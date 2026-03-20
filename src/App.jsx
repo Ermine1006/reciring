@@ -6,6 +6,8 @@ import RatingReview from './components/RatingReview'
 import ReciRingLogo from './components/ReciRingLogo'
 import { MOCK_REQUESTS } from './data/mockRequests'
 import LeaderboardView from './components/LeaderboardView'
+import ChatView from './components/ChatView'
+import MatchModal from './components/MatchModal'
 
 /* ─── Design tokens ─────────────────────────────────────────────── */
 const C = {
@@ -116,8 +118,12 @@ function StatusBar() {
 
 /* ─── App ───────────────────────────────────────────────────────── */
 export default function App() {
-  const [tab, setTab] = useState('discover')
-  const [requests, setRequests] = useState(MOCK_REQUESTS)
+  const [tab, setTab]             = useState('discover')
+  const [requests, setRequests]   = useState(MOCK_REQUESTS)
+  const [matches, setMatches]     = useState([])
+  const [messages, setMessages]   = useState({})
+  const [chatMatchId, setChatMatchId] = useState(null)
+  const [profileHovered, setProfileHovered] = useState(false)
 
   const handleNewRequest = (newReq) => {
     setRequests((prev) => [
@@ -125,6 +131,85 @@ export default function App() {
       ...prev,
     ])
     setTab('discover')
+  }
+
+  const PEER_REPLIES = [
+    "That sounds great! When are you free to chat?",
+    "Awesome, happy to help. What works for your schedule?",
+    "Perfect — I have some time this week. Want to set something up?",
+    "Great, looking forward to connecting! Let me know what's most helpful.",
+    "Thanks for reaching out! Happy to share what I know.",
+  ]
+
+  const handleMatchConfirm = ({ request, peer }) => {
+    const matchId  = `match-${Date.now()}`
+    const autoMsg  = {
+      id:        `msg-auto-${Date.now()}`,
+      senderId:  'peer',
+      content:   "Hey! Happy to connect — I might be able to help. Want to chat here or grab a coffee? ☕",
+      type:      'text',
+      timestamp: new Date().toISOString(),
+    }
+    const newMatch = {
+      id:              matchId,
+      request,
+      peer:            peer || 'Anonymous Peer',
+      createdAt:       new Date().toISOString(),
+      lastMessage:     autoMsg.content,
+      lastMessageTime: 'Just now',
+    }
+    setMatches(prev => [newMatch, ...prev])
+    setMessages(prev => ({ ...prev, [matchId]: [autoMsg] }))
+    setChatMatchId(matchId)
+    setTab('matches')
+  }
+
+  const handleSendMessage = (matchId, content) => {
+    const msg = {
+      id:        `msg-${Date.now()}`,
+      senderId:  'me',
+      content,
+      type:      'text',
+      timestamp: new Date().toISOString(),
+    }
+    setMessages(prev => ({ ...prev, [matchId]: [...(prev[matchId] || []), msg] }))
+    setMatches(prev => prev.map(m =>
+      m.id === matchId ? { ...m, lastMessage: content, lastMessageTime: 'Just now' } : m
+    ))
+    setTimeout(() => {
+      const reply = PEER_REPLIES[Math.floor(Math.random() * PEER_REPLIES.length)]
+      const peerMsg = {
+        id:        `msg-peer-${Date.now()}`,
+        senderId:  'peer',
+        content:   reply,
+        type:      'text',
+        timestamp: new Date().toISOString(),
+      }
+      setMessages(prev => ({ ...prev, [matchId]: [...(prev[matchId] || []), peerMsg] }))
+      setMatches(prev => prev.map(m =>
+        m.id === matchId ? { ...m, lastMessage: reply, lastMessageTime: 'Just now' } : m
+      ))
+    }, 1500)
+  }
+
+  const handleProposeMeeting = (matchId, { datetime, location }) => {
+    const meetingMsg = {
+      id:        `msg-mtg-${Date.now()}`,
+      senderId:  'me',
+      type:      'meeting_proposal',
+      timestamp: new Date().toISOString(),
+      meeting:   { datetime, location, status: 'pending' },
+    }
+    setMessages(prev => ({ ...prev, [matchId]: [...(prev[matchId] || []), meetingMsg] }))
+  }
+
+  const handleMeetingResponse = (matchId, msgId, status) => {
+    setMessages(prev => ({
+      ...prev,
+      [matchId]: (prev[matchId] || []).map(msg =>
+        msg.id === msgId ? { ...msg, meeting: { ...msg.meeting, status } } : msg
+      ),
+    }))
   }
 
   return (
@@ -169,29 +254,53 @@ export default function App() {
         <StatusBar />
 
         {/* ── App header ────────────────────────────────────── */}
-        <header className="flex-shrink-0 px-6 pt-1 pb-4" style={{ background: C.white }}>
+        <header className="flex-shrink-0 px-5 pt-2 pb-3" style={{ background: C.white }}>
           <div className="flex items-center justify-between">
-            <ReciRingLogo size={22} />
+            <ReciRingLogo size={34} />
 
-            {/* Profile button */}
+            {/* Premium profile button — gradient border, soft glow on hover */}
             <button
               type="button"
-              className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-150 active:scale-95"
+              onMouseEnter={() => setProfileHovered(true)}
+              onMouseLeave={() => setProfileHovered(false)}
+              className="active:scale-95"
               style={{
-                background: C.goldBg,
-                border: `1.5px solid ${C.goldLight}`,
+                width: 42, height: 42,
+                borderRadius: '50%',
+                flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer',
+                // Gradient-border trick: inner fill + outer gradient via border-box
+                background: profileHovered
+                  ? 'linear-gradient(#F5F0E8, #F5F0E8) padding-box, linear-gradient(135deg, #FFD700 0%, #B8962E 100%) border-box'
+                  : 'linear-gradient(#FAFAF8, #FAFAF8) padding-box, linear-gradient(135deg, #D4AF37 0%, #9A7520 100%) border-box',
+                border: '1.5px solid transparent',
+                boxShadow: profileHovered
+                  ? '0 0 0 3px rgba(212,175,55,0.14), 0 4px 14px rgba(140,100,0,0.16)'
+                  : '0 2px 8px rgba(100,70,0,0.08)',
+                transform: profileHovered ? 'scale(1.05)' : 'scale(1)',
+                transition: 'all 0.24s ease',
               }}
+              aria-label="Profile"
             >
-              <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: C.gold }} strokeWidth={1.8}>
+              <svg
+                width="16" height="16"
+                fill="none" stroke="currentColor"
+                viewBox="0 0 24 24"
+                style={{ color: profileHovered ? '#B8962E' : '#C8A96A' }}
+                strokeWidth={1.65}
+              >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
             </button>
           </div>
 
-          {/* Gold divider */}
+          {/* Symmetric gold rule — fades to transparency at both edges */}
           <div
-            className="mt-4 h-px"
-            style={{ background: `linear-gradient(90deg, ${C.goldLight} 0%, rgba(230,211,163,0.3) 60%, transparent 100%)` }}
+            className="mt-3 h-px"
+            style={{
+              background: 'linear-gradient(90deg, transparent 0%, rgba(212,175,55,0.28) 18%, rgba(212,175,55,0.55) 50%, rgba(212,175,55,0.28) 82%, transparent 100%)',
+            }}
           />
         </header>
 
@@ -202,6 +311,7 @@ export default function App() {
               requests={requests}
               onSwipeRight={(r) => console.log('Helping:', r.id)}
               onSwipeLeft={(r) => console.log('Passed:', r.id)}
+              onMatchConfirm={handleMatchConfirm}
             />
           )}
           {tab === 'post' && (
@@ -209,9 +319,24 @@ export default function App() {
               <SubmitRequest onSubmitted={handleNewRequest} />
             </div>
           )}
-          {tab === 'matches' && (
+          {tab === 'matches' && !chatMatchId && (
             <div className="flex-1 phone-scroll" style={{ background: '#F9F7F4' }}>
-              <MatchesList />
+              <MatchesList
+                matches={matches}
+                onOpenChat={(id) => setChatMatchId(id)}
+              />
+            </div>
+          )}
+          {tab === 'matches' && chatMatchId && (
+            <div className="flex-1 overflow-hidden" style={{ display: 'flex', flexDirection: 'column' }}>
+              <ChatView
+                match={matches.find(m => m.id === chatMatchId)}
+                messages={messages[chatMatchId] || []}
+                onSend={(content) => handleSendMessage(chatMatchId, content)}
+                onProposeMeeting={(data) => handleProposeMeeting(chatMatchId, data)}
+                onMeetingResponse={(msgId, status) => handleMeetingResponse(chatMatchId, msgId, status)}
+                onBack={() => setChatMatchId(null)}
+              />
             </div>
           )}
           {tab === 'reviews' && (

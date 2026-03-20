@@ -1,88 +1,144 @@
 /*
- * ReciRingLogo — icon + wordmark lockup
+ * ReciRingLogo — premium metallic wordmark lockup
  *
- * Icon: two interlocking rings in gold, representing reciprocal exchange.
- * Wordmark: "ReciRing" in Fraunces serif, black.
+ * Icon: 3D extruded gold "R" in Playfair Display italic,
+ *       built from layered SVG text with a metallic gradient on the front face.
+ * Wordmark: "ReciRing" in Playfair Display with a warm gold gradient.
+ *
+ * Micro-interaction: the entire lockup lifts 2px on hover with
+ * a deepened drop shadow — restrained luxury, not playful.
  */
-export default function ReciRingLogo({ size = 22 }) {
-  // Ring geometry — two overlapping circles in a 30 × 18 canvas
-  const r  = 8          // ring radius
-  const cy = 9          // vertical center
-  const lx = 9          // left ring center x
-  const rx = 21         // right ring center x  (gap = rx - lx - 2r = 4 → nice overlap)
+import { useState } from 'react'
 
-  // Scale everything relative to requested size
-  const scale     = size / 18
-  const vbWidth   = 30
-  const vbHeight  = 18
-  const svgWidth  = vbWidth  * scale
-  const svgHeight = vbHeight * scale
+/* ── Gradient definitions ─────────────────────────────────────── */
+const WORDMARK_GRADIENT =
+  'linear-gradient(135deg, #7A5910 0%, #C8A832 38%, #D4AF37 55%, #8B6914 100%)'
+
+/* ── Metallic R icon ──────────────────────────────────────────── */
+/*
+ * Three offset copies of the italic "R" simulate a cast-metal extrusion.
+ * The frontmost copy carries a five-stop gradient that goes from bright
+ * champagne (highlight) through warm gold to deep amber (shadow edge),
+ * matching the light-from-upper-left look of the reference photograph.
+ */
+function MetallicR({ size }) {
+  const W = 40        // viewBox width
+  const H = 48        // viewBox height
+  const FONT_SIZE = 52
+  const BX = 1        // baseline x — slight left margin so extrusion stays in frame
+  const BY = 43       // baseline y
+
+  const EXTRUSION = [
+    { dx: 3, dy: 3.5, fill: '#4E3206', opacity: 0.55 }, // deepest shadow
+    { dx: 2, dy: 2.5, fill: '#7A5910', opacity: 0.72 },
+    { dx: 1, dy: 1.5, fill: '#B8962E', opacity: 0.88 },
+  ]
+
+  const textProps = {
+    fontFamily: "'Playfair Display', 'Georgia', serif",
+    fontSize: FONT_SIZE,
+    fontStyle: 'italic',
+    fontWeight: '400',
+  }
 
   return (
-    <div className="flex items-center" style={{ gap: 9 }}>
-      {/* ── Interlocking rings icon ── */}
-      <svg
-        width={svgWidth}
-        height={svgHeight}
-        viewBox={`0 0 ${vbWidth} ${vbHeight}`}
-        fill="none"
-        aria-hidden="true"
-      >
+    <svg
+      width={size}
+      height={size * 1.2}
+      viewBox={`0 0 ${W} ${H}`}
+      style={{ overflow: 'visible', display: 'block', flexShrink: 0 }}
+      aria-hidden="true"
+    >
+      <defs>
         {/*
-         * Draw each ring as a full circle.
-         * The left ring is clipped so its right half doesn't overdraw the
-         * right ring's left arc, giving a true "link" appearance.
-         * We paint: left ring back-half → right ring → left ring front-half.
+         * Five-stop gradient simulates convex metallic surface:
+         * bright highlight → rich gold → warm gold → deep gold → dark edge
          */}
-        <defs>
-          {/* Clip left half of canvas — for the back arc of left ring */}
-          <clipPath id="rrl-left-back">
-            <rect x="0" y="0" width={lx} height={vbHeight} />
-          </clipPath>
-          {/* Clip right half of canvas — for the front arc of left ring */}
-          <clipPath id="rrl-left-front">
-            <rect x={lx} y="0" width={vbWidth - lx} height={vbHeight} />
-          </clipPath>
-        </defs>
+        <linearGradient id="rLogoGold" x1="12%" y1="4%" x2="88%" y2="96%">
+          <stop offset="0%"   stopColor="#FFF8D6" /> {/* specular highlight   */}
+          <stop offset="18%"  stopColor="#FFD700" /> {/* bright gold          */}
+          <stop offset="44%"  stopColor="#D4AF37" /> {/* warm mid gold        */}
+          <stop offset="72%"  stopColor="#B8962E" /> {/* deeper gold          */}
+          <stop offset="100%" stopColor="#7A5910" /> {/* shadow edge          */}
+        </linearGradient>
+      </defs>
 
-        {/* Left ring — back half (sits behind right ring) */}
-        <circle
-          cx={lx} cy={cy} r={r}
-          stroke="#C8A96A"
-          strokeWidth={1.6}
-          clipPath="url(#rrl-left-back)"
-        />
+      {/* Back-most extrusion layers */}
+      {EXTRUSION.map(({ dx, dy, fill, opacity }, i) => (
+        <text
+          key={i}
+          x={BX + dx}
+          y={BY + dy}
+          fill={fill}
+          opacity={opacity}
+          {...textProps}
+        >
+          R
+        </text>
+      ))}
 
-        {/* Right ring — full circle (sits in front of left ring's back half) */}
-        <circle
-          cx={rx} cy={cy} r={r}
-          stroke="#C8A96A"
-          strokeWidth={1.6}
-        />
+      {/* Front face — metallic gradient */}
+      <text x={BX} y={BY} fill="url(#rLogoGold)" {...textProps}>
+        R
+      </text>
+    </svg>
+  )
+}
 
-        {/* Left ring — front half (sits in front of right ring) */}
-        <circle
-          cx={lx} cy={cy} r={r}
-          stroke="#C8A96A"
-          strokeWidth={1.6}
-          clipPath="url(#rrl-left-front)"
-        />
-      </svg>
+/* ── Exported component ───────────────────────────────────────── */
+export default function ReciRingLogo({ size = 30 }) {
+  const [hovered, setHovered] = useState(false)
 
-      {/* ── Wordmark ── */}
+  return (
+    <button
+      type="button"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        background: 'none',
+        border: 'none',
+        cursor: 'pointer',
+        padding: 0,
+        // Luxury lift — subtle spring-feel cubic-bezier
+        transform: hovered ? 'translateY(-2px)' : 'translateY(0)',
+        transition: 'transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1)',
+      }}
+      aria-label="ReciRing — home"
+    >
+      {/* 3-D metallic "R" */}
+      <div
+        style={{
+          filter: hovered
+            ? 'drop-shadow(0 7px 16px rgba(180,138,0,0.42))'
+            : 'drop-shadow(0 3px 8px rgba(110,80,0,0.26))',
+          transition: 'filter 0.28s ease',
+        }}
+      >
+        <MetallicR size={size} />
+      </div>
+
+      {/* Gold-gradient wordmark in Playfair Display */}
       <span
         style={{
-          fontFamily: 'Fraunces, "Playfair Display", Georgia, serif',
-          fontSize: size + 2,
-          fontWeight: 600,
-          letterSpacing: '-0.02em',
-          color: '#111111',
+          fontFamily: "'Playfair Display', 'Georgia', serif",
+          fontSize: Math.round(size * 0.72),
+          fontWeight: 500,
+          letterSpacing: '0.07em',
+          background: WORDMARK_GRADIENT,
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text',
+          color: 'transparent', // fallback
           lineHeight: 1,
+          paddingBottom: 1,     // prevents descender clip on some browsers
           userSelect: 'none',
         }}
       >
         ReciRing
       </span>
-    </div>
+    </button>
   )
 }

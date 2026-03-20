@@ -11,7 +11,7 @@ const C = {
   white:     '#FFFFFF',
 }
 
-export default function MatchModal({ match, onClose }) {
+export default function MatchModal({ match, onClose, onConfirm }) {
   return (
     <AnimatePresence>
       <motion.div
@@ -98,7 +98,7 @@ export default function MatchModal({ match, onClose }) {
             {/* CTA */}
             <button
               type="button"
-              onClick={onClose}
+              onClick={() => { onConfirm?.(); onClose() }}
               className="w-full py-4 rounded-[16px] text-sm font-semibold tracking-[0.12em] uppercase transition-all duration-200 active:scale-[0.98]"
               style={{
                 background: `linear-gradient(135deg, ${C.gold} 0%, ${C.goldDark} 100%)`,

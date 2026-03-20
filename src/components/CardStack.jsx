@@ -15,7 +15,7 @@ const C = {
   white:     '#FFFFFF',
 }
 
-export default function CardStack({ requests, onSwipeRight, onSwipeLeft }) {
+export default function CardStack({ requests, onSwipeRight, onSwipeLeft, onMatchConfirm }) {
   const [stack, setStack] = useState(requests)
   const [match, setMatch] = useState(null)
   const dragX   = useMotionValue(0)
@@ -143,7 +143,13 @@ export default function CardStack({ requests, onSwipeRight, onSwipeLeft }) {
         </button>
       </div>
 
-      {match && <MatchModal match={match} onClose={() => setMatch(null)} />}
+      {match && (
+        <MatchModal
+          match={match}
+          onClose={() => setMatch(null)}
+          onConfirm={() => onMatchConfirm?.(match)}
+        />
+      )}
     </div>
   )
 }

@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import AnonymousAvatar from './AnonymousAvatar'
 
 const C = {
   gold:      '#C8A96A',
@@ -12,26 +13,17 @@ const C = {
   border:    '#F0ECE4',
 }
 
-const MOCK_MATCHES = [
-  {
-    id: 'm1',
-    peer:    'Fellow Rotman MBA',
-    request: 'Connect to someone at Bain',
-    status:  'Scheduled',
-    date:    'Tomorrow, 3 pm',
-    initials: 'RM',
-  },
-  {
-    id: 'm2',
-    peer:    'Rotman Peer',
-    request: 'Finance midterm study buddy',
-    status:  'Completed',
-    date:    'Last week',
-    initials: 'RP',
-  },
-]
+function timeAgo(isoString) {
+  const diff = Date.now() - new Date(isoString).getTime()
+  const m = Math.floor(diff / 60000)
+  if (m < 1)  return 'Just now'
+  if (m < 60) return `${m}m ago`
+  const h = Math.floor(m / 60)
+  if (h < 24) return `${h}h ago`
+  return `${Math.floor(h / 24)}d ago`
+}
 
-export default function MatchesList() {
+export default function MatchesList({ matches = [], onOpenChat }) {
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -47,80 +39,99 @@ export default function MatchesList() {
           Matches
         </h2>
         <p className="text-sm mt-1 leading-relaxed" style={{ color: C.textSub }}>
-          People you're connected with. Schedule coffee chats and leave a review after.
+          People you've connected with. Tap to chat or schedule a coffee.
         </p>
       </div>
 
-      <ul className="space-y-3">
-        {MOCK_MATCHES.map((m, i) => (
-          <motion.li
-            key={m.id}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.07 }}
-            className="rounded-[20px] overflow-hidden"
-            style={{
-              background: C.white,
-              border: `1px solid ${C.border}`,
-              boxShadow: '0 2px 12px rgba(0,0,0,0.05)',
-            }}
-          >
-            {/* Top gold accent stripe */}
-            <div style={{ height: 3, background: `linear-gradient(90deg, ${C.gold}, ${C.goldLight} 60%, transparent)` }} />
+      {matches.length === 0 ? (
+        <div style={{ textAlign: 'center', paddingTop: 48 }}>
+          <div style={{
+            width: 64, height: 64, borderRadius: '50%',
+            background: C.goldBg, border: `1.5px solid ${C.goldLight}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto 20px', fontSize: 28,
+          }}>
+            🤝
+          </div>
+          <p style={{ fontSize: 16, fontWeight: 600, color: C.text, marginBottom: 8, fontFamily: 'Fraunces, Georgia, serif' }}>
+            No matches yet
+          </p>
+          <p style={{ fontSize: 13, color: C.textMuted, lineHeight: 1.6, fontFamily: 'Inter, system-ui, sans-serif' }}>
+            Swipe right on a request to create<br />your first match.
+          </p>
+        </div>
+      ) : (
+        <ul style={{ display: 'flex', flexDirection: 'column', gap: 12, listStyle: 'none', padding: 0, margin: 0 }}>
+          {matches.map((m, i) => (
+            <motion.li
+              key={m.id}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.06 }}
+              onClick={() => onOpenChat?.(m.id)}
+              style={{
+                borderRadius: 20, overflow: 'hidden',
+                background: C.white,
+                border: `1px solid ${C.border}`,
+                boxShadow: '0 2px 12px rgba(0,0,0,0.05)',
+                cursor: 'pointer',
+              }}
+            >
+              {/* Gold top stripe */}
+              <div style={{ height: 3, background: `linear-gradient(90deg, ${C.gold}, ${C.goldLight} 60%, transparent)` }} />
 
-            <div className="px-5 py-4">
-              {/* Peer row */}
-              <div className="flex items-center gap-3 mb-3">
-                {/* Avatar */}
-                <div
-                  className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-semibold"
-                  style={{ background: C.goldBg, border: `1.5px solid ${C.goldLight}`, color: C.goldDark }}
-                >
-                  {m.initials}
+              <div style={{ padding: '14px 18px' }}>
+                {/* Peer row */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+                  <AnonymousAvatar seed={m.id} size={38} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: 14, fontWeight: 600, color: C.text, fontFamily: 'Inter, system-ui, sans-serif', marginBottom: 2 }}>
+                      Anonymous Peer
+                    </p>
+                    <p style={{
+                      fontSize: 12, color: C.textSub,
+                      fontFamily: 'Inter, system-ui, sans-serif',
+                      whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                    }}>
+                      {m.lastMessage || 'New match'}
+                    </p>
+                  </div>
+                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <p style={{ fontSize: 10, color: C.textMuted, fontFamily: 'Inter, system-ui, sans-serif' }}>
+                      {m.lastMessageTime || timeAgo(m.createdAt)}
+                    </p>
+                    {/* Unread dot */}
+                    <div style={{
+                      width: 8, height: 8, borderRadius: '50%',
+                      background: C.gold, margin: '4px 0 0 auto',
+                    }} />
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm leading-tight truncate" style={{ color: C.text }}>{m.peer}</p>
-                  <p className="text-xs mt-0.5 truncate" style={{ color: C.textSub }}>{m.request}</p>
-                </div>
+
+                {/* Request snippet */}
+                {m.request?.needs && (
+                  <div style={{
+                    background: C.goldBg, borderRadius: 10,
+                    padding: '8px 12px',
+                    border: `1px solid ${C.goldLight}`,
+                  }}>
+                    <p style={{
+                      fontSize: 11, color: C.textSub,
+                      fontFamily: 'Inter, system-ui, sans-serif',
+                      lineHeight: 1.4,
+                      display: '-webkit-box', WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                    }}>
+                      <strong style={{ color: C.goldDark }}>Needs: </strong>
+                      {m.request.needs}
+                    </p>
+                  </div>
+                )}
               </div>
-
-              {/* Footer row */}
-              <div className="flex items-center justify-between">
-                <span
-                  className="text-[10px] tracking-[0.12em] uppercase font-semibold px-3 py-1 rounded-full"
-                  style={{
-                    background: m.status === 'Completed' ? C.goldBg          : '#F3F4F6',
-                    border:     m.status === 'Completed' ? `1px solid ${C.goldLight}` : '1px solid #E5E7EB',
-                    color:      m.status === 'Completed' ? C.goldDark         : C.textSub,
-                  }}
-                >
-                  {m.status}
-                </span>
-                <span className="text-[11px]" style={{ color: C.textMuted }}>{m.date}</span>
-              </div>
-
-              {m.status === 'Completed' && (
-                <button
-                  type="button"
-                  className="mt-3 w-full py-2.5 rounded-[12px] text-xs font-semibold tracking-[0.1em] uppercase transition-all duration-200 active:scale-[0.98]"
-                  style={{
-                    background: C.goldBg,
-                    border: `1.5px solid ${C.goldLight}`,
-                    color: C.goldDark,
-                  }}
-                >
-                  Leave a review →
-                </button>
-              )}
-            </div>
-          </motion.li>
-        ))}
-      </ul>
-
-      {/* Empty-state hint */}
-      <p className="text-center text-[12px] mt-8" style={{ color: C.textMuted }}>
-        New matches appear here after you help a peer.
-      </p>
+            </motion.li>
+          ))}
+        </ul>
+      )}
     </motion.div>
   )
 }
