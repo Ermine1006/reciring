@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import AnonymousAvatar from './AnonymousAvatar'
 import Certificate from './Certificate'
-import { MOCK_ME, MOCK_LEADERBOARD, getBadge, getNextBadge } from '../data/reputationData'
+import { MOCK_ME, MOCK_LEADERBOARD, getBadge, getNextBadge, getReliability } from '../data/reputationData'
 
 const C = {
   gold:      '#C8A96A',
@@ -47,8 +47,9 @@ function BadgeChip({ label }) {
 export default function LeaderboardView() {
   const [showCert, setShowCert] = useState(false)
 
-  const myBadge   = getBadge(MOCK_ME.points)
-  const nextBadge = getNextBadge(MOCK_ME.points)
+  const myBadge      = getBadge(MOCK_ME.points)
+  const nextBadge    = getNextBadge(MOCK_ME.points)
+  const myReliability = getReliability(MOCK_ME.scheduled, MOCK_ME.completed)
   const prevMin   = myBadge.min
   const nextMin   = nextBadge ? nextBadge.min : prevMin + 250
   const progress  = nextBadge
@@ -66,7 +67,7 @@ export default function LeaderboardView() {
             ReciRing
           </p>
           <h2 style={{ fontSize: 24, fontWeight: 600, color: C.text, fontFamily: 'Fraunces, Georgia, serif', letterSpacing: '-0.02em', marginBottom: 4 }}>
-            Top Connectors
+            Active Contributors
           </h2>
           <p style={{ fontSize: 13, color: C.textSub, fontFamily: 'Inter, system-ui, sans-serif', lineHeight: 1.5 }}>
             Earn points by helping your peers.
@@ -85,17 +86,50 @@ export default function LeaderboardView() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
               <AnonymousAvatar seed="me" size={44} />
               <div style={{ flex: 1 }}>
-                <p style={{ fontSize: 13, fontWeight: 600, color: C.text, fontFamily: 'Inter, system-ui, sans-serif', marginBottom: 4 }}>
-                  Your Score
-                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: C.text, fontFamily: 'Inter, system-ui, sans-serif' }}>
+                    Your Profile
+                  </p>
+                  {myReliability?.label && (
+                    <span style={{
+                      fontSize: 10, fontWeight: 600, letterSpacing: '0.06em',
+                      padding: '2px 9px', borderRadius: 99,
+                      background: myReliability.bg, color: myReliability.color,
+                      border: `1px solid ${myReliability.border}`,
+                      fontFamily: 'Inter, system-ui, sans-serif', whiteSpace: 'nowrap',
+                    }}>
+                      {myReliability.label} ({myReliability.rate}%)
+                    </span>
+                  )}
+                </div>
                 <BadgeChip label={myBadge.label} />
               </div>
               <div style={{ textAlign: 'right' }}>
-                <p style={{ fontSize: 32, fontWeight: 700, color: C.text, fontFamily: 'Inter, system-ui, sans-serif', lineHeight: 1, letterSpacing: '-0.02em' }}>
+                <p style={{ fontSize: 26, fontWeight: 700, color: C.textSub, fontFamily: 'Inter, system-ui, sans-serif', lineHeight: 1, letterSpacing: '-0.02em' }}>
                   {MOCK_ME.points}
                 </p>
-                <p style={{ fontSize: 11, color: C.textMuted, fontFamily: 'Inter, system-ui, sans-serif', marginTop: 2 }}>points</p>
+                <p style={{ fontSize: 10, color: C.textMuted, fontFamily: 'Inter, system-ui, sans-serif', marginTop: 2 }}>pts contributed</p>
               </div>
+            </div>
+
+            {/* Completion metrics */}
+            <div style={{
+              padding: '10px 14px', marginBottom: 10,
+              borderRadius: 12,
+              background: myReliability?.label === 'Inconsistent' ? '#F9FAFB' : '#F0FDF4',
+              border: `1px solid ${myReliability?.label === 'Inconsistent' ? '#E5E7EB' : '#BBF7D0'}`,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                <p style={{ fontSize: 13, fontWeight: 600, color: C.text, fontFamily: 'Inter, system-ui, sans-serif' }}>
+                  Completed <strong>{MOCK_ME.completed}</strong> / {MOCK_ME.scheduled} chats
+                </p>
+                <p style={{ fontSize: 13, fontWeight: 700, color: myReliability?.color ?? C.textMuted, fontFamily: 'Inter, system-ui, sans-serif' }}>
+                  {myReliability?.rate ?? 0}%
+                </p>
+              </div>
+              <p style={{ fontSize: 11, color: C.textMuted, fontFamily: 'Inter, system-ui, sans-serif', lineHeight: 1.4 }}>
+                Shows up to scheduled chats consistently
+              </p>
             </div>
 
             {/* Progress bar */}
@@ -254,7 +288,7 @@ export default function LeaderboardView() {
                 {/* Avatar */}
                 <AnonymousAvatar seed={entry.seed} size={36} />
 
-                {/* Name + badge */}
+                {/* Name + badge + reliability */}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{
                     fontSize: 14, fontWeight: entry.isMe ? 700 : 500,
@@ -264,7 +298,22 @@ export default function LeaderboardView() {
                   }}>
                     {entry.name}{entry.isMe ? ' (you)' : ''}
                   </p>
-                  <BadgeChip label={entry.badge} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+                    <BadgeChip label={entry.badge} />
+                    {(() => {
+                      const r = getReliability(entry.scheduled, entry.completed)
+                      return r?.label ? (
+                        <span style={{
+                          fontSize: 9, fontWeight: 600, letterSpacing: '0.06em',
+                          padding: '2px 7px', borderRadius: 99,
+                          background: r.bg, color: r.color, border: `1px solid ${r.border}`,
+                          fontFamily: 'Inter, system-ui, sans-serif', whiteSpace: 'nowrap',
+                        }}>
+                          {r.label}
+                        </span>
+                      ) : null
+                    })()}
+                  </div>
                 </div>
 
                 {/* Points */}

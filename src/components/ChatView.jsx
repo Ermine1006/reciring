@@ -26,14 +26,14 @@ function fmtMeeting(iso) {
   })
 }
 
-function MeetingCard({ msg, onAccept, onDecline }) {
+function MeetingCard({ msg, onConfirm, onSuggestAnother, onReschedule }) {
   const { meeting } = msg
   const isMe = msg.senderId === 'me'
   return (
     <div style={{ display: 'flex', justifyContent: isMe ? 'flex-end' : 'flex-start', padding: '4px 16px' }}>
       <div style={{
         background: C.white,
-        border: `1.5px solid ${C.goldLight}`,
+        border: `1.5px solid ${meeting.status === 'confirmed' ? '#BBF7D0' : C.goldLight}`,
         borderRadius: 18, padding: '14px 16px',
         maxWidth: 270,
         boxShadow: '0 2px 12px rgba(200,169,106,0.12)',
@@ -42,10 +42,11 @@ function MeetingCard({ msg, onAccept, onDecline }) {
           <span style={{ fontSize: 18 }}>☕</span>
           <p style={{
             fontSize: 11, fontWeight: 700, letterSpacing: '0.1em',
-            textTransform: 'uppercase', color: C.goldDark,
+            textTransform: 'uppercase',
+            color: meeting.status === 'confirmed' ? '#16A34A' : C.goldDark,
             fontFamily: 'Inter, system-ui, sans-serif',
           }}>
-            Coffee Chat {isMe ? 'Suggested' : 'Proposed'}
+            {meeting.status === 'confirmed' ? 'Coffee Chat Confirmed' : `Coffee Chat ${isMe ? 'Suggested' : 'Proposed'}`}
           </p>
         </div>
         <p style={{
@@ -57,56 +58,143 @@ function MeetingCard({ msg, onAccept, onDecline }) {
         <p style={{
           fontSize: 13, color: C.textSub,
           fontFamily: 'Inter, system-ui, sans-serif',
-          marginBottom: meeting.status === 'pending' && !isMe ? 14 : 0,
+          marginBottom: 12,
         }}>
           📍 {meeting.location}
         </p>
 
+        {/* Pending — receiver sees Confirm / Suggest another time */}
         {meeting.status === 'pending' && !isMe && (
           <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={onAccept} style={{
+            <button onClick={onConfirm} style={{
               flex: 1, padding: '8px 0', borderRadius: 10,
               background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
               color: '#fff', fontSize: 12, fontWeight: 600,
               fontFamily: 'Inter, system-ui, sans-serif',
               border: 'none', cursor: 'pointer',
             }}>
-              Accept ✓
+              Confirm ✅
             </button>
-            <button onClick={onDecline} style={{
+            <button onClick={onSuggestAnother} style={{
               flex: 1, padding: '8px 0', borderRadius: 10,
               background: '#F3F4F6', color: C.textSub,
               fontSize: 12, fontWeight: 600,
               fontFamily: 'Inter, system-ui, sans-serif',
               border: '1px solid #E5E7EB', cursor: 'pointer',
             }}>
-              Decline
+              Suggest another time ⏱
             </button>
           </div>
         )}
-        {meeting.status === 'accepted' && (
-          <p style={{ fontSize: 12, color: '#16A34A', fontWeight: 600, fontFamily: 'Inter, system-ui, sans-serif' }}>
-            ✓ Confirmed!
-          </p>
+
+        {/* Pending — sender sees waiting state + dev controls */}
+        {meeting.status === 'pending' && isMe && (
+          <>
+            <p style={{ fontSize: 11, color: C.textMuted, fontFamily: 'Inter, system-ui, sans-serif', fontStyle: 'italic' }}>
+              Waiting for response…
+            </p>
+            {import.meta.env.DEV && (
+              <div style={{
+                marginTop: 8, paddingTop: 8,
+                borderTop: '1px dashed #E5E7EB',
+                display: 'flex', gap: 6,
+              }}>
+                <button onClick={onConfirm} style={{
+                  flex: 1, padding: '6px 0', borderRadius: 8,
+                  background: '#DBEAFE', border: '1px solid #93C5FD',
+                  color: '#1E40AF', fontSize: 10, fontWeight: 600,
+                  fontFamily: 'Inter, system-ui, sans-serif', cursor: 'pointer',
+                }}>
+                  Mock confirm as peer
+                </button>
+                <button onClick={onSuggestAnother} style={{
+                  flex: 1, padding: '6px 0', borderRadius: 8,
+                  background: '#DBEAFE', border: '1px solid #93C5FD',
+                  color: '#1E40AF', fontSize: 10, fontWeight: 600,
+                  fontFamily: 'Inter, system-ui, sans-serif', cursor: 'pointer',
+                }}>
+                  Mock suggest another time
+                </button>
+              </div>
+            )}
+          </>
         )}
-        {meeting.status === 'declined' && (
-          <p style={{ fontSize: 12, color: C.textMuted, fontFamily: 'Inter, system-ui, sans-serif' }}>
-            Declined
-          </p>
+
+        {/* Confirmed — show calendar + reschedule actions */}
+        {meeting.status === 'confirmed' && (
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              onClick={() => {
+                const title = encodeURIComponent('Coffee Chat — ReciRing')
+                const dtStart = new Date(meeting.datetime).toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '')
+                const dtEnd = new Date(new Date(meeting.datetime).getTime() + 30 * 60000).toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '')
+                const loc = encodeURIComponent(meeting.location)
+                window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dtStart}/${dtEnd}&location=${loc}`, '_blank')
+              }}
+              style={{
+                flex: 1, padding: '7px 0', borderRadius: 10,
+                background: '#F0FDF4', border: '1px solid #BBF7D0',
+                color: '#166534', fontSize: 11, fontWeight: 600,
+                fontFamily: 'Inter, system-ui, sans-serif', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+              }}
+            >
+              <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <rect x="3" y="4" width="18" height="18" rx="2" />
+                <path d="M16 2v4M8 2v4M3 10h18" />
+              </svg>
+              Add to calendar
+            </button>
+            <button
+              onClick={onReschedule}
+              style={{
+                padding: '7px 12px', borderRadius: 10,
+                background: 'transparent', border: '1px solid #E5E7EB',
+                color: C.textMuted, fontSize: 11, fontWeight: 500,
+                fontFamily: 'Inter, system-ui, sans-serif', cursor: 'pointer',
+              }}
+            >
+              Reschedule
+            </button>
+          </div>
         )}
       </div>
     </div>
   )
 }
 
-export default function ChatView({ match, messages, onSend, onProposeMeeting, onMeetingResponse, onBack }) {
+export default function ChatView({ match, messages, onSend, onProposeMeeting, onMeetingResponse, onBack, autoOpenSchedule, onScheduleOpened, scheduleFeedback, onNavigateReview }) {
   const [input, setInput]               = useState('')
   const [showCoffee, setShowCoffee]     = useState(false)
+  const [showFollowUp, setShowFollowUp] = useState(false)
+  const [rescheduleData, setRescheduleData] = useState(null) // pre-fill values for reschedule
   const bottomRef                        = useRef(null)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  // Auto-open scheduler when coming from "Schedule coffee chat" CTA
+  useEffect(() => {
+    if (autoOpenSchedule) {
+      setShowCoffee(true)
+      onScheduleOpened?.()
+    }
+  }, [autoOpenSchedule])
+
+  // Nudge logic based on message count
+  const myMessages = messages.filter(m => m.senderId === 'me' && m.type === 'text')
+  const hasMeeting = messages.some(m => m.type === 'meeting_proposal')
+  const confirmedMeeting = messages.find(m => m.type === 'meeting_proposal' && m.meeting?.status === 'confirmed')
+  const totalMessages = messages.filter(m => m.type === 'text').length
+
+  // Post-meeting follow-up: show after confirmed meeting (simulated — 5s delay as mock)
+  useEffect(() => {
+    if (confirmedMeeting && !showFollowUp) {
+      const timer = setTimeout(() => setShowFollowUp(true), 5000)
+      return () => clearTimeout(timer)
+    }
+  }, [confirmedMeeting])
 
   const handleSend = () => {
     const t = input.trim()
@@ -191,9 +279,40 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
               <MeetingCard
                 key={msg.id}
                 msg={msg}
-                onAccept={() => onMeetingResponse(msg.id, 'accepted')}
-                onDecline={() => onMeetingResponse(msg.id, 'declined')}
+                onConfirm={() => onMeetingResponse(msg.id, 'confirmed')}
+                onSuggestAnother={() => {
+                  setRescheduleData({ datetime: msg.meeting.datetime, location: msg.meeting.location })
+                  setShowCoffee(true)
+                }}
+                onReschedule={() => {
+                  setRescheduleData({ datetime: msg.meeting.datetime, location: msg.meeting.location })
+                  setShowCoffee(true)
+                }}
               />
+            )
+          }
+          // System messages — centered, neutral
+          if (msg.senderId === 'system') {
+            return (
+              <motion.div
+                key={msg.id}
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2 }}
+                style={{ display: 'flex', justifyContent: 'center', padding: '8px 16px' }}
+              >
+                <div style={{
+                  background: '#F0FDF4', border: '1px solid #BBF7D0',
+                  borderRadius: 20, padding: '8px 18px',
+                }}>
+                  <p style={{
+                    fontSize: 13, fontWeight: 600, color: '#166534',
+                    fontFamily: 'Inter, system-ui, sans-serif', textAlign: 'center',
+                  }}>
+                    {msg.content}
+                  </p>
+                </div>
+              </motion.div>
             )
           }
           const isMe = msg.senderId === 'me'
@@ -237,28 +356,137 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
             </motion.div>
           )
         })}
+        {/* ── Smart nudges ── */}
+        {!hasMeeting && totalMessages >= 3 && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            style={{ padding: '8px 16px', display: 'flex', justifyContent: 'center' }}
+          >
+            <div style={{
+              background: C.goldBg, border: `1px solid ${C.goldLight}`,
+              borderRadius: 16, padding: '10px 18px',
+              display: 'flex', alignItems: 'center', gap: 10,
+              boxShadow: '0 2px 8px rgba(200,169,106,0.1)',
+            }}>
+              <span style={{ fontSize: 16 }}>✨</span>
+              <p style={{ fontSize: 12, color: C.goldDark, fontFamily: 'Inter, system-ui, sans-serif', fontWeight: 500 }}>
+                {totalMessages >= 6
+                  ? 'Still interested? Lock in a time'
+                  : 'Looks like a good match — schedule a chat?'}
+              </p>
+              <button
+                onClick={() => setShowCoffee(true)}
+                style={{
+                  padding: '5px 12px', borderRadius: 10,
+                  background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
+                  color: '#fff', fontSize: 11, fontWeight: 600,
+                  fontFamily: 'Inter, system-ui, sans-serif',
+                  border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
+                }}
+              >
+                Schedule ☕
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {/* ── Post-scheduling feedback ── */}
+        {scheduleFeedback && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            style={{ padding: '8px 16px', display: 'flex', justifyContent: 'center' }}
+          >
+            <div style={{
+              background: '#F0FDF4', border: '1px solid #BBF7D0',
+              borderRadius: 16, padding: '12px 20px', textAlign: 'center',
+            }}>
+              <p style={{ fontSize: 14, fontWeight: 600, color: '#166534', fontFamily: 'Inter, system-ui, sans-serif' }}>
+                Nice — your chat is set 🎉
+              </p>
+              <p style={{ fontSize: 11, color: '#16A34A', fontFamily: 'Inter, system-ui, sans-serif', marginTop: 4 }}>
+                +10 points after completion
+              </p>
+            </div>
+          </motion.div>
+        )}
+
+        {/* ── Post-meeting follow-up ── */}
+        {showFollowUp && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            style={{ padding: '8px 16px', display: 'flex', justifyContent: 'center' }}
+          >
+            <div style={{
+              background: C.white, border: `1.5px solid ${C.goldLight}`,
+              borderRadius: 18, padding: '14px 20px', textAlign: 'center',
+              boxShadow: '0 2px 12px rgba(200,169,106,0.12)',
+              maxWidth: 280, width: '100%',
+            }}>
+              <p style={{ fontSize: 14, fontWeight: 600, color: C.text, fontFamily: 'Inter, system-ui, sans-serif', marginBottom: 12 }}>
+                Did you end up meeting?
+              </p>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  onClick={() => { setShowFollowUp(false); onNavigateReview?.() }}
+                  style={{
+                    flex: 1, padding: '9px 0', borderRadius: 12,
+                    background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
+                    color: '#fff', fontSize: 13, fontWeight: 600,
+                    fontFamily: 'Inter, system-ui, sans-serif',
+                    border: 'none', cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(200,169,106,0.3)',
+                  }}
+                >
+                  Yes — leave a review
+                </button>
+                <button
+                  onClick={() => setShowFollowUp(false)}
+                  style={{
+                    flex: 1, padding: '9px 0', borderRadius: 12,
+                    background: '#F3F4F6', color: C.textSub,
+                    fontSize: 13, fontWeight: 600,
+                    fontFamily: 'Inter, system-ui, sans-serif',
+                    border: '1px solid #E5E7EB', cursor: 'pointer',
+                  }}
+                >
+                  Not yet
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         <div ref={bottomRef} />
       </div>
 
       {/* ── Coffee chat quick-action ── */}
-      <div style={{
-        padding: '8px 16px 4px',
-        background: C.white,
-        borderTop: '1px solid rgba(0,0,0,0.05)',
-        flexShrink: 0,
-      }}>
-        <button
-          onClick={() => setShowCoffee(true)}
-          style={{
-            width: '100%', padding: '9px 0', borderRadius: 12,
-            background: C.goldBg, border: `1.5px solid ${C.goldLight}`,
-            color: C.goldDark, fontSize: 13, fontWeight: 600,
-            fontFamily: 'Inter, system-ui, sans-serif', cursor: 'pointer',
-          }}
-        >
-          Suggest Coffee Chat ☕
-        </button>
-      </div>
+      {!hasMeeting && (
+        <div style={{
+          padding: '8px 16px 4px',
+          background: C.white,
+          borderTop: '1px solid rgba(0,0,0,0.05)',
+          flexShrink: 0,
+        }}>
+          <button
+            onClick={() => setShowCoffee(true)}
+            style={{
+              width: '100%', padding: '9px 0', borderRadius: 12,
+              background: C.goldBg, border: `1.5px solid ${C.goldLight}`,
+              color: C.goldDark, fontSize: 13, fontWeight: 600,
+              fontFamily: 'Inter, system-ui, sans-serif', cursor: 'pointer',
+            }}
+          >
+            {myMessages.length === 0
+              ? 'Start with a coffee chat ☕'
+              : myMessages.length <= 2
+                ? 'Take this offline ☕'
+                : 'Schedule a coffee chat ☕'}
+          </button>
+        </div>
+      )}
 
       {/* ── Input bar ── */}
       <div style={{
@@ -307,8 +535,9 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
       <AnimatePresence>
         {showCoffee && (
           <CoffeeChatModal
-            onConfirm={(data) => { onProposeMeeting(data); setShowCoffee(false) }}
-            onClose={() => setShowCoffee(false)}
+            initialValues={rescheduleData}
+            onConfirm={(data) => { onProposeMeeting(data); setShowCoffee(false); setRescheduleData(null) }}
+            onClose={() => { setShowCoffee(false); setRescheduleData(null) }}
           />
         )}
       </AnimatePresence>

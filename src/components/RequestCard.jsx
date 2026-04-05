@@ -20,14 +20,22 @@ const C = {
   white:      '#FFFFFF',
 }
 
-export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight, isTop }) {
+/* ── Urgency indicator config ────────────────────────────────────── */
+const URGENCY = {
+  urgent: { label: 'Urgent',    bg: '#FEF2F2', border: '#FECACA', color: '#991B1B', dot: '#EF4444' },
+  soon:   { label: 'This week', bg: '#FFF8EB', border: '#FDE68A', color: '#92400E', dot: '#F59E0B' },
+}
+
+export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight, isTop, matchReason, onTap }) {
   const [offset, setOffset] = useState(0)
+  const [hasDragged, setHasDragged] = useState(false)
   const rotate       = offset ? Math.min(Math.max(offset / 16, -ROTATION_RANGE), ROTATION_RANGE) : 0
   const matchOpacity = offset ? Math.min( offset / SWIPE_THRESHOLD, 1) : 0
   const passOpacity  = offset ? Math.min(-offset / SWIPE_THRESHOLD, 1) : 0
 
   const handleDrag = (_, info) => {
     if (!isTop) return
+    if (Math.abs(info.offset.x) > 4) setHasDragged(true)
     setOffset(info.offset.x)
     onDrag?.(info.offset.x)
   }
@@ -38,6 +46,13 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
     onDrag?.(0)
     if (info.offset.x >  SWIPE_THRESHOLD) onSwipeRight()
     else if (info.offset.x < -SWIPE_THRESHOLD) onSwipeLeft()
+    // Reset after a tick so the pointerUp handler can read it
+    setTimeout(() => setHasDragged(false), 0)
+  }
+
+  const handlePointerUp = () => {
+    if (!isTop || hasDragged) return
+    onTap?.(request)
   }
 
   return (
@@ -55,9 +70,11 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
           : '0 6px 20px rgba(0,0,0,0.05)',
         overflow: 'hidden',
         height: 'auto',
-        minHeight: 280,
-        maxHeight: 'calc(100% - 112px)',
+        maxHeight: 'calc(100% - 24px)',
+        display: 'flex',
+        flexDirection: 'column',
       }}
+      onPointerUp={handlePointerUp}
       drag={isTop ? 'x' : false}
       dragConstraints={{ left: 0, right: 0 }}
       dragElastic={0.6}
@@ -132,40 +149,63 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
       )}
 
       {/* ── Card body ─────────────────────────────────── */}
-      <div style={{ padding: '28px 30px 24px' }}>
+      <div style={{ padding: '28px 30px 24px', flex: 1, overflowY: 'auto', minHeight: 0 }}>
 
-        {/* Category row */}
-        <div className="flex items-center justify-between" style={{ marginBottom: 26 }}>
-          <span
-            style={{
-              background: C.goldBg,
-              border: `1px solid ${C.goldLight}`,
-              color: C.goldDark,
-              borderRadius: 99,
-              padding: '5px 14px',
-              fontSize: 9,
-              fontWeight: 700,
-              letterSpacing: '0.2em',
-              textTransform: 'uppercase',
-              fontFamily: 'Inter, system-ui, sans-serif',
-            }}
-          >
-            {request.category}
-          </span>
-          <span style={{
-            fontSize: 12,
-            color: C.textMuted,
-            opacity: 0.55,
-            fontFamily: 'Inter, system-ui, sans-serif',
-            letterSpacing: '0.02em',
-          }}>
-            {request.createdAt}
-          </span>
-        </div>
+        {/* ── Scannable meta bar — the 1-second decision row ────── */}
+        {(() => {
+          const urg = request.urgency ? URGENCY[request.urgency] : null
+          return (
+            <div className="flex items-center flex-wrap" style={{ gap: 6, marginBottom: 20 }}>
+              {/* Category — filled, high-contrast */}
+              <span style={{
+                background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
+                color: '#FFFFFF',
+                borderRadius: 99, padding: '5px 14px',
+                fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
+                fontFamily: 'Inter, system-ui, sans-serif',
+                boxShadow: '0 2px 6px rgba(200,169,106,0.25)',
+              }}>
+                {request.category}
+              </span>
+              {/* Time — filled dark chip */}
+              {request.time && (
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 5,
+                  background: '#1A1A1A', color: '#FFFFFF',
+                  borderRadius: 99, padding: '5px 12px',
+                  fontSize: 11, fontWeight: 600, fontFamily: 'Inter, system-ui, sans-serif',
+                }}>
+                  <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.4}>
+                    <circle cx="12" cy="12" r="10" />
+                    <path strokeLinecap="round" d="M12 6v6l4 2" />
+                  </svg>
+                  {request.time}
+                </span>
+              )}
+              {/* Urgency — bold color-coded */}
+              {urg && (
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 5,
+                  background: urg.color, color: '#FFFFFF',
+                  borderRadius: 99, padding: '5px 12px',
+                  fontSize: 11, fontWeight: 700, fontFamily: 'Inter, system-ui, sans-serif',
+                  boxShadow: `0 2px 8px ${urg.dot}44`,
+                }}>
+                  {urg.label}
+                </span>
+              )}
+              {/* Timestamp — right-aligned, quiet */}
+              <div style={{ flex: 1 }} />
+              <span style={{ fontSize: 11, color: C.textMuted, opacity: 0.55, fontFamily: 'Inter, system-ui, sans-serif' }}>
+                {request.createdAt}
+              </span>
+            </div>
+          )
+        })()}
 
         {/* ── WHAT THEY NEED ─────────────────────────────── */}
-        <div style={{ marginBottom: 26 }}>
-          <div className="flex items-center" style={{ marginBottom: 12 }}>
+        <div style={{ marginBottom: 22 }}>
+          <div className="flex items-center" style={{ marginBottom: 10 }}>
             <div style={{ width: 2.5, height: 14, background: C.gold, borderRadius: 99, marginRight: 10, flexShrink: 0 }} />
             <span
               style={{
@@ -182,7 +222,7 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
           </div>
           <p
             style={{
-              fontSize: 18,
+              fontSize: 17,
               lineHeight: 1.45,
               fontWeight: 700,
               letterSpacing: '-0.01em',
@@ -192,7 +232,7 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
               wordWrap: 'break-word',
               overflowWrap: 'break-word',
               display: '-webkit-box',
-              WebkitLineClamp: 4,
+              WebkitLineClamp: 2,
               WebkitBoxOrient: 'vertical',
               overflow: 'hidden',
             }}
@@ -201,18 +241,37 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
           </p>
         </div>
 
+        {/* ── Tags ────────────────────────────────────── */}
+        {request.tags?.length > 0 && (
+          <div className="flex flex-wrap" style={{ gap: 6, marginBottom: 18, paddingLeft: 13 }}>
+            {request.tags.map((tag) => (
+              <span
+                key={tag}
+                style={{
+                  fontSize: 10, fontWeight: 500, letterSpacing: '0.04em',
+                  color: C.textSub, background: '#F5F3F0', border: '1px solid #EDE9E3',
+                  borderRadius: 99, padding: '3px 10px',
+                  fontFamily: 'Inter, system-ui, sans-serif',
+                }}
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+
         {/* Divider */}
         <div
           style={{
             height: 1,
             background: 'linear-gradient(90deg, rgba(200,169,106,0.25), rgba(139,111,71,0.1), transparent)',
-            marginBottom: 26,
+            marginBottom: 22,
           }}
         />
 
         {/* ── WHAT THEY OFFER ────────────────────────────── */}
-        <div style={{ marginBottom: 26 }}>
-          <div className="flex items-center" style={{ marginBottom: 12 }}>
+        <div style={{ marginBottom: 18 }}>
+          <div className="flex items-center" style={{ marginBottom: 10 }}>
             <div style={{ width: 2.5, height: 14, background: C.warm, borderRadius: 99, marginRight: 10, flexShrink: 0 }} />
             <span
               style={{
@@ -229,7 +288,7 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
           </div>
           <p
             style={{
-              fontSize: 18,
+              fontSize: 17,
               lineHeight: 1.45,
               fontWeight: 700,
               letterSpacing: '-0.01em',
@@ -239,7 +298,7 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
               wordWrap: 'break-word',
               overflowWrap: 'break-word',
               display: '-webkit-box',
-              WebkitLineClamp: 4,
+              WebkitLineClamp: 2,
               WebkitBoxOrient: 'vertical',
               overflow: 'hidden',
             }}
@@ -252,7 +311,7 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
         <div
           className="flex items-center gap-2"
           style={{
-            paddingTop: 18,
+            paddingTop: 14,
             borderTop: '1px solid rgba(0,0,0,0.05)',
           }}
         >
@@ -265,27 +324,50 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
             <AnonymousAvatar seed={request.id} size={36} />
           </div>
 
-          <p style={{
-            fontSize: 11,
-            letterSpacing: '0.12em',
-            textTransform: 'uppercase',
-            fontWeight: 500,
-            color: C.textMuted,
-            opacity: 0.6,
-            fontFamily: 'Inter, system-ui, sans-serif',
-          }}>
-            Anonymous · Rotman Peer
-          </p>
-          <div style={{ flex: 1 }} />
-          <p style={{
-            fontSize: 11,
-            color: C.textMuted,
-            opacity: 0.5,
-            fontFamily: 'Inter, system-ui, sans-serif',
-            letterSpacing: '0.02em',
-          }}>
-            Swipe right if you can help
-          </p>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{
+              fontSize: 11,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              fontWeight: 500,
+              color: C.textMuted,
+              opacity: 0.6,
+              fontFamily: 'Inter, system-ui, sans-serif',
+            }}>
+              Anonymous · Rotman Peer
+            </p>
+            {matchReason && (
+              <p style={{
+                fontSize: 11,
+                color: C.warm,
+                fontWeight: 500,
+                fontFamily: 'Inter, system-ui, sans-serif',
+                marginTop: 3,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}>
+                {matchReason}
+              </p>
+            )}
+          </div>
+
+          {/* Tap hint */}
+          {isTop && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 4,
+              color: C.textMuted, opacity: 0.5, flexShrink: 0,
+            }}>
+              <span style={{
+                fontSize: 10, fontWeight: 500, fontFamily: 'Inter, system-ui, sans-serif',
+              }}>
+                Details
+              </span>
+              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          )}
         </div>
 
       </div>

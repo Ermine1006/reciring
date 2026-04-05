@@ -11,7 +11,7 @@ const C = {
   white:     '#FFFFFF',
 }
 
-export default function MatchModal({ match, onClose, onConfirm }) {
+export default function MatchModal({ match, onClose, onConfirm, onSchedule }) {
   return (
     <AnimatePresence>
       <motion.div
@@ -91,14 +91,23 @@ export default function MatchModal({ match, onClose, onConfirm }) {
               </div>
             </div>
 
-            <p className="text-sm text-center leading-relaxed mb-6" style={{ color: C.textSub }}>
-              Schedule your coffee chat and complete the exchange. Leave a review to build community trust.
-            </p>
+            {/* Pre-filled message preview */}
+            <div
+              className="rounded-[12px] px-4 py-3 mb-5"
+              style={{ background: '#F9F7F4', border: '1px solid #F0ECE4' }}
+            >
+              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] mb-1.5" style={{ color: C.gold }}>
+                Quick intro message
+              </p>
+              <p className="text-[13px] leading-relaxed" style={{ color: C.textSub, fontStyle: 'italic' }}>
+                "Hey! Happy to connect — want to do a quick coffee chat this week?"
+              </p>
+            </div>
 
-            {/* CTA */}
+            {/* Primary CTA — Schedule (recommended) */}
             <button
               type="button"
-              onClick={() => { onConfirm?.(); onClose() }}
+              onClick={() => { onSchedule?.(match); onClose() }}
               className="w-full py-4 rounded-[16px] text-sm font-semibold tracking-[0.12em] uppercase transition-all duration-200 active:scale-[0.98]"
               style={{
                 background: `linear-gradient(135deg, ${C.gold} 0%, ${C.goldDark} 100%)`,
@@ -106,7 +115,22 @@ export default function MatchModal({ match, onClose, onConfirm }) {
                 boxShadow: '0 8px 24px rgba(200,169,106,0.35)',
               }}
             >
-              Let's connect
+              ☕ Schedule coffee chat
+            </button>
+            <div className="mb-3" />
+
+            {/* Secondary CTA — Send intro */}
+            <button
+              type="button"
+              onClick={() => { onConfirm?.(match); onClose() }}
+              className="w-full py-3.5 rounded-[16px] text-sm font-semibold tracking-[0.08em] transition-all duration-200 active:scale-[0.98]"
+              style={{
+                background: C.goldBg,
+                border: `1.5px solid ${C.goldLight}`,
+                color: C.goldDark,
+              }}
+            >
+              Send quick intro
             </button>
 
             {/* Dismiss link */}

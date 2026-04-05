@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 
 const C = {
   gold:      '#C8A96A',
@@ -20,14 +20,20 @@ const inputStyle = {
   boxSizing: 'border-box',
 }
 
-export default function CoffeeChatModal({ onConfirm, onClose }) {
+export default function CoffeeChatModal({ onConfirm, onClose, initialValues }) {
   const tomorrow = new Date()
   tomorrow.setDate(tomorrow.getDate() + 1)
   const defaultDate = tomorrow.toISOString().split('T')[0]
 
-  const [date, setDate]         = useState(defaultDate)
-  const [time, setTime]         = useState('14:00')
-  const [location, setLocation] = useState('Madison Pub')
+  // Pre-fill from previous meeting when rescheduling
+  const initDate = initialValues?.datetime ? new Date(initialValues.datetime).toISOString().split('T')[0] : defaultDate
+  const initTime = initialValues?.datetime ? new Date(initialValues.datetime).toTimeString().slice(0, 5) : '14:00'
+  const initLocation = initialValues?.location || 'Madison Pub'
+
+  const [date, setDate]         = useState(initDate)
+  const [time, setTime]         = useState(initTime)
+  const [location, setLocation] = useState(initLocation)
+  const [selectedQuick, setSelectedQuick] = useState(null)
 
   const handleConfirm = () => {
     if (!date || !time) return
@@ -72,8 +78,51 @@ export default function CoffeeChatModal({ onConfirm, onClose }) {
             Suggest a Coffee Chat
           </h3>
           <p style={{ fontSize: 13, color: C.textSub, fontFamily: 'Inter, system-ui, sans-serif', lineHeight: 1.5 }}>
-            Propose a time — your peer can accept or suggest another
+            Pick a quick option or customize below
           </p>
+        </div>
+
+        {/* Quick-select buttons */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+          {[
+            { label: 'Tomorrow afternoon', days: 1, hour: '14:00' },
+            { label: 'This week',          days: 3, hour: '15:00' },
+            { label: '30 min quick chat',  days: 1, hour: '12:00' },
+          ].map((q) => {
+            const isSelected = selectedQuick === q.label
+            return (
+              <motion.button
+                key={q.label}
+                type="button"
+                whileTap={{ scale: 0.95 }}
+                animate={isSelected ? { scale: [1, 1.04, 1] } : {}}
+                transition={{ duration: 0.2 }}
+                onClick={() => {
+                  setSelectedQuick(q.label)
+                  const d = new Date()
+                  d.setDate(d.getDate() + q.days)
+                  setDate(d.toISOString().split('T')[0])
+                  setTime(q.hour)
+                  setLocation('Madison Pub')
+                }}
+                style={{
+                  flex: 1, padding: '10px 6px', borderRadius: 12,
+                  background: isSelected
+                    ? `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`
+                    : C.goldBg,
+                  border: `1.5px solid ${isSelected ? C.gold : C.goldLight}`,
+                  color: isSelected ? '#fff' : C.goldDark,
+                  fontSize: 11, fontWeight: 600,
+                  fontFamily: 'Inter, system-ui, sans-serif',
+                  cursor: 'pointer', lineHeight: 1.3, textAlign: 'center',
+                  boxShadow: isSelected ? '0 4px 12px rgba(200,169,106,0.3)' : 'none',
+                  transition: 'background 0.2s, color 0.2s, box-shadow 0.2s',
+                }}
+              >
+                {q.label}
+              </motion.button>
+            )
+          })}
         </div>
 
         {/* Fields */}

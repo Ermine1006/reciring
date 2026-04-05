@@ -3,7 +3,8 @@
     "allow": [
       "Bash(npx vite:*)",
       "Bash(npm install:*)",
-      "Bash(node -e \"const { Handshake } = require\\(''lucide-react''\\); console.log\\(!!Handshake\\)\")"
+      "Bash(node -e \"const { Handshake } = require\\(''lucide-react''\\); console.log\\(!!Handshake\\)\")",
+      "Bash(npm run:*)"
     ]
   }
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import CardStack from './components/CardStack'
 import SubmitRequest from './components/SubmitRequest'
 import MatchesList from './components/MatchesList'
@@ -124,6 +124,8 @@ export default function App() {
   const [messages, setMessages]   = useState({})
   const [chatMatchId, setChatMatchId] = useState(null)
   const [profileHovered, setProfileHovered] = useState(false)
+  const [pendingSchedule, setPendingSchedule] = useState(null)  // matchId to auto-open scheduler
+  const [scheduleFeedback, setScheduleFeedback] = useState(null) // post-scheduling confirmation
 
   const handleNewRequest = (newReq) => {
     setRequests((prev) => [
@@ -141,7 +143,7 @@ export default function App() {
     "Thanks for reaching out! Happy to share what I know.",
   ]
 
-  const handleMatchConfirm = ({ request, peer }) => {
+  const handleMatchConfirm = ({ request, peer }, opts) => {
     const matchId  = `match-${Date.now()}`
     const autoMsg  = {
       id:        `msg-auto-${Date.now()}`,
@@ -162,9 +164,11 @@ export default function App() {
     setMessages(prev => ({ ...prev, [matchId]: [autoMsg] }))
     setChatMatchId(matchId)
     setTab('matches')
+    if (opts?.openSchedule) setPendingSchedule(matchId)
   }
 
   const handleSendMessage = (matchId, content) => {
+    if (scheduleFeedback) setScheduleFeedback(null)
     const msg = {
       id:        `msg-${Date.now()}`,
       senderId:  'me',
@@ -201,15 +205,27 @@ export default function App() {
       meeting:   { datetime, location, status: 'pending' },
     }
     setMessages(prev => ({ ...prev, [matchId]: [...(prev[matchId] || []), meetingMsg] }))
+    // Show post-scheduling feedback (stays until next message)
+    setScheduleFeedback(matchId)
   }
 
   const handleMeetingResponse = (matchId, msgId, status) => {
-    setMessages(prev => ({
-      ...prev,
-      [matchId]: (prev[matchId] || []).map(msg =>
+    setMessages(prev => {
+      const updated = (prev[matchId] || []).map(msg =>
         msg.id === msgId ? { ...msg, meeting: { ...msg.meeting, status } } : msg
-      ),
-    }))
+      )
+      // Inject confirmation system message when confirmed
+      if (status === 'confirmed') {
+        updated.push({
+          id:        `msg-sys-${Date.now()}`,
+          senderId:  'system',
+          type:      'text',
+          content:   'Coffee chat confirmed 🎉',
+          timestamp: new Date().toISOString(),
+        })
+      }
+      return { ...prev, [matchId]: updated }
+    })
   }
 
   return (
@@ -336,6 +352,10 @@ export default function App() {
                 onProposeMeeting={(data) => handleProposeMeeting(chatMatchId, data)}
                 onMeetingResponse={(msgId, status) => handleMeetingResponse(chatMatchId, msgId, status)}
                 onBack={() => setChatMatchId(null)}
+                autoOpenSchedule={pendingSchedule === chatMatchId}
+                onScheduleOpened={() => setPendingSchedule(null)}
+                scheduleFeedback={scheduleFeedback === chatMatchId}
+                onNavigateReview={() => { setChatMatchId(null); setTab('reviews') }}
               />
             </div>
           )}
