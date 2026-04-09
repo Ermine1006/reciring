@@ -14,10 +14,10 @@
 
 import { normalizeIndustry } from './requestOptions'
 
-// ── Current viewer profile (mock) ─────────────────────────────────
-// In production this would come from the logged-in user's profile.
+// ── Default viewer profile (fallback when no auth) ───────────────
+// In production the real profile is passed from AuthContext.
 // Uses canonical labels from requestOptions.js.
-export const VIEWER_PROFILE = {
+export const DEFAULT_VIEWER_PROFILE = {
   strengths:  ['Consulting', 'Referral', 'Coffee Chat', 'Resume Review', 'Intro'],
   industries: ['Consulting', 'Investment Banking'],
 }
@@ -71,7 +71,7 @@ function urgencyBonus(request) {
   return 0
 }
 
-export function getMatchScore(request, viewer = VIEWER_PROFILE) {
+export function getMatchScore(request, viewer = DEFAULT_VIEWER_PROFILE) {
   const relevance = relevanceScore(request, viewer)
   const trust     = posterTrustScore(request)
   const activity  = posterActivityScore(request)
@@ -81,7 +81,7 @@ export function getMatchScore(request, viewer = VIEWER_PROFILE) {
 
 // ── Match reason (human-readable) ─────────────────────────────────
 
-export function getMatchReason(request, viewer = VIEWER_PROFILE) {
+export function getMatchReason(request, viewer = DEFAULT_VIEWER_PROFILE) {
   const parts = []
 
   // Relevance: which of the viewer's strengths match the request?
@@ -119,8 +119,8 @@ export function getMatchReason(request, viewer = VIEWER_PROFILE) {
 // ── Filter requests by active filters ─────────────────────────────
 
 export function filterRequests(requests, filters) {
-  const { industries = [], helpTypes = [] } = filters || {}
-  if (industries.length === 0 && helpTypes.length === 0) return requests
+  const { industries = [], helpTypes = [], times = [] } = filters || {}
+  if (industries.length === 0 && helpTypes.length === 0 && times.length === 0) return requests
 
   return requests.filter(r => {
     const tags = r.tags || []
@@ -132,13 +132,14 @@ export function filterRequests(requests, filters) {
     const helpMatch = helpTypes.length === 0 || helpTypes.some(ht =>
       tags.some(t => fuzzyMatch(t, ht))
     )
-    return industryMatch && helpMatch
+    const timeMatch = times.length === 0 || times.includes(r.time)
+    return industryMatch && helpMatch && timeMatch
   })
 }
 
 // ── Rank a list of requests ───────────────────────────────────────
 
-export function rankRequests(requests, viewer = VIEWER_PROFILE) {
+export function rankRequests(requests, viewer = DEFAULT_VIEWER_PROFILE) {
   return [...requests]
     .map(r => ({ ...r, _score: getMatchScore(r, viewer), _reason: getMatchReason(r, viewer) }))
     .sort((a, b) => b._score.total - a._score.total)

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import AnonymousAvatar from './AnonymousAvatar'
 import CoffeeChatModal from './CoffeeChatModal'
+import ReportModal from './ReportModal'
 
 const C = {
   gold:      '#C8A96A',
@@ -163,11 +164,26 @@ function MeetingCard({ msg, onConfirm, onSuggestAnother, onReschedule }) {
   )
 }
 
-export default function ChatView({ match, messages, onSend, onProposeMeeting, onMeetingResponse, onBack, autoOpenSchedule, onScheduleOpened, scheduleFeedback, onNavigateReview }) {
+// Check if identity should be revealed: only on the day of a confirmed meeting
+function shouldRevealIdentity(messages) {
+  const now = new Date()
+  const todayStr = now.toISOString().slice(0, 10)
+  for (const msg of messages) {
+    if (msg.type === 'meeting_proposal' && msg.meeting?.status === 'confirmed' && msg.meeting.datetime) {
+      const meetingDay = new Date(msg.meeting.datetime).toISOString().slice(0, 10)
+      if (todayStr >= meetingDay) return true
+    }
+  }
+  return false
+}
+
+export default function ChatView({ match, messages, onSend, onProposeMeeting, onMeetingResponse, onBack, autoOpenSchedule, onScheduleOpened, scheduleFeedback, onNavigateReview, peerProfile, onReport, onBlock }) {
   const [input, setInput]               = useState('')
   const [showCoffee, setShowCoffee]     = useState(false)
   const [showFollowUp, setShowFollowUp] = useState(false)
-  const [rescheduleData, setRescheduleData] = useState(null) // pre-fill values for reschedule
+  const [rescheduleData, setRescheduleData] = useState(null)
+  const [showSafetyMenu, setShowSafetyMenu] = useState(false)
+  const [showReportModal, setShowReportModal] = useState(false)
   const bottomRef                        = useRef(null)
 
   useEffect(() => {
@@ -225,16 +241,101 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
           </svg>
         </button>
         <AnonymousAvatar seed={match?.id || 'chat'} size={36} />
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ fontSize: 14, fontWeight: 600, color: C.text, fontFamily: 'Inter, system-ui, sans-serif' }}>
-            Anonymous Peer
-          </p>
-          <p style={{ fontSize: 11, color: '#16A34A', fontFamily: 'Inter, system-ui, sans-serif', display: 'flex', alignItems: 'center', gap: 4 }}>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#16A34A', display: 'inline-block' }} />
-            Active match
-          </p>
+        {(() => {
+          const revealed = shouldRevealIdentity(messages)
+          const name = revealed && peerProfile?.first_name
+            ? peerProfile.first_name
+            : 'Anonymous Peer'
+          const subtitle = revealed && peerProfile?.program
+            ? peerProfile.program
+            : null
+          return (
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontSize: 14, fontWeight: 600, color: C.text, fontFamily: 'Inter, system-ui, sans-serif' }}>
+                {name}
+              </p>
+              <p style={{ fontSize: 11, color: '#16A34A', fontFamily: 'Inter, system-ui, sans-serif', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#16A34A', display: 'inline-block' }} />
+                {subtitle || 'Active match'}
+              </p>
+            </div>
+          )
+        })()}
+
+        {/* ── Safety menu (…) ──────────────────────────── */}
+        <div style={{ position: 'relative', flexShrink: 0 }}>
+          <button
+            type="button"
+            onClick={() => setShowSafetyMenu(m => !m)}
+            style={{
+              width: 32, height: 32, borderRadius: '50%',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: showSafetyMenu ? '#F3F4F6' : 'transparent',
+              border: 'none', cursor: 'pointer',
+            }}
+            aria-label="More options"
+          >
+            <svg width="16" height="16" fill={C.textMuted} viewBox="0 0 20 20">
+              <circle cx="4" cy="10" r="1.8" />
+              <circle cx="10" cy="10" r="1.8" />
+              <circle cx="16" cy="10" r="1.8" />
+            </svg>
+          </button>
+          {showSafetyMenu && (
+            <div style={{
+              position: 'absolute', right: 0, top: 36, zIndex: 10,
+              background: '#fff', borderRadius: 12,
+              boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+              border: '1px solid #E5E7EB',
+              overflow: 'hidden', minWidth: 160,
+            }}>
+              <button
+                type="button"
+                onClick={() => { setShowSafetyMenu(false); setShowReportModal(true) }}
+                style={{
+                  display: 'block', width: '100%', textAlign: 'left',
+                  padding: '11px 16px', fontSize: 13, fontWeight: 500,
+                  color: '#DC2626', background: 'none', border: 'none', cursor: 'pointer',
+                }}
+              >
+                Report user
+              </button>
+              {onBlock && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowSafetyMenu(false)
+                    if (window.confirm('Block this user? They will be hidden from your matches.')) {
+                      onBlock(match)
+                    }
+                  }}
+                  style={{
+                    display: 'block', width: '100%', textAlign: 'left',
+                    padding: '11px 16px', fontSize: 13, fontWeight: 500,
+                    color: '#DC2626', background: 'none', border: 'none', cursor: 'pointer',
+                    borderTop: '1px solid #F3F4F6',
+                  }}
+                >
+                  Block user
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Report modal */}
+      {showReportModal && (
+        <ReportModal
+          type="user"
+          targetId={match?.id}
+          onSubmit={async ({ reason, details }) => {
+            if (onReport) return onReport({ matchId: match?.id, reason, details })
+            return {}
+          }}
+          onClose={() => setShowReportModal(false)}
+        />
+      )}
 
       {/* ── Messages ── */}
       <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '16px 0' }}>

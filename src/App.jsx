@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import CardStack from './components/CardStack'
 import SubmitRequest from './components/SubmitRequest'
 import MatchesList from './components/MatchesList'
@@ -8,6 +8,12 @@ import { MOCK_REQUESTS } from './data/mockRequests'
 import LeaderboardView from './components/LeaderboardView'
 import ChatView from './components/ChatView'
 import MatchModal from './components/MatchModal'
+import { AuthProvider, useAuth } from './context/AuthContext'
+import LoginScreen from './components/LoginScreen'
+import SettingsPage from './components/SettingsPage'
+import { submitReport, blockUser, fetchBlockedIds } from './lib/safety'
+import { isSupabaseConfigured } from './lib/supabase'
+import { fetchPosts, createPost } from './lib/posts'
 
 /* ─── Design tokens ─────────────────────────────────────────────── */
 const C = {
@@ -116,23 +122,120 @@ function StatusBar() {
   )
 }
 
-/* ─── App ───────────────────────────────────────────────────────── */
-export default function App() {
+/* ─── App shell (authenticated) ─────────────────────────────────── */
+function AppShell() {
+  const { session, user, signOut } = useAuth()
   const [tab, setTab]             = useState('discover')
-  const [requests, setRequests]   = useState(MOCK_REQUESTS)
+  const [showSettings, setShowSettings] = useState(false)
+  const [requests, setRequests]   = useState([])
   const [matches, setMatches]     = useState([])
   const [messages, setMessages]   = useState({})
   const [chatMatchId, setChatMatchId] = useState(null)
   const [profileHovered, setProfileHovered] = useState(false)
-  const [pendingSchedule, setPendingSchedule] = useState(null)  // matchId to auto-open scheduler
-  const [scheduleFeedback, setScheduleFeedback] = useState(null) // post-scheduling confirmation
+  const [pendingSchedule, setPendingSchedule] = useState(null)
+  const [scheduleFeedback, setScheduleFeedback] = useState(null)
+  const [blockedIds, setBlockedIds] = useState(new Set())
 
-  const handleNewRequest = (newReq) => {
+  // Load posts from Supabase (or fall back to mock data)
+  useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setRequests(MOCK_REQUESTS)
+      return
+    }
+    fetchPosts().then(({ data, error }) => {
+      if (error) {
+        console.error('[ReciRing] Failed to load posts:', error)
+        setRequests(MOCK_REQUESTS) // graceful fallback
+        return
+      }
+      // If DB has no posts yet, show mock data so the UI isn't empty
+      setRequests(data && data.length > 0 ? data : MOCK_REQUESTS)
+    })
+  }, [])
+
+  // Load blocked user ids on mount
+  useEffect(() => {
+    if (!user) return
+    fetchBlockedIds(user.id).then(({ data }) => {
+      if (data) setBlockedIds(new Set(data))
+    })
+  }, [user?.id])
+
+  // Filter out blocked users' posts + own posts
+  const visibleRequests = useMemo(
+    () => requests.filter(r => {
+      const creatorId = r.created_by || r.poster_id
+      if (creatorId && user && creatorId === user.id) return false     // hide own posts
+      if (creatorId && blockedIds.has(creatorId))     return false     // hide blocked
+      return true
+    }),
+    [requests, blockedIds, user?.id]
+  )
+
+  // ── Safety handlers ──────────────────────────────────────────
+  const handleReport = async ({ postId, matchId, reason, details }) => {
+    if (!user) return { error: new Error('Not signed in.') }
+    // For post reports, also resolve the creator's user id
+    const post = requests.find(r => r.id === postId)
+    const reportedUserId = matchId || post?.created_by || null
+    return submitReport({
+      reporterId: user.id,
+      reportedUserId,
+      reportedPostId: postId || null,
+      reason,
+      details,
+    })
+  }
+
+  const handleBlock = async (target) => {
+    if (!user) return
+    const targetUserId = target?.created_by || target?.poster_id || target?.peerId || null
+    if (!targetUserId) {
+      alert('Cannot block this user — no real user ID available on demo data.')
+      return
+    }
+    if (targetUserId === user.id) {
+      alert('You cannot block yourself.')
+      return
+    }
+    const { error } = await blockUser({ blockerId: user.id, blockedUserId: targetUserId })
+    if (error) {
+      alert('Failed to block user: ' + (error.message || 'Unknown error'))
+      return
+    }
+    setBlockedIds(prev => new Set([...prev, targetUserId]))
+  }
+
+  // Compute which matches have identity revealed (meeting day or later)
+  const revealedMatchIds = useMemo(() => {
+    const revealed = new Set()
+    const todayStr = new Date().toISOString().slice(0, 10)
+    for (const [matchId, msgs] of Object.entries(messages)) {
+      for (const msg of msgs) {
+        if (msg.type === 'meeting_proposal' && msg.meeting?.status === 'confirmed' && msg.meeting.datetime) {
+          const meetingDay = new Date(msg.meeting.datetime).toISOString().slice(0, 10)
+          if (todayStr >= meetingDay) { revealed.add(matchId); break }
+        }
+      }
+    }
+    return revealed
+  }, [messages])
+
+  const handleNewRequest = async (newReq) => {
+    if (isSupabaseConfigured && user) {
+      const { data: card, error } = await createPost(user.id, newReq)
+      if (error) return { error }
+      setRequests((prev) => [card, ...prev])
+      setTab('discover')
+      return {}
+    }
+    // Fallback for unconfigured / demo mode
     setRequests((prev) => [
       { id: `req-${Date.now()}`, ...newReq, createdAt: 'Just now' },
       ...prev,
     ])
     setTab('discover')
+    return {}
   }
 
   const PEER_REPLIES = [
@@ -279,6 +382,8 @@ export default function App() {
               type="button"
               onMouseEnter={() => setProfileHovered(true)}
               onMouseLeave={() => setProfileHovered(false)}
+              onClick={() => setShowSettings(true)}
+              title={session ? `${session.user.email} — open settings` : 'Settings'}
               className="active:scale-95"
               style={{
                 width: 42, height: 42,
@@ -322,12 +427,17 @@ export default function App() {
 
         {/* ── Main content ──────────────────────────────────── */}
         <main className="flex-1 flex flex-col overflow-hidden" style={{ background: '#F9F7F4' }}>
+          {showSettings && session ? (
+            <SettingsPage onClose={() => setShowSettings(false)} />
+          ) : <>
           {tab === 'discover' && (
             <CardStack
-              requests={requests}
+              requests={visibleRequests}
               onSwipeRight={(r) => console.log('Helping:', r.id)}
               onSwipeLeft={(r) => console.log('Passed:', r.id)}
               onMatchConfirm={handleMatchConfirm}
+              onReport={handleReport}
+              onBlock={handleBlock}
             />
           )}
           {tab === 'post' && (
@@ -340,6 +450,7 @@ export default function App() {
               <MatchesList
                 matches={matches}
                 onOpenChat={(id) => setChatMatchId(id)}
+                revealedMatchIds={revealedMatchIds}
               />
             </div>
           )}
@@ -356,6 +467,8 @@ export default function App() {
                 onScheduleOpened={() => setPendingSchedule(null)}
                 scheduleFeedback={scheduleFeedback === chatMatchId}
                 onNavigateReview={() => { setChatMatchId(null); setTab('reviews') }}
+                onReport={handleReport}
+                onBlock={handleBlock}
               />
             </div>
           )}
@@ -369,6 +482,7 @@ export default function App() {
               <LeaderboardView />
             </div>
           )}
+          </>}
         </main>
 
         {/* ── Bottom tab bar ────────────────────────────────── */}
@@ -415,5 +529,37 @@ export default function App() {
         </div>
       </div>
     </div>
+  )
+}
+
+/* ─── Root App — auth gate ─────────────────────────────────────── */
+function AppRoot() {
+  const { session, loading, isConfigured } = useAuth()
+
+  // 1. No backend → skip auth entirely
+  if (!isConfigured) return <AppShell />
+
+  // 2. Configured but still bootstrapping session
+  if (loading) {
+    return (
+      <div
+        className="w-full min-h-[100dvh] flex items-center justify-center"
+        style={{ background: '#EEE9E0' }}
+      >
+        <ReciRingLogo size={38} />
+      </div>
+    )
+  }
+
+  // 3. Configured + bootstrapped → gate on session
+  if (!session) return <LoginScreen />
+  return <AppShell />
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppRoot />
+    </AuthProvider>
   )
 }

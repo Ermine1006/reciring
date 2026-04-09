@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Handshake } from 'lucide-react'
 import AnonymousAvatar from './AnonymousAvatar'
+import ReportModal from './ReportModal'
 
 const C = {
   gold:       '#C8A96A',
@@ -21,7 +23,10 @@ const URGENCY = {
   soon:   { label: 'This week', color: '#92400E', dot: '#F59E0B' },
 }
 
-export default function RequestDetailModal({ request, matchReason, onClose, onMatch }) {
+export default function RequestDetailModal({ request, matchReason, onClose, onMatch, onReport, onBlock }) {
+  const [showMenu, setShowMenu]     = useState(false)
+  const [showReport, setShowReport] = useState(false)
+
   if (!request) return null
 
   const urg = request.urgency ? URGENCY[request.urgency] : null
@@ -214,6 +219,68 @@ export default function RequestDetailModal({ request, matchReason, onClose, onMa
                 </p>
               )}
             </div>
+
+            {/* ── Safety menu (…) ─────────────────────────── */}
+            <div style={{ position: 'relative', flexShrink: 0 }}>
+              <button
+                type="button"
+                onClick={() => setShowMenu(m => !m)}
+                style={{
+                  width: 32, height: 32, borderRadius: '50%',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: showMenu ? '#F3F4F6' : 'transparent',
+                  border: 'none', cursor: 'pointer',
+                }}
+                aria-label="More options"
+              >
+                <svg width="16" height="16" fill={C.textMuted} viewBox="0 0 20 20">
+                  <circle cx="4" cy="10" r="1.8" />
+                  <circle cx="10" cy="10" r="1.8" />
+                  <circle cx="16" cy="10" r="1.8" />
+                </svg>
+              </button>
+
+              {showMenu && (
+                <div style={{
+                  position: 'absolute', right: 0, bottom: 36, zIndex: 10,
+                  background: '#fff', borderRadius: 12,
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                  border: '1px solid #E5E7EB',
+                  overflow: 'hidden', minWidth: 160,
+                }}>
+                  <button
+                    type="button"
+                    onClick={() => { setShowMenu(false); setShowReport(true) }}
+                    style={{
+                      display: 'block', width: '100%', textAlign: 'left',
+                      padding: '11px 16px', fontSize: 13, fontWeight: 500,
+                      color: '#DC2626', background: 'none', border: 'none', cursor: 'pointer',
+                    }}
+                  >
+                    Report post
+                  </button>
+                  {onBlock && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowMenu(false)
+                        if (window.confirm('Block this user? Their posts will be hidden from your feed.')) {
+                          onBlock(request)
+                        }
+                      }}
+                      style={{
+                        display: 'block', width: '100%', textAlign: 'left',
+                        padding: '11px 16px', fontSize: 13, fontWeight: 500,
+                        color: '#DC2626', background: 'none', border: 'none', cursor: 'pointer',
+                        borderTop: '1px solid #F3F4F6',
+                      }}
+                    >
+                      Block user
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -247,6 +314,18 @@ export default function RequestDetailModal({ request, matchReason, onClose, onMa
           </button>
         </div>
       </motion.div>
+
+      {showReport && (
+        <ReportModal
+          type="post"
+          targetId={request.id}
+          onSubmit={async ({ reason, details }) => {
+            if (onReport) return onReport({ postId: request.id, reason, details })
+            return {}
+          }}
+          onClose={() => setShowReport(false)}
+        />
+      )}
     </AnimatePresence>
   )
 }

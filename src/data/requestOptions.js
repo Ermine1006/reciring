@@ -1,6 +1,8 @@
 // ── Shared taxonomy for Post Request form + Discover filters ──────
 // Single source of truth. Import from here everywhere.
 
+export const TIME_OPTIONS = ['15 min', '30 min', '1 hr', '2+ hr']
+
 export const HELP_TYPES = [
   'Referral',
   'Coffee Chat',

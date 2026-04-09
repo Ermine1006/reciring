@@ -4,8 +4,9 @@ import { Handshake } from 'lucide-react'
 import RequestCard from './RequestCard'
 import RequestDetailModal from './RequestDetailModal'
 import MatchModal from './MatchModal'
-import { rankRequests, filterRequests } from '../data/matchRanking'
-import { INDUSTRIES, HELP_TYPES } from '../data/requestOptions'
+import { rankRequests, filterRequests, DEFAULT_VIEWER_PROFILE } from '../data/matchRanking'
+import { INDUSTRIES, HELP_TYPES, TIME_OPTIONS } from '../data/requestOptions'
+import { useAuth } from '../context/AuthContext'
 
 const C = {
   gold:      '#C8A96A',
@@ -38,16 +39,20 @@ function FilterChip({ label, active, onClick }) {
   )
 }
 
-export default function CardStack({ requests, onSwipeRight, onSwipeLeft, onMatchConfirm }) {
-  const [filters, setFilters] = useState({ industries: [], helpTypes: [] })
+export default function CardStack({ requests, onSwipeRight, onSwipeLeft, onMatchConfirm, onReport, onBlock }) {
+  const { viewerProfile } = useAuth()
+  const viewer = viewerProfile || DEFAULT_VIEWER_PROFILE
+
+  const [filters, setFilters] = useState({ industries: [], helpTypes: [], times: [] })
   const [showFilters, setShowFilters] = useState(false)
 
-  const hasFilters = filters.industries.length > 0 || filters.helpTypes.length > 0
+  const filterCount = filters.industries.length + filters.helpTypes.length + filters.times.length
+  const hasFilters = filterCount > 0
 
   const ranked = useMemo(() => {
     const filtered = filterRequests(requests, filters)
-    return rankRequests(filtered)
-  }, [requests, filters])
+    return rankRequests(filtered, viewer)
+  }, [requests, filters, viewer])
 
   const [stack, setStack] = useState(ranked)
   const [match, setMatch] = useState(null)
@@ -57,7 +62,7 @@ export default function CardStack({ requests, onSwipeRight, onSwipeLeft, onMatch
 
   // Re-sync stack when filters or requests change
   useEffect(() => {
-    setStack(rankRequests(filterRequests(requests, filters)))
+    setStack(rankRequests(filterRequests(requests, filters), viewer))
   }, [requests, filters])
 
   const toggleFilter = (key, value) => {
@@ -109,12 +114,12 @@ export default function CardStack({ requests, onSwipeRight, onSwipeLeft, onMatch
           <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
             <path strokeLinecap="round" d="M3 6h18M7 12h10M10 18h4" />
           </svg>
-          Filters{hasFilters ? ` (${filters.industries.length + filters.helpTypes.length})` : ''}
+          Filters{hasFilters ? ` (${filterCount})` : ''}
         </button>
         {hasFilters && (
           <button
             type="button"
-            onClick={() => setFilters({ industries: [], helpTypes: [] })}
+            onClick={() => setFilters({ industries: [], helpTypes: [], times: [] })}
             style={{
               padding: '6px 12px', borderRadius: 99,
               background: 'transparent', border: 'none',
@@ -161,13 +166,31 @@ export default function CardStack({ requests, onSwipeRight, onSwipeLeft, onMatch
           }}>
             Help type
           </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
             {HELP_TYPES.map(ht => (
               <FilterChip
                 key={ht}
                 label={ht}
                 active={filters.helpTypes.includes(ht)}
                 onClick={() => toggleFilter('helpTypes', ht)}
+              />
+            ))}
+          </div>
+
+          {/* Time commitment */}
+          <p style={{
+            fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase',
+            color: C.textMuted, fontFamily: 'Inter, system-ui, sans-serif', marginBottom: 6,
+          }}>
+            Time commitment
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {TIME_OPTIONS.map(t => (
+              <FilterChip
+                key={t}
+                label={t}
+                active={filters.times.includes(t)}
+                onClick={() => toggleFilter('times', t)}
               />
             ))}
           </div>
@@ -215,7 +238,7 @@ export default function CardStack({ requests, onSwipeRight, onSwipeLeft, onMatch
           {hasFilters && (
             <button
               type="button"
-              onClick={() => setFilters({ industries: [], helpTypes: [] })}
+              onClick={() => setFilters({ industries: [], helpTypes: [], times: [] })}
               style={{
                 padding: '10px 24px', borderRadius: 99,
                 background: C.goldBg, border: `1.5px solid ${C.goldLight}`,
@@ -303,6 +326,8 @@ export default function CardStack({ requests, onSwipeRight, onSwipeLeft, onMatch
           matchReason={detailRequest._reason}
           onClose={() => setDetailRequest(null)}
           onMatch={(r) => handleSwipeRight(r)}
+          onReport={onReport}
+          onBlock={onBlock}
         />
       )}
 

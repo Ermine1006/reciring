@@ -23,7 +23,7 @@ function timeAgo(isoString) {
   return `${Math.floor(h / 24)}d ago`
 }
 
-export default function MatchesList({ matches = [], onOpenChat }) {
+export default function MatchesList({ matches = [], onOpenChat, revealedMatchIds = new Set(), peerProfiles = {} }) {
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -86,7 +86,9 @@ export default function MatchesList({ matches = [], onOpenChat }) {
                   <AnonymousAvatar seed={m.id} size={38} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontSize: 14, fontWeight: 600, color: C.text, fontFamily: 'Inter, system-ui, sans-serif', marginBottom: 2 }}>
-                      Anonymous Peer
+                      {revealedMatchIds.has(m.id) && peerProfiles[m.id]?.first_name
+                        ? peerProfiles[m.id].first_name
+                        : 'Anonymous Peer'}
                     </p>
                     <p style={{
                       fontSize: 12, color: C.textSub,

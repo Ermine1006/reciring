@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { HELP_TYPES, INDUSTRIES } from '../data/requestOptions'
+import { HELP_TYPES, INDUSTRIES, TIME_OPTIONS } from '../data/requestOptions'
 
 /* ── Design tokens ──────────────────────────────────────────────── */
 const C = {
@@ -21,7 +21,6 @@ const C = {
 }
 
 /* ── Structured option lists ────────────────────────────────────── */
-const TIME_OPTIONS  = ['15 min', '30 min', '1 hr', '2+ hr']
 const URGENCY_OPTIONS = [
   { value: null,     label: 'No rush' },
   { value: 'soon',   label: 'This week' },
@@ -210,21 +209,37 @@ export default function SubmitRequest({ onSubmitted }) {
     )
   }
 
+  const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState(null)
+
   /* ── Submit ── */
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!canSubmit) return
-    onSubmitted?.({
-      needs: needsText,
-      offers: offers.trim(),
-      category: helpType[0] || 'Other',
-      tags,
-      time,
-      urgency,
-    })
-    setTitle(''); setDetails(''); setOffers('')
-    setHelpType([]); setIndustry([])
-    setTime('15 min'); setUrgency(null)
+    if (!canSubmit || submitting) return
+    setSubmitting(true); setSubmitError(null)
+    try {
+      const result = await onSubmitted?.({
+        needs: needsText,
+        offers: offers.trim(),
+        category: helpType[0] || 'Other',
+        helpType,
+        industry,
+        tags,
+        time,
+        urgency,
+      })
+      if (result?.error) {
+        setSubmitError(result.error.message || 'Failed to post.')
+        setSubmitting(false)
+        return
+      }
+      setTitle(''); setDetails(''); setOffers('')
+      setHelpType([]); setIndustry([])
+      setTime('15 min'); setUrgency(null)
+    } catch (err) {
+      setSubmitError(err.message || 'Unexpected error.')
+    }
+    setSubmitting(false)
   }
 
   /* ── Focus helpers ── */
@@ -514,17 +529,21 @@ export default function SubmitRequest({ onSubmitted }) {
         </div>
 
         {/* ── Submit ─────────────────────────────────────── */}
+        {submitError && (
+          <p className="text-center text-xs" style={{ color: '#DC2626' }}>{submitError}</p>
+        )}
         <button
           type="submit"
-          disabled={!canSubmit}
+          disabled={!canSubmit || submitting}
           className="w-full py-4 rounded-[16px] text-sm font-semibold tracking-[0.12em] uppercase transition-all duration-200 active:scale-[0.98]"
           style={{
             background: canSubmit ? `linear-gradient(135deg, ${C.gold} 0%, ${C.goldDark} 100%)` : '#F3F4F6',
             color:      canSubmit ? '#fff' : C.textMuted,
             boxShadow:  canSubmit ? '0 8px 24px rgba(200,169,106,0.35)' : 'none',
+            opacity:    submitting ? 0.6 : 1,
           }}
         >
-          Post anonymously
+          {submitting ? 'Posting…' : 'Post anonymously'}
         </button>
 
         <p className="text-center text-[11px]" style={{ color: C.textMuted }}>
