@@ -107,7 +107,7 @@ export default function MatchModal({ match, onClose, onConfirm, onSchedule }) {
             {/* Primary CTA — Schedule (recommended) */}
             <button
               type="button"
-              onClick={() => { onSchedule?.(match); onClose() }}
+              onClick={() => onSchedule?.(match)}
               className="w-full py-4 rounded-[16px] text-sm font-semibold tracking-[0.12em] uppercase transition-all duration-200 active:scale-[0.98]"
               style={{
                 background: `linear-gradient(135deg, ${C.gold} 0%, ${C.goldDark} 100%)`,
@@ -122,7 +122,7 @@ export default function MatchModal({ match, onClose, onConfirm, onSchedule }) {
             {/* Secondary CTA — Send intro */}
             <button
               type="button"
-              onClick={() => { onConfirm?.(match); onClose() }}
+              onClick={() => onConfirm?.(match)}
               className="w-full py-3.5 rounded-[16px] text-sm font-semibold tracking-[0.08em] transition-all duration-200 active:scale-[0.98]"
               style={{
                 background: C.goldBg,

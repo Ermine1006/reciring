@@ -78,7 +78,8 @@ export default function CardStack({ requests, onSwipeRight, onSwipeLeft, onMatch
     (request) => {
       setStack((prev) => prev.filter((r) => r.id !== request.id))
       onSwipeRight?.(request)
-      if (Math.random() > 0.6) setMatch({ request, peer: 'A fellow Rotman MBA' })
+      // Always show the match modal — real match is created on confirm
+      setMatch({ request, peer: 'Anonymous Peer' })
     },
     [onSwipeRight]
   )
@@ -335,8 +336,8 @@ export default function CardStack({ requests, onSwipeRight, onSwipeLeft, onMatch
         <MatchModal
           match={match}
           onClose={() => setMatch(null)}
-          onConfirm={() => onMatchConfirm?.(match)}
-          onSchedule={(m) => onMatchConfirm?.(m, { openSchedule: true })}
+          onConfirm={() => { onMatchConfirm?.(match); setMatch(null) }}
+          onSchedule={(m) => { onMatchConfirm?.(m); setMatch(null) }}
         />
       )}
     </div>

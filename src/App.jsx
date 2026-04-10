@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import CardStack from './components/CardStack'
 import SubmitRequest from './components/SubmitRequest'
 import MatchesList from './components/MatchesList'
@@ -7,7 +7,6 @@ import ReciRingLogo from './components/ReciRingLogo'
 import { MOCK_REQUESTS } from './data/mockRequests'
 import LeaderboardView from './components/LeaderboardView'
 import ChatView from './components/ChatView'
-import MatchModal from './components/MatchModal'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import LoginScreen from './components/LoginScreen'
 import SettingsPage from './components/SettingsPage'
@@ -15,6 +14,8 @@ import MyPostsPage from './components/MyPostsPage'
 import { submitReport, blockUser, fetchBlockedIds } from './lib/safety'
 import { isSupabaseConfigured, supabase } from './lib/supabase'
 import { fetchPosts, createPost, updatePost } from './lib/posts'
+import { createMatch, fetchMyMatches, matchToUI } from './lib/matches'
+import { fetchMessages, sendMessage, sendMeetingProposal, updateMeetingStatus, msgToUI } from './lib/messages'
 
 /* ─── Design tokens ─────────────────────────────────────────────── */
 const C = {
@@ -132,11 +133,9 @@ function AppShell() {
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [requests, setRequests]   = useState([])
   const [matches, setMatches]     = useState([])
-  const [messages, setMessages]   = useState({})
   const [chatMatchId, setChatMatchId] = useState(null)
+  const [chatMessages, setChatMessages] = useState([]) // messages for current chat
   const [profileHovered, setProfileHovered] = useState(false)
-  const [pendingSchedule, setPendingSchedule] = useState(null)
-  const [scheduleFeedback, setScheduleFeedback] = useState(null)
   const [blockedIds, setBlockedIds] = useState(new Set())
 
   // Load posts from Supabase (or fall back to mock data)
@@ -155,6 +154,29 @@ function AppShell() {
       setRequests(data && data.length > 0 ? data : MOCK_REQUESTS)
     })
   }, [])
+
+  // Load matches from Supabase
+  const loadMatches = useCallback(async () => {
+    if (!isSupabaseConfigured || !user) return
+    const { data, error } = await fetchMyMatches(user.id)
+    if (error) { console.error('[ReciRing] Failed to load matches:', error); return }
+    setMatches(data.map(m => matchToUI(m, user.id)))
+  }, [user?.id])
+
+  useEffect(() => { loadMatches() }, [loadMatches])
+
+  // Load messages when entering a chat
+  const loadMessages = useCallback(async (matchId) => {
+    if (!isSupabaseConfigured || !user) return
+    const { data, error } = await fetchMessages(matchId)
+    if (error) { console.error('[ReciRing] Failed to load messages:', error); return }
+    setChatMessages(data.map(m => msgToUI(m, user.id)))
+  }, [user?.id])
+
+  useEffect(() => {
+    if (chatMatchId) loadMessages(chatMatchId)
+    else setChatMessages([])
+  }, [chatMatchId, loadMessages])
 
   // Load blocked user ids on mount
   useEffect(() => {
@@ -210,19 +232,19 @@ function AppShell() {
   }
 
   // Compute which matches have identity revealed (meeting day or later)
+  // For now this checks only the currently loaded chat messages
   const revealedMatchIds = useMemo(() => {
     const revealed = new Set()
+    if (!chatMatchId) return revealed
     const todayStr = new Date().toISOString().slice(0, 10)
-    for (const [matchId, msgs] of Object.entries(messages)) {
-      for (const msg of msgs) {
-        if (msg.type === 'meeting_proposal' && msg.meeting?.status === 'confirmed' && msg.meeting.datetime) {
-          const meetingDay = new Date(msg.meeting.datetime).toISOString().slice(0, 10)
-          if (todayStr >= meetingDay) { revealed.add(matchId); break }
-        }
+    for (const msg of chatMessages) {
+      if (msg.type === 'meeting_proposal' && msg.meeting?.status === 'confirmed' && msg.meeting?.datetime) {
+        const meetingDay = new Date(msg.meeting.datetime).toISOString().slice(0, 10)
+        if (todayStr >= meetingDay) { revealed.add(chatMatchId); break }
       }
     }
     return revealed
-  }, [messages])
+  }, [chatMessages, chatMatchId])
 
   const handleNewRequest = async (newReq) => {
     if (isSupabaseConfigured && user) {
@@ -272,97 +294,50 @@ function AppShell() {
     return {}
   }
 
-  const PEER_REPLIES = [
-    "That sounds great! When are you free to chat?",
-    "Awesome, happy to help. What works for your schedule?",
-    "Perfect — I have some time this week. Want to set something up?",
-    "Great, looking forward to connecting! Let me know what's most helpful.",
-    "Thanks for reaching out! Happy to share what I know.",
-  ]
-
-  const handleMatchConfirm = ({ request, peer }, opts) => {
-    const matchId  = `match-${Date.now()}`
-    const autoMsg  = {
-      id:        `msg-auto-${Date.now()}`,
-      senderId:  'peer',
-      content:   "Hey! Happy to connect — I might be able to help. Want to chat here or grab a coffee? ☕",
-      type:      'text',
-      timestamp: new Date().toISOString(),
+  // ── Match: user picks up a post ──────────────────────────────
+  const handleMatchConfirm = async ({ request }) => {
+    if (!user || !isSupabaseConfigured) return
+    const { data, error } = await createMatch(user.id, request)
+    if (error) {
+      if (error.code === '23505') { // unique violation — already matched
+        alert('You already picked up this request.')
+      } else {
+        console.error('[ReciRing] Match creation failed:', error)
+        alert('Failed to create match: ' + (error.message || 'Unknown error'))
+      }
+      return
     }
-    const newMatch = {
-      id:              matchId,
-      request,
-      peer:            peer || 'Anonymous Peer',
-      createdAt:       new Date().toISOString(),
-      lastMessage:     autoMsg.content,
-      lastMessageTime: 'Just now',
-    }
-    setMatches(prev => [newMatch, ...prev])
-    setMessages(prev => ({ ...prev, [matchId]: [autoMsg] }))
-    setChatMatchId(matchId)
+    // Reload matches so the new one shows up
+    await loadMatches()
+    setChatMatchId(data.id)
     setTab('matches')
-    if (opts?.openSchedule) setPendingSchedule(matchId)
   }
 
-  const handleSendMessage = (matchId, content) => {
-    if (scheduleFeedback) setScheduleFeedback(null)
-    const msg = {
-      id:        `msg-${Date.now()}`,
-      senderId:  'me',
-      content,
-      type:      'text',
-      timestamp: new Date().toISOString(),
-    }
-    setMessages(prev => ({ ...prev, [matchId]: [...(prev[matchId] || []), msg] }))
-    setMatches(prev => prev.map(m =>
-      m.id === matchId ? { ...m, lastMessage: content, lastMessageTime: 'Just now' } : m
+  // ── Send a text message ─────────────────────────────────────
+  const handleSendMessage = async (matchId, content) => {
+    if (!user) return
+    const { data, error } = await sendMessage(matchId, user.id, content)
+    if (error) { console.error('[ReciRing] Send failed:', error); return }
+    // Append locally for instant feedback
+    setChatMessages(prev => [...prev, msgToUI(data, user.id)])
+  }
+
+  // ── Propose a meeting ───────────────────────────────────────
+  const handleProposeMeeting = async (matchId, { datetime, location }) => {
+    if (!user) return
+    const { data, error } = await sendMeetingProposal(matchId, user.id, { datetime, location })
+    if (error) { console.error('[ReciRing] Meeting proposal failed:', error); return }
+    setChatMessages(prev => [...prev, msgToUI(data, user.id)])
+  }
+
+  // ── Respond to a meeting proposal ───────────────────────────
+  const handleMeetingResponse = async (matchId, msgId, newStatus) => {
+    const { data, error } = await updateMeetingStatus(msgId, newStatus)
+    if (error) { console.error('[ReciRing] Meeting update failed:', error); return }
+    // Update the message locally
+    setChatMessages(prev => prev.map(m =>
+      m.id === msgId ? { ...m, meeting: { ...m.meeting, status: newStatus } } : m
     ))
-    setTimeout(() => {
-      const reply = PEER_REPLIES[Math.floor(Math.random() * PEER_REPLIES.length)]
-      const peerMsg = {
-        id:        `msg-peer-${Date.now()}`,
-        senderId:  'peer',
-        content:   reply,
-        type:      'text',
-        timestamp: new Date().toISOString(),
-      }
-      setMessages(prev => ({ ...prev, [matchId]: [...(prev[matchId] || []), peerMsg] }))
-      setMatches(prev => prev.map(m =>
-        m.id === matchId ? { ...m, lastMessage: reply, lastMessageTime: 'Just now' } : m
-      ))
-    }, 1500)
-  }
-
-  const handleProposeMeeting = (matchId, { datetime, location }) => {
-    const meetingMsg = {
-      id:        `msg-mtg-${Date.now()}`,
-      senderId:  'me',
-      type:      'meeting_proposal',
-      timestamp: new Date().toISOString(),
-      meeting:   { datetime, location, status: 'pending' },
-    }
-    setMessages(prev => ({ ...prev, [matchId]: [...(prev[matchId] || []), meetingMsg] }))
-    // Show post-scheduling feedback (stays until next message)
-    setScheduleFeedback(matchId)
-  }
-
-  const handleMeetingResponse = (matchId, msgId, status) => {
-    setMessages(prev => {
-      const updated = (prev[matchId] || []).map(msg =>
-        msg.id === msgId ? { ...msg, meeting: { ...msg.meeting, status } } : msg
-      )
-      // Inject confirmation system message when confirmed
-      if (status === 'confirmed') {
-        updated.push({
-          id:        `msg-sys-${Date.now()}`,
-          senderId:  'system',
-          type:      'text',
-          content:   'Coffee chat confirmed 🎉',
-          timestamp: new Date().toISOString(),
-        })
-      }
-      return { ...prev, [matchId]: updated }
-    })
   }
 
   return (
@@ -578,14 +553,11 @@ function AppShell() {
             <div className="flex-1 min-h-0 overflow-hidden" style={{ display: 'flex', flexDirection: 'column' }}>
               <ChatView
                 match={matches.find(m => m.id === chatMatchId)}
-                messages={messages[chatMatchId] || []}
+                messages={chatMessages}
                 onSend={(content) => handleSendMessage(chatMatchId, content)}
                 onProposeMeeting={(data) => handleProposeMeeting(chatMatchId, data)}
                 onMeetingResponse={(msgId, status) => handleMeetingResponse(chatMatchId, msgId, status)}
                 onBack={() => setChatMatchId(null)}
-                autoOpenSchedule={pendingSchedule === chatMatchId}
-                onScheduleOpened={() => setPendingSchedule(null)}
-                scheduleFeedback={scheduleFeedback === chatMatchId}
                 onNavigateReview={() => { setChatMatchId(null); setTab('reviews') }}
                 onReport={handleReport}
                 onBlock={handleBlock}
