@@ -263,7 +263,15 @@ function EditPostModal({ post, onSave, onClose }) {
 }
 
 /* ── Main: My Posts Page ───────────────────────────────────────── */
-export default function MyPostsPage({ posts, onEditPost, onDeletePost, onClose }) {
+export default function MyPostsPage({ 
+  posts = [],
+  onEditPost,
+  onDeletePost,
+  onClose,
+  loading = false,
+  error = null,
+  isSupabaseConfigured = false,
+}) {
   const [deleting, setDeleting]       = useState(null)
   const [editingPost, setEditingPost] = useState(null)
 
