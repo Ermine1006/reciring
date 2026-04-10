@@ -58,7 +58,7 @@ export default function LeaderboardView() {
   const canUnlockCert = MOCK_ME.points >= 100
 
   return (
-    <div className="phone-scroll" style={{ background: C.bg, minHeight: '100%' }}>
+    <div className="flex-1 phone-scroll" style={{ background: C.bg }}>
       <div style={{ padding: '24px 20px 40px' }}>
 
         {/* ── Page header ── */}

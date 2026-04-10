@@ -30,18 +30,6 @@ const URGENCY_OPTIONS = [
   { value: 'urgent', label: 'Urgent' },
 ]
 
-function formatRelative(isoString) {
-  const diff = Date.now() - new Date(isoString).getTime()
-  const mins = Math.floor(diff / 60000)
-  if (mins < 1)  return 'Just now'
-  if (mins < 60) return `${mins}m ago`
-  const hrs = Math.floor(mins / 60)
-  if (hrs < 24)  return `${hrs}h ago`
-  const days = Math.floor(hrs / 24)
-  if (days < 7)  return `${days}d ago`
-  return `${Math.floor(days / 7)}w ago`
-}
-
 /* ── Chip selector (same style as SubmitRequest) ───────────────── */
 function ChipGroup({ options, selected, onToggle, multi = false }) {
   return (
@@ -73,11 +61,15 @@ function ChipGroup({ options, selected, onToggle, multi = false }) {
 
 /* ── Edit Post Modal ───────────────────────────────────────────── */
 function EditPostModal({ post, onSave, onClose }) {
-  const [needText, setNeedText]     = useState(post.need_text || '')
-  const [offerText, setOfferText]   = useState(post.offer_text || '')
-  const [helpType, setHelpType]     = useState(post.help_type || [])
-  const [industry, setIndustry]     = useState(post.industry_tag || [])
-  const [time, setTime]             = useState(post.time_commitment || '15 min')
+  // Posts arrive in card-mapped shape; derive help_type vs industry from tags
+  const initHelpType = (post.tags || []).filter(t => HELP_TYPES.includes(t))
+  const initIndustry = (post.tags || []).filter(t => INDUSTRIES.includes(t))
+
+  const [needText, setNeedText]     = useState(post.needs || '')
+  const [offerText, setOfferText]   = useState(post.offers || '')
+  const [helpType, setHelpType]     = useState(initHelpType)
+  const [industry, setIndustry]     = useState(initIndustry)
+  const [time, setTime]             = useState(post.time || '15 min')
   const [urgency, setUrgency]       = useState(post.urgency || null)
   const [saving, setSaving]         = useState(false)
   const [error, setError]           = useState(null)
@@ -313,21 +305,7 @@ export default function MyPostsPage({
           Manage, edit, or republish your requests.
         </p>
 
-        {loading && (
-          <p className="text-center py-12" style={{ color: C.textMuted, fontSize: 14 }}>Loading…</p>
-        )}
-
-        {!loading && error && (
-          <p className="text-center py-12" style={{ color: C.danger, fontSize: 14 }}>{error}</p>
-        )}
-
-        {!loading && !error && !isSupabaseConfigured && (
-          <p className="text-center py-12" style={{ color: C.textMuted, fontSize: 14, lineHeight: 1.6 }}>
-            Posts are stored in demo mode only.<br />Connect Supabase to manage your posts.
-          </p>
-        )}
-
-        {!loading && !error && isSupabaseConfigured && posts.length === 0 && (
+        {posts.length === 0 && (
           <div className="text-center py-12">
             <div style={{
               width: 56, height: 56, borderRadius: '50%',

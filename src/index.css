@@ -28,8 +28,11 @@ body {
   justify-content: center;
 }
 
-/* Scrollable panel inside the phone frame */
+/* Scrollable panel inside the phone frame.
+   min-height:0 lets a flex child shrink below its content size
+   so overflow-y:auto actually activates. */
 .phone-scroll {
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;

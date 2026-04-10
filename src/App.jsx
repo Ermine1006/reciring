@@ -168,7 +168,7 @@ function AppShell() {
   const visibleRequests = useMemo(
     () => requests.filter(r => {
       const creatorId = r.created_by || r.poster_id
-      if (creatorId && user && creatorId === user.id) return false     // hide own posts
+      // if (creatorId && user && creatorId === user.id) return false  // TEMP: show own posts in Discover for demo
       if (creatorId && blockedIds.has(creatorId))     return false     // hide blocked
       return true
     }),
@@ -539,7 +539,7 @@ function AppShell() {
         </header>
 
         {/* ── Main content ──────────────────────────────────── */}
-        <main className="flex-1 flex flex-col overflow-hidden" style={{ background: '#F9F7F4' }}>
+        <main className="flex-1 flex flex-col min-h-0" style={{ background: '#F9F7F4' }}>
           {showSettings && session ? (
             <SettingsPage onClose={() => setShowSettings(false)} />
           ) : showMyPosts && session ? (
@@ -575,7 +575,7 @@ function AppShell() {
             </div>
           )}
           {tab === 'matches' && chatMatchId && (
-            <div className="flex-1 overflow-hidden" style={{ display: 'flex', flexDirection: 'column' }}>
+            <div className="flex-1 min-h-0 overflow-hidden" style={{ display: 'flex', flexDirection: 'column' }}>
               <ChatView
                 match={matches.find(m => m.id === chatMatchId)}
                 messages={messages[chatMatchId] || []}
@@ -598,9 +598,7 @@ function AppShell() {
             </div>
           )}
           {tab === 'rank' && (
-            <div className="flex-1 phone-scroll" style={{ background: '#F9F7F4' }}>
-              <LeaderboardView />
-            </div>
+            <LeaderboardView />
           )}
           </>}
         </main>
