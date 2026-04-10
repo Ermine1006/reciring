@@ -15,21 +15,7 @@ export async function fetchPosts() {
 
   if (error) return { data: null, error }
 
-  // Map DB rows → card shape expected by CardStack / RequestCard
-  const mapped = data.map(row => ({
-    id:         row.id,
-    created_by: row.created_by,       // real user id — used by block/report
-    needs:      row.need_text,
-    offers:     row.offer_text,
-    category:   row.help_type?.[0] || 'Other',
-    tags:       [...(row.help_type || []), ...(row.industry_tag || [])],
-    time:       row.time_commitment || '15 min',
-    urgency:    row.urgency,
-    createdAt:  formatRelative(row.created_at),
-    poster:     { points: 0, scheduled: 0, completed: 0, industries: row.industry_tag || [] },
-  }))
-
-  return { data: mapped, error: null }
+  return { data: data.map(rowToCard), error: null }
 }
 
 /**
@@ -55,26 +41,58 @@ export async function createPost(userId, fields) {
 
   if (error) return { data: null, error }
 
-  // Return the card-shaped object so the caller can prepend to state
-  const card = {
-    id:         data.id,
-    created_by: data.created_by,
-    needs:      data.need_text,
-    offers:     data.offer_text,
-    category:   data.help_type?.[0] || 'Other',
-    tags:       [...(data.help_type || []), ...(data.industry_tag || [])],
-    time:       data.time_commitment || '15 min',
-    urgency:    data.urgency,
-    createdAt:  'Just now',
-    poster:     { points: 0, scheduled: 0, completed: 0, industries: data.industry_tag || [] },
-  }
+  return { data: rowToCard(data), error: null }
+}
 
-  return { data: card, error: null }
+/**
+ * Update an existing post and republish it (reset created_at to now).
+ * Only the author can update (RLS enforced).
+ */
+export async function updatePost(postId, userId, fields) {
+  if (!isSupabaseConfigured) return { data: null, error: new Error('Supabase not configured.') }
+
+  const { data, error } = await supabase
+    .from('posts')
+    .update({
+      need_text:       fields.need_text,
+      offer_text:      fields.offer_text,
+      help_type:       fields.help_type    || [],
+      industry_tag:    fields.industry_tag  || [],
+      time_commitment: fields.time_commitment || '15 min',
+      urgency:         fields.urgency       || null,
+      is_anonymous:    fields.is_anonymous ?? true,
+      created_at:      new Date().toISOString(), // republish — move to top of feed
+    })
+    .eq('id', postId)
+    .eq('created_by', userId)
+    .select()
+    .single()
+
+  if (error) return { data: null, error }
+  return { data: rowToCard(data), error: null }
+}
+
+/**
+ * Map a raw DB row to the card shape expected by CardStack / RequestCard.
+ */
+export function rowToCard(row) {
+  return {
+    id:         row.id,
+    created_by: row.created_by,
+    needs:      row.need_text,
+    offers:     row.offer_text,
+    category:   row.help_type?.[0] || 'Other',
+    tags:       [...(row.help_type || []), ...(row.industry_tag || [])],
+    time:       row.time_commitment || '15 min',
+    urgency:    row.urgency,
+    createdAt:  formatRelative(row.created_at),
+    poster:     { points: 0, scheduled: 0, completed: 0, industries: row.industry_tag || [] },
+  }
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────
 
-function formatRelative(isoString) {
+export function formatRelative(isoString) {
   const diff = Date.now() - new Date(isoString).getTime()
   const mins  = Math.floor(diff / 60000)
   if (mins < 1)   return 'Just now'

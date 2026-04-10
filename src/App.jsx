@@ -11,9 +11,10 @@ import MatchModal from './components/MatchModal'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import LoginScreen from './components/LoginScreen'
 import SettingsPage from './components/SettingsPage'
+import MyPostsPage from './components/MyPostsPage'
 import { submitReport, blockUser, fetchBlockedIds } from './lib/safety'
-import { isSupabaseConfigured } from './lib/supabase'
-import { fetchPosts, createPost } from './lib/posts'
+import { isSupabaseConfigured, supabase } from './lib/supabase'
+import { fetchPosts, createPost, updatePost } from './lib/posts'
 
 /* ─── Design tokens ─────────────────────────────────────────────── */
 const C = {
@@ -127,6 +128,8 @@ function AppShell() {
   const { session, user, signOut } = useAuth()
   const [tab, setTab]             = useState('discover')
   const [showSettings, setShowSettings] = useState(false)
+  const [showMyPosts, setShowMyPosts]   = useState(false)
+  const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [requests, setRequests]   = useState([])
   const [matches, setMatches]     = useState([])
   const [messages, setMessages]   = useState({})
@@ -235,6 +238,37 @@ function AppShell() {
       ...prev,
     ])
     setTab('discover')
+    return {}
+  }
+
+  // ── My Posts: derived from shared state ───────────────────────
+  const myPosts = useMemo(
+    () => user
+      ? requests
+          .filter(r => r.created_by === user.id)
+          .sort((a, b) => (b.createdAt === 'Just now' ? 1 : 0) - (a.createdAt === 'Just now' ? 1 : 0))
+      : [],
+    [requests, user?.id]
+  )
+
+  const handleEditPost = async (postId, fields) => {
+    if (!user) return { error: new Error('Not signed in.') }
+    const { data, error } = await updatePost(postId, user.id, fields)
+    if (error) return { error }
+    // Replace in shared state — updated card has fresh createdAt
+    setRequests(prev => [data, ...prev.filter(r => r.id !== postId)])
+    return {}
+  }
+
+  const handleDeletePost = async (postId) => {
+    if (!user) return { error: new Error('Not signed in.') }
+    const { error } = await supabase
+      .from('posts')
+      .delete()
+      .eq('id', postId)
+      .eq('created_by', user.id)
+    if (error) return { error }
+    setRequests(prev => prev.filter(r => r.id !== postId))
     return {}
   }
 
@@ -377,43 +411,122 @@ function AppShell() {
           <div className="flex items-center justify-between">
             <ReciRingLogo size={34} />
 
-            {/* Premium profile button — gradient border, soft glow on hover */}
-            <button
-              type="button"
-              onMouseEnter={() => setProfileHovered(true)}
-              onMouseLeave={() => setProfileHovered(false)}
-              onClick={() => setShowSettings(true)}
-              title={session ? `${session.user.email} — open settings` : 'Settings'}
-              className="active:scale-95"
-              style={{
-                width: 42, height: 42,
-                borderRadius: '50%',
-                flexShrink: 0,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer',
-                // Gradient-border trick: inner fill + outer gradient via border-box
-                background: profileHovered
-                  ? 'linear-gradient(#F5F0E8, #F5F0E8) padding-box, linear-gradient(135deg, #FFD700 0%, #B8962E 100%) border-box'
-                  : 'linear-gradient(#FAFAF8, #FAFAF8) padding-box, linear-gradient(135deg, #D4AF37 0%, #9A7520 100%) border-box',
-                border: '1.5px solid transparent',
-                boxShadow: profileHovered
-                  ? '0 0 0 3px rgba(212,175,55,0.14), 0 4px 14px rgba(140,100,0,0.16)'
-                  : '0 2px 8px rgba(100,70,0,0.08)',
-                transform: profileHovered ? 'scale(1.05)' : 'scale(1)',
-                transition: 'all 0.24s ease',
-              }}
-              aria-label="Profile"
-            >
-              <svg
-                width="16" height="16"
-                fill="none" stroke="currentColor"
-                viewBox="0 0 24 24"
-                style={{ color: profileHovered ? '#B8962E' : '#C8A96A' }}
-                strokeWidth={1.65}
+            {/* Profile button + dropdown menu */}
+            <div style={{ position: 'relative', flexShrink: 0 }}>
+              <button
+                type="button"
+                onMouseEnter={() => setProfileHovered(true)}
+                onMouseLeave={() => setProfileHovered(false)}
+                onClick={() => setShowProfileMenu(m => !m)}
+                title={session ? session.user.email : 'Menu'}
+                className="active:scale-95"
+                style={{
+                  width: 42, height: 42,
+                  borderRadius: '50%',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer',
+                  background: profileHovered
+                    ? 'linear-gradient(#F5F0E8, #F5F0E8) padding-box, linear-gradient(135deg, #FFD700 0%, #B8962E 100%) border-box'
+                    : 'linear-gradient(#FAFAF8, #FAFAF8) padding-box, linear-gradient(135deg, #D4AF37 0%, #9A7520 100%) border-box',
+                  border: '1.5px solid transparent',
+                  boxShadow: profileHovered
+                    ? '0 0 0 3px rgba(212,175,55,0.14), 0 4px 14px rgba(140,100,0,0.16)'
+                    : '0 2px 8px rgba(100,70,0,0.08)',
+                  transform: profileHovered ? 'scale(1.05)' : 'scale(1)',
+                  transition: 'all 0.24s ease',
+                }}
+                aria-label="Profile menu"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-            </button>
+                <svg
+                  width="16" height="16"
+                  fill="none" stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  style={{ color: profileHovered ? '#B8962E' : '#C8A96A' }}
+                  strokeWidth={1.65}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </button>
+
+              {/* Dropdown */}
+              {showProfileMenu && (
+                <>
+                  {/* Invisible backdrop to close on outside click */}
+                  <div
+                    onClick={() => setShowProfileMenu(false)}
+                    style={{ position: 'fixed', inset: 0, zIndex: 39 }}
+                  />
+                  <div style={{
+                    position: 'absolute', right: 0, top: 48, zIndex: 40,
+                    background: '#FFFFFF',
+                    borderRadius: 16,
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.06)',
+                    border: '1px solid rgba(200,169,106,0.18)',
+                    overflow: 'hidden',
+                    minWidth: 180,
+                  }}>
+                    {/* My Posts */}
+                    <button
+                      type="button"
+                      onClick={() => { setShowProfileMenu(false); setShowMyPosts(true); setShowSettings(false) }}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 10, width: '100%',
+                        padding: '13px 18px', background: 'none', border: 'none',
+                        fontSize: 14, fontWeight: 500, color: C.text, cursor: 'pointer',
+                        textAlign: 'left',
+                      }}
+                    >
+                      <svg width="16" height="16" fill="none" stroke={C.gold} viewBox="0 0 24 24" strokeWidth={1.8}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V9a2 2 0 012-2h2a2 2 0 012 2v9a2 2 0 01-2 2h-2z" />
+                      </svg>
+                      My Posts
+                    </button>
+
+                    <div style={{ height: 1, background: 'rgba(200,169,106,0.12)', margin: '0 14px' }} />
+
+                    {/* Settings */}
+                    <button
+                      type="button"
+                      onClick={() => { setShowProfileMenu(false); setShowSettings(true); setShowMyPosts(false) }}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 10, width: '100%',
+                        padding: '13px 18px', background: 'none', border: 'none',
+                        fontSize: 14, fontWeight: 500, color: C.text, cursor: 'pointer',
+                        textAlign: 'left',
+                      }}
+                    >
+                      <svg width="16" height="16" fill="none" stroke={C.gold} viewBox="0 0 24 24" strokeWidth={1.8}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.573-1.066z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                      Settings
+                    </button>
+
+                    <div style={{ height: 1, background: 'rgba(200,169,106,0.12)', margin: '0 14px' }} />
+
+                    {/* Log out */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowProfileMenu(false)
+                        if (window.confirm('Sign out?')) signOut()
+                      }}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 10, width: '100%',
+                        padding: '13px 18px', background: 'none', border: 'none',
+                        fontSize: 14, fontWeight: 500, color: '#DC2626', cursor: 'pointer',
+                        textAlign: 'left',
+                      }}
+                    >
+                      <svg width="16" height="16" fill="none" stroke="#DC2626" viewBox="0 0 24 24" strokeWidth={1.8}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                      </svg>
+                      Log out
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
 
           {/* Symmetric gold rule — fades to transparency at both edges */}
@@ -429,6 +542,13 @@ function AppShell() {
         <main className="flex-1 flex flex-col overflow-hidden" style={{ background: '#F9F7F4' }}>
           {showSettings && session ? (
             <SettingsPage onClose={() => setShowSettings(false)} />
+          ) : showMyPosts && session ? (
+            <MyPostsPage
+              posts={myPosts}
+              onEditPost={handleEditPost}
+              onDeletePost={handleDeletePost}
+              onClose={() => setShowMyPosts(false)}
+            />
           ) : <>
           {tab === 'discover' && (
             <CardStack

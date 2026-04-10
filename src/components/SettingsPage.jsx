@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 
 const C = {
@@ -24,6 +24,8 @@ export default function SettingsPage({ onClose }) {
   const [status, setStatus]       = useState(null) // {type:'ok'|'err', msg}
   const [confirmDel, setConfirmDel] = useState(false)
   const [deleting, setDeleting]   = useState(false)
+  const [showSupport, setShowSupport] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   const handleSave = async () => {
     setSaving(true); setStatus(null)
@@ -167,25 +169,22 @@ export default function SettingsPage({ onClose }) {
             Support
           </h2>
 
-          <a
-            href="mailto:support@reciring.com?subject=ReciRing%20Support%20Request"
+          <button
+            type="button"
+            onClick={() => setShowSupport(true)}
             className="w-full py-3 rounded-xl text-sm font-semibold active:scale-[0.98] flex items-center justify-center gap-2"
             style={{
               background: C.white,
               color: C.goldDark,
               border: `1.5px solid ${C.goldLight}`,
-              textDecoration: 'none',
-              display: 'flex',
+              cursor: 'pointer',
             }}
           >
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
             Contact Support
-          </a>
-          <p className="mt-2 text-center" style={{ fontSize: 11, color: C.textMuted }}>
-            support@reciring.com
-          </p>
+          </button>
         </section>
 
         {/* Account actions */}
@@ -255,6 +254,140 @@ export default function SettingsPage({ onClose }) {
           )}
         </section>
       </motion.div>
+
+      {/* Support modal */}
+      <AnimatePresence>
+        {showSupport && (
+          <>
+            <motion.div
+              key="support-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowSupport(false)}
+              style={{
+                position: 'absolute', inset: 0, zIndex: 60,
+                background: 'rgba(0,0,0,0.4)',
+                backdropFilter: 'blur(4px)',
+              }}
+            />
+            <motion.div
+              key="support-sheet"
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', stiffness: 340, damping: 34 }}
+              style={{
+                position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 61,
+                background: C.white,
+                borderRadius: '24px 24px 0 0',
+                padding: '16px 24px 32px',
+                boxShadow: '0 -8px 40px rgba(0,0,0,0.12)',
+              }}
+            >
+              {/* Drag handle */}
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+                <div style={{ width: 36, height: 4, borderRadius: 99, background: '#D1D5DB' }} />
+              </div>
+
+              {/* Icon */}
+              <div style={{
+                width: 48, height: 48, borderRadius: '50%',
+                background: '#FBF6EC', border: '1.5px solid #E6D3A3',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                margin: '0 auto 14px',
+              }}>
+                <svg width="22" height="22" fill="none" stroke={C.gold} viewBox="0 0 24 24" strokeWidth={1.8}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              </div>
+
+              <h3 style={{ fontSize: 18, fontWeight: 600, color: C.text, textAlign: 'center', marginBottom: 6 }}>
+                Contact Support
+              </h3>
+              <p style={{ fontSize: 13, color: C.textSub, textAlign: 'center', lineHeight: 1.6, marginBottom: 20 }}>
+                Having trouble? Send us a note and we'll get back to you as soon as possible.
+              </p>
+
+              {/* Email link */}
+              <a
+                href="mailto:erminelyu@gmail.com?subject=ReciRing%20Support%20Request"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-3 rounded-xl text-sm font-semibold active:scale-[0.98] flex items-center justify-center gap-2"
+                style={{
+                  background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
+                  color: '#fff',
+                  textDecoration: 'none',
+                  display: 'flex',
+                  border: 'none',
+                  boxShadow: '0 4px 14px rgba(200,169,106,0.30)',
+                  marginBottom: 6,
+                }}
+              >
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                Send email
+              </a>
+              <p className="text-center" style={{ fontSize: 10, color: C.textMuted, lineHeight: 1.5, marginBottom: 12 }}>
+                If your mail app doesn't open, copy the address below and email us manually.
+              </p>
+
+              {/* Copy email */}
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText('erminelyu@gmail.com').then(() => {
+                    setCopied(true)
+                    setTimeout(() => setCopied(false), 2000)
+                  })
+                }}
+                className="w-full py-2.5 rounded-xl text-sm font-medium active:scale-[0.98] flex items-center justify-center gap-2"
+                style={{
+                  background: copied ? '#ECFDF5' : C.white,
+                  color: copied ? '#059669' : C.goldDark,
+                  border: `1.5px solid ${copied ? '#A7F3D0' : C.goldLight}`,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  marginBottom: 14,
+                }}
+              >
+                {copied ? (
+                  <>
+                    <svg width="14" height="14" fill="none" stroke="#059669" viewBox="0 0 24 24" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Copied!
+                  </>
+                ) : (
+                  <>
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
+                      <rect x="9" y="9" width="13" height="13" rx="2" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                    </svg>
+                    Copy email address
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowSupport(false)}
+                className="w-full py-3 rounded-xl text-sm font-semibold active:scale-[0.98]"
+                style={{
+                  background: C.white,
+                  color: C.textSub,
+                  border: `1.5px solid ${C.border}`,
+                  cursor: 'pointer',
+                }}
+              >
+                Close
+              </button>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
