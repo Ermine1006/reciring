@@ -15,14 +15,26 @@ const C = {
 
 const LABELS = ['', 'Poor', 'Fair', 'Good', 'Great', 'Excellent']
 
-export default function RatingReview({ matchId, peerName, onSubmitted }) {
-  const [rating, setRating] = useState(0)
-  const [hover,  setHover]  = useState(0)
-  const [review, setReview] = useState('')
+export default function RatingReview({ matchId, peerName, onSubmitted, onBack }) {
+  const [rating, setRating]       = useState(0)
+  const [hover,  setHover]        = useState(0)
+  const [review, setReview]       = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [status, setStatus]       = useState(null) // {type:'ok'|'err', msg}
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    onSubmitted?.({ matchId, rating, review })
+    if (!rating || submitting) return
+    if (!matchId) { setStatus({ type: 'err', msg: 'Please navigate here from a chat to leave a review.' }); return }
+    setSubmitting(true); setStatus(null)
+    const result = await onSubmitted?.({ matchId, rating, review })
+    setSubmitting(false)
+    if (result?.error) {
+      setStatus({ type: 'err', msg: result.error.message || 'Failed to submit review.' })
+    } else {
+      setStatus({ type: 'ok', msg: 'Review submitted — thank you!' })
+      setRating(0); setReview('')
+    }
   }
 
   const displayed = hover || rating
@@ -33,8 +45,25 @@ export default function RatingReview({ matchId, peerName, onSubmitted }) {
       animate={{ opacity: 1, y: 0 }}
       className="px-5 py-7"
     >
-      {/* Section header */}
+      {/* Back button + Section header */}
       <div className="mb-7">
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              background: 'none', border: 'none', cursor: 'pointer',
+              fontSize: 13, fontWeight: 500, color: C.gold,
+              padding: 0, marginBottom: 12,
+            }}
+          >
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to reviews
+          </button>
+        )}
         <p className="text-[10px] tracking-[0.28em] font-semibold uppercase mb-1" style={{ color: C.gold }}>
           Feedback
         </p>
@@ -126,17 +155,28 @@ export default function RatingReview({ matchId, peerName, onSubmitted }) {
           />
         </div>
 
+        {/* Status message */}
+        {status && (
+          <p className="text-center text-xs" style={{ color: status.type === 'ok' ? '#16A34A' : '#DC2626' }}>
+            {status.msg}
+          </p>
+        )}
+
         {/* Submit */}
         <button
           type="submit"
+          disabled={!rating || submitting}
           className="w-full py-4 rounded-[16px] text-sm font-semibold tracking-[0.12em] uppercase transition-all duration-200 active:scale-[0.98]"
           style={{
-            background: `linear-gradient(135deg, ${C.gold} 0%, ${C.goldDark} 100%)`,
-            color: '#fff',
-            boxShadow: '0 8px 24px rgba(200,169,106,0.35)',
+            background: rating
+              ? `linear-gradient(135deg, ${C.gold} 0%, ${C.goldDark} 100%)`
+              : '#E5E7EB',
+            color: rating ? '#fff' : C.textMuted,
+            boxShadow: rating ? '0 8px 24px rgba(200,169,106,0.35)' : 'none',
+            opacity: submitting ? 0.6 : 1,
           }}
         >
-          Submit review
+          {submitting ? 'Submitting…' : 'Submit review'}
         </button>
 
         <p className="text-center text-[11px]" style={{ color: C.textMuted }}>

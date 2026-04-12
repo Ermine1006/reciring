@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
+import { Handshake, X } from 'lucide-react'
 import AnonymousAvatar from './AnonymousAvatar'
 
 const SWIPE_THRESHOLD = 80
@@ -101,49 +102,63 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
         }}
       />
 
-      {/* ── Swipe overlays ────────────────────────────── */}
+      {/* ── Swipe overlays (Tinder/Hinge style stamps) ── */}
       {isTop && (
         <>
+          {/* CONNECT — top-left stamp on right swipe */}
           <div
-            className="absolute inset-0 flex items-center justify-start pointer-events-none"
-            style={{ opacity: matchOpacity, paddingLeft: 28 }}
+            className="absolute pointer-events-none"
+            style={{
+              top: 28, left: 20, zIndex: 20,
+              opacity: matchOpacity,
+              transform: `scale(${0.7 + matchOpacity * 0.3}) rotate(-12deg)`,
+              transition: 'transform 0.05s',
+            }}
           >
-            <span
-              style={{
-                background: C.goldBg,
-                border: `2.5px solid ${C.gold}`,
-                color: C.goldDark,
-                borderRadius: 99,
-                padding: '8px 22px',
-                fontSize: 13,
-                fontWeight: 700,
-                letterSpacing: '0.14em',
-                textTransform: 'uppercase',
-                boxShadow: '0 4px 16px rgba(200,169,106,0.3)',
-              }}
-            >
-              Match!
-            </span>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '10px 20px',
+              borderRadius: 12,
+              border: `3px solid ${C.gold}`,
+              background: 'rgba(251,246,236,0.92)',
+              boxShadow: '0 4px 20px rgba(200,169,106,0.35)',
+            }}>
+              <Handshake size={22} stroke={C.goldDark} strokeWidth={2.2} />
+              <span style={{
+                fontSize: 18, fontWeight: 800, letterSpacing: '0.12em',
+                color: C.goldDark, fontFamily: 'Inter, system-ui, sans-serif',
+              }}>
+                CONNECT
+              </span>
+            </div>
           </div>
+
+          {/* PASS — top-right stamp on left swipe */}
           <div
-            className="absolute inset-0 flex items-center justify-end pointer-events-none"
-            style={{ opacity: passOpacity, paddingRight: 28 }}
+            className="absolute pointer-events-none"
+            style={{
+              top: 28, right: 20, zIndex: 20,
+              opacity: passOpacity,
+              transform: `scale(${0.7 + passOpacity * 0.3}) rotate(12deg)`,
+              transition: 'transform 0.05s',
+            }}
           >
-            <span
-              style={{
-                background: '#F3F4F6',
-                border: '2.5px solid #D1D5DB',
-                color: '#6B7280',
-                borderRadius: 99,
-                padding: '8px 22px',
-                fontSize: 13,
-                fontWeight: 700,
-                letterSpacing: '0.14em',
-                textTransform: 'uppercase',
-              }}
-            >
-              Pass
-            </span>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '10px 20px',
+              borderRadius: 12,
+              border: '3px solid #9CA3AF',
+              background: 'rgba(243,244,246,0.92)',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+            }}>
+              <X size={22} stroke="#6B7280" strokeWidth={2.6} />
+              <span style={{
+                fontSize: 18, fontWeight: 800, letterSpacing: '0.12em',
+                color: '#6B7280', fontFamily: 'Inter, system-ui, sans-serif',
+              }}>
+                PASS
+              </span>
+            </div>
           </div>
         </>
       )}

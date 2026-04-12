@@ -3,6 +3,7 @@ import CardStack from './components/CardStack'
 import SubmitRequest from './components/SubmitRequest'
 import MatchesList from './components/MatchesList'
 import RatingReview from './components/RatingReview'
+import PendingReviewsList from './components/PendingReviewsList'
 import ReciRingLogo from './components/ReciRingLogo'
 import { MOCK_REQUESTS } from './data/mockRequests'
 import LeaderboardView from './components/LeaderboardView'
@@ -135,6 +136,9 @@ function AppShell() {
   const [matches, setMatches]     = useState([])
   const [chatMatchId, setChatMatchId] = useState(null)
   const [chatMessages, setChatMessages] = useState([]) // messages for current chat
+  const [reviewMatchId, setReviewMatchId] = useState(null) // which match is being reviewed
+  const [reviewedMatchIds, setReviewedMatchIds] = useState(new Set()) // matches already reviewed by current user
+  const [pastReviews, setPastReviews] = useState([]) // full review objects for display
   const [profileHovered, setProfileHovered] = useState(false)
   const [blockedIds, setBlockedIds] = useState(new Set())
 
@@ -185,6 +189,27 @@ function AppShell() {
       if (data) setBlockedIds(new Set(data))
     })
   }, [user?.id])
+
+  // Load reviewed match IDs (so we can hide them from the pending review list)
+  const loadReviewedMatchIds = useCallback(async () => {
+    if (!isSupabaseConfigured || !user) return
+    const { data, error } = await supabase
+      .from('reviews')
+      .select('id, match_id, rating, comment, created_at')
+      .eq('reviewer_user_id', user.id)
+      .order('created_at', { ascending: false })
+    if (error) { console.error('[ReciRing] Failed to load reviews:', error); return }
+    setReviewedMatchIds(new Set((data || []).map(r => r.match_id)))
+    setPastReviews(data || [])
+  }, [user?.id])
+
+  useEffect(() => { loadReviewedMatchIds() }, [loadReviewedMatchIds])
+
+  // Matches the current user has NOT yet reviewed
+  const pendingReviewMatches = useMemo(
+    () => matches.filter(m => !reviewedMatchIds.has(m.id)),
+    [matches, reviewedMatchIds]
+  )
 
   // Filter out blocked users' posts + own posts
   const visibleRequests = useMemo(
@@ -341,6 +366,39 @@ function AppShell() {
     if (error) console.error('[ReciRing] Meeting update failed (UI updated locally):', error)
   }
 
+  // ── Submit a review ─────────────────────────────────────────
+  const handleSubmitReview = async ({ matchId, rating, review }) => {
+    if (!user || !isSupabaseConfigured) return { error: new Error('Not signed in.') }
+    const match = matches.find(m => m.id === matchId)
+    if (!match) return { error: new Error('Match not found.') }
+
+    const { error } = await supabase
+      .from('reviews')
+      .insert({
+        match_id:         matchId,
+        reviewer_user_id: user.id,
+        reviewed_user_id: match.peerId,
+        rating,
+        comment:          review || '',
+      })
+
+    if (error) {
+      if (error.code === '23505') return { error: new Error('You already reviewed this match.') }
+      return { error }
+    }
+    // Optimistic: immediately remove from pending list + add to past reviews
+    setReviewedMatchIds(prev => new Set([...prev, matchId]))
+    setPastReviews(prev => [{
+      id: `temp-${Date.now()}`,
+      match_id: matchId,
+      rating,
+      comment: review || '',
+      created_at: new Date().toISOString(),
+    }, ...prev])
+    setReviewMatchId(null)
+    return {}
+  }
+
   return (
     /*
      * Desktop: warm-cream canvas, phone centered.
@@ -460,6 +518,25 @@ function AppShell() {
 
                     <div style={{ height: 1, background: 'rgba(200,169,106,0.12)', margin: '0 14px' }} />
 
+                    {/* My Reviews */}
+                    <button
+                      type="button"
+                      onClick={() => { setShowProfileMenu(false); setShowMyPosts(false); setShowSettings(false); setTab('reviews'); setReviewMatchId(null) }}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 10, width: '100%',
+                        padding: '13px 18px', background: 'none', border: 'none',
+                        fontSize: 14, fontWeight: 500, color: C.text, cursor: 'pointer',
+                        textAlign: 'left',
+                      }}
+                    >
+                      <svg width="16" height="16" fill="none" stroke={C.gold} viewBox="0 0 24 24" strokeWidth={1.8}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                      </svg>
+                      My Reviews
+                    </button>
+
+                    <div style={{ height: 1, background: 'rgba(200,169,106,0.12)', margin: '0 14px' }} />
+
                     {/* Settings */}
                     <button
                       type="button"
@@ -559,7 +636,7 @@ function AppShell() {
                 onProposeMeeting={(data) => handleProposeMeeting(chatMatchId, data)}
                 onMeetingResponse={(msgId, status) => handleMeetingResponse(chatMatchId, msgId, status)}
                 onBack={() => setChatMatchId(null)}
-                onNavigateReview={() => { setChatMatchId(null); setTab('reviews') }}
+                onNavigateReview={() => { setReviewMatchId(chatMatchId); setChatMatchId(null); setTab('reviews') }}
                 onReport={handleReport}
                 onBlock={handleBlock}
               />
@@ -567,7 +644,21 @@ function AppShell() {
           )}
           {tab === 'reviews' && (
             <div className="flex-1 phone-scroll" style={{ background: '#F9F7F4' }}>
-              <RatingReview peerName="your match" />
+              {reviewMatchId ? (
+                <RatingReview
+                  matchId={reviewMatchId}
+                  peerName={matches.find(m => m.id === reviewMatchId)?.request?.needs?.slice(0, 30) || 'your match'}
+                  onSubmitted={handleSubmitReview}
+                  onBack={() => setReviewMatchId(null)}
+                />
+              ) : (
+                <PendingReviewsList
+                  matches={pendingReviewMatches}
+                  pastReviews={pastReviews}
+                  allMatches={matches}
+                  onSelect={(id) => setReviewMatchId(id)}
+                />
+              )}
             </div>
           )}
           {tab === 'rank' && (

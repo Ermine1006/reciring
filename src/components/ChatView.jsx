@@ -47,7 +47,7 @@ function MeetingCard({ msg, onConfirm, onSuggestAnother, onReschedule }) {
             color: meeting.status === 'confirmed' ? '#16A34A' : C.goldDark,
             fontFamily: 'Inter, system-ui, sans-serif',
           }}>
-            {meeting.status === 'confirmed' ? 'Coffee Chat Confirmed' : `Coffee Chat ${isMe ? 'Suggested' : 'Proposed'}`}
+            {meeting.status === 'confirmed' ? 'Coffee Chat Confirmed ✅' : `Coffee Chat ${isMe ? 'Suggested' : 'Proposed'}`}
           </p>
         </div>
         <p style={{
@@ -74,7 +74,7 @@ function MeetingCard({ msg, onConfirm, onSuggestAnother, onReschedule }) {
               fontFamily: 'Inter, system-ui, sans-serif',
               border: 'none', cursor: 'pointer',
             }}>
-              Confirm ✅
+              Confirm
             </button>
             <button onClick={onSuggestAnother} style={{
               flex: 1, padding: '8px 0', borderRadius: 10,
@@ -289,6 +289,22 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
               border: '1px solid #E5E7EB',
               overflow: 'hidden', minWidth: 160,
             }}>
+              {onNavigateReview && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowSafetyMenu(false)
+                    onNavigateReview()
+                  }}
+                  style={{
+                    display: 'block', width: '100%', textAlign: 'left',
+                    padding: '11px 16px', fontSize: 13, fontWeight: 500,
+                    color: '#C8A96A', background: 'none', border: 'none', cursor: 'pointer',
+                  }}
+                >
+                  Review user
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => { setShowSafetyMenu(false); setShowReportModal(true) }}
@@ -296,6 +312,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
                   display: 'block', width: '100%', textAlign: 'left',
                   padding: '11px 16px', fontSize: 13, fontWeight: 500,
                   color: '#DC2626', background: 'none', border: 'none', cursor: 'pointer',
+                  borderTop: '1px solid #F3F4F6',
                 }}
               >
                 Report user
