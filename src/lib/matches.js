@@ -4,8 +4,9 @@ import { supabase, isSupabaseConfigured } from './supabase'
  * Create a match: the current user (helper) picks up a post.
  * Returns { data: matchRow, error }
  */
-export async function createMatch(helperUserId, post) {
+export async function createMatch(helperUserId, post, actionType) {
   if (!isSupabaseConfigured) return { data: null, error: new Error('Supabase not configured.') }
+  if (!actionType) return { data: null, error: new Error('action_type is required.') }
 
   const { data, error } = await supabase
     .from('matches')
@@ -13,6 +14,7 @@ export async function createMatch(helperUserId, post) {
       post_id:           post.id,
       requester_user_id: post.created_by,
       helper_user_id:    helperUserId,
+      action_type:       actionType,
     })
     .select()
     .single()

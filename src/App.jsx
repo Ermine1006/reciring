@@ -295,9 +295,9 @@ function AppShell() {
   }
 
   // ── Match: user picks up a post ──────────────────────────────
-  const handleMatchConfirm = async ({ request }) => {
+  const handleMatchConfirm = async ({ request }, actionType) => {
     if (!user || !isSupabaseConfigured) return
-    const { data, error } = await createMatch(user.id, request)
+    const { data, error } = await createMatch(user.id, request, actionType || 'quick_intro')
     if (error) {
       if (error.code === '23505') { // unique violation — already matched
         alert('You already picked up this request.')

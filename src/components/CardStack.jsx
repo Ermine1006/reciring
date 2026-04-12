@@ -336,8 +336,8 @@ export default function CardStack({ requests, onSwipeRight, onSwipeLeft, onMatch
         <MatchModal
           match={match}
           onClose={() => setMatch(null)}
-          onConfirm={() => { onMatchConfirm?.(match); setMatch(null) }}
-          onSchedule={(m) => { onMatchConfirm?.(m); setMatch(null) }}
+          onConfirm={(m, actionType) => { onMatchConfirm?.(m, actionType); setMatch(null) }}
+          onSchedule={(m, actionType) => { onMatchConfirm?.(m, actionType); setMatch(null) }}
         />
       )}
     </div>
