@@ -332,12 +332,13 @@ function AppShell() {
 
   // ── Respond to a meeting proposal ───────────────────────────
   const handleMeetingResponse = async (matchId, msgId, newStatus) => {
-    const { data, error } = await updateMeetingStatus(msgId, newStatus)
-    if (error) { console.error('[ReciRing] Meeting update failed:', error); return }
-    // Update the message locally
+    // Optimistic: update UI immediately so the button responds
     setChatMessages(prev => prev.map(m =>
       m.id === msgId ? { ...m, meeting: { ...m.meeting, status: newStatus } } : m
     ))
+    // Persist to DB (best-effort)
+    const { error } = await updateMeetingStatus(msgId, newStatus)
+    if (error) console.error('[ReciRing] Meeting update failed (UI updated locally):', error)
   }
 
   return (
