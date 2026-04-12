@@ -21,16 +21,26 @@ export async function fetchMessages(matchId) {
 export async function sendMessage(matchId, senderUserId, body) {
   if (!isSupabaseConfigured) return { data: null, error: new Error('Supabase not configured.') }
 
-  const { data, error } = await supabase
+  const row = {
+    match_id:       matchId,
+    sender_user_id: senderUserId,
+    body,
+  }
+
+  // First try with type column; if the column doesn't exist, retry without it
+  let { data, error } = await supabase
     .from('messages')
-    .insert({
-      match_id:       matchId,
-      sender_user_id: senderUserId,
-      body,
-      type:           'text',
-    })
+    .insert({ ...row, type: 'text' })
     .select()
     .single()
+
+  if (error && error.message?.includes('type')) {
+    ;({ data, error } = await supabase
+      .from('messages')
+      .insert(row)
+      .select()
+      .single())
+  }
 
   return { data, error }
 }
@@ -41,17 +51,32 @@ export async function sendMessage(matchId, senderUserId, body) {
 export async function sendMeetingProposal(matchId, senderUserId, { datetime, location }) {
   if (!isSupabaseConfigured) return { data: null, error: new Error('Supabase not configured.') }
 
-  const { data, error } = await supabase
+  const meetingData = { datetime, location, status: 'pending' }
+
+  // Try with type+metadata columns first; fall back to body-only if columns don't exist
+  let { data, error } = await supabase
     .from('messages')
     .insert({
       match_id:       matchId,
       sender_user_id: senderUserId,
-      body:           '',
+      body:           JSON.stringify(meetingData),
       type:           'meeting_proposal',
-      metadata:       { datetime, location, status: 'pending' },
+      metadata:       meetingData,
     })
     .select()
     .single()
+
+  if (error && (error.message?.includes('type') || error.message?.includes('metadata'))) {
+    ;({ data, error } = await supabase
+      .from('messages')
+      .insert({
+        match_id:       matchId,
+        sender_user_id: senderUserId,
+        body:           JSON.stringify(meetingData),
+      })
+      .select()
+      .single())
+  }
 
   return { data, error }
 }
@@ -85,15 +110,22 @@ export async function updateMeetingStatus(messageId, status) {
  * Map a DB message row to the shape consumed by ChatView.
  */
 export function msgToUI(row, currentUserId) {
+  const type = row.type || 'text'
+  const meeting = type === 'meeting_proposal'
+    ? (row.metadata || tryParseJSON(row.body))
+    : null
+
   return {
     id:        row.id,
     senderId:  row.sender_user_id === currentUserId ? 'me' : 'peer',
     content:   row.body,
-    type:      row.type,
+    type,
     timestamp: row.created_at,
-    // meeting data lives in metadata for meeting_proposal type
-    ...(row.type === 'meeting_proposal' && row.metadata
-      ? { meeting: row.metadata }
-      : {}),
+    ...(meeting ? { meeting } : {}),
   }
+}
+
+function tryParseJSON(str) {
+  try { const o = JSON.parse(str); return typeof o === 'object' ? o : null }
+  catch { return null }
 }

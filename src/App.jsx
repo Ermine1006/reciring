@@ -318,7 +318,7 @@ function AppShell() {
     if (!user) return
     const { data, error } = await sendMessage(matchId, user.id, content)
     if (error) { console.error('[ReciRing] Send failed:', error); return }
-    // Append locally for instant feedback
+    if (!data) return
     setChatMessages(prev => [...prev, msgToUI(data, user.id)])
   }
 
