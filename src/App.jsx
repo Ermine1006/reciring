@@ -183,6 +183,73 @@ function AppShell() {
     else setChatMessages([])
   }, [chatMatchId, loadMessages])
 
+  // ── Realtime: messages for the active chat ─────────────────────
+  // Scoped to current matchId — subscribes only while chat is open.
+  // INSERT: incoming peer messages (sender's own are already optimistic).
+  // UPDATE: meeting status changes (confirmed/declined/rescheduled).
+  useEffect(() => {
+    if (!isSupabaseConfigured || !chatMatchId || !user) return
+    const uid = user.id
+
+    const channel = supabase
+      .channel(`chat-${chatMatchId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messages', filter: `match_id=eq.${chatMatchId}` },
+        (payload) => {
+          if (payload.new.sender_user_id === uid) return          // own send — already in state
+          setChatMessages(prev => {
+            if (prev.some(m => m.id === payload.new.id)) return prev // dedup guard
+            return [...prev, msgToUI(payload.new, uid)]
+          })
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'messages', filter: `match_id=eq.${chatMatchId}` },
+        (payload) => {
+          // Only patch meeting_proposal status changes
+          if (payload.new.type !== 'meeting_proposal') return
+          const newMeta = payload.new.metadata
+          if (!newMeta?.status) return // incomplete payload — skip
+          setChatMessages(prev => prev.map(m => {
+            if (m.id !== payload.new.id) return m
+            // If our optimistic state already matches or exceeds, keep it
+            if (m.meeting?.status === newMeta.status) return m
+            return msgToUI(payload.new, uid)
+          }))
+        }
+      )
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [chatMatchId, user?.id])
+
+  // ── Realtime: new matches involving the current user ──────────
+  // Supabase filter supports one column, but matches have two user
+  // columns. We use two listeners on the same channel — one per role.
+  // Event: INSERT only. Triggers a full refetch (matches carry joined
+  // post data that can't be reconstructed from the payload alone).
+  useEffect(() => {
+    if (!isSupabaseConfigured || !user) return
+
+    const channel = supabase
+      .channel('my-matches')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'matches', filter: `requester_user_id=eq.${user.id}` },
+        () => { loadMatches() }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'matches', filter: `helper_user_id=eq.${user.id}` },
+        () => { loadMatches() }
+      )
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [user?.id, loadMatches])
+
   // Load blocked user ids on mount
   useEffect(() => {
     if (!user) return
@@ -362,9 +429,16 @@ function AppShell() {
     setChatMessages(prev => prev.map(m =>
       m.id === msgId ? { ...m, meeting: { ...m.meeting, status: newStatus } } : m
     ))
-    // Persist to DB (best-effort)
+    // Persist to DB
     const { error } = await updateMeetingStatus(msgId, newStatus)
-    if (error) console.error('[ReciRing] Meeting update failed (UI updated locally):', error)
+    if (error) {
+      console.error('[ReciRing] Meeting update failed — rolling back:', error)
+      alert(`Meeting update failed: ${error.message || JSON.stringify(error)}`)
+      // Rollback optimistic update
+      setChatMessages(prev => prev.map(m =>
+        m.id === msgId ? { ...m, meeting: { ...m.meeting, status: 'pending' } } : m
+      ))
+    }
   }
 
   // ── Submit a review ─────────────────────────────────────────
