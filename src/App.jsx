@@ -10,6 +10,7 @@ import LeaderboardView from './components/LeaderboardView'
 import ChatView from './components/ChatView'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import LoginScreen from './components/LoginScreen'
+import EmailConfirmed from './components/EmailConfirmed'
 import SettingsPage, { resolveAvatarSeed } from './components/SettingsPage'
 import AnonymousAvatar from './components/AnonymousAvatar'
 import MyPostsPage from './components/MyPostsPage'
@@ -817,7 +818,19 @@ function AppRoot() {
     )
   }
 
-  // 3. Configured + bootstrapped → gate on session
+  // 3. Email-confirmed landing page (after clicking confirmation link)
+  if (window.location.pathname === '/auth/confirmed') {
+    return (
+      <EmailConfirmed
+        onGoToLogin={() => {
+          window.history.replaceState({}, '', '/')
+          window.location.reload()
+        }}
+      />
+    )
+  }
+
+  // 4. Configured + bootstrapped → gate on session
   if (!session) return <LoginScreen />
   return <AppShell />
 }

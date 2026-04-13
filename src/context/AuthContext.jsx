@@ -78,7 +78,7 @@ export function AuthProvider({ children }) {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+      options: { emailRedirectTo: `${window.location.origin}/auth/confirmed` },
     })
     return { data, error }
   }
@@ -94,7 +94,7 @@ export function AuthProvider({ children }) {
     if (!isSupabaseConfigured) return { error: new Error('Supabase not configured.') }
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: { redirectTo: window.location.origin },
     })
     return { data, error }
   }
