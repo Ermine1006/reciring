@@ -1,11 +1,14 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
+import AnonymousAvatar from './AnonymousAvatar'
+import PRESET_AVATARS from '../data/presetAvatars'
 
 const C = {
   gold:      '#C8A96A',
   goldDark:  '#A88245',
   goldLight: '#E6D3A3',
+  goldBg:    '#FBF6EC',
   text:      '#111111',
   textSub:   '#6B7280',
   textMuted: '#9CA3AF',
@@ -14,25 +17,34 @@ const C = {
   danger:    '#DC2626',
 }
 
+/** Resolve a `preset:key` avatar_url → the seed for AnonymousAvatar. */
+export function resolveAvatarSeed(avatarUrl) {
+  if (!avatarUrl?.startsWith('preset:')) return null
+  const key = avatarUrl.slice(7)
+  return PRESET_AVATARS.find(a => a.key === key)?.seed ?? null
+}
+
 export default function SettingsPage({ onClose }) {
   const { user, profile, updateProfile, signOut, deleteAccount } = useAuth()
 
-  const [name, setName]           = useState(profile?.name || '')
-  const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || '')
-  const [isAnon, setIsAnon]       = useState(profile?.is_anonymous ?? true)
-  const [saving, setSaving]       = useState(false)
-  const [status, setStatus]       = useState(null) // {type:'ok'|'err', msg}
+  const [name, setName]               = useState(profile?.name || '')
+  const [selectedKey, setSelectedKey]  = useState(
+    profile?.avatar_url?.startsWith('preset:') ? profile.avatar_url.slice(7) : null
+  )
+  const [saving, setSaving]     = useState(false)
+  const [status, setStatus]     = useState(null)
   const [confirmDel, setConfirmDel] = useState(false)
-  const [deleting, setDeleting]   = useState(false)
+  const [deleting, setDeleting]     = useState(false)
   const [showSupport, setShowSupport] = useState(false)
-  const [copied, setCopied] = useState(false)
+  const [copied, setCopied]         = useState(false)
+
+  const selectedAvatar = PRESET_AVATARS.find(a => a.key === selectedKey)
 
   const handleSave = async () => {
     setSaving(true); setStatus(null)
     const { error } = await updateProfile({
       name: name.trim() || 'Anonymous',
-      avatar_url: avatarUrl.trim() || null,
-      is_anonymous: isAnon,
+      avatar_url: selectedKey ? `preset:${selectedKey}` : null,
     })
     setSaving(false)
     setStatus(error
@@ -55,9 +67,8 @@ export default function SettingsPage({ onClose }) {
       return
     }
     if (partial) {
-      alert('Your profile data was deleted and you have been signed out. Full account removal requires admin action — please contact support to fully delete your auth record.')
+      alert('Your profile data was deleted and you have been signed out. Full account removal requires admin action — please contact support.')
     }
-    // signOut already called inside deleteAccount → AppRoot will swap to LoginScreen
   }
 
   const inputStyle = {
@@ -75,30 +86,87 @@ export default function SettingsPage({ onClose }) {
         className="px-5 pt-5 pb-10"
       >
         {/* Header */}
-        <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center justify-between mb-6">
           <h1 className="font-display" style={{ fontSize: 22, fontWeight: 600, color: C.text }}>
-            Settings
+            My Profile
           </h1>
           <button
             type="button"
             onClick={onClose}
             className="text-sm font-medium"
-            style={{ color: C.goldDark }}
+            style={{ color: C.goldDark, background: 'none', border: 'none', cursor: 'pointer' }}
           >
             Done
           </button>
         </div>
 
-        {/* Profile card */}
+        {/* ── Profile section ─────────────────────────────────── */}
         <section
           className="rounded-2xl p-5 mb-4"
           style={{ background: C.white, border: `1px solid ${C.border}` }}
         >
-          <h2 className="text-xs uppercase tracking-wider mb-4" style={{ color: C.textMuted }}>
+          <h2 className="text-xs uppercase tracking-wider mb-5" style={{ color: C.textMuted }}>
             Profile
           </h2>
 
-          <label className="block text-xs mb-1" style={{ color: C.textSub }}>Display name</label>
+          {/* Current avatar — large preview */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 20 }}>
+            <div style={{
+              borderRadius: '50%',
+              border: `3px solid ${C.goldLight}`,
+              boxShadow: '0 4px 20px rgba(200,169,106,0.25)',
+              marginBottom: 8,
+            }}>
+              <AnonymousAvatar
+                seed={selectedAvatar?.seed || profile?.id || 'default'}
+                size={88}
+              />
+            </div>
+            <p style={{ fontSize: 12, color: C.textMuted, fontFamily: 'Inter, system-ui, sans-serif' }}>
+              {selectedAvatar?.label || 'Default'}
+            </p>
+          </div>
+
+          {/* Avatar picker grid */}
+          <div style={{ marginBottom: 24 }}>
+            <p
+              className="text-[11px] tracking-[0.14em] uppercase font-semibold mb-3"
+              style={{ color: C.textSub }}
+            >
+              Choose avatar
+            </p>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(5, 1fr)',
+              gap: 10,
+            }}>
+              {PRESET_AVATARS.map((av) => {
+                const isActive = av.key === selectedKey
+                return (
+                  <button
+                    key={av.key}
+                    type="button"
+                    onClick={() => setSelectedKey(av.key)}
+                    title={av.label}
+                    style={{
+                      padding: 0, background: 'none', cursor: 'pointer',
+                      border: isActive ? `2.5px solid ${C.gold}` : '2.5px solid transparent',
+                      borderRadius: '50%',
+                      boxShadow: isActive ? `0 0 0 2px ${C.goldLight}, 0 4px 12px rgba(200,169,106,0.3)` : 'none',
+                      transform: isActive ? 'scale(1.08)' : 'scale(1)',
+                      transition: 'all 0.15s ease',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >
+                    <AnonymousAvatar seed={av.seed} size={52} />
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Display name */}
+          <label className="block text-xs mb-1.5" style={{ color: C.textSub, fontWeight: 500 }}>Display name</label>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -107,72 +175,58 @@ export default function SettingsPage({ onClose }) {
             style={inputStyle}
           />
 
-          <label className="block text-xs mb-1" style={{ color: C.textSub }}>Avatar URL (optional)</label>
-          <input
-            value={avatarUrl}
-            onChange={(e) => setAvatarUrl(e.target.value)}
-            placeholder="https://…"
-            className="w-full rounded-xl px-4 py-3 text-sm mb-4"
-            style={inputStyle}
-          />
-
-          <label className="block text-xs mb-1" style={{ color: C.textSub }}>Email</label>
+          {/* Email (read-only) */}
+          <label className="block text-xs mb-1.5" style={{ color: C.textSub, fontWeight: 500 }}>Email</label>
           <input
             value={user?.email || ''}
             readOnly
-            className="w-full rounded-xl px-4 py-3 text-sm mb-4"
-            style={{ ...inputStyle, color: C.textSub, cursor: 'not-allowed' }}
+            className="w-full rounded-xl px-4 py-3 text-sm"
+            style={{ ...inputStyle, color: C.textMuted, cursor: 'not-allowed', background: '#F5F5F5' }}
           />
 
-          <label className="flex items-center justify-between py-2">
-            <span className="text-sm" style={{ color: C.text }}>Anonymous mode</span>
-            <input
-              type="checkbox"
-              checked={isAnon}
-              onChange={(e) => setIsAnon(e.target.checked)}
-              style={{ width: 18, height: 18, accentColor: C.gold }}
-            />
-          </label>
-
+          {/* Status message */}
           {status && (
             <p
-              className="mt-3 text-center text-xs"
-              style={{ color: status.type === 'ok' ? C.goldDark : C.danger }}
+              className="mt-4 text-center text-xs"
+              style={{ color: status.type === 'ok' ? '#16A34A' : C.danger }}
             >
               {status.msg}
             </p>
           )}
 
+          {/* Save */}
           <button
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="w-full mt-4 py-3 rounded-xl text-sm font-semibold active:scale-[0.98]"
+            className="w-full mt-5 py-3 rounded-xl text-sm font-semibold active:scale-[0.98]"
             style={{
               background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
               color: '#fff',
               border: 'none',
               opacity: saving ? 0.6 : 1,
               boxShadow: '0 4px 14px rgba(200,169,106,0.30)',
+              cursor: saving ? 'wait' : 'pointer',
             }}
           >
-            {saving ? 'Saving…' : 'Save changes'}
+            {saving ? 'Saving...' : 'Save changes'}
           </button>
         </section>
 
-        {/* Support */}
+        {/* ── Account section ─────────────────────────────────── */}
         <section
-          className="rounded-2xl p-5 mb-4"
+          className="rounded-2xl p-5"
           style={{ background: C.white, border: `1px solid ${C.border}` }}
         >
           <h2 className="text-xs uppercase tracking-wider mb-4" style={{ color: C.textMuted }}>
-            Support
+            Account
           </h2>
 
+          {/* Contact Support */}
           <button
             type="button"
             onClick={() => setShowSupport(true)}
-            className="w-full py-3 rounded-xl text-sm font-semibold active:scale-[0.98] flex items-center justify-center gap-2"
+            className="w-full py-3 rounded-xl text-sm font-semibold active:scale-[0.98] flex items-center justify-center gap-2 mb-3"
             style={{
               background: C.white,
               color: C.goldDark,
@@ -185,30 +239,23 @@ export default function SettingsPage({ onClose }) {
             </svg>
             Contact Support
           </button>
-        </section>
 
-        {/* Account actions */}
-        <section
-          className="rounded-2xl p-5"
-          style={{ background: C.white, border: `1px solid ${C.border}` }}
-        >
-          <h2 className="text-xs uppercase tracking-wider mb-4" style={{ color: C.textMuted }}>
-            Account
-          </h2>
-
+          {/* Log out */}
           <button
             type="button"
             onClick={handleSignOut}
             className="w-full py-3 rounded-xl text-sm font-semibold mb-3 active:scale-[0.98]"
             style={{
               background: C.white,
-              color: C.goldDark,
-              border: `1.5px solid ${C.goldLight}`,
+              color: C.textSub,
+              border: `1.5px solid ${C.border}`,
+              cursor: 'pointer',
             }}
           >
-            Sign out
+            Log out
           </button>
 
+          {/* Delete account */}
           {!confirmDel ? (
             <button
               type="button"
@@ -218,6 +265,7 @@ export default function SettingsPage({ onClose }) {
                 background: C.white,
                 color: C.danger,
                 border: `1.5px solid ${C.danger}`,
+                cursor: 'pointer',
               }}
             >
               Delete account
@@ -236,7 +284,7 @@ export default function SettingsPage({ onClose }) {
                   onClick={() => setConfirmDel(false)}
                   disabled={deleting}
                   className="flex-1 py-2.5 rounded-lg text-xs font-semibold"
-                  style={{ background: C.white, color: C.text, border: `1px solid ${C.border}` }}
+                  style={{ background: C.white, color: C.text, border: `1px solid ${C.border}`, cursor: 'pointer' }}
                 >
                   Cancel
                 </button>
@@ -245,9 +293,9 @@ export default function SettingsPage({ onClose }) {
                   onClick={handleDelete}
                   disabled={deleting}
                   className="flex-1 py-2.5 rounded-lg text-xs font-semibold"
-                  style={{ background: C.danger, color: '#fff', border: 'none', opacity: deleting ? 0.6 : 1 }}
+                  style={{ background: C.danger, color: '#fff', border: 'none', opacity: deleting ? 0.6 : 1, cursor: 'pointer' }}
                 >
-                  {deleting ? 'Deleting…' : 'Yes, delete'}
+                  {deleting ? 'Deleting...' : 'Yes, delete'}
                 </button>
               </div>
             </div>
@@ -285,15 +333,13 @@ export default function SettingsPage({ onClose }) {
                 boxShadow: '0 -8px 40px rgba(0,0,0,0.12)',
               }}
             >
-              {/* Drag handle */}
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
                 <div style={{ width: 36, height: 4, borderRadius: 99, background: '#D1D5DB' }} />
               </div>
 
-              {/* Icon */}
               <div style={{
                 width: 48, height: 48, borderRadius: '50%',
-                background: '#FBF6EC', border: '1.5px solid #E6D3A3',
+                background: C.goldBg, border: `1.5px solid ${C.goldLight}`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 margin: '0 auto 14px',
               }}>
@@ -309,7 +355,6 @@ export default function SettingsPage({ onClose }) {
                 Having trouble? Send us a note and we'll get back to you as soon as possible.
               </p>
 
-              {/* Email link */}
               <a
                 href="mailto:erminelyu@gmail.com?subject=ReciRing%20Support%20Request"
                 target="_blank"
@@ -317,11 +362,8 @@ export default function SettingsPage({ onClose }) {
                 className="w-full py-3 rounded-xl text-sm font-semibold active:scale-[0.98] flex items-center justify-center gap-2"
                 style={{
                   background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
-                  color: '#fff',
-                  textDecoration: 'none',
-                  display: 'flex',
-                  border: 'none',
-                  boxShadow: '0 4px 14px rgba(200,169,106,0.30)',
+                  color: '#fff', textDecoration: 'none', display: 'flex',
+                  border: 'none', boxShadow: '0 4px 14px rgba(200,169,106,0.30)',
                   marginBottom: 6,
                 }}
               >
@@ -331,10 +373,9 @@ export default function SettingsPage({ onClose }) {
                 Send email
               </a>
               <p className="text-center" style={{ fontSize: 10, color: C.textMuted, lineHeight: 1.5, marginBottom: 12 }}>
-                If your mail app doesn't open, copy the address below and email us manually.
+                If your mail app doesn't open, copy the address below.
               </p>
 
-              {/* Copy email */}
               <button
                 type="button"
                 onClick={() => {
@@ -348,9 +389,7 @@ export default function SettingsPage({ onClose }) {
                   background: copied ? '#ECFDF5' : C.white,
                   color: copied ? '#059669' : C.goldDark,
                   border: `1.5px solid ${copied ? '#A7F3D0' : C.goldLight}`,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  marginBottom: 14,
+                  cursor: 'pointer', transition: 'all 0.2s ease', marginBottom: 14,
                 }}
               >
                 {copied ? (
@@ -375,12 +414,7 @@ export default function SettingsPage({ onClose }) {
                 type="button"
                 onClick={() => setShowSupport(false)}
                 className="w-full py-3 rounded-xl text-sm font-semibold active:scale-[0.98]"
-                style={{
-                  background: C.white,
-                  color: C.textSub,
-                  border: `1.5px solid ${C.border}`,
-                  cursor: 'pointer',
-                }}
+                style={{ background: C.white, color: C.textSub, border: `1.5px solid ${C.border}`, cursor: 'pointer' }}
               >
                 Close
               </button>

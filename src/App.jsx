@@ -10,7 +10,8 @@ import LeaderboardView from './components/LeaderboardView'
 import ChatView from './components/ChatView'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import LoginScreen from './components/LoginScreen'
-import SettingsPage from './components/SettingsPage'
+import SettingsPage, { resolveAvatarSeed } from './components/SettingsPage'
+import AnonymousAvatar from './components/AnonymousAvatar'
 import MyPostsPage from './components/MyPostsPage'
 import { submitReport, blockUser, fetchBlockedIds } from './lib/safety'
 import { isSupabaseConfigured, supabase } from './lib/supabase'
@@ -127,7 +128,7 @@ function StatusBar() {
 
 /* ─── App shell (authenticated) ─────────────────────────────────── */
 function AppShell() {
-  const { session, user, signOut } = useAuth()
+  const { session, user, profile, signOut } = useAuth()
   const [tab, setTab]             = useState('discover')
   const [showSettings, setShowSettings] = useState(false)
   const [showMyPosts, setShowMyPosts]   = useState(false)
@@ -459,10 +460,16 @@ function AppShell() {
                   borderRadius: '50%',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   cursor: 'pointer',
-                  background: profileHovered
-                    ? 'linear-gradient(#F5F0E8, #F5F0E8) padding-box, linear-gradient(135deg, #FFD700 0%, #B8962E 100%) border-box'
-                    : 'linear-gradient(#FAFAF8, #FAFAF8) padding-box, linear-gradient(135deg, #D4AF37 0%, #9A7520 100%) border-box',
-                  border: '1.5px solid transparent',
+                  overflow: 'hidden',
+                  padding: 0,
+                  background: resolveAvatarSeed(profile?.avatar_url)
+                    ? 'none'
+                    : profileHovered
+                      ? 'linear-gradient(#F5F0E8, #F5F0E8) padding-box, linear-gradient(135deg, #FFD700 0%, #B8962E 100%) border-box'
+                      : 'linear-gradient(#FAFAF8, #FAFAF8) padding-box, linear-gradient(135deg, #D4AF37 0%, #9A7520 100%) border-box',
+                  border: resolveAvatarSeed(profile?.avatar_url)
+                    ? '2px solid #E6D3A3'
+                    : '1.5px solid transparent',
                   boxShadow: profileHovered
                     ? '0 0 0 3px rgba(212,175,55,0.14), 0 4px 14px rgba(140,100,0,0.16)'
                     : '0 2px 8px rgba(100,70,0,0.08)',
@@ -471,15 +478,19 @@ function AppShell() {
                 }}
                 aria-label="Profile menu"
               >
-                <svg
-                  width="16" height="16"
-                  fill="none" stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  style={{ color: profileHovered ? '#B8962E' : '#C8A96A' }}
-                  strokeWidth={1.65}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
+                {resolveAvatarSeed(profile?.avatar_url) ? (
+                  <AnonymousAvatar seed={resolveAvatarSeed(profile.avatar_url)} size={42} />
+                ) : (
+                  <svg
+                    width="16" height="16"
+                    fill="none" stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    style={{ color: profileHovered ? '#B8962E' : '#C8A96A' }}
+                    strokeWidth={1.65}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                )}
               </button>
 
               {/* Dropdown */}
@@ -537,7 +548,7 @@ function AppShell() {
 
                     <div style={{ height: 1, background: 'rgba(200,169,106,0.12)', margin: '0 14px' }} />
 
-                    {/* Settings */}
+                    {/* My Profile */}
                     <button
                       type="button"
                       onClick={() => { setShowProfileMenu(false); setShowSettings(true); setShowMyPosts(false) }}
@@ -549,10 +560,9 @@ function AppShell() {
                       }}
                     >
                       <svg width="16" height="16" fill="none" stroke={C.gold} viewBox="0 0 24 24" strokeWidth={1.8}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.573-1.066z" />
-                        <circle cx="12" cy="12" r="3" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
-                      Settings
+                      My Profile
                     </button>
 
                     <div style={{ height: 1, background: 'rgba(200,169,106,0.12)', margin: '0 14px' }} />

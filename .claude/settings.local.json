@@ -6,7 +6,8 @@
       "Bash(node -e \"const { Handshake } = require\\(''lucide-react''\\); console.log\\(!!Handshake\\)\")",
       "Bash(npm run:*)",
       "Bash(node scripts/seed-posts.js)",
-      "Bash(grep -i \"service\" .env*)"
+      "Bash(grep -i \"service\" .env*)",
+      "Bash(node -e:*)"
     ]
   }
 }
