@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import CardStack from './components/CardStack'
 import SubmitRequest from './components/SubmitRequest'
 import MatchesList from './components/MatchesList'
@@ -11,6 +11,7 @@ import ChatView from './components/ChatView'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import LoginScreen from './components/LoginScreen'
 import EmailConfirmed from './components/EmailConfirmed'
+import NewMatchModal from './components/NewMatchModal'
 import SettingsPage, { resolveAvatarSeed } from './components/SettingsPage'
 import AnonymousAvatar from './components/AnonymousAvatar'
 import MyPostsPage from './components/MyPostsPage'
@@ -144,6 +145,27 @@ function AppShell() {
   const [profileHovered, setProfileHovered] = useState(false)
   const [blockedIds, setBlockedIds] = useState(new Set())
 
+  // ── New Match popup state ────────────────────────────────────
+  const [newMatchModalOpen, setNewMatchModalOpen] = useState(false)
+  const [latestNewMatch, setLatestNewMatch]       = useState(null)
+  // Track which match ids we've already shown a popup for (per session + per user).
+  const shownMatchIdsRef = useRef(new Set())
+  // localStorage-backed acknowledged set so popups don't re-appear on reload.
+  const ackKey = user ? `reciring:ackMatches:${user.id}` : null
+  const loadAckSet = useCallback(() => {
+    if (!ackKey) return new Set()
+    try { return new Set(JSON.parse(localStorage.getItem(ackKey) || '[]')) }
+    catch { return new Set() }
+  }, [ackKey])
+  const persistAck = useCallback((id) => {
+    if (!ackKey) return
+    try {
+      const current = loadAckSet()
+      current.add(id)
+      localStorage.setItem(ackKey, JSON.stringify([...current]))
+    } catch {}
+  }, [ackKey, loadAckSet])
+
   // Load posts from Supabase (or fall back to mock data)
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -233,23 +255,77 @@ function AppShell() {
   // post data that can't be reconstructed from the payload alone).
   useEffect(() => {
     if (!isSupabaseConfigured || !user) return
+    const uid = user.id
+
+    const triggerNewMatchPopup = async (row) => {
+      // Only the REQUESTER sees the popup — the helper already navigated
+      // into the chat as part of their own action (handleMatchConfirm).
+      if (row.helper_user_id === uid) return
+      if (row.requester_user_id !== uid) return
+      // Dedupe across session + persisted acks
+      if (shownMatchIdsRef.current.has(row.id)) return
+      if (loadAckSet().has(row.id)) return
+      shownMatchIdsRef.current.add(row.id)
+
+      // Refetch matches to get the joined post data, then find this one
+      await loadMatches()
+      // Defer one tick so matches state is updated before we read it
+      setTimeout(() => {
+        setMatches(curr => {
+          const found = curr.find(m => m.id === row.id)
+          if (found) {
+            setLatestNewMatch(found)
+            setNewMatchModalOpen(true)
+          }
+          return curr
+        })
+      }, 0)
+    }
 
     const channel = supabase
       .channel('my-matches')
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'matches', filter: `requester_user_id=eq.${user.id}` },
-        () => { loadMatches() }
+        { event: 'INSERT', schema: 'public', table: 'matches', filter: `requester_user_id=eq.${uid}` },
+        (payload) => { triggerNewMatchPopup(payload.new) }
       )
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'matches', filter: `helper_user_id=eq.${user.id}` },
+        { event: 'INSERT', schema: 'public', table: 'matches', filter: `helper_user_id=eq.${uid}` },
         () => { loadMatches() }
       )
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [user?.id, loadMatches])
+  }, [user?.id, loadMatches, loadAckSet])
+
+  // ── Fallback: on load, surface any unseen new match as a popup ───
+  // If realtime missed a match (offline, reconnect, cold load), find the
+  // most recent match where the current user is the requester and hasn't
+  // acknowledged yet, then show the popup once.
+  useEffect(() => {
+    if (!user || !matches.length || newMatchModalOpen) return
+    const ack = loadAckSet()
+    const candidate = matches.find(m => !m.isHelper && !ack.has(m.id) && !shownMatchIdsRef.current.has(m.id))
+    if (candidate) {
+      shownMatchIdsRef.current.add(candidate.id)
+      setLatestNewMatch(candidate)
+      setNewMatchModalOpen(true)
+    }
+  }, [matches, user?.id, loadAckSet, newMatchModalOpen])
+
+  const handleNewMatchView = useCallback(() => {
+    if (!latestNewMatch) return
+    persistAck(latestNewMatch.id)
+    setNewMatchModalOpen(false)
+    setTab('matches')
+    setChatMatchId(latestNewMatch.id)
+  }, [latestNewMatch, persistAck])
+
+  const handleNewMatchDismiss = useCallback(() => {
+    if (latestNewMatch) persistAck(latestNewMatch.id)
+    setNewMatchModalOpen(false)
+  }, [latestNewMatch, persistAck])
 
   // Load blocked user ids on mount
   useEffect(() => {
@@ -794,6 +870,14 @@ function AppShell() {
         >
           <div style={{ width: 134, height: 5, borderRadius: 99, background: 'rgba(0,0,0,0.18)' }} />
         </div>
+
+        {/* ── New Match popup ─────────────────────────────────── */}
+        <NewMatchModal
+          open={newMatchModalOpen && !(tab === 'matches' && chatMatchId === latestNewMatch?.id)}
+          match={latestNewMatch}
+          onView={handleNewMatchView}
+          onDismiss={handleNewMatchDismiss}
+        />
       </div>
     </div>
   )

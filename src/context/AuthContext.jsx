@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useRef } from 'react'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 
 const AuthContext = createContext(null)
@@ -7,6 +7,8 @@ export function AuthProvider({ children }) {
   const [session, setSession] = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(isSupabaseConfigured)
+  // Guard against double-subscribe in StrictMode / HMR
+  const initialized = useRef(false)
 
   // ── Bootstrap ────────────────────────────────────────────────
   useEffect(() => {
@@ -14,66 +16,96 @@ export function AuthProvider({ children }) {
       setLoading(false)
       return
     }
+    if (initialized.current) return
+    initialized.current = true
 
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
-      setSession(s)
-      if (s) ensureProfile(s.user)
-      else setLoading(false)
-    }).catch(() => setLoading(false))
+    let mounted = true
+
+    supabase.auth.getSession()
+      .then(({ data: { session: s }, error }) => {
+        if (!mounted) return
+        if (error) console.warn('[ReciRing] getSession error (non-fatal):', error.message)
+        console.log('[ReciRing] bootstrap session:', !!s, s?.user?.email)
+        setSession(s)
+        if (s) ensureProfile(s.user)
+        else setLoading(false)
+      })
+      .catch((err) => {
+        console.warn('[ReciRing] getSession threw (non-fatal):', err?.message)
+        if (mounted) setLoading(false)
+      })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, s) => {
+      (event, s) => {
+        console.log('[ReciRing] auth event:', event, 'session:', !!s, 'user:', s?.user?.email)
+        if (!mounted) return
+        // Ignore token refresh noise for session state — session reference
+        // stays stable, no need to re-trigger profile loads.
+        if (event === 'TOKEN_REFRESHED') {
+          setSession(s)
+          return
+        }
         setSession(s)
         if (s) ensureProfile(s.user)
         else { setProfile(null); setLoading(false) }
       },
     )
-    return () => subscription.unsubscribe()
+
+    return () => {
+      mounted = false
+      subscription?.unsubscribe()
+    }
   }, [])
 
-  // ── Ensure profile row exists (auto-create on first sign-in) ─
+  // ── Ensure profile row exists — never block the app on failure ─
   async function ensureProfile(user) {
-    // Try to fetch existing profile
-    const { data: existing, error: fetchError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .maybeSingle()
+    try {
+      const { data: existing, error: fetchError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .maybeSingle()
 
-    if (fetchError) {
-      console.error('Profile fetch error:', fetchError)
+      if (fetchError) {
+        console.error('[ReciRing] Profile fetch error (non-fatal):', fetchError)
+        setProfile({ id: user.id, email: user.email, name: user.email?.split('@')[0] || 'Member', avatar_url: null })
+        setLoading(false)
+        return
+      }
+
+      if (existing) {
+        console.log('[ReciRing] Profile loaded for', user.email)
+        setProfile(existing)
+        setLoading(false)
+        return
+      }
+
+      console.log('[ReciRing] Creating new profile for', user.email)
+      const { data: created, error: insertError } = await supabase
+        .from('profiles')
+        .insert({
+          id:         user.id,
+          email:      user.email,
+          name:       user.user_metadata?.full_name || user.email?.split('@')[0] || 'Member',
+          avatar_url: null,
+        })
+        .select()
+        .single()
+
+      if (insertError) {
+        console.error('[ReciRing] Profile create error (non-fatal):', insertError)
+        setProfile({ id: user.id, email: user.email, name: user.email?.split('@')[0] || 'Member', avatar_url: null })
+      } else {
+        setProfile(created)
+      }
+    } catch (err) {
+      console.error('[ReciRing] ensureProfile threw (non-fatal):', err)
+      setProfile({ id: user.id, email: user.email, name: 'Member', avatar_url: null })
+    } finally {
       setLoading(false)
-      return
     }
-
-    if (existing) {
-      setProfile(existing)
-      setLoading(false)
-      return
-    }
-
-    // No row yet — create one with defaults
-    const { data: created, error: insertError } = await supabase
-      .from('profiles')
-      .insert({
-        id:           user.id,
-        email:        user.email,
-        name:         'Anonymous',
-        avatar_url:   null,
-        is_anonymous: true,
-      })
-      .select()
-      .single()
-
-    if (insertError) {
-      console.error('Profile create error:', insertError)
-    } else {
-      setProfile(created)
-    }
-    setLoading(false)
   }
 
-  // ── Sign up ──────────────────────────────────────────────────
   async function signUp(email, password) {
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -83,30 +115,32 @@ export function AuthProvider({ children }) {
     return { data, error }
   }
 
-  // ── Sign in ──────────────────────────────────────────────────
   async function signIn(email, password) {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     return { data, error }
   }
 
-  // ── Sign in with Google OAuth ───────────────────────────────
   async function signInWithGoogle() {
     if (!isSupabaseConfigured) return { error: new Error('Supabase not configured.') }
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin },
+      options: {
+        redirectTo: window.location.origin,
+        queryParams: { prompt: 'select_account' },
+      },
     })
     return { data, error }
   }
 
-  // ── Sign out ─────────────────────────────────────────────────
   async function signOut() {
-    if (isSupabaseConfigured) await supabase.auth.signOut()
+    if (isSupabaseConfigured) {
+      try { await supabase.auth.signOut() }
+      catch (err) { console.warn('[ReciRing] signOut error (ignored):', err?.message) }
+    }
     setSession(null)
     setProfile(null)
   }
 
-  // ── Update profile ───────────────────────────────────────────
   async function updateProfile(updates) {
     if (!isSupabaseConfigured || !session?.user) {
       return { error: new Error('Not signed in.') }
@@ -121,11 +155,6 @@ export function AuthProvider({ children }) {
     return { data, error }
   }
 
-  // ── Delete account ───────────────────────────────────────────
-  // Client-side can only delete the user's own row in `profiles`
-  // (RLS allows it). Removing the auth.users record requires the
-  // service-role key — must be done via an Edge Function or admin
-  // endpoint. We delete app data + sign out, and report `partial`.
   async function deleteAccount() {
     if (!isSupabaseConfigured || !session?.user) {
       return { error: new Error('Not signed in.') }
@@ -143,8 +172,7 @@ export function AuthProvider({ children }) {
     return { partial: true }
   }
 
-  // ── Derived viewer profile for match ranking (fallback) ──────
-  const viewerProfile = null  // new schema doesn't carry strengths/industries; CardStack uses DEFAULT
+  const viewerProfile = null
 
   return (
     <AuthContext.Provider value={{
