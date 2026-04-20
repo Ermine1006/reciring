@@ -145,14 +145,31 @@ export function AuthProvider({ children }) {
     if (!isSupabaseConfigured || !session?.user) {
       return { error: new Error('Not signed in.') }
     }
-    const { data, error } = await supabase
-      .from('profiles')
-      .update(updates)
-      .eq('id', session.user.id)
-      .select()
-      .single()
-    if (!error && data) setProfile(data)
-    return { data, error }
+    // Only pass JSON-safe scalar/array values — prevents circular refs
+    const safe = {}
+    for (const [k, v] of Object.entries(updates)) {
+      const t = typeof v
+      if (t === 'string' || t === 'number' || t === 'boolean' || v === null || Array.isArray(v)) {
+        safe[k] = v
+      }
+    }
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update(safe)
+        .eq('id', session.user.id)
+        .select()
+        .single()
+      if (error) {
+        console.error('[ReciRing] updateProfile error:', error.message || error.code)
+        return { error: new Error(error.message || 'Profile update failed') }
+      }
+      if (data) setProfile(data)
+      return { data, error: null }
+    } catch (err) {
+      console.error('[ReciRing] updateProfile threw:', err?.message)
+      return { error: new Error(err?.message || 'Profile update failed') }
+    }
   }
 
   async function deleteAccount() {
@@ -172,7 +189,10 @@ export function AuthProvider({ children }) {
     return { partial: true }
   }
 
-  const viewerProfile = null
+  // Derive viewer profile for match ranking from onboarding data
+  const viewerProfile = (profile?.can_help_with?.length && profile?.industry_interests?.length)
+    ? { strengths: profile.can_help_with, industries: profile.industry_interests }
+    : null
 
   return (
     <AuthContext.Provider value={{

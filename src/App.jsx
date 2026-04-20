@@ -13,12 +13,13 @@ import LoginScreen from './components/LoginScreen'
 import EmailConfirmed from './components/EmailConfirmed'
 import NewMatchModal from './components/NewMatchModal'
 import SettingsPage, { resolveAvatarSeed } from './components/SettingsPage'
+import OnboardingProfile from './components/OnboardingProfile'
 import AnonymousAvatar from './components/AnonymousAvatar'
 import MyPostsPage from './components/MyPostsPage'
 import { submitReport, blockUser, fetchBlockedIds } from './lib/safety'
 import { isSupabaseConfigured, supabase } from './lib/supabase'
 import { fetchPosts, createPost, updatePost } from './lib/posts'
-import { createMatch, fetchMyMatches, matchToUI } from './lib/matches'
+import { createMatch, fetchMyMatches, fetchMatchedPostIds, unmatchMatch, matchToUI } from './lib/matches'
 import { fetchMessages, sendMessage, sendMeetingProposal, updateMeetingStatus, msgToUI } from './lib/messages'
 
 /* ─── Design tokens ─────────────────────────────────────────────── */
@@ -144,6 +145,7 @@ function AppShell() {
   const [pastReviews, setPastReviews] = useState([]) // full review objects for display
   const [profileHovered, setProfileHovered] = useState(false)
   const [blockedIds, setBlockedIds] = useState(new Set())
+  const [matchedPostIds, setMatchedPostIds] = useState(new Set())
 
   // ── New Match popup state ────────────────────────────────────
   const [newMatchModalOpen, setNewMatchModalOpen] = useState(false)
@@ -192,6 +194,15 @@ function AppShell() {
   }, [user?.id])
 
   useEffect(() => { loadMatches() }, [loadMatches])
+
+  // Load post IDs that already have an active match involving me
+  const loadMatchedPostIds = useCallback(async () => {
+    if (!isSupabaseConfigured || !user) return
+    const { data } = await fetchMatchedPostIds(user.id)
+    setMatchedPostIds(new Set(data))
+  }, [user?.id])
+
+  useEffect(() => { loadMatchedPostIds() }, [loadMatchedPostIds])
 
   // Load messages when entering a chat
   const loadMessages = useCallback(async (matchId) => {
@@ -294,6 +305,29 @@ function AppShell() {
         { event: 'INSERT', schema: 'public', table: 'matches', filter: `helper_user_id=eq.${uid}` },
         () => { loadMatches() }
       )
+      // UPDATE: handles unmatch (status → 'unmatched'), completion, etc.
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'matches', filter: `requester_user_id=eq.${uid}` },
+        (payload) => {
+          if (payload.new.status === 'unmatched' || payload.new.status === 'cancelled') {
+            setMatches(prev => prev.filter(m => m.id !== payload.new.id))
+          } else {
+            loadMatches()
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'matches', filter: `helper_user_id=eq.${uid}` },
+        (payload) => {
+          if (payload.new.status === 'unmatched' || payload.new.status === 'cancelled') {
+            setMatches(prev => prev.filter(m => m.id !== payload.new.id))
+          } else {
+            loadMatches()
+          }
+        }
+      )
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
@@ -335,17 +369,26 @@ function AppShell() {
     })
   }, [user?.id])
 
-  // Load reviewed match IDs (so we can hide them from the pending review list)
+  // Load reviewed match IDs + past reviews with post context
   const loadReviewedMatchIds = useCallback(async () => {
     if (!isSupabaseConfigured || !user) return
     const { data, error } = await supabase
       .from('reviews')
-      .select('id, match_id, rating, comment, created_at')
+      .select(`
+        id, match_id, rating, comment, created_at,
+        match:matches (
+          post:posts ( need_text, offer_text )
+        )
+      `)
       .eq('reviewer_user_id', user.id)
       .order('created_at', { ascending: false })
     if (error) { console.error('[ReciRing] Failed to load reviews:', error); return }
     setReviewedMatchIds(new Set((data || []).map(r => r.match_id)))
-    setPastReviews(data || [])
+    setPastReviews((data || []).map(r => ({
+      ...r,
+      postNeeds:  r.match?.post?.need_text || null,
+      postOffers: r.match?.post?.offer_text || null,
+    })))
   }, [user?.id])
 
   useEffect(() => { loadReviewedMatchIds() }, [loadReviewedMatchIds])
@@ -356,15 +399,16 @@ function AppShell() {
     [matches, reviewedMatchIds]
   )
 
-  // Filter out blocked users' posts + own posts
+  // Filter out blocked users' posts, own posts, and already-matched posts
   const visibleRequests = useMemo(
     () => requests.filter(r => {
       const creatorId = r.created_by || r.poster_id
       // if (creatorId && user && creatorId === user.id) return false  // TEMP: show own posts in Discover for demo
       if (creatorId && blockedIds.has(creatorId))     return false     // hide blocked
+      if (r.id && matchedPostIds.has(r.id))           return false     // hide already-matched
       return true
     }),
-    [requests, blockedIds, user?.id]
+    [requests, blockedIds, matchedPostIds, user?.id]
   )
 
   // ── Safety handlers ──────────────────────────────────────────
@@ -465,9 +509,9 @@ function AppShell() {
   }
 
   // ── Match: user picks up a post ──────────────────────────────
-  const handleMatchConfirm = async ({ request }, actionType) => {
+  const handleMatchConfirm = async ({ request }) => {
     if (!user || !isSupabaseConfigured) return
-    const { data, error } = await createMatch(user.id, request, actionType || 'quick_intro')
+    const { data, error } = await createMatch(user.id, request)
     if (error) {
       if (error.code === '23505') { // unique violation — already matched
         alert('You already picked up this request.')
@@ -477,10 +521,36 @@ function AppShell() {
       }
       return
     }
-    // Reload matches so the new one shows up
+    // Reload matches + matched post IDs so the new one shows up
     await loadMatches()
+    await loadMatchedPostIds()
     setChatMatchId(data.id)
     setTab('matches')
+  }
+
+  // ── Unmatch: soft-delete the match, restore post in Discover ─
+  const unmatchingRef = useRef(new Set())
+  const handleUnmatch = async (matchId) => {
+    if (!user || !isSupabaseConfigured) return
+    if (unmatchingRef.current.has(matchId)) return // already in flight
+    unmatchingRef.current.add(matchId)
+    console.log('[ReciRing] Unmatching:', matchId)
+
+    // Optimistic: remove from UI immediately
+    setMatches(prev => prev.filter(m => m.id !== matchId))
+    if (chatMatchId === matchId) setChatMatchId(null)
+
+    const { error } = await unmatchMatch(matchId)
+    unmatchingRef.current.delete(matchId)
+    if (error) {
+      console.error('[ReciRing] Unmatch failed:', error)
+      alert('Failed to unmatch: ' + (error.message || JSON.stringify(error)) +
+        '\n\nHave you run the migration-unmatch.sql script in Supabase SQL Editor?')
+      await loadMatches()
+      return
+    }
+    console.log('[ReciRing] Unmatch succeeded for', matchId)
+    await Promise.all([loadMatches(), loadMatchedPostIds()])
   }
 
   // ── Send a text message ─────────────────────────────────────
@@ -800,6 +870,7 @@ function AppShell() {
                 onNavigateReview={() => { setReviewMatchId(chatMatchId); setChatMatchId(null); setTab('reviews') }}
                 onReport={handleReport}
                 onBlock={handleBlock}
+                onUnmatch={() => handleUnmatch(chatMatchId)}
               />
             </div>
           )}
@@ -885,7 +956,7 @@ function AppShell() {
 
 /* ─── Root App — auth gate ─────────────────────────────────────── */
 function AppRoot() {
-  const { session, loading, isConfigured } = useAuth()
+  const { session, profile, loading, isConfigured } = useAuth()
 
   // 1. No backend → skip auth entirely
   if (!isConfigured) return <AppShell />
@@ -914,8 +985,15 @@ function AppRoot() {
     )
   }
 
-  // 4. Configured + bootstrapped → gate on session
+  // 4. Not logged in
   if (!session) return <LoginScreen />
+
+  // 5. Logged in but hasn't completed onboarding
+  //    Only gate if the column exists (i.e. migration has been run).
+  //    If onboarding_done is undefined, the column doesn't exist — skip.
+  if (profile && profile.onboarding_done === false) return <OnboardingProfile />
+
+  // 6. Fully onboarded
   return <AppShell />
 }
 

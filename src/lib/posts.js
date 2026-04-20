@@ -8,14 +8,27 @@ import { supabase, isSupabaseConfigured } from './supabase'
 export async function fetchPosts() {
   if (!isSupabaseConfigured) return { data: null, error: null }
 
+  // Try with profile join first for ranking data
   const { data, error } = await supabase
     .from('posts')
-    .select('*')
+    .select(`
+      *,
+      creator:profiles ( total_points, meetings_scheduled, meetings_completed )
+    `)
     .order('created_at', { ascending: false })
 
-  if (error) return { data: null, error }
+  // If the join fails (no FK relationship), fall back to plain select
+  if (error) {
+    console.warn('[ReciRing] Posts+profiles join failed, falling back:', error.message)
+    const { data: plain, error: plainErr } = await supabase
+      .from('posts')
+      .select('*')
+      .order('created_at', { ascending: false })
+    if (plainErr) return { data: null, error: plainErr }
+    return { data: (plain || []).map(rowToCard), error: null }
+  }
 
-  return { data: data.map(rowToCard), error: null }
+  return { data: (data || []).map(rowToCard), error: null }
 }
 
 /**
@@ -76,17 +89,24 @@ export async function updatePost(postId, userId, fields) {
  * Map a raw DB row to the card shape expected by CardStack / RequestCard.
  */
 export function rowToCard(row) {
+  const creator = row.creator || {}
   return {
-    id:         row.id,
-    created_by: row.created_by,
-    needs:      row.need_text,
-    offers:     row.offer_text,
-    category:   row.help_type?.[0] || 'Other',
-    tags:       [...(row.help_type || []), ...(row.industry_tag || [])],
-    time:       row.time_commitment || '15 min',
-    urgency:    row.urgency,
-    createdAt:  formatRelative(row.created_at),
-    poster:     { points: 0, scheduled: 0, completed: 0, industries: row.industry_tag || [] },
+    id:           row.id,
+    created_by:   row.created_by,
+    needs:        row.need_text,
+    offers:       row.offer_text,
+    category:     row.help_type?.[0] || 'Other',
+    tags:         [...(row.help_type || []), ...(row.industry_tag || [])],
+    time:         row.time_commitment || '15 min',
+    urgency:      row.urgency,
+    createdAt:    formatRelative(row.created_at),
+    createdAtRaw: row.created_at,   // ISO string for freshness scoring
+    poster: {
+      points:     creator.total_points       || 0,
+      scheduled:  creator.meetings_scheduled || 0,
+      completed:  creator.meetings_completed || 0,
+      industries: row.industry_tag || [],
+    },
   }
 }
 

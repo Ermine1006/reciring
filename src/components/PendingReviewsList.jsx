@@ -189,6 +189,34 @@ export default function PendingReviewsList({ matches = [], pastReviews = [], all
                     </p>
                   </div>
 
+                  {/* Exchange context */}
+                  {(r.postNeeds || r.postOffers) && (
+                    <div style={{
+                      marginBottom: 8,
+                      background: C.goldBg, borderRadius: 10,
+                      padding: '8px 12px',
+                      border: `1px solid ${C.goldLight}`,
+                    }}>
+                      <p style={{
+                        fontSize: 10, fontWeight: 600, letterSpacing: '0.12em',
+                        textTransform: 'uppercase', color: C.gold, marginBottom: 4,
+                        fontFamily: 'Inter, system-ui, sans-serif',
+                      }}>
+                        Reviewed exchange
+                      </p>
+                      <p style={{
+                        fontSize: 11, color: C.textSub, lineHeight: 1.45,
+                        fontFamily: 'Inter, system-ui, sans-serif',
+                        display: '-webkit-box', WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                      }}>
+                        {r.postNeeds && <><strong style={{ color: C.goldDark }}>Needs:</strong> {r.postNeeds}</>}
+                        {r.postNeeds && r.postOffers && <span style={{ margin: '0 6px', color: C.goldLight }}>·</span>}
+                        {r.postOffers && <><strong style={{ color: C.goldDark }}>Offers:</strong> {r.postOffers}</>}
+                      </p>
+                    </div>
+                  )}
+
                   {r.comment ? (
                     <p style={{
                       fontSize: 12, color: C.textSub, lineHeight: 1.5,
@@ -202,16 +230,6 @@ export default function PendingReviewsList({ matches = [], pastReviews = [], all
                   ) : (
                     <p style={{ fontSize: 12, color: C.textMuted, fontStyle: 'italic' }}>
                       No written review
-                    </p>
-                  )}
-
-                  {match?.request?.needs && (
-                    <p style={{
-                      fontSize: 11, color: C.textMuted, marginTop: 8,
-                      fontFamily: 'Inter, system-ui, sans-serif',
-                      whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                    }}>
-                      Re: {match.request.needs}
                     </p>
                   )}
                 </div>

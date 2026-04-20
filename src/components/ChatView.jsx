@@ -177,7 +177,7 @@ function shouldRevealIdentity(messages) {
   return false
 }
 
-export default function ChatView({ match, messages, onSend, onProposeMeeting, onMeetingResponse, onBack, autoOpenSchedule, onScheduleOpened, scheduleFeedback, onNavigateReview, peerProfile, onReport, onBlock }) {
+export default function ChatView({ match, messages, onSend, onProposeMeeting, onMeetingResponse, onBack, autoOpenSchedule, onScheduleOpened, scheduleFeedback, onNavigateReview, peerProfile, onReport, onBlock, onUnmatch }) {
   const [input, setInput]               = useState('')
   const [showCoffee, setShowCoffee]     = useState(false)
   const [showFollowUp, setShowFollowUp] = useState(false)
@@ -303,6 +303,25 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
                   }}
                 >
                   Review user
+                </button>
+              )}
+              {onUnmatch && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowSafetyMenu(false)
+                    if (window.confirm('Unmatch this person? The original post will reappear in Discover for both of you.')) {
+                      onUnmatch()
+                    }
+                  }}
+                  style={{
+                    display: 'block', width: '100%', textAlign: 'left',
+                    padding: '11px 16px', fontSize: 13, fontWeight: 500,
+                    color: '#C8A96A', background: 'none', border: 'none', cursor: 'pointer',
+                    borderTop: '1px solid #F3F4F6',
+                  }}
+                >
+                  Unmatch
                 </button>
               )}
               <button

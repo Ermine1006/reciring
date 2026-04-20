@@ -1,22 +1,23 @@
 // ── Match ranking utility ──────────────────────────────────────────
 //
-// Scores each request from the VIEWER's perspective:
-//   "How relevant is this request to ME, and how trustworthy is the poster?"
+// Scores each request from the VIEWER's perspective.
 //
-// Score breakdown (0–100):
-//   Relevance:        0–50  (viewer strengths vs request needs/tags + viewer industry vs request topic)
-//   Poster trust:     0–30  (poster's completion rate — surface reliable people first)
-//   Poster activity:  0–15  (poster's contribution points — light signal of engagement)
-//   Urgency fit:      0–5   (boost for time-sensitive requests)
+// Redesigned formula (0–100) to reward reciprocity and prevent gaming:
 //
-// Viewer reliability/activity are constant across all cards so they
-// don't affect relative ordering — they're intentionally excluded.
+//   Relevance:     0–40  (viewer strengths vs request tags + industry overlap)
+//   Reciprocity:   0–30  (balance between giving and receiving help)
+//   Freshness:     0–20  (newer posts surface higher — prevents stale feed)
+//   Urgency:       0–10  (boost for time-sensitive requests)
+//
+// Why this replaces the old formula:
+//   - Old "poster trust" (completion rate) punished busy users and was easy to game
+//   - Old "poster activity" (raw points) created winner-takes-all feedback loops
+//   - Reciprocity rewards balanced users — pure takers get deprioritized
+//   - Freshness prevents early adopters from permanently dominating the feed
 
 import { normalizeIndustry } from './requestOptions'
 
 // ── Default viewer profile (fallback when no auth) ───────────────
-// In production the real profile is passed from AuthContext.
-// Uses canonical labels from requestOptions.js.
 export const DEFAULT_VIEWER_PROFILE = {
   strengths:  ['Consulting', 'Referral', 'Coffee Chat', 'Resume Review', 'Intro'],
   industries: ['Consulting', 'Investment Banking'],
@@ -25,58 +26,102 @@ export const DEFAULT_VIEWER_PROFILE = {
 // ── Helpers ───────────────────────────────────────────────────────
 
 function fuzzyMatch(a, b) {
-  // Normalize both sides so 'IB' matches 'Investment Banking', etc.
   const an = normalizeIndustry(a).toLowerCase()
   const bn = normalizeIndustry(b).toLowerCase()
   return an.includes(bn) || bn.includes(an)
 }
 
-// ── Scoring ───────────────────────────────────────────────────────
+// ── Scoring components ───────────────────────────────────────────
 
 function relevanceScore(request, viewer) {
-  // 1) Tag overlap: do the request's tags match what the viewer can help with?
-  //    e.g. request tags ['Consulting', 'Coffee Chat'] vs viewer strengths ['Consulting', 'Referral', 'Coffee Chat']
+  // 1) Tag overlap (0–24): request tags vs viewer's strengths
   const tags = request.tags || []
   const tagHits = tags.filter(t => viewer.strengths.some(s => fuzzyMatch(t, s))).length
-  const tagScore = tags.length > 0 ? (tagHits / tags.length) * 30 : 10 // 0–30
+  const tagScore = tags.length > 0 ? (tagHits / tags.length) * 24 : 8
 
-  // 2) Industry overlap: does the request's topic/category relate to the viewer's industry background?
-  //    We check both the request tags AND the request category against the viewer's industries.
-  //    This answers: "Is this request in a domain I know?"
+  // 2) Industry overlap (0–16): request topics vs viewer's industries
   const topicSignals = [...tags, request.category || ''].filter(Boolean)
   const indHits = viewer.industries.filter(ind =>
     topicSignals.some(sig => fuzzyMatch(sig, ind))
   ).length
-  const indScore = viewer.industries.length > 0 ? (indHits / viewer.industries.length) * 20 : 5 // 0–20
+  const indScore = viewer.industries.length > 0 ? (indHits / viewer.industries.length) * 16 : 4
 
   return Math.round(tagScore + indScore)
 }
 
-function posterTrustScore(request) {
+function reciprocityScore(request) {
+  // Measures how balanced the poster is between giving and receiving.
+  //
+  // given    = meetings completed as helper (helped others)
+  // received = matches where they were the requester (received help)
+  //
+  // We approximate from available stats:
+  //   poster.completed = total meetings completed (both roles)
+  //   poster.scheduled = total meetings scheduled (both roles)
+  //   poster.points    = total contribution points (weighted toward helping)
+  //
+  // Reciprocity ratio: min(given, received) / max(given, received)
+  //   - 1.0 = perfect balance → 30 pts
+  //   - 0.0 = pure taker or pure giver → 0 pts
+  //   - New user (no data) → 15 pts (neutral)
   const p = request.poster
-  if (!p || !p.scheduled || p.scheduled === 0) return 15 // neutral — don't penalize new users
-  const rate = p.completed / p.scheduled
-  return Math.round(rate * 30) // 0–30
+  if (!p) return 15
+
+  const given    = p.completed || 0   // times they followed through
+  const received = p.scheduled || 0   // times they scheduled (asked for help)
+
+  // New user: no data → neutral
+  if (given === 0 && received === 0) return 15
+
+  // Edge case: only given, never received (pure giver) — still good, slight penalty
+  if (received === 0) return Math.min(given * 3, 25)
+
+  // Edge case: only received, never given (pure taker) — low score
+  if (given === 0) return Math.max(5 - received, 0)
+
+  const ratio = Math.min(given, received) / Math.max(given, received)
+  return Math.round(ratio * 30)
 }
 
-function posterActivityScore(request) {
-  const points = request.poster?.points || 0
-  // Cap at 300 pts = full 15 points. Prevents popularity from dominating.
-  return Math.round(Math.min(points / 300, 1) * 15)
+function freshnessScore(request) {
+  // Newer posts get a boost. Posts older than 7 days get 0.
+  // This prevents the feed from being dominated by stale posts
+  // from early adopters who accumulated high scores.
+  const createdStr = request.createdAtRaw || request.created_at
+  if (!createdStr) return 10 // no timestamp → neutral
+
+  const ageMs = Date.now() - new Date(createdStr).getTime()
+  const ageHours = ageMs / (1000 * 60 * 60)
+
+  if (ageHours < 1)   return 20   // just posted
+  if (ageHours < 6)   return 17
+  if (ageHours < 24)  return 14
+  if (ageHours < 48)  return 10
+  if (ageHours < 72)  return 7
+  if (ageHours < 168) return 4    // up to 7 days
+  return 0                        // older than a week
 }
 
 function urgencyBonus(request) {
-  if (request.urgency === 'urgent') return 5
-  if (request.urgency === 'soon')   return 3
+  if (request.urgency === 'urgent') return 10
+  if (request.urgency === 'soon')   return 5
   return 0
 }
 
+// ── Main scoring function ────────────────────────────────────────
+
 export function getMatchScore(request, viewer = DEFAULT_VIEWER_PROFILE) {
-  const relevance = relevanceScore(request, viewer)
-  const trust     = posterTrustScore(request)
-  const activity  = posterActivityScore(request)
-  const urgency   = urgencyBonus(request)
-  return { total: relevance + trust + activity + urgency, relevance, trust, activity, urgency }
+  const relevance   = relevanceScore(request, viewer)
+  const reciprocity = reciprocityScore(request)
+  const freshness   = freshnessScore(request)
+  const urgency     = urgencyBonus(request)
+  return {
+    total: relevance + reciprocity + freshness + urgency,
+    relevance,
+    reciprocity,
+    freshness,
+    urgency,
+  }
 }
 
 // ── Match reason (human-readable) ─────────────────────────────────
@@ -92,20 +137,28 @@ export function getMatchReason(request, viewer = DEFAULT_VIEWER_PROFILE) {
     parts.push(`Strong fit: ${tagStr}`)
   }
 
-  // Poster trust
+  // Reciprocity signal
   const p = request.poster
-  if (p?.scheduled && p.scheduled >= 3) {
-    const rate = Math.round((p.completed / p.scheduled) * 100)
-    if (rate > 90) parts.push(`highly reliable (${rate}%)`)
-    else if (rate > 80) parts.push(`reliable peer (${rate}%)`)
+  if (p) {
+    const given = p.completed || 0
+    const received = p.scheduled || 0
+    if (given >= 3 && received >= 2) {
+      const ratio = Math.round((Math.min(given, received) / Math.max(given, received)) * 100)
+      if (ratio >= 80) parts.push('active reciprocator')
+      else if (ratio >= 50) parts.push('balanced contributor')
+    } else if (given >= 3 && parts.length < 2) {
+      parts.push('proven helper')
+    }
   }
 
-  // Poster activity (only if we need a second reason)
-  if (p?.points >= 200 && parts.length < 2) {
-    parts.push('active contributor')
+  // Freshness
+  const createdStr = request.createdAtRaw || request.created_at
+  if (createdStr) {
+    const ageHours = (Date.now() - new Date(createdStr).getTime()) / (1000 * 60 * 60)
+    if (ageHours < 2 && parts.length < 2) parts.push('just posted')
   }
 
-  // Urgency (only if we need a second reason)
+  // Urgency
   if (request.urgency === 'urgent' && parts.length < 2) {
     parts.push('urgent request')
   }

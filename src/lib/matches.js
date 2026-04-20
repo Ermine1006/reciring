@@ -4,9 +4,8 @@ import { supabase, isSupabaseConfigured } from './supabase'
  * Create a match: the current user (helper) picks up a post.
  * Returns { data: matchRow, error }
  */
-export async function createMatch(helperUserId, post, actionType) {
+export async function createMatch(helperUserId, post) {
   if (!isSupabaseConfigured) return { data: null, error: new Error('Supabase not configured.') }
-  if (!actionType) return { data: null, error: new Error('action_type is required.') }
 
   const { data, error } = await supabase
     .from('matches')
@@ -14,7 +13,6 @@ export async function createMatch(helperUserId, post, actionType) {
       post_id:           post.id,
       requester_user_id: post.created_by,
       helper_user_id:    helperUserId,
-      action_type:       actionType,
     })
     .select()
     .single()
@@ -23,7 +21,7 @@ export async function createMatch(helperUserId, post, actionType) {
 }
 
 /**
- * Fetch all matches for the current user (as requester or helper).
+ * Fetch all ACTIVE matches for the current user (as requester or helper).
  * Joins the related post so the UI can show the request context.
  * Returns { data: [matchRow], error }
  */
@@ -40,9 +38,51 @@ export async function fetchMyMatches(userId) {
       )
     `)
     .or(`requester_user_id.eq.${userId},helper_user_id.eq.${userId}`)
+    .neq('status', 'unmatched')
     .order('created_at', { ascending: false })
 
   return { data: data || [], error }
+}
+
+/**
+ * Fetch post IDs that have any active match involving the given user.
+ * Used to hide already-matched posts from the Discover feed.
+ */
+export async function fetchMatchedPostIds(userId) {
+  if (!isSupabaseConfigured) return { data: [], error: null }
+
+  const { data, error } = await supabase
+    .from('matches')
+    .select('post_id')
+    .or(`requester_user_id.eq.${userId},helper_user_id.eq.${userId}`)
+    .eq('status', 'active')
+
+  if (error) return { data: [], error }
+  return { data: (data || []).map(r => r.post_id), error: null }
+}
+
+/**
+ * Unmatch — soft-delete by setting status to 'unmatched'.
+ * Uses .select() to verify the row was actually updated (RLS can silently
+ * block updates, returning no error but also no rows).
+ */
+export async function unmatchMatch(matchId) {
+  if (!isSupabaseConfigured) return { error: new Error('Supabase not configured.') }
+
+  const { data, error } = await supabase
+    .from('matches')
+    .update({ status: 'unmatched' })
+    .eq('id', matchId)
+    .select('id, status')
+
+  if (error) return { error }
+  if (!data || data.length === 0) {
+    return { error: new Error('Unmatch had no effect — the row was not updated. Check your DB CHECK constraint and RLS policies.') }
+  }
+  if (data[0].status !== 'unmatched') {
+    return { error: new Error(`Status is "${data[0].status}" instead of "unmatched" — CHECK constraint may be blocking the value.`) }
+  }
+  return { error: null }
 }
 
 /**

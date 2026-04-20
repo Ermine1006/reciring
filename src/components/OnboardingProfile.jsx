@@ -22,34 +22,39 @@ function Chip({ label, active, onClick }) {
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={() => onClick(label)}
       className="transition-all duration-150 active:scale-95"
       style={{
-        padding: '6px 14px', borderRadius: 99,
+        padding: '7px 16px', borderRadius: 99,
         fontSize: 12, fontWeight: 600, fontFamily: 'Inter, system-ui, sans-serif',
         cursor: 'pointer',
-        background: active ? C.goldBg : C.white,
+        background: active
+          ? `linear-gradient(135deg, ${C.goldBg}, rgba(200,169,106,0.18))`
+          : C.white,
         color: active ? C.goldDark : C.textSub,
         border: `1.5px solid ${active ? C.gold : C.border}`,
-        boxShadow: active ? '0 2px 8px rgba(200,169,106,0.2)' : 'none',
+        boxShadow: active
+          ? '0 2px 10px rgba(200,169,106,0.25), inset 0 1px 0 rgba(255,255,255,0.6)'
+          : '0 1px 2px rgba(0,0,0,0.04)',
       }}
     >
+      {active && <span style={{ marginRight: 4 }}>&#10003;</span>}
       {label}
     </button>
   )
 }
 
 export default function OnboardingProfile() {
-  const { createProfile, user } = useAuth()
+  const { updateProfile, user } = useAuth()
 
-  const [firstName, setFirstName]             = useState('')
-  const [program, setProgram]                 = useState('')
+  const [displayName, setDisplayName]            = useState('')
+  const [program, setProgram]                    = useState('')
   const [industryInterests, setIndustryInterests] = useState([])
-  const [canHelpWith, setCanHelpWith]         = useState([])
-  const [saving, setSaving]                   = useState(false)
-  const [error, setError]                     = useState(null)
+  const [canHelpWith, setCanHelpWith]            = useState([])
+  const [saving, setSaving]                      = useState(false)
+  const [error, setError]                        = useState(null)
 
-  const toggleList = (list, setList, max) => (val) => {
+  const toggleList = (setList, max) => (val) => {
     setList(prev =>
       prev.includes(val)
         ? prev.filter(v => v !== val)
@@ -57,7 +62,7 @@ export default function OnboardingProfile() {
     )
   }
 
-  const canSubmit = firstName.trim() && program && industryInterests.length > 0 && canHelpWith.length > 0
+  const canSubmit = displayName.trim() && program && industryInterests.length > 0 && canHelpWith.length > 0
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -65,11 +70,12 @@ export default function OnboardingProfile() {
     setSaving(true)
     setError(null)
 
-    const { error: err } = await createProfile({
-      firstName: firstName.trim(),
+    const { error: err } = await updateProfile({
+      name:               displayName.trim(),
       program,
-      industryInterests,
-      canHelpWith,
+      industry_interests: industryInterests,
+      can_help_with:      canHelpWith,
+      onboarding_done:    true,
     })
 
     setSaving(false)
@@ -90,6 +96,7 @@ export default function OnboardingProfile() {
           borderRadius: 28,
           padding: '40px 28px 36px',
           boxShadow: '0 20px 60px rgba(0,0,0,0.10), 0 4px 16px rgba(200,169,106,0.12)',
+          maxHeight: '90dvh', overflowY: 'auto',
         }}
       >
         <div className="flex justify-center mb-6">
@@ -103,23 +110,27 @@ export default function OnboardingProfile() {
           Set up your profile
         </h1>
         <p className="text-center mb-6" style={{ fontSize: 13, color: C.textSub, lineHeight: 1.5 }}>
-          This powers your matches. Only your first name is ever shown to peers.
+          This powers your matches. Your identity stays anonymous until you choose otherwise.
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* First name */}
+          {/* Display name */}
           <div>
             <label className="block text-[11px] tracking-[0.14em] uppercase font-semibold mb-2" style={{ color: C.textSub }}>
-              First name <span style={{ color: '#EF4444' }}>*</span>
+              Display name <span style={{ color: '#EF4444' }}>*</span>
             </label>
             <input
               type="text"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value.slice(0, 30))}
-              placeholder="How peers will know you"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value.slice(0, 30))}
+              placeholder="Pick a nickname — shown on leaderboard"
+              autoFocus
               className="w-full rounded-xl px-4 py-3 text-sm"
-              style={{ background: '#FAFAFA', border: `1.5px solid ${C.border}`, color: C.text }}
+              style={{ background: '#FAFAFA', border: `1.5px solid ${C.border}`, color: C.text, outline: 'none' }}
             />
+            <p className="mt-1.5" style={{ fontSize: 10, color: C.textMuted, lineHeight: 1.4 }}>
+              Does not need to be your real name. Visible on the monthly leaderboard.
+            </p>
           </div>
 
           {/* Email (read-only) */}
@@ -161,7 +172,7 @@ export default function OnboardingProfile() {
                   key={ind}
                   label={ind}
                   active={industryInterests.includes(ind)}
-                  onClick={toggleList(industryInterests, setIndustryInterests, 3)}
+                  onClick={toggleList(setIndustryInterests, 3)}
                 />
               ))}
             </div>
@@ -173,7 +184,7 @@ export default function OnboardingProfile() {
               I can help with <span style={{ color: '#EF4444' }}>*</span>
             </label>
             <p className="mb-2" style={{ fontSize: 11, color: C.textMuted }}>
-              Select up to 5 — shown as your strengths in match scoring
+              Select up to 5 — used to match you with the right requests
             </p>
             <div className="flex flex-wrap gap-2">
               {HELP_TYPES.map(ht => (
@@ -181,7 +192,7 @@ export default function OnboardingProfile() {
                   key={ht}
                   label={ht}
                   active={canHelpWith.includes(ht)}
-                  onClick={toggleList(canHelpWith, setCanHelpWith, 5)}
+                  onClick={toggleList(setCanHelpWith, 5)}
                 />
               ))}
             </div>
@@ -207,6 +218,21 @@ export default function OnboardingProfile() {
             }}
           >
             {saving ? 'Saving...' : 'Start discovering'}
+          </button>
+
+          {/* Skip link */}
+          <button
+            type="button"
+            onClick={async () => {
+              setSaving(true)
+              await updateProfile({ onboarding_done: true })
+              setSaving(false)
+            }}
+            disabled={saving}
+            className="w-full mt-2 py-2 text-[12px] tracking-wide transition-opacity hover:opacity-60"
+            style={{ color: C.textMuted, background: 'none', border: 'none', cursor: 'pointer' }}
+          >
+            Skip for now
           </button>
         </form>
       </motion.div>
