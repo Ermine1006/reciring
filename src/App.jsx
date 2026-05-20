@@ -12,6 +12,8 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import LoginScreen from './components/LoginScreen'
 import EmailConfirmed from './components/EmailConfirmed'
 import NewMatchModal from './components/NewMatchModal'
+import NotificationBell from './components/NotificationBell'
+import PostMatchFeedbackPrompt from './components/PostMatchFeedbackPrompt'
 import SettingsPage, { resolveAvatarSeed } from './components/SettingsPage'
 import OnboardingProfile from './components/OnboardingProfile'
 import AnonymousAvatar from './components/AnonymousAvatar'
@@ -83,51 +85,6 @@ const TABS = [
     ),
   },
 ]
-
-/* ─── iOS-style status bar (light mode) ────────────────────────── */
-function StatusBar() {
-  return (
-    <div
-      className="flex-shrink-0 flex items-center justify-between px-7 pt-3.5 pb-1 select-none"
-      style={{ height: 48, color: C.text }}
-    >
-      <span className="text-[15px] font-semibold tracking-tight">9:41</span>
-
-      <div className="flex items-center gap-[6px]">
-        {/* Signal bars */}
-        <svg width="17" height="12" viewBox="0 0 17 12" fill="currentColor">
-          <rect x="0"    y="8"   width="3" height="4"    rx="0.8" />
-          <rect x="4.5"  y="5.5" width="3" height="6.5"  rx="0.8" />
-          <rect x="9"    y="3"   width="3" height="9"    rx="0.8" />
-          <rect x="13.5" y="0"   width="3" height="12"   rx="0.8" opacity="0.3" />
-        </svg>
-
-        {/* Wi-Fi */}
-        <svg width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
-          <circle cx="8" cy="10.5" r="1" fill="currentColor" stroke="none" />
-          <path d="M5 7.8A4.5 4.5 0 0111 7.8" />
-          <path d="M2.5 5.2a8 8 0 0111 0" />
-        </svg>
-
-        {/* Battery */}
-        <div className="flex items-center gap-[2px]">
-          <div
-            className="relative overflow-hidden flex items-center"
-            style={{
-              width: 25, height: 12,
-              border: `1.5px solid ${C.text}`,
-              borderRadius: 3.5,
-              opacity: 0.65,
-            }}
-          >
-            <div style={{ width: '72%', height: '100%', background: C.text, borderRadius: '2px 0 0 2px' }} />
-          </div>
-          <div style={{ width: 2, height: 5, background: C.text, borderRadius: 1, opacity: 0.4 }} />
-        </div>
-      </div>
-    </div>
-  )
-}
 
 /* ─── App shell (authenticated) ─────────────────────────────────── */
 function AppShell() {
@@ -361,6 +318,29 @@ function AppShell() {
     setNewMatchModalOpen(false)
   }, [latestNewMatch, persistAck])
 
+  // ── Post-match feedback prompt ───────────────────────────────
+  // Fires for matches >= 24h old that the viewer hasn't reviewed yet.
+  // Snooze persists in localStorage with a 48h TTL per match.
+  const [feedbackPromptOpen, setFeedbackPromptOpen]   = useState(false)
+  const [feedbackPromptMatch, setFeedbackPromptMatch] = useState(null)
+  const shownFeedbackRef = useRef(new Set()) // session-level dedupe
+  const snoozeKey = user ? `reciring:fbSnooze:${user.id}` : null
+
+  const loadSnoozeMap = useCallback(() => {
+    if (!snoozeKey) return {}
+    try { return JSON.parse(localStorage.getItem(snoozeKey) || '{}') }
+    catch { return {} }
+  }, [snoozeKey])
+
+  const persistSnooze = useCallback((matchId, hours = 48) => {
+    if (!snoozeKey) return
+    try {
+      const map = loadSnoozeMap()
+      map[matchId] = Date.now() + hours * 3600_000
+      localStorage.setItem(snoozeKey, JSON.stringify(map))
+    } catch {}
+  }, [snoozeKey, loadSnoozeMap])
+
   // Load blocked user ids on mount
   useEffect(() => {
     if (!user) return
@@ -398,6 +378,72 @@ function AppShell() {
     () => matches.filter(m => !reviewedMatchIds.has(m.id)),
     [matches, reviewedMatchIds]
   )
+
+  // Fire the post-match feedback prompt for the oldest ripe candidate.
+  // Ripe = pending review AND >= 24h old AND not snoozed AND not shown this session.
+  // Suppressed when other modals are open (new-match popup, review form, chat).
+  useEffect(() => {
+    if (!user || feedbackPromptOpen || newMatchModalOpen || reviewMatchId || chatMatchId) return
+    if (pendingReviewMatches.length === 0) return
+
+    const snooze = loadSnoozeMap()
+    const now = Date.now()
+    const RIPE_AFTER_MS = 24 * 3600_000
+
+    // Sort oldest-first so we ask about the longest-pending match
+    const candidate = [...pendingReviewMatches]
+      .filter(m => {
+        if (shownFeedbackRef.current.has(m.id)) return false
+        const snoozedUntil = snooze[m.id]
+        if (snoozedUntil && snoozedUntil > now) return false
+        const ageMs = now - new Date(m.createdAt).getTime()
+        return ageMs >= RIPE_AFTER_MS
+      })
+      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))[0]
+
+    if (candidate) {
+      shownFeedbackRef.current.add(candidate.id)
+      setFeedbackPromptMatch(candidate)
+      setFeedbackPromptOpen(true)
+    }
+  }, [pendingReviewMatches, user?.id, feedbackPromptOpen, newMatchModalOpen, reviewMatchId, chatMatchId, loadSnoozeMap])
+
+  const handleFeedbackReview = useCallback((matchId) => {
+    setFeedbackPromptOpen(false)
+    setReviewMatchId(matchId)
+    setTab('reviews')
+  }, [])
+
+  const handleFeedbackSnooze = useCallback(() => {
+    if (feedbackPromptMatch) persistSnooze(feedbackPromptMatch.id)
+    setFeedbackPromptOpen(false)
+  }, [feedbackPromptMatch, persistSnooze])
+
+  // ── Notification routing — bell click → correct view ─────────
+  const handleNotificationOpen = useCallback((n) => {
+    const matchId = n.payload?.match_id
+    switch (n.type) {
+      case 'new_match':
+      case 'new_message':
+      case 'meeting_confirmed':
+        if (matchId) {
+          setTab('matches')
+          setChatMatchId(matchId)
+        }
+        break
+      case 'feedback_request':
+        if (matchId) {
+          setReviewMatchId(matchId)
+          setTab('reviews')
+        }
+        break
+      case 'review_received':
+        setTab('reviews')
+        break
+      default:
+        break
+    }
+  }, [])
 
   // Filter out blocked users' posts, own posts, and already-matched posts
   const visibleRequests = useMemo(
@@ -618,6 +664,17 @@ function AppShell() {
       created_at: new Date().toISOString(),
     }, ...prev])
     setReviewMatchId(null)
+
+    // Clear any outstanding feedback_request notifications for this match
+    supabase
+      .from('notifications')
+      .update({ read_at: new Date().toISOString() })
+      .eq('user_id', user.id)
+      .eq('type', 'feedback_request')
+      .is('read_at', null)
+      .filter('payload->>match_id', 'eq', matchId)
+      .then(() => {})
+
     return {}
   }
 
@@ -659,13 +716,19 @@ function AppShell() {
           }}
         />
 
-        {/* Status bar */}
-        <StatusBar />
-
         {/* ── App header ────────────────────────────────────── */}
         <header className="flex-shrink-0 px-5 pt-2 pb-3" style={{ background: C.white }}>
           <div className="flex items-center justify-between">
             <ReciRingLogo size={34} />
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              {/* Notification bell */}
+              {user && (
+                <NotificationBell
+                  userId={user.id}
+                  onOpenNotification={handleNotificationOpen}
+                />
+              )}
 
             {/* Profile button + dropdown menu */}
             <div style={{ position: 'relative', flexShrink: 0 }}>
@@ -811,6 +874,7 @@ function AppShell() {
                 </>
               )}
             </div>
+            </div>
           </div>
 
           {/* Symmetric gold rule — fades to transparency at both edges */}
@@ -948,6 +1012,15 @@ function AppShell() {
           match={latestNewMatch}
           onView={handleNewMatchView}
           onDismiss={handleNewMatchDismiss}
+        />
+
+        {/* ── Post-match feedback prompt (24h after match) ────── */}
+        <PostMatchFeedbackPrompt
+          open={feedbackPromptOpen}
+          match={feedbackPromptMatch}
+          onReview={handleFeedbackReview}
+          onSnooze={handleFeedbackSnooze}
+          onUnmatch={(id) => { handleFeedbackSnooze(); handleUnmatch(id) }}
         />
       </div>
     </div>
