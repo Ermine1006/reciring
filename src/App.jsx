@@ -717,7 +717,10 @@ function AppShell() {
         />
 
         {/* ── App header ────────────────────────────────────── */}
-        <header className="flex-shrink-0 px-5 pt-2 pb-3" style={{ background: C.white }}>
+        <header
+          className="flex-shrink-0 px-5 pb-3 pt-5 sm:pt-14"
+          style={{ background: C.white }}
+        >
           <div className="flex items-center justify-between">
             <ReciRingLogo size={34} />
 
