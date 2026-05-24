@@ -4,8 +4,8 @@
 
 export const ALLOWED_EMAIL_DOMAIN = 'mail.utoronto.ca'
 
-// Additional domains allowed temporarily (e.g. for demo / testing)
-export const EXTRA_ALLOWED_DOMAINS = ['gmail.com']
+// Additional domains allowed alongside the primary one.
+export const EXTRA_ALLOWED_DOMAINS = ['rotman.utoronto.ca', 'utoronto.ca']
 
 export function isAllowedEmail(email) {
   if (!ALLOWED_EMAIL_DOMAIN) return true
