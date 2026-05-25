@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import AnonymousAvatar from './AnonymousAvatar'
 import CoffeeChatModal from './CoffeeChatModal'
 import ReportModal from './ReportModal'
+import IdentityRevealRequestModal from './IdentityRevealRequestModal'
+import PeerProfileCard from './PeerProfileCard'
 
 const C = {
   gold:      '#C8A96A',
@@ -177,14 +179,24 @@ function shouldRevealIdentity(messages) {
   return false
 }
 
-export default function ChatView({ match, messages, onSend, onProposeMeeting, onMeetingResponse, onBack, autoOpenSchedule, onScheduleOpened, scheduleFeedback, onNavigateReview, peerProfile, onReport, onBlock, onUnmatch }) {
+export default function ChatView({ match, messages, onSend, onProposeMeeting, onMeetingResponse, onBack, autoOpenSchedule, onScheduleOpened, scheduleFeedback, onNavigateReview, peerProfile, onReport, onBlock, onUnmatch, onRequestReveal, onAcceptReveal, onDeclineReveal }) {
   const [input, setInput]               = useState('')
   const [showCoffee, setShowCoffee]     = useState(false)
   const [showFollowUp, setShowFollowUp] = useState(false)
   const [rescheduleData, setRescheduleData] = useState(null)
   const [showSafetyMenu, setShowSafetyMenu] = useState(false)
   const [showReportModal, setShowReportModal] = useState(false)
+  const [showRevealModal, setShowRevealModal] = useState(false)
+  const [showProfileCard, setShowProfileCard] = useState(false)
+  const [revealDeclineDismissed, setRevealDeclineDismissed] = useState(false)
+  const autoOpenedRef = useRef(false)
   const bottomRef                        = useRef(null)
+
+  const reveal = match?.reveal || { status: 'none', iAmRequester: false }
+  const isRevealed = reveal.status === 'accepted'
+  const isPendingForMe = reveal.status === 'pending' && !reveal.iAmRequester
+  const isPendingByMe  = reveal.status === 'pending' && reveal.iAmRequester
+  const wasDeclinedByPeer = reveal.status === 'declined' && reveal.iAmRequester
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -211,6 +223,21 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
       return () => clearTimeout(timer)
     }
   }, [confirmedMeeting])
+
+  // Auto-open the reveal-request modal once when a pending request arrives.
+  // The banner stays visible afterwards so the recipient can come back to it.
+  useEffect(() => {
+    if (isPendingForMe && !autoOpenedRef.current) {
+      autoOpenedRef.current = true
+      setShowRevealModal(true)
+    }
+    if (!isPendingForMe) autoOpenedRef.current = false
+  }, [isPendingForMe])
+
+  // Reset the "peer declined" dismissal when status changes away from declined
+  useEffect(() => {
+    if (reveal.status !== 'declined') setRevealDeclineDismissed(false)
+  }, [reveal.status])
 
   const handleSend = () => {
     const t = input.trim()
@@ -240,24 +267,56 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </button>
-        <AnonymousAvatar seed={match?.id || 'chat'} size={36} />
         {(() => {
-          const revealed = shouldRevealIdentity(messages)
-          const name = revealed && peerProfile?.first_name
-            ? peerProfile.first_name
-            : 'Anonymous Peer'
-          const subtitle = revealed && peerProfile?.program
-            ? peerProfile.program
-            : null
+          // Identity is revealed if EITHER the explicit reveal was accepted,
+          // OR a confirmed meeting day has arrived (existing legacy reveal).
+          const explicitlyRevealed = isRevealed
+          const meetingDayRevealed = shouldRevealIdentity(messages)
+          const revealed = explicitlyRevealed || meetingDayRevealed
+
+          const peerName = revealed && (peerProfile?.name || peerProfile?.first_name)
+          const displayName = peerName || 'Anonymous Peer'
+          const subtitle = explicitlyRevealed
+            ? 'Identity revealed'
+            : (revealed && peerProfile?.program) || 'Active match'
+          const subtitleColor = explicitlyRevealed ? C.goldDark : '#16A34A'
+
+          const HeaderInner = (
+            <>
+              <AnonymousAvatar seed={match?.id || 'chat'} size={36} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: 14, fontWeight: 600, color: C.text, fontFamily: 'Inter, system-ui, sans-serif' }}>
+                  {displayName}
+                </p>
+                <p style={{ fontSize: 11, color: subtitleColor, fontFamily: 'Inter, system-ui, sans-serif', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: subtitleColor, display: 'inline-block' }} />
+                  {subtitle}
+                </p>
+              </div>
+            </>
+          )
+
+          // Tappable header opens the profile card only when explicit reveal accepted
+          if (explicitlyRevealed) {
+            return (
+              <button
+                type="button"
+                onClick={() => setShowProfileCard(true)}
+                style={{
+                  flex: 1, minWidth: 0,
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                  textAlign: 'left',
+                }}
+                aria-label="View peer profile"
+              >
+                {HeaderInner}
+              </button>
+            )
+          }
           return (
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: 14, fontWeight: 600, color: C.text, fontFamily: 'Inter, system-ui, sans-serif' }}>
-                {name}
-              </p>
-              <p style={{ fontSize: 11, color: '#16A34A', fontFamily: 'Inter, system-ui, sans-serif', display: 'flex', alignItems: 'center', gap: 4 }}>
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#16A34A', display: 'inline-block' }} />
-                {subtitle || 'Active match'}
-              </p>
+            <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
+              {HeaderInner}
             </div>
           )
         })()}
@@ -289,6 +348,49 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
               border: '1px solid #E5E7EB',
               overflow: 'hidden', minWidth: 160,
             }}>
+              {/* Identity reveal — first item, varies by current state */}
+              {onRequestReveal && (reveal.status === 'none' || reveal.status === 'declined') && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowSafetyMenu(false)
+                    onRequestReveal()
+                  }}
+                  style={{
+                    display: 'block', width: '100%', textAlign: 'left',
+                    padding: '11px 16px', fontSize: 13, fontWeight: 600,
+                    color: '#A88245', background: 'none', border: 'none', cursor: 'pointer',
+                  }}
+                >
+                  Request to reveal identity
+                </button>
+              )}
+              {isPendingForMe && (
+                <button
+                  type="button"
+                  onClick={() => { setShowSafetyMenu(false); setShowRevealModal(true) }}
+                  style={{
+                    display: 'block', width: '100%', textAlign: 'left',
+                    padding: '11px 16px', fontSize: 13, fontWeight: 600,
+                    color: '#A88245', background: 'none', border: 'none', cursor: 'pointer',
+                  }}
+                >
+                  Review reveal request
+                </button>
+              )}
+              {isRevealed && (
+                <button
+                  type="button"
+                  onClick={() => { setShowSafetyMenu(false); setShowProfileCard(true) }}
+                  style={{
+                    display: 'block', width: '100%', textAlign: 'left',
+                    padding: '11px 16px', fontSize: 13, fontWeight: 600,
+                    color: '#A88245', background: 'none', border: 'none', cursor: 'pointer',
+                  }}
+                >
+                  View peer profile
+                </button>
+              )}
               {onNavigateReview && (
                 <button
                   type="button"
@@ -300,6 +402,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
                     display: 'block', width: '100%', textAlign: 'left',
                     padding: '11px 16px', fontSize: 13, fontWeight: 500,
                     color: '#C8A96A', background: 'none', border: 'none', cursor: 'pointer',
+                    borderTop: '1px solid #F3F4F6',
                   }}
                 >
                   Review user
@@ -406,6 +509,120 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
                 {match.request.offers?.slice(0, 90)}{match.request.offers?.length > 90 ? '…' : ''}
               </p>
             </div>
+          </div>
+        )}
+
+        {/* ── Identity reveal banners ───────────────────── */}
+        {isPendingForMe && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            style={{ margin: '0 16px 14px' }}
+          >
+            <div style={{
+              background: `linear-gradient(135deg, ${C.goldBg}, #F7EBCF)`,
+              border: `1.5px solid ${C.goldLight}`,
+              borderRadius: 16,
+              padding: '14px 16px',
+              boxShadow: '0 4px 14px rgba(200,169,106,0.16)',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 12 }}>
+                <span style={{ fontSize: 18, lineHeight: 1 }}>🔓</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{
+                    fontSize: 13, fontWeight: 600, color: C.goldDark,
+                    fontFamily: 'Inter, system-ui, sans-serif', margin: 0,
+                  }}>
+                    Reveal identities?
+                  </p>
+                  <p style={{
+                    fontSize: 12, color: C.textSub, lineHeight: 1.45,
+                    fontFamily: 'Inter, system-ui, sans-serif',
+                    margin: '3px 0 0',
+                  }}>
+                    Anonymous Peer is asking to share names and school emails.
+                  </p>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  onClick={() => setShowRevealModal(true)}
+                  style={{
+                    flex: 1, padding: '8px 0', borderRadius: 10,
+                    background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
+                    color: '#fff', fontSize: 12, fontWeight: 600,
+                    fontFamily: 'Inter, system-ui, sans-serif',
+                    border: 'none', cursor: 'pointer',
+                  }}
+                >
+                  Review
+                </button>
+                <button
+                  onClick={async () => { await onDeclineReveal?.() }}
+                  style={{
+                    flex: 1, padding: '8px 0', borderRadius: 10,
+                    background: '#fff', color: C.textSub,
+                    fontSize: 12, fontWeight: 600,
+                    fontFamily: 'Inter, system-ui, sans-serif',
+                    border: `1px solid ${C.border}`, cursor: 'pointer',
+                  }}
+                >
+                  Not now
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {isPendingByMe && (
+          <div style={{
+            margin: '0 16px 14px',
+            background: '#FAFAF8',
+            border: `1px dashed ${C.goldLight}`,
+            borderRadius: 14,
+            padding: '10px 14px',
+            display: 'flex', alignItems: 'center', gap: 10,
+          }}>
+            <span style={{ fontSize: 14 }}>⏳</span>
+            <p style={{
+              fontSize: 12, color: C.textSub, lineHeight: 1.45,
+              fontFamily: 'Inter, system-ui, sans-serif', margin: 0,
+            }}>
+              Reveal request sent — waiting for your peer's response.
+            </p>
+          </div>
+        )}
+
+        {wasDeclinedByPeer && !revealDeclineDismissed && (
+          <div style={{
+            margin: '0 16px 14px',
+            background: '#FAFAF8',
+            border: '1px solid #F0ECE4',
+            borderRadius: 14,
+            padding: '12px 14px',
+            display: 'flex', alignItems: 'flex-start', gap: 10,
+          }}>
+            <span style={{ fontSize: 14, marginTop: 1 }}>💬</span>
+            <p style={{
+              flex: 1,
+              fontSize: 12, color: C.textSub, lineHeight: 1.5,
+              fontFamily: 'Inter, system-ui, sans-serif', margin: 0,
+            }}>
+              Your peer declined the reveal request. You can continue chatting anonymously.
+            </p>
+            <button
+              type="button"
+              onClick={() => setRevealDeclineDismissed(true)}
+              aria-label="Dismiss"
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: C.textMuted, padding: 0, marginTop: -2,
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                <path d="M6 6l12 12M18 6L6 18" />
+              </svg>
+            </button>
           </div>
         )}
 
@@ -678,6 +895,30 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
           />
         )}
       </AnimatePresence>
+
+      {/* Identity reveal — request modal (recipient side) */}
+      <IdentityRevealRequestModal
+        open={showRevealModal}
+        onAccept={async () => {
+          await onAcceptReveal?.()
+          setShowRevealModal(false)
+          // Slide-out the profile card automatically on accept
+          setTimeout(() => setShowProfileCard(true), 300)
+        }}
+        onDecline={async () => {
+          await onDeclineReveal?.()
+          setShowRevealModal(false)
+        }}
+        onClose={() => setShowRevealModal(false)}
+      />
+
+      {/* Identity reveal — right-side profile card */}
+      <PeerProfileCard
+        open={showProfileCard && isRevealed}
+        onClose={() => setShowProfileCard(false)}
+        match={match}
+        peerProfile={peerProfile}
+      />
     </div>
   )
 }

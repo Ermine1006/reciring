@@ -21,7 +21,7 @@ import MyPostsPage from './components/MyPostsPage'
 import { submitReport, blockUser, fetchBlockedIds } from './lib/safety'
 import { isSupabaseConfigured, supabase } from './lib/supabase'
 import { fetchPosts, createPost, updatePost } from './lib/posts'
-import { createMatch, fetchMyMatches, fetchMatchedPostIds, unmatchMatch, matchToUI } from './lib/matches'
+import { createMatch, fetchMyMatches, fetchMatchedPostIds, unmatchMatch, matchToUI, requestIdentityReveal, acceptIdentityReveal, declineIdentityReveal, fetchPeerProfile } from './lib/matches'
 import { fetchMessages, sendMessage, sendMeetingProposal, updateMeetingStatus, msgToUI } from './lib/messages'
 
 /* ─── Design tokens ─────────────────────────────────────────────── */
@@ -97,6 +97,7 @@ function AppShell() {
   const [matches, setMatches]     = useState([])
   const [chatMatchId, setChatMatchId] = useState(null)
   const [chatMessages, setChatMessages] = useState([]) // messages for current chat
+  const [peerProfile, setPeerProfile]   = useState(null) // peer's profile when reveal is accepted
   const [reviewMatchId, setReviewMatchId] = useState(null) // which match is being reviewed
   const [reviewedMatchIds, setReviewedMatchIds] = useState(new Set()) // matches already reviewed by current user
   const [pastReviews, setPastReviews] = useState([]) // full review objects for display
@@ -599,6 +600,65 @@ function AppShell() {
     await Promise.all([loadMatches(), loadMatchedPostIds()])
   }
 
+  // ── Identity reveal handlers ────────────────────────────────
+  // All three trigger a matches refetch via realtime UPDATE subscription;
+  // we also do a local refetch for the initiator so the UI updates without
+  // waiting for the round-trip.
+  const handleRequestReveal = useCallback(async (matchId) => {
+    if (!user) return
+    const id = matchId || chatMatchId
+    if (!id) return
+    const { error } = await requestIdentityReveal(id, user.id)
+    if (error) {
+      console.error('[ReciRing] Reveal request failed:', error)
+      alert('Could not send reveal request: ' + (error.message || 'unknown'))
+      return
+    }
+    await loadMatches()
+  }, [user?.id, chatMatchId, loadMatches])
+
+  const handleAcceptReveal = useCallback(async (matchId) => {
+    if (!user) return
+    const id = matchId || chatMatchId
+    if (!id) return
+    const { error } = await acceptIdentityReveal(id)
+    if (error) {
+      console.error('[ReciRing] Reveal accept failed:', error)
+      alert('Could not accept reveal: ' + (error.message || 'unknown'))
+      return
+    }
+    await loadMatches()
+  }, [user?.id, chatMatchId, loadMatches])
+
+  const handleDeclineReveal = useCallback(async (matchId) => {
+    if (!user) return
+    const id = matchId || chatMatchId
+    if (!id) return
+    const { error } = await declineIdentityReveal(id)
+    if (error) {
+      console.error('[ReciRing] Reveal decline failed:', error)
+      alert('Could not decline reveal: ' + (error.message || 'unknown'))
+      return
+    }
+    await loadMatches()
+  }, [user?.id, chatMatchId, loadMatches])
+
+  // Fetch peer profile when a chat opens with an accepted reveal,
+  // or when the reveal flips to accepted while the chat is open.
+  useEffect(() => {
+    if (!chatMatchId) { setPeerProfile(null); return }
+    const current = matches.find(m => m.id === chatMatchId)
+    if (!current) return
+    if (current.reveal?.status !== 'accepted') { setPeerProfile(null); return }
+    let cancelled = false
+    fetchPeerProfile(current.peerId).then(({ data, error }) => {
+      if (cancelled) return
+      if (error) { console.error('[ReciRing] Peer profile fetch failed:', error); return }
+      setPeerProfile(data)
+    })
+    return () => { cancelled = true }
+  }, [chatMatchId, matches])
+
   // ── Send a text message ─────────────────────────────────────
   const handleSendMessage = async (matchId, content) => {
     if (!user) return
@@ -930,6 +990,7 @@ function AppShell() {
               <ChatView
                 match={matches.find(m => m.id === chatMatchId)}
                 messages={chatMessages}
+                peerProfile={peerProfile}
                 onSend={(content) => handleSendMessage(chatMatchId, content)}
                 onProposeMeeting={(data) => handleProposeMeeting(chatMatchId, data)}
                 onMeetingResponse={(msgId, status) => handleMeetingResponse(chatMatchId, msgId, status)}
@@ -938,6 +999,9 @@ function AppShell() {
                 onReport={handleReport}
                 onBlock={handleBlock}
                 onUnmatch={() => handleUnmatch(chatMatchId)}
+                onRequestReveal={() => handleRequestReveal(chatMatchId)}
+                onAcceptReveal={() => handleAcceptReveal(chatMatchId)}
+                onDeclineReveal={() => handleDeclineReveal(chatMatchId)}
               />
             </div>
           )}
