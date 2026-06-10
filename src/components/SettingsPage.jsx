@@ -1,7 +1,10 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
+import { INDUSTRIES, HELP_TYPES } from '../data/requestOptions'
+import { PROGRAMS, CAREER_STAGES, NETWORKING_INTENTS } from '../data/onboardingOptions'
 import AnonymousAvatar from './AnonymousAvatar'
+import Chip from './Chip'
 import PRESET_AVATARS from '../data/presetAvatars'
 
 const C = {
@@ -15,6 +18,7 @@ const C = {
   white:     '#FFFFFF',
   border:    '#E5E7EB',
   danger:    '#DC2626',
+  success:   '#16A34A',
 }
 
 /** Resolve a `preset:key` avatar_url → the seed for AnonymousAvatar. */
@@ -24,27 +28,114 @@ export function resolveAvatarSeed(avatarUrl) {
   return PRESET_AVATARS.find(a => a.key === key)?.seed ?? null
 }
 
+// ── Small shared styles for field labels ───────────────────────
+const labelStyle = {
+  display: 'block', fontSize: 11, letterSpacing: '0.14em',
+  textTransform: 'uppercase', fontWeight: 600, color: C.textSub,
+  marginBottom: 8, fontFamily: 'Inter, system-ui, sans-serif',
+}
+const helperStyle = {
+  marginTop: -2, marginBottom: 8,
+  fontSize: 11, color: C.textMuted,
+  fontFamily: 'Inter, system-ui, sans-serif', lineHeight: 1.4,
+}
+const inputStyle = {
+  width: '100%', background: '#FAFAFA',
+  border: `1.5px solid ${C.border}`, color: C.text, outline: 'none',
+  padding: '12px 16px', borderRadius: 12, fontSize: 14,
+  fontFamily: 'Inter, system-ui, sans-serif',
+}
+
+// ── Section wrapper ────────────────────────────────────────────
+function Section({ title, children }) {
+  return (
+    <section
+      className="rounded-2xl p-5 mb-4"
+      style={{ background: C.white, border: `1px solid ${C.border}` }}
+    >
+      <h2 className="text-xs uppercase tracking-wider mb-5" style={{ color: C.textMuted }}>
+        {title}
+      </h2>
+      {children}
+    </section>
+  )
+}
+
+// ── Field row (label + helper + body) ──────────────────────────
+function Field({ label, helper, required, children, last }) {
+  return (
+    <div style={{ marginBottom: last ? 0 : 18 }}>
+      <label style={labelStyle}>
+        {label}
+        {required && <span style={{ color: '#EF4444' }}> *</span>}
+      </label>
+      {helper && <p style={helperStyle}>{helper}</p>}
+      {children}
+    </div>
+  )
+}
+
+// ── Toggle helper for multi-select chip arrays ────────────────
+function makeToggle(setter, max = Infinity) {
+  return (val) => setter(prev =>
+    prev.includes(val) ? prev.filter(v => v !== val) : prev.length < max ? [...prev, val] : prev
+  )
+}
+
+// ────────────────────────────────────────────────────────────────
+// My Profile page
+// ────────────────────────────────────────────────────────────────
 export default function SettingsPage({ onClose }) {
   const { user, profile, updateProfile, signOut, deleteAccount } = useAuth()
 
-  const [name, setName]               = useState(profile?.name || '')
-  const [selectedKey, setSelectedKey]  = useState(
-    profile?.avatar_url?.startsWith('preset:') ? profile.avatar_url.slice(7) : null
+  // Avatar
+  const [selectedKey, setSelectedKey] = useState(
+    profile?.avatar_url?.startsWith('preset:') ? profile.avatar_url.slice(7) : null,
   )
-  const [saving, setSaving]     = useState(false)
-  const [status, setStatus]     = useState(null)
+  const selectedAvatar = PRESET_AVATARS.find(a => a.key === selectedKey)
+
+  // Basic
+  const [name, setName]               = useState(profile?.name || '')
+  const [program, setProgram]         = useState(profile?.program || '')
+  const [headline, setHeadline]       = useState(profile?.headline || '')
+  const [careerStage, setCareerStage] = useState(profile?.career_stage || '')
+
+  // Professional
+  const [industryInterests, setIndustryInterests] = useState(profile?.industry_interests || [])
+  const [canHelpWith, setCanHelpWith]             = useState(profile?.can_help_with || [])
+  const [skillsToLearn, setSkillsToLearn]         = useState(profile?.skills_to_learn || [])
+  const [networkingIntent, setNetworkingIntent]   = useState(profile?.networking_intent || [])
+
+  // Personality
+  const [promptAskMe, setPromptAskMe]     = useState(profile?.prompt_ask_me || '')
+  const [promptWeekend, setPromptWeekend] = useState(profile?.prompt_weekend || '')
+
+  // Save / account state
+  const [saving, setSaving]   = useState(false)
+  const [status, setStatus]   = useState(null)
   const [confirmDel, setConfirmDel] = useState(false)
   const [deleting, setDeleting]     = useState(false)
   const [showSupport, setShowSupport] = useState(false)
   const [copied, setCopied]         = useState(false)
 
-  const selectedAvatar = PRESET_AVATARS.find(a => a.key === selectedKey)
+  const toggleNetworkingIntent = (id) => setNetworkingIntent(prev =>
+    prev.includes(id) ? prev.filter(v => v !== id) : [...prev, id]
+  )
 
   const handleSave = async () => {
     setSaving(true); setStatus(null)
     const { error } = await updateProfile({
-      name: name.trim() || 'Anonymous',
-      avatar_url: selectedKey ? `preset:${selectedKey}` : null,
+      name:               name.trim() || 'Anonymous',
+      avatar_url:         selectedKey ? `preset:${selectedKey}` : null,
+      program,
+      headline:           headline.trim(),
+      career_stage:       careerStage,
+      industry_interests: industryInterests,
+      can_help_with:      canHelpWith,
+      skills_to_learn:    skillsToLearn,
+      networking_intent:  networkingIntent,
+      prompt_ask_me:      promptAskMe.trim(),
+      prompt_weekend:     promptWeekend.trim(),
     })
     setSaving(false)
     setStatus(error
@@ -71,13 +162,6 @@ export default function SettingsPage({ onClose }) {
     }
   }
 
-  const inputStyle = {
-    background: '#FAFAFA',
-    border: `1.5px solid ${C.border}`,
-    color: C.text,
-    outline: 'none',
-  }
-
   return (
     <div className="flex-1 phone-scroll" style={{ background: '#F9F7F4' }}>
       <motion.div
@@ -100,17 +184,10 @@ export default function SettingsPage({ onClose }) {
           </button>
         </div>
 
-        {/* ── Profile section ─────────────────────────────────── */}
-        <section
-          className="rounded-2xl p-5 mb-4"
-          style={{ background: C.white, border: `1px solid ${C.border}` }}
-        >
-          <h2 className="text-xs uppercase tracking-wider mb-5" style={{ color: C.textMuted }}>
-            Profile
-          </h2>
-
-          {/* Current avatar — large preview */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 20 }}>
+        {/* ── 1. Basic Profile ────────────────────────────────── */}
+        <Section title="Basic profile">
+          {/* Avatar preview */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 18 }}>
             <div style={{
               borderRadius: '50%',
               border: `3px solid ${C.goldLight}`,
@@ -119,7 +196,7 @@ export default function SettingsPage({ onClose }) {
             }}>
               <AnonymousAvatar
                 seed={selectedAvatar?.seed || profile?.id || 'default'}
-                size={88}
+                size={84}
               />
             </div>
             <p style={{ fontSize: 12, color: C.textMuted, fontFamily: 'Inter, system-ui, sans-serif' }}>
@@ -127,14 +204,7 @@ export default function SettingsPage({ onClose }) {
             </p>
           </div>
 
-          {/* Avatar picker grid */}
-          <div style={{ marginBottom: 24 }}>
-            <p
-              className="text-[11px] tracking-[0.14em] uppercase font-semibold mb-3"
-              style={{ color: C.textSub }}
-            >
-              Choose avatar
-            </p>
+          <Field label="Choose avatar">
             <div style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(5, 1fr)',
@@ -163,65 +233,180 @@ export default function SettingsPage({ onClose }) {
                 )
               })}
             </div>
-          </div>
+          </Field>
 
-          {/* Display name */}
-          <label className="block text-xs mb-1.5" style={{ color: C.textSub, fontWeight: 500 }}>Display name</label>
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Anonymous"
-            className="w-full rounded-xl px-4 py-3 text-sm mb-4"
-            style={inputStyle}
-          />
+          <Field label="Display name">
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value.slice(0, 30))}
+              placeholder="Anonymous"
+              style={inputStyle}
+            />
+          </Field>
 
-          {/* Email (read-only) */}
-          <label className="block text-xs mb-1.5" style={{ color: C.textSub, fontWeight: 500 }}>Email</label>
-          <input
-            value={user?.email || ''}
-            readOnly
-            className="w-full rounded-xl px-4 py-3 text-sm"
-            style={{ ...inputStyle, color: C.textMuted, cursor: 'not-allowed', background: '#F5F5F5' }}
-          />
+          <Field label="Email">
+            <input
+              value={user?.email || ''}
+              readOnly
+              style={{ ...inputStyle, color: C.textMuted, cursor: 'not-allowed', background: '#F5F5F5' }}
+            />
+          </Field>
 
-          {/* Status message */}
-          {status && (
-            <p
-              className="mt-4 text-center text-xs"
-              style={{ color: status.type === 'ok' ? '#16A34A' : C.danger }}
-            >
-              {status.msg}
-            </p>
-          )}
+          <Field label="Program">
+            <div className="flex flex-wrap gap-2">
+              {PROGRAMS.map(p => (
+                <Chip key={p} label={p} active={program === p} onClick={() => setProgram(p)} />
+              ))}
+            </div>
+          </Field>
 
-          {/* Save */}
+          <Field label="Current role" helper="What you're doing right now — student, role at Co.">
+            <input
+              value={headline}
+              onChange={(e) => setHeadline(e.target.value.slice(0, 80))}
+              placeholder="e.g. MBA '26, ex-PM at Shopify"
+              style={inputStyle}
+            />
+          </Field>
+
+          <Field label="Career stage" last>
+            <div className="flex flex-wrap gap-2">
+              {CAREER_STAGES.map(s => (
+                <Chip key={s} label={s} active={careerStage === s} onClick={() => setCareerStage(s)} />
+              ))}
+            </div>
+          </Field>
+        </Section>
+
+        {/* ── 2. Professional Matching ────────────────────────── */}
+        <Section title="Professional matching">
+          <Field label="Industry focus" helper="Pick up to 3 — surfaces the right requests for you.">
+            <div className="flex flex-wrap gap-2">
+              {INDUSTRIES.map(ind => (
+                <Chip
+                  key={ind}
+                  label={ind}
+                  active={industryInterests.includes(ind)}
+                  onClick={makeToggle(setIndustryInterests, 3)}
+                />
+              ))}
+            </div>
+          </Field>
+
+          <Field label="Skills I offer" helper="Up to 5 — what peers can come to you for.">
+            <div className="flex flex-wrap gap-2">
+              {HELP_TYPES.map(ht => (
+                <Chip
+                  key={`offer-${ht}`}
+                  label={ht}
+                  active={canHelpWith.includes(ht)}
+                  onClick={makeToggle(setCanHelpWith, 5)}
+                />
+              ))}
+            </div>
+          </Field>
+
+          <Field label="Skills I want to learn" helper="Up to 5 — what you'd love a peer to teach you.">
+            <div className="flex flex-wrap gap-2">
+              {HELP_TYPES.map(ht => (
+                <Chip
+                  key={`learn-${ht}`}
+                  label={ht}
+                  active={skillsToLearn.includes(ht)}
+                  onClick={makeToggle(setSkillsToLearn, 5)}
+                />
+              ))}
+            </div>
+          </Field>
+
+          <Field label="I'm here to find" helper="Multi-select. Drives the AI match scorer." last>
+            <div className="flex flex-wrap gap-2">
+              {NETWORKING_INTENTS.map(opt => (
+                <Chip
+                  key={opt.id}
+                  label={opt.label}
+                  active={networkingIntent.includes(opt.id)}
+                  onClick={() => toggleNetworkingIntent(opt.id)}
+                />
+              ))}
+            </div>
+          </Field>
+        </Section>
+
+        {/* ── 3. Personality prompts ──────────────────────────── */}
+        <Section title="Personality prompts">
+          <Field label="Ask me about…" helper="A topic, a skill, an industry — anything you'd love to be asked about.">
+            <input
+              value={promptAskMe}
+              onChange={(e) => setPromptAskMe(e.target.value.slice(0, 160))}
+              placeholder="e.g. growth at a Series A, breaking into VC, founder fundraising"
+              style={inputStyle}
+            />
+          </Field>
+
+          <Field label="Weekend you're most likely to find me…" helper="A glimpse of who you are outside work." last>
+            <input
+              value={promptWeekend}
+              onChange={(e) => setPromptWeekend(e.target.value.slice(0, 160))}
+              placeholder="e.g. hiking the Bruce Trail with a podcast in my ears"
+              style={inputStyle}
+            />
+          </Field>
+        </Section>
+
+        {/* ── Save changes ────────────────────────────────────── */}
+        <div className="mb-6">
           <button
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="w-full mt-5 py-3 rounded-xl text-sm font-semibold active:scale-[0.98]"
+            className="w-full py-3.5 rounded-xl text-sm font-semibold tracking-wide active:scale-[0.98]"
             style={{
               background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
               color: '#fff',
               border: 'none',
               opacity: saving ? 0.6 : 1,
-              boxShadow: '0 4px 14px rgba(200,169,106,0.30)',
+              boxShadow: '0 6px 20px rgba(200,169,106,0.35)',
               cursor: saving ? 'wait' : 'pointer',
             }}
           >
-            {saving ? 'Saving...' : 'Save changes'}
+            {saving ? 'Saving…' : 'Save changes'}
           </button>
-        </section>
 
-        {/* ── Account section ─────────────────────────────────── */}
-        <section
-          className="rounded-2xl p-5"
-          style={{ background: C.white, border: `1px solid ${C.border}` }}
-        >
-          <h2 className="text-xs uppercase tracking-wider mb-4" style={{ color: C.textMuted }}>
-            Account
-          </h2>
+          <AnimatePresence>
+            {status && (
+              <motion.div
+                key={status.msg}
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.18 }}
+                style={{
+                  marginTop: 12,
+                  padding: '10px 14px',
+                  borderRadius: 12,
+                  background: status.type === 'ok' ? '#F0FDF4' : '#FEF2F2',
+                  border: `1px solid ${status.type === 'ok' ? '#BBF7D0' : '#FECACA'}`,
+                  display: 'flex', alignItems: 'center', gap: 8,
+                }}
+              >
+                <span style={{ fontSize: 16 }}>
+                  {status.type === 'ok' ? '✓' : '⚠'}
+                </span>
+                <p style={{
+                  fontSize: 13, fontWeight: 500,
+                  color: status.type === 'ok' ? C.success : C.danger,
+                  fontFamily: 'Inter, system-ui, sans-serif', margin: 0,
+                }}>
+                  {status.msg}
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
 
+        {/* ── Account ─────────────────────────────────────────── */}
+        <Section title="Account">
           {/* Contact Support */}
           <button
             type="button"
@@ -300,7 +485,7 @@ export default function SettingsPage({ onClose }) {
               </div>
             </div>
           )}
-        </section>
+        </Section>
       </motion.div>
 
       {/* Support modal */}
