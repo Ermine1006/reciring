@@ -1,7 +1,9 @@
 // Shared option lists used by the onboarding wizard AND the My Profile editor.
 // Keep these in one place so add/rename only happens here.
 
-export const PROGRAMS = ['MBA', 'MFin', 'MBAN', 'MMgt', 'MMA', 'PhD', 'Other']
+// Program options. The legacy 'MBA' value (used before splitting full-time vs
+// part-time) is migrated to 'FT-MBA' by scripts/migration-program-options.sql.
+export const PROGRAMS = ['FT-MBA', 'PT-MBA', 'MMA', 'MFin', 'EMBA', 'GEMBA', 'PhD', 'Other']
 
 export const CAREER_STAGES = [
   'Pre-MBA',
