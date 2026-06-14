@@ -39,7 +39,7 @@ function FilterChip({ label, active, onClick }) {
   )
 }
 
-export default function CardStack({ requests, unmatchedPostIds, onSwipeRight, onSwipeLeft, onMatchConfirm, onReport, onBlock }) {
+export default function CardStack({ requests, unmatchedPostIds, onSwipeRight, onSwipeLeft, onMatchConfirm, onOpenChat, onScheduleChat, onReport, onBlock }) {
   const { viewerProfile } = useAuth()
   const viewer = viewerProfile || DEFAULT_VIEWER_PROFILE
 
@@ -95,13 +95,18 @@ export default function CardStack({ requests, unmatchedPostIds, onSwipeRight, on
   }, [])
 
   const handleSwipeRight = useCallback(
-    (request) => {
+    async (request) => {
       markInteracted(request.id)
       onSwipeRight?.(request)
-      // Always show the match modal — real match is created on confirm
-      setMatch({ request, peer: 'Anonymous Peer' })
+      // Create the match in the DB BEFORE showing the popup. The popup
+      // is purely a confirmation — its Dismiss button does not undo
+      // the match. If creation fails (duplicate, network), the parent
+      // already shows an alert; we just skip opening the modal.
+      const result = (await onMatchConfirm?.(request)) || {}
+      if (result.error || !result.matchId) return
+      setMatch({ id: result.matchId, request, peer: 'Anonymous Peer' })
     },
-    [onSwipeRight, markInteracted]
+    [onSwipeRight, onMatchConfirm, markInteracted]
   )
 
   const handleSwipeLeft = useCallback(
@@ -355,9 +360,14 @@ export default function CardStack({ requests, unmatchedPostIds, onSwipeRight, on
       {match && (
         <MatchModal
           match={match}
+          // Dismiss = close the popup only. The match record stays in
+          // the DB; the user can still find it in their Matches inbox.
+          // No status change, no chat opened, no redirect.
           onClose={() => setMatch(null)}
-          onConfirm={(m, actionType) => { onMatchConfirm?.(m, actionType); setMatch(null) }}
-          onSchedule={(m, actionType) => { onMatchConfirm?.(m, actionType); setMatch(null) }}
+          // "Send quick intro" — navigate to chat (match already exists)
+          onConfirm={() => { onOpenChat?.(match.id); setMatch(null) }}
+          // "Schedule coffee chat" — navigate to chat AND auto-open scheduler
+          onSchedule={() => { onScheduleChat?.(match.id); setMatch(null) }}
         />
       )}
     </div>

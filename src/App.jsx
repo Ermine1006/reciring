@@ -574,8 +574,17 @@ function AppShell() {
   }
 
   // ── Match: user picks up a post ──────────────────────────────
-  const handleMatchConfirm = async ({ request }) => {
-    if (!user || !isSupabaseConfigured) return
+  //
+  // Creates the match in the DB and refreshes local caches. Does NOT
+  // navigate away from Discover — navigation is a separate explicit
+  // action via handleOpenChat / handleScheduleChat. This lets the
+  // post-match "It's a match!" popup show "Dismiss" without losing
+  // the user's place on Discover.
+  //
+  // Returns { matchId, error } so the caller can decide what to do next
+  // (open the confirmation modal vs surface an error).
+  const handleMatchConfirm = async (request) => {
+    if (!user || !isSupabaseConfigured) return { matchId: null, error: new Error('Not signed in.') }
     const { data, error } = await createMatch(user.id, request)
     if (error) {
       if (error.code === '23505') { // unique violation — already matched
@@ -584,14 +593,30 @@ function AppShell() {
         console.error('[ReciRing] Match creation failed:', error)
         alert('Failed to create match: ' + (error.message || 'Unknown error'))
       }
-      return
+      return { matchId: null, error }
     }
-    // Reload matches + matched post IDs so the new one shows up
-    await loadMatches()
-    await loadMatchedPostIds()
-    setChatMatchId(data.id)
-    setTab('matches')
+    await Promise.all([loadMatches(), loadMatchedPostIds()])
+    return { matchId: data.id, error: null }
   }
+
+  // Auto-open the scheduler when navigating to a chat from the
+  // "Schedule coffee chat" button in the post-match popup.
+  const [chatAutoOpenSchedule, setChatAutoOpenSchedule] = useState(false)
+
+  // Pure navigation — used by the post-match "Send quick intro" button.
+  const handleOpenChat = useCallback((matchId) => {
+    if (!matchId) return
+    setChatMatchId(matchId)
+    setTab('matches')
+  }, [])
+
+  // Navigation + open scheduler on arrival.
+  const handleScheduleChat = useCallback((matchId) => {
+    if (!matchId) return
+    setChatAutoOpenSchedule(true)
+    setChatMatchId(matchId)
+    setTab('matches')
+  }, [])
 
   // ── Unmatch: soft-delete the match, restore post in Discover ─
   const unmatchingRef = useRef(new Set())
@@ -986,6 +1011,8 @@ function AppShell() {
               onSwipeRight={(r) => console.log('Helping:', r.id)}
               onSwipeLeft={(r) => console.log('Passed:', r.id)}
               onMatchConfirm={handleMatchConfirm}
+              onOpenChat={handleOpenChat}
+              onScheduleChat={handleScheduleChat}
               onReport={handleReport}
               onBlock={handleBlock}
             />
@@ -1010,6 +1037,8 @@ function AppShell() {
                 match={matches.find(m => m.id === chatMatchId)}
                 messages={chatMessages}
                 peerProfile={peerProfile}
+                autoOpenSchedule={chatAutoOpenSchedule}
+                onScheduleOpened={() => setChatAutoOpenSchedule(false)}
                 onSend={(content) => handleSendMessage(chatMatchId, content)}
                 onProposeMeeting={(data) => handleProposeMeeting(chatMatchId, data)}
                 onMeetingResponse={(msgId, status) => handleMeetingResponse(chatMatchId, msgId, status)}
