@@ -22,6 +22,7 @@ import { submitReport, blockUser, fetchBlockedIds } from './lib/safety'
 import { isSupabaseConfigured, supabase } from './lib/supabase'
 import { fetchPosts, createPost, updatePost } from './lib/posts'
 import { createMatch, fetchMyMatches, fetchMatchedPostIds, fetchUnmatchedPostIds, unmatchMatch, matchToUI, requestIdentityReveal, acceptIdentityReveal, declineIdentityReveal, fetchPeerProfile } from './lib/matches'
+import { fetchUserInteractions, recordPostInteraction } from './lib/interactions'
 import { fetchMessages, sendMessage, sendMeetingProposal, updateMeetingStatus, msgToUI } from './lib/messages'
 
 /* ─── Design tokens ─────────────────────────────────────────────── */
@@ -105,6 +106,10 @@ function AppShell() {
   const [blockedIds, setBlockedIds] = useState(new Set())
   const [matchedPostIds, setMatchedPostIds] = useState(new Set())
   const [unmatchedPostIds, setUnmatchedPostIds] = useState(new Set())
+  // Persistent Map<postId, 'viewed'|'swiped_left'> backing the Discover
+  // tier ranker. Loaded from DB on mount; updated optimistically on
+  // every swipe-left / detail-open.
+  const [interactionMap, setInteractionMap] = useState(() => new Map())
 
   // ── New Match popup state ────────────────────────────────────
   const [newMatchModalOpen, setNewMatchModalOpen] = useState(false)
@@ -172,6 +177,37 @@ function AppShell() {
   }, [user?.id])
 
   useEffect(() => { loadUnmatchedPostIds() }, [loadUnmatchedPostIds])
+
+  // Load Discover interaction history (viewed / swiped_left). Used by
+  // the 4-tier ranker so dismissed posts persist their lower priority
+  // across refresh and tab switches.
+  const loadInteractions = useCallback(async () => {
+    if (!isSupabaseConfigured || !user) return
+    const { data } = await fetchUserInteractions(user.id)
+    setInteractionMap(data)
+  }, [user?.id])
+
+  useEffect(() => { loadInteractions() }, [loadInteractions])
+
+  // Record a Discover interaction. Optimistic + non-blocking.
+  // Priority: swiped_left > viewed > none. Refuses to downgrade an
+  // existing 'swiped_left' to 'viewed'.
+  const recordInteraction = useCallback((postId, type) => {
+    if (!user || !postId) return
+    setInteractionMap(prev => {
+      const existing = prev.get(postId)
+      if (existing === 'swiped_left' && type === 'viewed') return prev
+      if (existing === type) return prev
+      const next = new Map(prev)
+      next.set(postId, type)
+      return next
+    })
+    // Fire and forget — UX prefers responsiveness over write confirmation.
+    // If it fails, the next load will re-sync from DB.
+    recordPostInteraction(user.id, postId, type).then(({ error }) => {
+      if (error) console.warn('[ReciRing] recordPostInteraction failed:', error.message || error)
+    })
+  }, [user?.id])
 
   // Load messages when entering a chat
   const loadMessages = useCallback(async (matchId) => {
@@ -1008,8 +1044,10 @@ function AppShell() {
             <CardStack
               requests={visibleRequests}
               unmatchedPostIds={unmatchedPostIds}
+              interactionMap={interactionMap}
               onSwipeRight={(r) => console.log('Helping:', r.id)}
-              onSwipeLeft={(r) => console.log('Passed:', r.id)}
+              onSwipeLeft={(r) => recordInteraction(r.id, 'swiped_left')}
+              onCardViewed={(r) => recordInteraction(r.id, 'viewed')}
               onMatchConfirm={handleMatchConfirm}
               onOpenChat={handleOpenChat}
               onScheduleChat={handleScheduleChat}

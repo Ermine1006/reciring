@@ -39,7 +39,7 @@ function FilterChip({ label, active, onClick }) {
   )
 }
 
-export default function CardStack({ requests, unmatchedPostIds, onSwipeRight, onSwipeLeft, onMatchConfirm, onOpenChat, onScheduleChat, onReport, onBlock }) {
+export default function CardStack({ requests, unmatchedPostIds, interactionMap, onSwipeRight, onSwipeLeft, onCardViewed, onMatchConfirm, onOpenChat, onScheduleChat, onReport, onBlock }) {
   const { viewerProfile } = useAuth()
   const viewer = viewerProfile || DEFAULT_VIEWER_PROFILE
 
@@ -49,27 +49,22 @@ export default function CardStack({ requests, unmatchedPostIds, onSwipeRight, on
   const filterCount = filters.industries.length + filters.helpTypes.length + filters.times.length
   const hasFilters = filterCount > 0
 
-  // Previously-unmatched posts stay visible but are pushed to the bottom
-  // by the ranker. Defaulting to an empty Set keeps the prop optional.
-  const unmatchedSet = unmatchedPostIds || new Set()
+  // Defaulting these to empty so the props stay optional in tests / demo.
+  const unmatchedSet  = unmatchedPostIds || new Set()
+  const interactions  = interactionMap   || new Map()
 
+  // Ranked + sorted by the 4-tier system. Swiped-left posts move to the
+  // bottom rather than being filtered out — they'll only resurface once
+  // the user exhausts every higher-tier post.
   const ranked = useMemo(() => {
     const filtered = filterRequests(requests, filters)
-    return rankRequests(filtered, viewer, unmatchedSet)
-  }, [requests, filters, viewer, unmatchedSet])
+    return rankRequests(filtered, viewer, unmatchedSet, interactions)
+  }, [requests, filters, viewer, unmatchedSet, interactions])
 
-  // Track IDs the user has already swiped/helped in this session so the
-  // stack doesn't get them back when the parent re-renders (auth events,
-  // realtime updates, etc. cause `requests` to come in as a new array
-  // reference each time).
-  const [interactedIds, setInteractedIds] = useState(() => new Set())
-
-  // Stack is derived from `ranked` minus interacted IDs. No setStack
-  // race conditions, no useEffect resetting state on parent re-renders.
-  const stack = useMemo(
-    () => ranked.filter(r => !interactedIds.has(r.id)),
-    [ranked, interactedIds]
-  )
+  // The stack is now the full ranked list — no in-memory hide filter.
+  // Persistence comes from interactionMap, which is loaded from the DB
+  // on mount and survives tab switches + refreshes.
+  const stack = ranked
 
   const [match, setMatch] = useState(null)
   const [detailRequest, setDetailRequest] = useState(null)
@@ -85,36 +80,39 @@ export default function CardStack({ requests, unmatchedPostIds, onSwipeRight, on
     }))
   }
 
-  const markInteracted = useCallback((id) => {
-    setInteractedIds(prev => {
-      if (prev.has(id)) return prev
-      const next = new Set(prev)
-      next.add(id)
-      return next
-    })
-  }, [])
-
   const handleSwipeRight = useCallback(
     async (request) => {
-      markInteracted(request.id)
       onSwipeRight?.(request)
-      // Create the match in the DB BEFORE showing the popup. The popup
-      // is purely a confirmation — its Dismiss button does not undo
-      // the match. If creation fails (duplicate, network), the parent
-      // already shows an alert; we just skip opening the modal.
+      // Create the match in the DB BEFORE showing the popup. The post
+      // disappears from the stack automatically once matchedPostIds
+      // refreshes (handled in App.jsx). If creation fails, the parent
+      // shows an alert and we skip opening the modal.
       const result = (await onMatchConfirm?.(request)) || {}
       if (result.error || !result.matchId) return
       setMatch({ id: result.matchId, request, peer: 'Anonymous Peer' })
     },
-    [onSwipeRight, onMatchConfirm, markInteracted]
+    [onSwipeRight, onMatchConfirm]
   )
 
   const handleSwipeLeft = useCallback(
     (request) => {
-      markInteracted(request.id)
+      // Records 'swiped_left' in App.jsx, which optimistically updates
+      // interactionMap → the post drops to tier 3 → moves to bottom of
+      // ranked list → next card slides up.
       onSwipeLeft?.(request)
     },
-    [onSwipeLeft, markInteracted]
+    [onSwipeLeft]
+  )
+
+  const handleCardTap = useCallback(
+    (request) => {
+      // Record 'viewed' before opening the detail modal. The recorder
+      // refuses to downgrade an existing 'swiped_left' to 'viewed', so
+      // re-viewing a previously-skipped post doesn't promote it back.
+      onCardViewed?.(request)
+      setDetailRequest(request)
+    },
+    [onCardViewed]
   )
 
   const topRequest  = stack[0]
@@ -299,7 +297,7 @@ export default function CardStack({ requests, unmatchedPostIds, onSwipeRight, on
               onDrag={(x) => dragX.set(x)}
               onSwipeLeft={() => handleSwipeLeft(topRequest)}
               onSwipeRight={() => handleSwipeRight(topRequest)}
-              onTap={(r) => setDetailRequest(r)}
+              onTap={handleCardTap}
             />
           </motion.div>
         </div>

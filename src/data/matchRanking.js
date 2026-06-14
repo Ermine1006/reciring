@@ -192,29 +192,59 @@ export function filterRequests(requests, filters) {
 
 // ── Rank a list of requests ───────────────────────────────────────
 //
-// `unmatchedSet`: Set of post IDs the viewer has previously unmatched.
-// Those posts are still returned (the user explicitly wants them visible)
-// but pushed below every fresh post by subtracting a large penalty.
-// A penalty of 200 guarantees the post sinks below the highest-scoring
-// fresh post (max raw score is 100).
+// Sort is two-key:
+//   1. tier ascending (lower tier = higher priority)
+//   2. raw match score descending (within the same tier)
+//
+// Tiers:
+//   1  unseen           — never interacted with (highest priority)
+//   2  viewed           — user opened the detail modal
+//   3  swiped_left      — user explicitly skipped
+//   4  unmatched        — match was previously created then unmatched
+//
+// Tier 4 supersedes the previous unmatch-penalty hack. If a post is
+// both unmatched AND swiped_left, it lands in tier 4 (unmatched takes
+// precedence — the user explicitly broke the connection).
+//
+// `interactionMap`: Map<postId, 'viewed' | 'swiped_left'>. Default empty.
+// `unmatchedSet`:   Set<postId>. Default empty.
 
-const UNMATCH_PENALTY = 200
+function computeTier(postId, interactionMap, unmatchedSet) {
+  if (unmatchedSet.has(postId)) return 4
+  const interaction = interactionMap.get(postId)
+  if (interaction === 'swiped_left') return 3
+  if (interaction === 'viewed')      return 2
+  return 1
+}
 
-export function rankRequests(requests, viewer = DEFAULT_VIEWER_PROFILE, unmatchedSet = new Set()) {
+const TIER_REASON_PREFIX = {
+  2: null,                    // viewed — no prefix, neutral signal
+  3: 'Previously skipped',
+  4: 'Previously unmatched',
+}
+
+export function rankRequests(
+  requests,
+  viewer = DEFAULT_VIEWER_PROFILE,
+  unmatchedSet = new Set(),
+  interactionMap = new Map(),
+) {
   return [...requests]
     .map(r => {
       const rawScore = getMatchScore(r, viewer)
-      const wasUnmatched = unmatchedSet.has(r.id)
-      const total = rawScore.total - (wasUnmatched ? UNMATCH_PENALTY : 0)
+      const tier = computeTier(r.id, interactionMap, unmatchedSet)
       const baseReason = getMatchReason(r, viewer)
-      const reason = wasUnmatched
-        ? `Previously unmatched · ${baseReason}`
-        : baseReason
+      const prefix = TIER_REASON_PREFIX[tier]
+      const reason = prefix ? `${prefix} · ${baseReason}` : baseReason
       return {
         ...r,
-        _score: { ...rawScore, total, wasUnmatched },
+        _score: { ...rawScore, tier },
         _reason: reason,
+        _tier: tier,
       }
     })
-    .sort((a, b) => b._score.total - a._score.total)
+    .sort((a, b) => {
+      if (a._tier !== b._tier) return a._tier - b._tier
+      return b._score.total - a._score.total
+    })
 }
