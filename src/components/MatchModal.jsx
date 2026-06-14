@@ -133,10 +133,10 @@ export default function MatchModal({ match, onClose, onConfirm, onSchedule }) {
               Send quick intro
             </button>
 
-            {/* Match silently — no specific action, just create the match */}
+            {/* Dismiss — closes the modal WITHOUT creating a match or chat. */}
             <button
               type="button"
-              onClick={() => onConfirm?.(match, 'quick_intro')}
+              onClick={onClose}
               className="w-full mt-3 py-2 text-[12px] tracking-wide transition-opacity hover:opacity-60"
               style={{ color: C.textMuted }}
             >

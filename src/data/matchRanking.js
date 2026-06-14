@@ -191,9 +191,30 @@ export function filterRequests(requests, filters) {
 }
 
 // ── Rank a list of requests ───────────────────────────────────────
+//
+// `unmatchedSet`: Set of post IDs the viewer has previously unmatched.
+// Those posts are still returned (the user explicitly wants them visible)
+// but pushed below every fresh post by subtracting a large penalty.
+// A penalty of 200 guarantees the post sinks below the highest-scoring
+// fresh post (max raw score is 100).
 
-export function rankRequests(requests, viewer = DEFAULT_VIEWER_PROFILE) {
+const UNMATCH_PENALTY = 200
+
+export function rankRequests(requests, viewer = DEFAULT_VIEWER_PROFILE, unmatchedSet = new Set()) {
   return [...requests]
-    .map(r => ({ ...r, _score: getMatchScore(r, viewer), _reason: getMatchReason(r, viewer) }))
+    .map(r => {
+      const rawScore = getMatchScore(r, viewer)
+      const wasUnmatched = unmatchedSet.has(r.id)
+      const total = rawScore.total - (wasUnmatched ? UNMATCH_PENALTY : 0)
+      const baseReason = getMatchReason(r, viewer)
+      const reason = wasUnmatched
+        ? `Previously unmatched · ${baseReason}`
+        : baseReason
+      return {
+        ...r,
+        _score: { ...rawScore, total, wasUnmatched },
+        _reason: reason,
+      }
+    })
     .sort((a, b) => b._score.total - a._score.total)
 }

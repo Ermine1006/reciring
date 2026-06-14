@@ -39,7 +39,7 @@ function FilterChip({ label, active, onClick }) {
   )
 }
 
-export default function CardStack({ requests, onSwipeRight, onSwipeLeft, onMatchConfirm, onReport, onBlock }) {
+export default function CardStack({ requests, unmatchedPostIds, onSwipeRight, onSwipeLeft, onMatchConfirm, onReport, onBlock }) {
   const { viewerProfile } = useAuth()
   const viewer = viewerProfile || DEFAULT_VIEWER_PROFILE
 
@@ -49,21 +49,32 @@ export default function CardStack({ requests, onSwipeRight, onSwipeLeft, onMatch
   const filterCount = filters.industries.length + filters.helpTypes.length + filters.times.length
   const hasFilters = filterCount > 0
 
+  // Previously-unmatched posts stay visible but are pushed to the bottom
+  // by the ranker. Defaulting to an empty Set keeps the prop optional.
+  const unmatchedSet = unmatchedPostIds || new Set()
+
   const ranked = useMemo(() => {
     const filtered = filterRequests(requests, filters)
-    return rankRequests(filtered, viewer)
-  }, [requests, filters, viewer])
+    return rankRequests(filtered, viewer, unmatchedSet)
+  }, [requests, filters, viewer, unmatchedSet])
 
-  const [stack, setStack] = useState(ranked)
+  // Track IDs the user has already swiped/helped in this session so the
+  // stack doesn't get them back when the parent re-renders (auth events,
+  // realtime updates, etc. cause `requests` to come in as a new array
+  // reference each time).
+  const [interactedIds, setInteractedIds] = useState(() => new Set())
+
+  // Stack is derived from `ranked` minus interacted IDs. No setStack
+  // race conditions, no useEffect resetting state on parent re-renders.
+  const stack = useMemo(
+    () => ranked.filter(r => !interactedIds.has(r.id)),
+    [ranked, interactedIds]
+  )
+
   const [match, setMatch] = useState(null)
   const [detailRequest, setDetailRequest] = useState(null)
   const dragX   = useMotionValue(0)
   const opacity = useTransform(dragX, [-120, 0], [0.45, 1])
-
-  // Re-sync stack when filters or requests change
-  useEffect(() => {
-    setStack(rankRequests(filterRequests(requests, filters), viewer))
-  }, [requests, filters])
 
   const toggleFilter = (key, value) => {
     setFilters(prev => ({
@@ -74,22 +85,31 @@ export default function CardStack({ requests, onSwipeRight, onSwipeLeft, onMatch
     }))
   }
 
+  const markInteracted = useCallback((id) => {
+    setInteractedIds(prev => {
+      if (prev.has(id)) return prev
+      const next = new Set(prev)
+      next.add(id)
+      return next
+    })
+  }, [])
+
   const handleSwipeRight = useCallback(
     (request) => {
-      setStack((prev) => prev.filter((r) => r.id !== request.id))
+      markInteracted(request.id)
       onSwipeRight?.(request)
       // Always show the match modal — real match is created on confirm
       setMatch({ request, peer: 'Anonymous Peer' })
     },
-    [onSwipeRight]
+    [onSwipeRight, markInteracted]
   )
 
   const handleSwipeLeft = useCallback(
     (request) => {
-      setStack((prev) => prev.filter((r) => r.id !== request.id))
+      markInteracted(request.id)
       onSwipeLeft?.(request)
     },
-    [onSwipeLeft]
+    [onSwipeLeft, markInteracted]
   )
 
   const topRequest  = stack[0]

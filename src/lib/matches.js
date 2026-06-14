@@ -62,6 +62,24 @@ export async function fetchMatchedPostIds(userId) {
 }
 
 /**
+ * Fetch post IDs the user has previously unmatched.
+ * Used to deprioritize (NOT hide) these posts in the Discover ranker —
+ * they reappear but at the bottom of the feed.
+ */
+export async function fetchUnmatchedPostIds(userId) {
+  if (!isSupabaseConfigured) return { data: [], error: null }
+
+  const { data, error } = await supabase
+    .from('matches')
+    .select('post_id')
+    .or(`requester_user_id.eq.${userId},helper_user_id.eq.${userId}`)
+    .eq('status', 'unmatched')
+
+  if (error) return { data: [], error }
+  return { data: (data || []).map(r => r.post_id), error: null }
+}
+
+/**
  * Unmatch — soft-delete by setting status to 'unmatched'.
  * Uses .select() to verify the row was actually updated (RLS can silently
  * block updates, returning no error but also no rows).

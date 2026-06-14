@@ -21,7 +21,7 @@ import MyPostsPage from './components/MyPostsPage'
 import { submitReport, blockUser, fetchBlockedIds } from './lib/safety'
 import { isSupabaseConfigured, supabase } from './lib/supabase'
 import { fetchPosts, createPost, updatePost } from './lib/posts'
-import { createMatch, fetchMyMatches, fetchMatchedPostIds, unmatchMatch, matchToUI, requestIdentityReveal, acceptIdentityReveal, declineIdentityReveal, fetchPeerProfile } from './lib/matches'
+import { createMatch, fetchMyMatches, fetchMatchedPostIds, fetchUnmatchedPostIds, unmatchMatch, matchToUI, requestIdentityReveal, acceptIdentityReveal, declineIdentityReveal, fetchPeerProfile } from './lib/matches'
 import { fetchMessages, sendMessage, sendMeetingProposal, updateMeetingStatus, msgToUI } from './lib/messages'
 
 /* ─── Design tokens ─────────────────────────────────────────────── */
@@ -104,6 +104,7 @@ function AppShell() {
   const [profileHovered, setProfileHovered] = useState(false)
   const [blockedIds, setBlockedIds] = useState(new Set())
   const [matchedPostIds, setMatchedPostIds] = useState(new Set())
+  const [unmatchedPostIds, setUnmatchedPostIds] = useState(new Set())
 
   // ── New Match popup state ────────────────────────────────────
   const [newMatchModalOpen, setNewMatchModalOpen] = useState(false)
@@ -161,6 +162,16 @@ function AppShell() {
   }, [user?.id])
 
   useEffect(() => { loadMatchedPostIds() }, [loadMatchedPostIds])
+
+  // Load post IDs I've previously unmatched — these stay visible in Discover
+  // but are sorted to the bottom by the ranker.
+  const loadUnmatchedPostIds = useCallback(async () => {
+    if (!isSupabaseConfigured || !user) return
+    const { data } = await fetchUnmatchedPostIds(user.id)
+    setUnmatchedPostIds(new Set(data))
+  }, [user?.id])
+
+  useEffect(() => { loadUnmatchedPostIds() }, [loadUnmatchedPostIds])
 
   // Load messages when entering a chat
   const loadMessages = useCallback(async (matchId) => {
@@ -236,8 +247,10 @@ function AppShell() {
       if (loadAckSet().has(row.id)) return
       shownMatchIdsRef.current.add(row.id)
 
-      // Refetch matches to get the joined post data, then find this one
-      await loadMatches()
+      // Refetch matches + matchedPostIds so the requester's own post gets
+      // filtered out of their Discover feed immediately (without waiting
+      // for them to refresh).
+      await Promise.all([loadMatches(), loadMatchedPostIds()])
       // Defer one tick so matches state is updated before we read it
       setTimeout(() => {
         setMatches(curr => {
@@ -261,7 +274,7 @@ function AppShell() {
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'matches', filter: `helper_user_id=eq.${uid}` },
-        () => { loadMatches() }
+        () => { loadMatches(); loadMatchedPostIds() }
       )
       // UPDATE: handles unmatch (status → 'unmatched'), completion, etc.
       .on(
@@ -270,6 +283,9 @@ function AppShell() {
         (payload) => {
           if (payload.new.status === 'unmatched' || payload.new.status === 'cancelled') {
             setMatches(prev => prev.filter(m => m.id !== payload.new.id))
+            // Refresh matched + unmatched sets so Discover sorting reacts
+            loadMatchedPostIds()
+            loadUnmatchedPostIds()
           } else {
             loadMatches()
           }
@@ -281,6 +297,8 @@ function AppShell() {
         (payload) => {
           if (payload.new.status === 'unmatched' || payload.new.status === 'cancelled') {
             setMatches(prev => prev.filter(m => m.id !== payload.new.id))
+            loadMatchedPostIds()
+            loadUnmatchedPostIds()
           } else {
             loadMatches()
           }
@@ -289,7 +307,7 @@ function AppShell() {
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [user?.id, loadMatches, loadAckSet])
+  }, [user?.id, loadMatches, loadMatchedPostIds, loadUnmatchedPostIds, loadAckSet])
 
   // ── Fallback: on load, surface any unseen new match as a popup ───
   // If realtime missed a match (offline, reconnect, cold load), find the
@@ -597,7 +615,7 @@ function AppShell() {
       return
     }
     console.log('[ReciRing] Unmatch succeeded for', matchId)
-    await Promise.all([loadMatches(), loadMatchedPostIds()])
+    await Promise.all([loadMatches(), loadMatchedPostIds(), loadUnmatchedPostIds()])
   }
 
   // ── Identity reveal handlers ────────────────────────────────
@@ -964,6 +982,7 @@ function AppShell() {
           {tab === 'discover' && (
             <CardStack
               requests={visibleRequests}
+              unmatchedPostIds={unmatchedPostIds}
               onSwipeRight={(r) => console.log('Helping:', r.id)}
               onSwipeLeft={(r) => console.log('Passed:', r.id)}
               onMatchConfirm={handleMatchConfirm}
