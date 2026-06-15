@@ -53,21 +53,23 @@ export default function CardStack({ requests, unmatchedPostIds, interactionMap, 
   const unmatchedSet  = unmatchedPostIds || new Set()
   const interactions  = interactionMap   || new Map()
 
-  // Session-only set: cards the user just acted on (swipe-left or
-  // swipe-right). These are pushed to the absolute bottom of the stack
-  // regardless of their persistent tier, so EVERY swipe produces a
-  // visible card change — including when the feed contains only
-  // tier-4 cards (all previously unmatched). The persistent state is
-  // still tracked in interactionMap; this set is just for immediate
-  // visual feedback within the session.
-  const [recentlyActedIds, setRecentlyActedIds] = useState(() => new Set())
+  // Session-only ORDERED list: cards the user has acted on this session,
+  // oldest-acted first. New / re-acted ids go to the end. This ordering
+  // is key — when the user finishes a full pass through all cards, the
+  // next swipe on the "newly-top" card must push it past the others, so
+  // the stack keeps cycling. A plain Set would no-op on re-add and the
+  // feed would freeze. The persistent state still lives in interactionMap;
+  // this list is purely for in-session visual order.
+  const [recentlyActedOrder, setRecentlyActedOrder] = useState(() => [])
 
   const markRecentlyActed = useCallback((id) => {
-    setRecentlyActedIds(prev => {
-      if (prev.has(id)) return prev
-      const next = new Set(prev)
-      next.add(id)
-      return next
+    setRecentlyActedOrder(prev => {
+      // Remove any prior entry for this id and re-append at the end.
+      // This guarantees the just-acted card lands at the absolute bottom,
+      // even when the user is cycling through an already-fully-swiped feed.
+      const withoutId = prev.filter(x => x !== id)
+      withoutId.push(id)
+      return withoutId
     })
   }, [])
 
@@ -79,18 +81,24 @@ export default function CardStack({ requests, unmatchedPostIds, interactionMap, 
     return rankRequests(filtered, viewer, unmatchedSet, interactions)
   }, [requests, filters, viewer, unmatchedSet, interactions])
 
-  // Final stack: tier-ranked, then recently-acted cards pushed to the
-  // very bottom. This guarantees visible movement after every swipe.
+  // Final stack: tier-ranked fresh cards first, then acted cards in the
+  // order they were acted on (oldest first, most recent last). This
+  // guarantees the freshly-swiped card always ends up at the bottom,
+  // even if every card was already acted on.
   const stack = useMemo(() => {
-    if (recentlyActedIds.size === 0) return ranked
+    if (recentlyActedOrder.length === 0) return ranked
+    const actedSet = new Set(recentlyActedOrder)
+    const byId = new Map()
     const fresh = []
-    const acted = []
     for (const r of ranked) {
-      if (recentlyActedIds.has(r.id)) acted.push(r)
-      else                            fresh.push(r)
+      if (actedSet.has(r.id)) byId.set(r.id, r)
+      else                    fresh.push(r)
     }
-    return [...fresh, ...acted]
-  }, [ranked, recentlyActedIds])
+    const actedInOrder = recentlyActedOrder
+      .map(id => byId.get(id))
+      .filter(Boolean)
+    return [...fresh, ...actedInOrder]
+  }, [ranked, recentlyActedOrder])
 
   const [match, setMatch] = useState(null)
   const [detailRequest, setDetailRequest] = useState(null)
