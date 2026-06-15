@@ -53,6 +53,24 @@ export default function CardStack({ requests, unmatchedPostIds, interactionMap, 
   const unmatchedSet  = unmatchedPostIds || new Set()
   const interactions  = interactionMap   || new Map()
 
+  // Session-only set: cards the user just acted on (swipe-left or
+  // swipe-right). These are pushed to the absolute bottom of the stack
+  // regardless of their persistent tier, so EVERY swipe produces a
+  // visible card change — including when the feed contains only
+  // tier-4 cards (all previously unmatched). The persistent state is
+  // still tracked in interactionMap; this set is just for immediate
+  // visual feedback within the session.
+  const [recentlyActedIds, setRecentlyActedIds] = useState(() => new Set())
+
+  const markRecentlyActed = useCallback((id) => {
+    setRecentlyActedIds(prev => {
+      if (prev.has(id)) return prev
+      const next = new Set(prev)
+      next.add(id)
+      return next
+    })
+  }, [])
+
   // Ranked + sorted by the 4-tier system. Swiped-left posts move to the
   // bottom rather than being filtered out — they'll only resurface once
   // the user exhausts every higher-tier post.
@@ -61,10 +79,18 @@ export default function CardStack({ requests, unmatchedPostIds, interactionMap, 
     return rankRequests(filtered, viewer, unmatchedSet, interactions)
   }, [requests, filters, viewer, unmatchedSet, interactions])
 
-  // The stack is now the full ranked list — no in-memory hide filter.
-  // Persistence comes from interactionMap, which is loaded from the DB
-  // on mount and survives tab switches + refreshes.
-  const stack = ranked
+  // Final stack: tier-ranked, then recently-acted cards pushed to the
+  // very bottom. This guarantees visible movement after every swipe.
+  const stack = useMemo(() => {
+    if (recentlyActedIds.size === 0) return ranked
+    const fresh = []
+    const acted = []
+    for (const r of ranked) {
+      if (recentlyActedIds.has(r.id)) acted.push(r)
+      else                            fresh.push(r)
+    }
+    return [...fresh, ...acted]
+  }, [ranked, recentlyActedIds])
 
   const [match, setMatch] = useState(null)
   const [detailRequest, setDetailRequest] = useState(null)
@@ -82,26 +108,28 @@ export default function CardStack({ requests, unmatchedPostIds, interactionMap, 
 
   const handleSwipeRight = useCallback(
     async (request) => {
+      // Push to bottom immediately so the modal opens over a different
+      // card if creation takes a tick. Once matchedPostIds refreshes,
+      // the card disappears entirely.
+      markRecentlyActed(request.id)
       onSwipeRight?.(request)
-      // Create the match in the DB BEFORE showing the popup. The post
-      // disappears from the stack automatically once matchedPostIds
-      // refreshes (handled in App.jsx). If creation fails, the parent
-      // shows an alert and we skip opening the modal.
       const result = (await onMatchConfirm?.(request)) || {}
       if (result.error || !result.matchId) return
       setMatch({ id: result.matchId, request, peer: 'Anonymous Peer' })
     },
-    [onSwipeRight, onMatchConfirm]
+    [onSwipeRight, onMatchConfirm, markRecentlyActed]
   )
 
   const handleSwipeLeft = useCallback(
     (request) => {
-      // Records 'swiped_left' in App.jsx, which optimistically updates
-      // interactionMap → the post drops to tier 3 → moves to bottom of
-      // ranked list → next card slides up.
+      // Persistent: records 'swiped_left' in App.jsx → updates
+      // interactionMap → tier 3 (or stays tier 4 if also unmatched).
+      // Session: also push to bottom so the user always sees the
+      // next card immediately — even when every card is tier 4.
+      markRecentlyActed(request.id)
       onSwipeLeft?.(request)
     },
-    [onSwipeLeft]
+    [onSwipeLeft, markRecentlyActed]
   )
 
   const handleCardTap = useCallback(
