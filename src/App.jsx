@@ -21,6 +21,7 @@ import MyPostsPage from './components/MyPostsPage'
 import AdminEmailTest from './components/AdminEmailTest'
 import EventsList from './components/EventsList'
 import CreateEventForm from './components/CreateEventForm'
+import ProfilePage from './components/ProfilePage'
 import { isAdmin } from './data/adminEmails'
 import { submitReport, blockUser, fetchBlockedIds } from './lib/safety'
 import { isSupabaseConfigured, supabase } from './lib/supabase'
@@ -41,7 +42,7 @@ const C = {
   white:       '#FFFFFF',
 }
 
-/* ─── Tab definitions ───────────────────────────────────────────── */
+/* ─── Tab definitions (5-tab nav: Discover · Matches · Community · Events · Profile) ── */
 const TABS = [
   {
     id: 'discover',
@@ -82,20 +83,11 @@ const TABS = [
     ),
   },
   {
-    id: 'reviews',
-    label: 'Reviews',
-    icon: (active) => (
-      <svg width="22" height="22" fill={active ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-      </svg>
-    ),
-  },
-  {
-    id: 'rank',
-    label: 'Rank',
+    id: 'profile',
+    label: 'Profile',
     icon: (active) => (
       <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={active ? 2 : 1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M16 8v8m-8-5v5m4-9v9M3 20h18" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
       </svg>
     ),
   },
@@ -105,13 +97,13 @@ const TABS = [
 function AppShell() {
   const { session, user, profile, signOut } = useAuth()
   const [tab, setTab]             = useState('discover')
-  const [showSettings, setShowSettings] = useState(false)
-  const [showMyPosts, setShowMyPosts]   = useState(false)
+  // Profile sub-tab is lifted to App so that chat→review deep-links can
+  // jump straight to the Reviews sub-tab on the Profile page.
+  const [profileSubTab, setProfileSubTab] = useState('profile')
   const [showAdminEmailTest, setShowAdminEmailTest] = useState(false)
   const [showCreateEvent, setShowCreateEvent] = useState(false)
   // Bump this to force EventsList to refetch after a new event is created.
   const [eventsRefreshKey, setEventsRefreshKey] = useState(0)
-  const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [requests, setRequests]   = useState([])
   const [matches, setMatches]     = useState([])
   const [chatMatchId, setChatMatchId] = useState(null)
@@ -890,175 +882,52 @@ function AppShell() {
                 />
               )}
 
-            {/* Profile button + dropdown menu */}
-            <div style={{ position: 'relative', flexShrink: 0 }}>
-              <button
-                type="button"
-                onMouseEnter={() => setProfileHovered(true)}
-                onMouseLeave={() => setProfileHovered(false)}
-                onClick={() => setShowProfileMenu(m => !m)}
-                title={session ? session.user.email : 'Menu'}
-                className="active:scale-95"
-                style={{
-                  width: 42, height: 42,
-                  borderRadius: '50%',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer',
-                  overflow: 'hidden',
-                  padding: 0,
-                  background: resolveAvatarSeed(profile?.avatar_url)
-                    ? 'none'
-                    : profileHovered
-                      ? 'linear-gradient(#F5F0E8, #F5F0E8) padding-box, linear-gradient(135deg, #FFD700 0%, #B8962E 100%) border-box'
-                      : 'linear-gradient(#FAFAF8, #FAFAF8) padding-box, linear-gradient(135deg, #D4AF37 0%, #9A7520 100%) border-box',
-                  border: resolveAvatarSeed(profile?.avatar_url)
-                    ? '2px solid #E6D3A3'
-                    : '1.5px solid transparent',
-                  boxShadow: profileHovered
-                    ? '0 0 0 3px rgba(212,175,55,0.14), 0 4px 14px rgba(140,100,0,0.16)'
-                    : '0 2px 8px rgba(100,70,0,0.08)',
-                  transform: profileHovered ? 'scale(1.05)' : 'scale(1)',
-                  transition: 'all 0.24s ease',
-                }}
-                aria-label="Profile menu"
-              >
-                {resolveAvatarSeed(profile?.avatar_url) ? (
-                  <AnonymousAvatar seed={resolveAvatarSeed(profile.avatar_url)} size={42} />
-                ) : (
-                  <svg
-                    width="16" height="16"
-                    fill="none" stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    style={{ color: profileHovered ? '#B8962E' : '#C8A96A' }}
-                    strokeWidth={1.65}
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                )}
-              </button>
-
-              {/* Dropdown */}
-              {showProfileMenu && (
-                <>
-                  {/* Invisible backdrop to close on outside click */}
-                  <div
-                    onClick={() => setShowProfileMenu(false)}
-                    style={{ position: 'fixed', inset: 0, zIndex: 39 }}
-                  />
-                  <div style={{
-                    position: 'absolute', right: 0, top: 48, zIndex: 40,
-                    background: '#FFFFFF',
-                    borderRadius: 16,
-                    boxShadow: '0 8px 32px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.06)',
-                    border: '1px solid rgba(200,169,106,0.18)',
-                    overflow: 'hidden',
-                    minWidth: 180,
-                  }}>
-                    {/* My Posts */}
-                    <button
-                      type="button"
-                      onClick={() => { setShowProfileMenu(false); setShowMyPosts(true); setShowSettings(false) }}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 10, width: '100%',
-                        padding: '13px 18px', background: 'none', border: 'none',
-                        fontSize: 14, fontWeight: 500, color: C.text, cursor: 'pointer',
-                        textAlign: 'left',
-                      }}
-                    >
-                      <svg width="16" height="16" fill="none" stroke={C.gold} viewBox="0 0 24 24" strokeWidth={1.8}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V9a2 2 0 012-2h2a2 2 0 012 2v9a2 2 0 01-2 2h-2z" />
-                      </svg>
-                      My Posts
-                    </button>
-
-                    <div style={{ height: 1, background: 'rgba(200,169,106,0.12)', margin: '0 14px' }} />
-
-                    {/* My Reviews */}
-                    <button
-                      type="button"
-                      onClick={() => { setShowProfileMenu(false); setShowMyPosts(false); setShowSettings(false); setTab('reviews'); setReviewMatchId(null) }}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 10, width: '100%',
-                        padding: '13px 18px', background: 'none', border: 'none',
-                        fontSize: 14, fontWeight: 500, color: C.text, cursor: 'pointer',
-                        textAlign: 'left',
-                      }}
-                    >
-                      <svg width="16" height="16" fill="none" stroke={C.gold} viewBox="0 0 24 24" strokeWidth={1.8}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                      </svg>
-                      My Reviews
-                    </button>
-
-                    <div style={{ height: 1, background: 'rgba(200,169,106,0.12)', margin: '0 14px' }} />
-
-                    {/* My Profile */}
-                    <button
-                      type="button"
-                      onClick={() => { setShowProfileMenu(false); setShowSettings(true); setShowMyPosts(false) }}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 10, width: '100%',
-                        padding: '13px 18px', background: 'none', border: 'none',
-                        fontSize: 14, fontWeight: 500, color: C.text, cursor: 'pointer',
-                        textAlign: 'left',
-                      }}
-                    >
-                      <svg width="16" height="16" fill="none" stroke={C.gold} viewBox="0 0 24 24" strokeWidth={1.8}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                      My Profile
-                    </button>
-
-                    {isAdmin(user?.email) && (
-                      <>
-                        <div style={{ height: 1, background: 'rgba(200,169,106,0.12)', margin: '0 14px' }} />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setShowProfileMenu(false)
-                            setShowAdminEmailTest(true)
-                            setShowSettings(false); setShowMyPosts(false)
-                          }}
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: 10, width: '100%',
-                            padding: '13px 18px', background: 'none', border: 'none',
-                            fontSize: 14, fontWeight: 500, color: C.text, cursor: 'pointer',
-                            textAlign: 'left',
-                          }}
-                        >
-                          <svg width="16" height="16" fill="none" stroke={C.gold} viewBox="0 0 24 24" strokeWidth={1.8}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                          </svg>
-                          Send test email
-                        </button>
-                      </>
-                    )}
-
-                    <div style={{ height: 1, background: 'rgba(200,169,106,0.12)', margin: '0 14px' }} />
-
-                    {/* Log out */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowProfileMenu(false)
-                        if (window.confirm('Sign out?')) signOut()
-                      }}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 10, width: '100%',
-                        padding: '13px 18px', background: 'none', border: 'none',
-                        fontSize: 14, fontWeight: 500, color: '#DC2626', cursor: 'pointer',
-                        textAlign: 'left',
-                      }}
-                    >
-                      <svg width="16" height="16" fill="none" stroke="#DC2626" viewBox="0 0 24 24" strokeWidth={1.8}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                      </svg>
-                      Log out
-                    </button>
-                  </div>
-                </>
+            {/* Avatar — taps through to the Profile tab. Dropdown removed;
+                  all account / profile actions live under the Profile tab. */}
+            <button
+              type="button"
+              onMouseEnter={() => setProfileHovered(true)}
+              onMouseLeave={() => setProfileHovered(false)}
+              onClick={() => { setTab('profile'); setProfileSubTab('profile') }}
+              title="Profile"
+              className="active:scale-95"
+              style={{
+                width: 42, height: 42,
+                borderRadius: '50%',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer',
+                overflow: 'hidden',
+                padding: 0, flexShrink: 0,
+                background: resolveAvatarSeed(profile?.avatar_url)
+                  ? 'none'
+                  : profileHovered
+                    ? 'linear-gradient(#F5F0E8, #F5F0E8) padding-box, linear-gradient(135deg, #FFD700 0%, #B8962E 100%) border-box'
+                    : 'linear-gradient(#FAFAF8, #FAFAF8) padding-box, linear-gradient(135deg, #D4AF37 0%, #9A7520 100%) border-box',
+                border: resolveAvatarSeed(profile?.avatar_url)
+                  ? '2px solid #E6D3A3'
+                  : '1.5px solid transparent',
+                boxShadow: profileHovered
+                  ? '0 0 0 3px rgba(212,175,55,0.14), 0 4px 14px rgba(140,100,0,0.16)'
+                  : '0 2px 8px rgba(100,70,0,0.08)',
+                transform: profileHovered ? 'scale(1.05)' : 'scale(1)',
+                transition: 'all 0.24s ease',
+              }}
+              aria-label="Open profile"
+            >
+              {resolveAvatarSeed(profile?.avatar_url) ? (
+                <AnonymousAvatar seed={resolveAvatarSeed(profile.avatar_url)} size={42} />
+              ) : (
+                <svg
+                  width="16" height="16"
+                  fill="none" stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  style={{ color: profileHovered ? '#B8962E' : '#C8A96A' }}
+                  strokeWidth={1.65}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
               )}
-            </div>
+            </button>
             </div>
           </div>
 
@@ -1073,16 +942,7 @@ function AppShell() {
 
         {/* ── Main content ──────────────────────────────────── */}
         <main className="flex-1 flex flex-col min-h-0" style={{ background: '#F9F7F4' }}>
-          {showSettings && session ? (
-            <SettingsPage onClose={() => setShowSettings(false)} />
-          ) : showMyPosts && session ? (
-            <MyPostsPage
-              posts={myPosts}
-              onEditPost={handleEditPost}
-              onDeletePost={handleDeletePost}
-              onClose={() => setShowMyPosts(false)}
-            />
-          ) : showAdminEmailTest && session && isAdmin(user?.email) ? (
+          {showAdminEmailTest && session && isAdmin(user?.email) ? (
             <AdminEmailTest onClose={() => setShowAdminEmailTest(false)} />
           ) : <>
           {tab === 'discover' && (
@@ -1126,7 +986,12 @@ function AppShell() {
                 onProposeMeeting={(data) => handleProposeMeeting(chatMatchId, data)}
                 onMeetingResponse={(msgId, status) => handleMeetingResponse(chatMatchId, msgId, status)}
                 onBack={() => setChatMatchId(null)}
-                onNavigateReview={() => { setReviewMatchId(chatMatchId); setChatMatchId(null); setTab('reviews') }}
+                onNavigateReview={() => {
+                  setReviewMatchId(chatMatchId)
+                  setChatMatchId(null)
+                  setTab('profile')
+                  setProfileSubTab('reviews')
+                }}
                 onReport={handleReport}
                 onBlock={handleBlock}
                 onUnmatch={() => handleUnmatch(chatMatchId)}
@@ -1136,27 +1001,19 @@ function AppShell() {
               />
             </div>
           )}
-          {tab === 'reviews' && (
-            <div className="flex-1 phone-scroll" style={{ background: '#F9F7F4' }}>
-              {reviewMatchId ? (
-                <RatingReview
-                  matchId={reviewMatchId}
-                  peerName={matches.find(m => m.id === reviewMatchId)?.request?.needs?.slice(0, 30) || 'your match'}
-                  onSubmitted={handleSubmitReview}
-                  onBack={() => setReviewMatchId(null)}
-                />
-              ) : (
-                <PendingReviewsList
-                  matches={pendingReviewMatches}
-                  pastReviews={pastReviews}
-                  allMatches={matches}
-                  onSelect={(id) => setReviewMatchId(id)}
-                />
-              )}
-            </div>
-          )}
-          {tab === 'rank' && (
-            <LeaderboardView />
+          {tab === 'profile' && (
+            <ProfilePage
+              subTab={profileSubTab}
+              onSubTabChange={setProfileSubTab}
+              pendingReviewMatches={pendingReviewMatches}
+              pastReviews={pastReviews}
+              allMatches={matches}
+              reviewMatchId={reviewMatchId}
+              onSelectReviewMatch={(id) => setReviewMatchId(id)}
+              onClearReviewMatch={() => setReviewMatchId(null)}
+              onSubmitReview={handleSubmitReview}
+              onOpenAdminEmailTest={() => setShowAdminEmailTest(true)}
+            />
           )}
           {tab === 'events' && !showCreateEvent && (
             <EventsList
@@ -1192,12 +1049,11 @@ function AppShell() {
                 key={t.id}
                 type="button"
                 onClick={() => setTab(t.id)}
-                className="flex flex-col items-center gap-1 py-2 px-3 rounded-2xl transition-all duration-200 active:scale-95"
+                className="flex flex-col items-center gap-1 py-2 px-4 rounded-2xl transition-all duration-200 active:scale-95"
                 style={{
                   color: active ? C.gold : C.textMuted,
                   background: active ? C.goldBg : 'transparent',
-                  minWidth: 50,
-                  flex: '1 0 auto',
+                  minWidth: 60,
                 }}
               >
                 {t.icon(active)}

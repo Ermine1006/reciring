@@ -1,0 +1,167 @@
+import { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
+import SettingsPage from './SettingsPage'
+import SettingsTab from './SettingsTab'
+import PendingReviewsList from './PendingReviewsList'
+import RatingReview from './RatingReview'
+import LeaderboardView from './LeaderboardView'
+
+const C = {
+  gold:      '#C8A96A',
+  goldDark:  '#A88245',
+  goldLight: '#E6D3A3',
+  goldBg:    '#FBF6EC',
+  text:      '#111111',
+  textSub:   '#6B7280',
+  textMuted: '#9CA3AF',
+  white:     '#FFFFFF',
+  border:    '#F0ECE4',
+}
+
+const SUB_TABS = [
+  { id: 'profile',     label: 'My Profile' },
+  { id: 'reviews',     label: 'Reviews' },
+  { id: 'leaderboard', label: 'Leaderboard' },
+  { id: 'settings',    label: 'Settings' },
+]
+
+/**
+ * ProfilePage — container for the bottom-nav "Profile" tab.
+ *
+ * Sub-tabs:
+ *   My Profile  → SettingsPage (the editor)
+ *   Reviews     → PendingReviewsList + RatingReview flow
+ *   Leaderboard → LeaderboardView
+ *   Settings    → SettingsTab (email prefs, admin, account)
+ *
+ * The "Reviews" sub-tab still cooperates with App.jsx's reviewMatchId
+ * state so that ChatView can deep-link from "Review user" — App sets
+ * tab='profile' and subTab='reviews' and reviewMatchId together.
+ */
+export default function ProfilePage({
+  // Sub-tab routing (lifted to App so chat→review deep-links work)
+  subTab,
+  onSubTabChange,
+  // Reviews sub-tab
+  pendingReviewMatches,
+  pastReviews,
+  allMatches,
+  reviewMatchId,
+  onSelectReviewMatch,
+  onClearReviewMatch,
+  onSubmitReview,
+  // Settings sub-tab
+  onOpenAdminEmailTest,
+}) {
+  // If parent didn't supply controlled state, fall back to local.
+  const [localSub, setLocalSub] = useState('profile')
+  const active = subTab ?? localSub
+  const setActive = (id) => {
+    if (onSubTabChange) onSubTabChange(id)
+    else                setLocalSub(id)
+  }
+
+  // Switching away from Reviews while a specific match was being
+  // rated should clear that selection so the next visit starts fresh.
+  useEffect(() => {
+    if (active !== 'reviews' && reviewMatchId) onClearReviewMatch?.()
+  }, [active]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <div className="flex-1 phone-scroll" style={{ background: '#F9F7F4', display: 'flex', flexDirection: 'column' }}>
+      {/* Page header */}
+      <div style={{
+        flexShrink: 0,
+        padding: '20px 20px 14px',
+        background: '#F9F7F4',
+      }}>
+        <h1 className="font-display" style={{
+          fontSize: 22, fontWeight: 600, color: C.text,
+          margin: 0, letterSpacing: '-0.01em',
+        }}>
+          Profile
+        </h1>
+
+        {/* Sub-tab pill row */}
+        <div
+          style={{
+            display: 'flex', gap: 6, marginTop: 14,
+            overflowX: 'auto',
+            WebkitOverflowScrolling: 'touch',
+            scrollbarWidth: 'none',
+          }}
+          className="phone-scroll-x"
+        >
+          {SUB_TABS.map(t => {
+            const isActive = active === t.id
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setActive(t.id)}
+                style={{
+                  flexShrink: 0,
+                  padding: '7px 14px',
+                  borderRadius: 99,
+                  background: isActive ? `linear-gradient(135deg, ${C.gold}, ${C.goldDark})` : C.white,
+                  color: isActive ? '#fff' : C.textSub,
+                  border: `1px solid ${isActive ? C.gold : C.border}`,
+                  fontSize: 12, fontWeight: 600,
+                  letterSpacing: '0.04em',
+                  fontFamily: 'Inter, system-ui, sans-serif',
+                  cursor: 'pointer',
+                  boxShadow: isActive ? '0 2px 8px rgba(200,169,106,0.25)' : 'none',
+                  transition: 'all 0.15s',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {t.label}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Active sub-tab body */}
+      <div style={{ flex: 1, minHeight: 0 }}>
+        <motion.div
+          key={active}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.16 }}
+          style={{ height: '100%' }}
+        >
+          {active === 'profile' && <SettingsPage />}
+
+          {active === 'reviews' && (
+            <div className="px-2" style={{ padding: '0 0 16px' }}>
+              {reviewMatchId ? (
+                <RatingReview
+                  matchId={reviewMatchId}
+                  peerName={allMatches?.find(m => m.id === reviewMatchId)?.request?.needs?.slice(0, 30) || 'your match'}
+                  onSubmitted={onSubmitReview}
+                  onBack={onClearReviewMatch}
+                />
+              ) : (
+                <PendingReviewsList
+                  matches={pendingReviewMatches || []}
+                  pastReviews={pastReviews || []}
+                  allMatches={allMatches || []}
+                  onSelect={onSelectReviewMatch}
+                />
+              )}
+            </div>
+          )}
+
+          {active === 'leaderboard' && <LeaderboardView />}
+
+          {active === 'settings' && (
+            <div className="px-5 pt-3 pb-10">
+              <SettingsTab onOpenAdminEmailTest={onOpenAdminEmailTest} />
+            </div>
+          )}
+        </motion.div>
+      </div>
+    </div>
+  )
+}
