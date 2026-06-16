@@ -18,6 +18,8 @@ import SettingsPage, { resolveAvatarSeed } from './components/SettingsPage'
 import OnboardingProfile from './components/OnboardingProfile'
 import AnonymousAvatar from './components/AnonymousAvatar'
 import MyPostsPage from './components/MyPostsPage'
+import AdminEmailTest from './components/AdminEmailTest'
+import { isAdmin } from './data/adminEmails'
 import { submitReport, blockUser, fetchBlockedIds } from './lib/safety'
 import { isSupabaseConfigured, supabase } from './lib/supabase'
 import { fetchPosts, createPost, updatePost } from './lib/posts'
@@ -93,6 +95,7 @@ function AppShell() {
   const [tab, setTab]             = useState('discover')
   const [showSettings, setShowSettings] = useState(false)
   const [showMyPosts, setShowMyPosts]   = useState(false)
+  const [showAdminEmailTest, setShowAdminEmailTest] = useState(false)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [requests, setRequests]   = useState([])
   const [matches, setMatches]     = useState([])
@@ -991,6 +994,31 @@ function AppShell() {
                       My Profile
                     </button>
 
+                    {isAdmin(user?.email) && (
+                      <>
+                        <div style={{ height: 1, background: 'rgba(200,169,106,0.12)', margin: '0 14px' }} />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowProfileMenu(false)
+                            setShowAdminEmailTest(true)
+                            setShowSettings(false); setShowMyPosts(false)
+                          }}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 10, width: '100%',
+                            padding: '13px 18px', background: 'none', border: 'none',
+                            fontSize: 14, fontWeight: 500, color: C.text, cursor: 'pointer',
+                            textAlign: 'left',
+                          }}
+                        >
+                          <svg width="16" height="16" fill="none" stroke={C.gold} viewBox="0 0 24 24" strokeWidth={1.8}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                          </svg>
+                          Send test email
+                        </button>
+                      </>
+                    )}
+
                     <div style={{ height: 1, background: 'rgba(200,169,106,0.12)', margin: '0 14px' }} />
 
                     {/* Log out */}
@@ -1039,6 +1067,8 @@ function AppShell() {
               onDeletePost={handleDeletePost}
               onClose={() => setShowMyPosts(false)}
             />
+          ) : showAdminEmailTest && session && isAdmin(user?.email) ? (
+            <AdminEmailTest onClose={() => setShowAdminEmailTest(false)} />
           ) : <>
           {tab === 'discover' && (
             <CardStack
