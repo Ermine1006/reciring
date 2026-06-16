@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { INDUSTRIES, HELP_TYPES } from '../data/requestOptions'
 import { PROGRAMS, CAREER_STAGES, NETWORKING_INTENTS } from '../data/onboardingOptions'
+import { setMyEmailSubscription } from '../lib/email'
 import AnonymousAvatar from './AnonymousAvatar'
 import Chip from './Chip'
 import PRESET_AVATARS from '../data/presetAvatars'
@@ -117,6 +118,29 @@ export default function SettingsPage({ onClose }) {
   const [deleting, setDeleting]     = useState(false)
   const [showSupport, setShowSupport] = useState(false)
   const [copied, setCopied]         = useState(false)
+
+  // Email subscription — local mirror of profile.email_subscribed.
+  // Optimistic toggle: flip state immediately, then persist + audit.
+  // Falls back to `true` for accounts created before the column existed.
+  const [emailSubscribed, setEmailSubscribed] = useState(
+    profile?.email_subscribed !== false,
+  )
+  const [emailToggleSaving, setEmailToggleSaving] = useState(false)
+  const [emailToggleError, setEmailToggleError]   = useState(null)
+
+  const handleEmailToggle = async () => {
+    if (emailToggleSaving) return
+    const next = !emailSubscribed
+    setEmailSubscribed(next)        // optimistic
+    setEmailToggleSaving(true)
+    setEmailToggleError(null)
+    const { error } = await setMyEmailSubscription(next)
+    setEmailToggleSaving(false)
+    if (error) {
+      setEmailSubscribed(!next)     // rollback
+      setEmailToggleError(error.message || 'Could not update preference')
+    }
+  }
 
   const toggleNetworkingIntent = (id) => setNetworkingIntent(prev =>
     prev.includes(id) ? prev.filter(v => v !== id) : [...prev, id]
@@ -404,6 +428,90 @@ export default function SettingsPage({ onClose }) {
             )}
           </AnimatePresence>
         </div>
+
+        {/* ── Email preferences ───────────────────────────────── */}
+        <Section title="Email preferences">
+          <div
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              gap: 16,
+            }}
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{
+                fontSize: 14, fontWeight: 600, color: C.text,
+                fontFamily: 'Inter, system-ui, sans-serif', margin: 0,
+              }}>
+                Receive Reciring emails
+              </p>
+              <p style={{
+                fontSize: 12, color: C.textMuted, lineHeight: 1.5,
+                fontFamily: 'Inter, system-ui, sans-serif',
+                margin: '4px 0 0',
+              }}>
+                Announcements, weekly digests, and feature updates. Account-related emails (security, password resets) will still reach you.
+              </p>
+            </div>
+
+            {/* iOS-style toggle */}
+            <button
+              type="button"
+              onClick={handleEmailToggle}
+              disabled={emailToggleSaving}
+              role="switch"
+              aria-checked={emailSubscribed}
+              aria-label="Receive Reciring emails"
+              style={{
+                flexShrink: 0,
+                width: 52, height: 30,
+                borderRadius: 99,
+                border: 'none',
+                background: emailSubscribed
+                  ? `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`
+                  : '#D1D5DB',
+                position: 'relative',
+                cursor: emailToggleSaving ? 'wait' : 'pointer',
+                transition: 'background 0.2s ease',
+                opacity: emailToggleSaving ? 0.7 : 1,
+                boxShadow: emailSubscribed
+                  ? '0 2px 8px rgba(200,169,106,0.3)'
+                  : 'inset 0 1px 2px rgba(0,0,0,0.1)',
+              }}
+            >
+              <span
+                style={{
+                  position: 'absolute',
+                  top: 3, left: emailSubscribed ? 25 : 3,
+                  width: 24, height: 24,
+                  borderRadius: '50%',
+                  background: C.white,
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.18)',
+                  transition: 'left 0.22s cubic-bezier(0.22, 1, 0.36, 1)',
+                }}
+              />
+            </button>
+          </div>
+
+          {emailToggleError && (
+            <p style={{
+              marginTop: 10, fontSize: 12, color: C.danger,
+              fontFamily: 'Inter, system-ui, sans-serif',
+            }}>
+              {emailToggleError}
+            </p>
+          )}
+
+          {!emailSubscribed && (
+            <p style={{
+              marginTop: 12, padding: '10px 12px',
+              background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 10,
+              fontSize: 12, color: '#92400E', lineHeight: 1.5,
+              fontFamily: 'Inter, system-ui, sans-serif',
+            }}>
+              You're currently opted out of non-essential Reciring emails. Toggle on anytime to start receiving updates again.
+            </p>
+          )}
+        </Section>
 
         {/* ── Account ─────────────────────────────────────────── */}
         <Section title="Account">

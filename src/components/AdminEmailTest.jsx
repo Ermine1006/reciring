@@ -54,6 +54,44 @@ export default function AdminEmailTest({ onClose }) {
   const [result, setResult]   = useState(null) // { sent, failed, unsubscribed, errors, recipients }
   const [error, setError]     = useState(null)
 
+  // Subscription admin (resubscribe / unsubscribe by email)
+  const [subEmail, setSubEmail]       = useState('')
+  const [subAction, setSubAction]     = useState('subscribe') // 'subscribe' | 'unsubscribe'
+  const [subSaving, setSubSaving]     = useState(false)
+  const [subResult, setSubResult]     = useState(null)
+  const [subError, setSubError]       = useState(null)
+
+  const handleSubscriptionUpdate = async () => {
+    const target = subEmail.trim().toLowerCase()
+    if (!EMAIL_RE.test(target)) { setSubError('Enter a valid email.'); return }
+    if (!session)                { setSubError('You are not signed in.'); return }
+
+    setSubSaving(true); setSubError(null); setSubResult(null)
+
+    let resp
+    try {
+      resp = await fetch('/api/admin/subscription', {
+        method: 'POST',
+        headers: {
+          Authorization:  `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: target, action: subAction }),
+      })
+    } catch (err) {
+      setSubSaving(false)
+      setSubError(err?.message || 'Network error')
+      return
+    }
+
+    let body = {}
+    try { body = await resp.json() } catch {}
+
+    setSubSaving(false)
+    if (!resp.ok) { setSubError(body.error || `Failed (${resp.status})`); return }
+    setSubResult(body)
+  }
+
   const { valid, invalid } = parseRecipients(recipientsText)
   const canSend = valid.length > 0 && valid.length <= 10 && !sending
 
@@ -306,6 +344,122 @@ export default function AdminEmailTest({ onClose }) {
             </p>
           </section>
         )}
+
+        {/* ── Manage subscription (resubscribe / unsubscribe) ───── */}
+        <section
+          className="rounded-2xl p-5 mt-6"
+          style={{ background: C.white, border: `1px solid ${C.border}` }}
+        >
+          <p className="text-xs uppercase tracking-wider mb-1" style={{ color: C.textMuted }}>
+            Manage subscription
+          </p>
+          <p style={{ fontSize: 11, color: C.textMuted, marginBottom: 14, fontFamily: 'Inter, system-ui, sans-serif', lineHeight: 1.5 }}>
+            Resubscribe a user who unsubscribed during testing, or manually opt someone out. Every change is recorded in <code style={{ background: '#F5F5F5', padding: '1px 5px', borderRadius: 4, fontFamily: 'ui-monospace, monospace' }}>email_subscriptions</code> with your user id.
+          </p>
+
+          <input
+            type="email"
+            value={subEmail}
+            onChange={(e) => setSubEmail(e.target.value)}
+            placeholder="user@example.com"
+            className="w-full rounded-xl px-4 py-3 text-sm mb-3"
+            style={{
+              background: '#FAFAFA',
+              border: `1.5px solid ${C.border}`,
+              color: C.text,
+              outline: 'none',
+              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+              fontSize: 13,
+            }}
+          />
+
+          {/* Action toggle */}
+          <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+            {[
+              { id: 'subscribe',   label: 'Resubscribe',  color: C.success, bg: '#F0FDF4', border: '#BBF7D0' },
+              { id: 'unsubscribe', label: 'Unsubscribe',  color: C.amber,   bg: '#FFFBEB', border: '#FDE68A' },
+            ].map(opt => {
+              const active = subAction === opt.id
+              return (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => setSubAction(opt.id)}
+                  style={{
+                    flex: 1,
+                    padding: '10px 12px',
+                    borderRadius: 12,
+                    background: active ? opt.bg : '#FAFAFA',
+                    border: `1.5px solid ${active ? opt.border : C.border}`,
+                    cursor: 'pointer',
+                    fontSize: 13, fontWeight: 600,
+                    color: active ? opt.color : C.textSub,
+                    fontFamily: 'Inter, system-ui, sans-serif',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  {opt.label}
+                </button>
+              )
+            })}
+          </div>
+
+          <button
+            type="button"
+            onClick={handleSubscriptionUpdate}
+            disabled={subSaving || !subEmail.trim()}
+            className="w-full py-3 rounded-xl text-sm font-semibold tracking-wide active:scale-[0.98]"
+            style={{
+              background: (subSaving || !subEmail.trim())
+                ? '#F3F4F6'
+                : `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
+              color: (subSaving || !subEmail.trim()) ? C.textMuted : '#fff',
+              border: 'none',
+              boxShadow: (subSaving || !subEmail.trim())
+                ? 'none'
+                : '0 4px 14px rgba(200,169,106,0.3)',
+              cursor: (subSaving || !subEmail.trim()) ? 'default' : 'pointer',
+            }}
+          >
+            {subSaving ? 'Updating…' : subAction === 'subscribe' ? 'Resubscribe user' : 'Unsubscribe user'}
+          </button>
+
+          {subError && (
+            <div
+              className="rounded-xl p-3 mt-3"
+              style={{ background: '#FEF2F2', border: `1px solid #FECACA` }}
+            >
+              <p style={{ fontSize: 12, color: C.danger, fontFamily: 'Inter, system-ui, sans-serif', margin: 0 }}>
+                {subError}
+              </p>
+            </div>
+          )}
+
+          {subResult && (
+            <div
+              className="rounded-xl p-3 mt-3"
+              style={{
+                background: subResult.status === 'subscribed' ? '#F0FDF4' : '#FFFBEB',
+                border: `1px solid ${subResult.status === 'subscribed' ? '#BBF7D0' : '#FDE68A'}`,
+              }}
+            >
+              <p style={{
+                fontSize: 13, fontWeight: 600,
+                color: subResult.status === 'subscribed' ? C.success : C.amber,
+                fontFamily: 'Inter, system-ui, sans-serif', margin: '0 0 4px',
+              }}>
+                {subResult.status === 'subscribed' ? '✓ Resubscribed' : '⚠ Unsubscribed'}
+              </p>
+              <p style={{ fontSize: 12, color: C.textSub, fontFamily: 'Inter, system-ui, sans-serif', margin: 0, lineHeight: 1.5 }}>
+                <span style={{ fontFamily: 'ui-monospace, monospace', color: C.text }}>{subResult.email}</span>
+                {' '}is now <strong>{subResult.status}</strong>
+                {subResult.previous && subResult.previous !== subResult.status && (
+                  <> (was <em>{subResult.previous}</em>)</>
+                )}.
+              </p>
+            </div>
+          )}
+        </section>
       </motion.div>
     </div>
   )

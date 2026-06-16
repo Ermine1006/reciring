@@ -42,7 +42,7 @@ export default async function handler(req, res) {
     .from('profiles')
     .update({ email_subscribed: false })
     .eq('id', userId)
-    .select('email')
+    .select('email, email_subscribed')
     .maybeSingle()
 
   if (error) {
@@ -52,6 +52,21 @@ export default async function handler(req, res) {
   if (!data) {
     return res.status(404).send(errorPage('We could not find your account.'))
   }
+
+  // Append to audit log. Best-effort — don't fail the user-facing page
+  // if the insert errors (the flag is already updated, which is what
+  // matters for compliance).
+  await admin
+    .from('email_subscriptions')
+    .insert({
+      user_id:  userId,
+      status:   'unsubscribed',
+      source:   'user_unsubscribe_link',
+      acted_by: userId,
+    })
+    .then(({ error: logErr }) => {
+      if (logErr) console.warn('[unsubscribe] audit log insert failed:', logErr.message)
+    })
 
   return res.status(200).send(confirmationPage(data.email))
 }
