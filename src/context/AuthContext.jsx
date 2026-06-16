@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
+import { sendWelcomeEmail } from '../lib/email'
 
 const AuthContext = createContext(null)
 
@@ -97,6 +98,19 @@ export function AuthProvider({ children }) {
         setProfile({ id: user.id, email: user.email, name: user.email?.split('@')[0] || 'Member', avatar_url: null })
       } else {
         setProfile(created)
+        // First-time profile creation = first sign-in → trigger welcome email.
+        // Fire-and-forget. Server-side dedupe in /api/send-email ensures even
+        // if this fires twice (HMR, double-mount, race), only one mail ships.
+        if (user.email) {
+          sendWelcomeEmail({
+            toEmail:     user.email,
+            displayName: user.user_metadata?.full_name || user.email.split('@')[0],
+          }).then(({ error: emailErr, data }) => {
+            if (emailErr) console.warn('[ReciRing] welcome email failed:', emailErr.message)
+            else if (data?.skipped) console.log('[ReciRing] welcome skipped:', data.reason)
+            else console.log('[ReciRing] welcome email queued:', data?.id)
+          })
+        }
       }
     } catch (err) {
       console.error('[ReciRing] ensureProfile threw (non-fatal):', err)

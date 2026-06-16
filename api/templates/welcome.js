@@ -1,18 +1,21 @@
-// Welcome email — sent after a user completes onboarding.
+// Welcome email — sent on first profile creation (i.e. first sign-in).
 //
-// Template uses inline styles only (no <link>, no <style>) because
-// Gmail / Outlook strip external CSS. Single-column, ~560px wide,
-// renders cleanly in Apple Mail, Gmail web, Outlook, and mobile.
+// Vision-led copy: leads with WHY Reciring exists ("making invisible
+// networks visible") rather than a feature tour. Target length ~200
+// words including footer. Single-column, inline styles only — same
+// rendering envelope as before for Gmail/Outlook/Apple Mail.
 //
 // Variables substituted from the `data` object:
-//   data.displayName  — preferred name or email prefix
-//   data.userEmail    — recipient address (shown in footer)
-//   data.appUrl       — link target for the CTA button
+//   data.displayName    — preferred name or email prefix
+//   data.userEmail      — recipient address (shown in footer)
+//   data.appUrl         — link target for the CTA button
+//   data.unsubscribeUrl — full HMAC-signed unsubscribe URL (optional)
 
-export function welcomeTemplate({ displayName, userEmail, appUrl }) {
-  const safeName = escapeHtml(displayName || 'there')
+export function welcomeTemplate({ displayName, userEmail, appUrl, unsubscribeUrl }) {
+  const safeName  = escapeHtml(displayName || 'there')
   const safeEmail = escapeHtml(userEmail || '')
-  const safeUrl = escapeHtml(appUrl || 'https://reciring.com')
+  const safeUrl   = escapeHtml(appUrl || 'https://reciring.com')
+  const safeUnsub = escapeHtml(unsubscribeUrl || '')
 
   const subject = `Welcome to Reciring, ${safeName}`
 
@@ -35,13 +38,13 @@ export function welcomeTemplate({ displayName, userEmail, appUrl }) {
 
           <!-- Header -->
           <tr>
-            <td style="padding:40px 40px 24px 40px; text-align:center;">
+            <td style="padding:40px 40px 22px 40px; text-align:center;">
               <p style="font-size:42px; line-height:1; margin:0 0 18px;">🤝</p>
               <h1 style="font-family:'Playfair Display',Georgia,serif; font-size:26px; font-weight:500; color:#A88245; margin:0 0 10px; letter-spacing:0.02em;">
                 Welcome to Reciring
               </h1>
               <p style="font-size:15px; line-height:1.55; color:#6B7280; margin:0;">
-                Hi ${safeName} — your profile is live and matching has started.
+                Hi ${safeName} — your profile is now live and ready to connect with the community.
               </p>
             </td>
           </tr>
@@ -53,34 +56,51 @@ export function welcomeTemplate({ displayName, userEmail, appUrl }) {
             </td>
           </tr>
 
-          <!-- First-steps section -->
+          <!-- Why Reciring? -->
           <tr>
-            <td style="padding:28px 40px 8px;">
-              <p style="font-size:11px; letter-spacing:0.18em; text-transform:uppercase; font-weight:600; color:#C8A96A; margin:0 0 16px;">
+            <td style="padding:24px 40px 8px;">
+              <div style="background:#FBF6EC; border:1px solid #E6D3A3; border-radius:14px; padding:20px 22px;">
+                <p style="font-size:11px; letter-spacing:0.18em; text-transform:uppercase; font-weight:600; color:#C8A96A; margin:0 0 10px;">
+                  Why Reciring?
+                </p>
+                <p style="font-size:14px; line-height:1.6; color:#3D3020; margin:0 0 10px; font-weight:600;">
+                  The most valuable opportunities often come from people you don't know yet.
+                </p>
+                <p style="font-size:13.5px; line-height:1.6; color:#6B5A40; margin:0;">
+                  Reciring helps uncover the expertise, experience, and opportunities hidden within your community — making invisible networks visible and useful.
+                </p>
+              </div>
+            </td>
+          </tr>
+
+          <!-- First steps -->
+          <tr>
+            <td style="padding:24px 40px 8px;">
+              <p style="font-size:11px; letter-spacing:0.18em; text-transform:uppercase; font-weight:600; color:#C8A96A; margin:0 0 14px;">
                 First steps
               </p>
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
                 <tr>
                   <td style="padding:12px 0; vertical-align:top;">
-                    <p style="font-size:14px; color:#111111; font-weight:600; margin:0 0 4px;">1 · Browse Discover</p>
+                    <p style="font-size:14px; color:#111111; font-weight:600; margin:0 0 4px;">1 · Explore opportunities</p>
                     <p style="font-size:13px; color:#6B7280; line-height:1.55; margin:0;">
-                      See what your peers need. Swipe right when you can help — your reputation grows with every match.
+                      See where you can help and discover people you may never have met otherwise.
                     </p>
                   </td>
                 </tr>
                 <tr>
                   <td style="padding:12px 0; vertical-align:top; border-top:1px solid #F0ECE4;">
-                    <p style="font-size:14px; color:#111111; font-weight:600; margin:0 0 4px;">2 · Post a request</p>
+                    <p style="font-size:14px; color:#111111; font-weight:600; margin:0 0 4px;">2 · Ask for what you need</p>
                     <p style="font-size:13px; color:#6B7280; line-height:1.55; margin:0;">
-                      Ask for an intro, a referral, a coffee chat. The clearer the ask, the better the match.
+                      Coffee chats, referrals, industry insights, project partners — the clearer the ask, the better the match.
                     </p>
                   </td>
                 </tr>
                 <tr>
                   <td style="padding:12px 0; vertical-align:top; border-top:1px solid #F0ECE4;">
-                    <p style="font-size:14px; color:#111111; font-weight:600; margin:0 0 4px;">3 · Stay anonymous</p>
+                    <p style="font-size:14px; color:#111111; font-weight:600; margin:0 0 4px;">3 · Connect safely</p>
                     <p style="font-size:13px; color:#6B7280; line-height:1.55; margin:0;">
-                      Identities only reveal when both sides agree. Build trust first — exchange later.
+                      Your identity stays private until both sides agree to reveal themselves.
                     </p>
                   </td>
                 </tr>
@@ -90,9 +110,9 @@ export function welcomeTemplate({ displayName, userEmail, appUrl }) {
 
           <!-- CTA -->
           <tr>
-            <td style="padding:28px 40px 40px; text-align:center;">
+            <td style="padding:26px 40px 36px; text-align:center;">
               <a href="${safeUrl}" style="display:inline-block; padding:14px 40px; background:#A88245; background-image:linear-gradient(135deg,#C8A96A 0%,#A88245 100%); color:#FFFFFF; text-decoration:none; border-radius:12px; font-size:14px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase;">
-                Open Reciring
+                Start Exploring
               </a>
               <p style="font-size:11px; color:#9CA3AF; margin:14px 0 0;">
                 Or paste this into your browser: <span style="color:#6B7280;">${safeUrl}</span>
@@ -102,11 +122,20 @@ export function welcomeTemplate({ displayName, userEmail, appUrl }) {
 
           <!-- Footer -->
           <tr>
-            <td style="padding:20px 40px 28px; background:#FAFAF8; border-top:1px solid #F0ECE4;">
-              <p style="font-size:11px; color:#9CA3AF; line-height:1.6; margin:0; text-align:center;">
+            <td style="padding:22px 40px 28px; background:#FAFAF8; border-top:1px solid #F0ECE4;">
+              <p style="font-size:12px; color:#A88245; font-weight:600; line-height:1.5; margin:0 0 4px; text-align:center;">
+                Privacy first.
+              </p>
+              <p style="font-size:11px; color:#9CA3AF; line-height:1.6; margin:0 0 10px; text-align:center;">
+                Your identity remains hidden until both parties agree to reveal themselves.
+              </p>
+              <p style="font-size:11px; color:#9CA3AF; line-height:1.6; margin:0 0 4px; text-align:center;">
                 You're receiving this because you signed up for Reciring with <span style="color:#6B7280;">${safeEmail}</span>.<br>
                 Reciring Team · A Rotman MBA community for warm introductions.
               </p>
+              ${safeUnsub ? `<p style="font-size:11px; color:#9CA3AF; line-height:1.6; margin:6px 0 0; text-align:center;">
+                Prefer fewer emails? <a href="${safeUnsub}" style="color:#A88245; text-decoration:underline;">Unsubscribe from non-essential mail</a>.
+              </p>` : ''}
             </td>
           </tr>
         </table>
