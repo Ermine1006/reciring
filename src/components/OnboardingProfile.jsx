@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { INDUSTRIES, HELP_TYPES } from '../data/requestOptions'
 import { PROGRAMS, CAREER_STAGES, NETWORKING_INTENTS } from '../data/onboardingOptions'
 import { useAuth } from '../context/AuthContext'
+import { sendWelcomeEmail } from '../lib/email'
 import ReciRingLogo from './ReciRingLogo'
 import Chip from './Chip'
 
@@ -145,7 +146,21 @@ export default function OnboardingProfile() {
     })
 
     setSaving(false)
-    if (err) setError(typeof err === 'string' ? err : err.message)
+    if (err) {
+      setError(typeof err === 'string' ? err : err.message)
+      return
+    }
+
+    // Fire-and-forget welcome email. Failures (domain unverified, Resend
+    // down, etc.) are logged in email_logs but never block the user.
+    if (user?.email) {
+      sendWelcomeEmail({
+        toEmail:     user.email,
+        displayName: displayName.trim() || user.email.split('@')[0],
+      }).then(({ error: emailErr }) => {
+        if (emailErr) console.warn('[ReciRing] welcome email failed:', emailErr.message || emailErr)
+      })
+    }
   }
 
   const handleSkipAll = async () => {
