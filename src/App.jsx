@@ -19,6 +19,8 @@ import OnboardingProfile from './components/OnboardingProfile'
 import AnonymousAvatar from './components/AnonymousAvatar'
 import MyPostsPage from './components/MyPostsPage'
 import AdminEmailTest from './components/AdminEmailTest'
+import EventsList from './components/EventsList'
+import CreateEventForm from './components/CreateEventForm'
 import { isAdmin } from './data/adminEmails'
 import { submitReport, blockUser, fetchBlockedIds } from './lib/safety'
 import { isSupabaseConfigured, supabase } from './lib/supabase'
@@ -70,6 +72,16 @@ const TABS = [
     ),
   },
   {
+    id: 'events',
+    label: 'Events',
+    icon: (active) => (
+      <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={active ? 2 : 1.5}>
+        <rect x="3" y="5" width="18" height="16" rx="2" />
+        <path strokeLinecap="round" d="M16 3v4M8 3v4M3 11h18" />
+      </svg>
+    ),
+  },
+  {
     id: 'reviews',
     label: 'Reviews',
     icon: (active) => (
@@ -96,6 +108,9 @@ function AppShell() {
   const [showSettings, setShowSettings] = useState(false)
   const [showMyPosts, setShowMyPosts]   = useState(false)
   const [showAdminEmailTest, setShowAdminEmailTest] = useState(false)
+  const [showCreateEvent, setShowCreateEvent] = useState(false)
+  // Bump this to force EventsList to refetch after a new event is created.
+  const [eventsRefreshKey, setEventsRefreshKey] = useState(0)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [requests, setRequests]   = useState([])
   const [matches, setMatches]     = useState([])
@@ -1143,6 +1158,21 @@ function AppShell() {
           {tab === 'rank' && (
             <LeaderboardView />
           )}
+          {tab === 'events' && !showCreateEvent && (
+            <EventsList
+              key={eventsRefreshKey}
+              onCreateEvent={() => setShowCreateEvent(true)}
+            />
+          )}
+          {tab === 'events' && showCreateEvent && (
+            <CreateEventForm
+              onCreated={() => {
+                setShowCreateEvent(false)
+                setEventsRefreshKey(k => k + 1)
+              }}
+              onClose={() => setShowCreateEvent(false)}
+            />
+          )}
           </>}
         </main>
 
@@ -1162,11 +1192,12 @@ function AppShell() {
                 key={t.id}
                 type="button"
                 onClick={() => setTab(t.id)}
-                className="flex flex-col items-center gap-1 py-2 px-4 rounded-2xl transition-all duration-200 active:scale-95"
+                className="flex flex-col items-center gap-1 py-2 px-3 rounded-2xl transition-all duration-200 active:scale-95"
                 style={{
                   color: active ? C.gold : C.textMuted,
                   background: active ? C.goldBg : 'transparent',
-                  minWidth: 60,
+                  minWidth: 50,
+                  flex: '1 0 auto',
                 }}
               >
                 {t.icon(active)}
