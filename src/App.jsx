@@ -518,7 +518,8 @@ function AppShell() {
         break
       case 'event_cancelled':
       case 'event_joined':
-      case 'event_message': {
+      case 'event_message':
+      case 'event_below_min': {
         const eventId = n.payload?.event_id
         setTab('events')
         setEditingEventId(null)

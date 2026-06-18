@@ -35,8 +35,11 @@ export default function EventCard({ event, joined, joining, onJoin, onLeave, onC
   const stop = (handler) => (e) => { e?.stopPropagation?.(); handler?.() }
   const emoji = categoryEmoji(event.category)
   const spotsLeft = Math.max(0, (event.max_attendees || 0) - (event.attendee_count || 0))
-  const isFull = spotsLeft === 0 && !joined
   const isCancelled = event.status === 'cancelled'
+  const isCompleted = event.status === 'completed'
+  // DB triggers keep events.status='full' when at capacity, but fall
+  // back to local capacity math in case the trigger hasn't fired yet.
+  const isFull = !isCancelled && !isCompleted && (event.status === 'full' || (spotsLeft === 0 && !joined))
   const sponsorBadge = HOST_TYPE_LABEL[event.host_type]
 
   return (
@@ -166,6 +169,17 @@ export default function EventCard({ event, joined, joining, onJoin, onLeave, onC
               fontFamily: 'Inter, system-ui, sans-serif',
             }}>
               Cancelled
+            </span>
+          ) : isCompleted ? (
+            <span style={{
+              fontSize: 11, fontWeight: 700,
+              letterSpacing: '0.12em', textTransform: 'uppercase',
+              color: C.textSub, background: '#F3F4F6',
+              border: `1px solid ${C.border}`,
+              borderRadius: 10, padding: '8px 14px',
+              fontFamily: 'Inter, system-ui, sans-serif',
+            }}>
+              Completed
             </span>
           ) : isHost ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>

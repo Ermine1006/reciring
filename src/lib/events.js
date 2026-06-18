@@ -17,13 +17,14 @@ export async function fetchUpcomingEvents() {
     .from('events')
     .select(`
       id, title, description, start_at, location, category,
-      max_attendees, host_user_id, host_display_name, host_type,
+      max_attendees, min_attendees, host_user_id, host_display_name, host_type,
       image_url, is_sponsored, created_at,
       status, cancellation_reason, cancelled_at,
       event_attendees ( count )
     `)
     .gte('start_at', new Date().toISOString())
     .neq('status', 'cancelled')
+    .neq('status', 'completed')
     .order('start_at', { ascending: true })
 
   if (error) return { data: [], error }
@@ -133,7 +134,7 @@ export async function fetchEventById(eventId) {
     .from('events')
     .select(`
       id, title, description, start_at, location, category,
-      max_attendees, host_user_id, host_display_name, host_type,
+      max_attendees, min_attendees, host_user_id, host_display_name, host_type,
       image_url, is_sponsored, created_at,
       status, cancellation_reason, cancelled_at,
       event_attendees ( count )
@@ -206,7 +207,7 @@ export async function updateEvent(eventId, fields) {
   if (!isSupabaseConfigured) return { data: null, error: new Error('Supabase not configured') }
   if (!eventId)              return { data: null, error: new Error('missing event id') }
 
-  const ALLOWED = ['title','description','start_at','location','category','max_attendees','host_type','image_url']
+  const ALLOWED = ['title','description','start_at','location','category','max_attendees','min_attendees','host_type','image_url']
   const patch = {}
   for (const key of ALLOWED) {
     if (key in (fields || {})) patch[key] = fields[key]

@@ -54,6 +54,7 @@ export default function CreateEventForm({ onCreated, onClose }) {
   const [location, setLocation]         = useState('')
   const [category, setCategory]         = useState('Social')
   const [maxAttendees, setMaxAttendees] = useState(10)
+  const [minAttendees, setMinAttendees] = useState(0)
   const [hostType, setHostType]         = useState('individual')
   const [imageUrl, setImageUrl]         = useState('')
 
@@ -86,13 +87,18 @@ export default function CreateEventForm({ onCreated, onClose }) {
         ? (location.trim() || profile?.name || 'Sponsor')
         : (profile?.name || user.email?.split('@')[0] || 'Host')
 
+    // Clamp min to [0, max] so the DB CHECK (min<=max) never errors.
+    const clampedMax = Number(maxAttendees) || 10
+    const clampedMin = Math.max(0, Math.min(Number(minAttendees) || 0, clampedMax))
+
     const { data, error: err } = await createEvent({
       title:             title.trim(),
       description:       description.trim(),
       start_at:          combined.toISOString(),
       location:          location.trim(),
       category,
-      max_attendees:     Number(maxAttendees) || 10,
+      max_attendees:     clampedMax,
+      min_attendees:     clampedMin,
       host_display_name: hostDisplayName,
       host_type:         hostType,
       image_url:         imageUrl.trim() || null,
@@ -208,18 +214,33 @@ export default function CreateEventForm({ onCreated, onClose }) {
               />
             </div>
 
-            <div style={{ marginBottom: 18 }}>
-              <label style={labelStyle}>Max attendees <span style={{ color: C.danger }}>*</span></label>
-              <p style={helperStyle}>Cap between 1 and 500.</p>
-              <input
-                type="number"
-                min={1}
-                max={500}
-                value={maxAttendees}
-                onChange={(e) => setMaxAttendees(Math.max(1, Math.min(500, Number(e.target.value) || 1)))}
-                style={inputStyle}
-              />
+            <div style={{ display: 'flex', gap: 10, marginBottom: 18 }}>
+              <div style={{ flex: 1 }}>
+                <label style={labelStyle}>Max attendees <span style={{ color: C.danger }}>*</span></label>
+                <input
+                  type="number"
+                  min={1}
+                  max={500}
+                  value={maxAttendees}
+                  onChange={(e) => setMaxAttendees(Math.max(1, Math.min(500, Number(e.target.value) || 1)))}
+                  style={inputStyle}
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={labelStyle}>Min attendees</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={maxAttendees}
+                  value={minAttendees}
+                  onChange={(e) => setMinAttendees(Math.max(0, Math.min(Number(maxAttendees) || 0, Number(e.target.value) || 0)))}
+                  style={inputStyle}
+                />
+              </div>
             </div>
+            <p style={{ ...helperStyle, marginTop: -10, marginBottom: 18 }}>
+              We'll ping you 24h before if turnout is below your minimum. Leave at 0 to skip the check.
+            </p>
 
             <div style={{ marginBottom: 18 }}>
               <label style={labelStyle}>Description</label>

@@ -66,6 +66,7 @@ export default function EditEventForm({ eventId, onSaved, onClose }) {
   const [location, setLocation]         = useState('')
   const [category, setCategory]         = useState('Social')
   const [maxAttendees, setMaxAttendees] = useState(10)
+  const [minAttendees, setMinAttendees] = useState(0)
   const [hostType, setHostType]         = useState('individual')
   const [imageUrl, setImageUrl]         = useState('')
 
@@ -92,6 +93,7 @@ export default function EditEventForm({ eventId, onSaved, onClose }) {
       setLocation(ev.location || '')
       setCategory(ev.category || 'Social')
       setMaxAttendees(ev.max_attendees || 10)
+      setMinAttendees(ev.min_attendees || 0)
       setHostType(ev.host_type || 'individual')
       setImageUrl(ev.image_url || '')
       setLoading(false)
@@ -116,13 +118,17 @@ export default function EditEventForm({ eventId, onSaved, onClose }) {
       setSaving(false); setError('Invalid date or time.'); return
     }
 
+    const clampedMax = Number(maxAttendees) || 10
+    const clampedMin = Math.max(0, Math.min(Number(minAttendees) || 0, clampedMax))
+
     const { data, error: err } = await updateEvent(event.id, {
       title:         title.trim(),
       description:   description.trim(),
       start_at:      combined.toISOString(),
       location:      location.trim(),
       category,
-      max_attendees: Number(maxAttendees) || 10,
+      max_attendees: clampedMax,
+      min_attendees: clampedMin,
       host_type:     hostType,
       image_url:     imageUrl.trim() || null,
     })
@@ -256,20 +262,33 @@ export default function EditEventForm({ eventId, onSaved, onClose }) {
               />
             </div>
 
-            <div style={{ marginBottom: 18 }}>
-              <label style={labelStyle}>Max attendees <span style={{ color: C.danger }}>*</span></label>
-              <p style={helperStyle}>
-                Current: {event.attendee_count || 0} joined. Setting below this won't kick people out — they keep their spot.
-              </p>
-              <input
-                type="number"
-                min={1}
-                max={500}
-                value={maxAttendees}
-                onChange={(e) => setMaxAttendees(Math.max(1, Math.min(500, Number(e.target.value) || 1)))}
-                style={inputStyle}
-              />
+            <div style={{ display: 'flex', gap: 10, marginBottom: 8 }}>
+              <div style={{ flex: 1 }}>
+                <label style={labelStyle}>Max attendees <span style={{ color: C.danger }}>*</span></label>
+                <input
+                  type="number"
+                  min={1}
+                  max={500}
+                  value={maxAttendees}
+                  onChange={(e) => setMaxAttendees(Math.max(1, Math.min(500, Number(e.target.value) || 1)))}
+                  style={inputStyle}
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={labelStyle}>Min attendees</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={maxAttendees}
+                  value={minAttendees}
+                  onChange={(e) => setMinAttendees(Math.max(0, Math.min(Number(maxAttendees) || 0, Number(e.target.value) || 0)))}
+                  style={inputStyle}
+                />
+              </div>
             </div>
+            <p style={{ ...helperStyle, marginBottom: 18 }}>
+              Current: {event.attendee_count || 0} joined. Lowering max won't kick anyone out. We'll ping you 24h before if turnout is below min (0 = skip the check).
+            </p>
 
             <div style={{ marginBottom: 18 }}>
               <label style={labelStyle}>Description</label>

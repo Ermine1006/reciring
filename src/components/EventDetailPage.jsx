@@ -77,6 +77,7 @@ export default function EventDetailPage({ eventId, onBack, onEdit }) {
   const spotsLeft = event ? Math.max(0, (event.max_attendees || 0) - (event.attendee_count || 0)) : 0
   const isFull = event ? (spotsLeft === 0 && !joined) : false
   const isCancelled = event?.status === 'cancelled'
+  const isCompleted = event?.status === 'completed'
   const sponsorBadge = event ? HOST_TYPE_LABEL[event.host_type] : ''
 
   // ── Initial load ──────────────────────────────────────────
@@ -256,6 +257,18 @@ export default function EventDetailPage({ eventId, onBack, onEdit }) {
               Cancelled
             </span>
           )}
+          {isCompleted && (
+            <span style={{
+              fontSize: 10, fontWeight: 700,
+              letterSpacing: '0.16em', textTransform: 'uppercase',
+              color: C.textSub, background: '#F3F4F6',
+              border: `1px solid ${C.border}`,
+              borderRadius: 99, padding: '5px 12px',
+              fontFamily: 'Inter, system-ui, sans-serif',
+            }}>
+              Completed
+            </span>
+          )}
         </div>
 
         {/* Header card */}
@@ -429,8 +442,8 @@ export default function EventDetailPage({ eventId, onBack, onEdit }) {
           </motion.div>
         )}
 
-        {/* Primary action */}
-        {!isCancelled && (
+        {/* Primary action — hidden for cancelled or completed events */}
+        {!isCancelled && !isCompleted && (
           <div style={{ marginBottom: 16 }}>
             {isHost ? (
               <div style={{ display: 'flex', gap: 8 }}>
@@ -600,7 +613,7 @@ export default function EventDetailPage({ eventId, onBack, onEdit }) {
             )}
           </div>
 
-          {(joined || isHost) && !isCancelled && (
+          {(joined || isHost) && !isCancelled && !isCompleted && (
             <div style={{ display: 'flex', gap: 8, padding: '12px 14px' }}>
               <input
                 type="text"

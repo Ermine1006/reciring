@@ -4,5 +4,11 @@
   "framework": "vite",
   "rewrites": [
     { "source": "/(.*)", "destination": "/" }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/event-attendance-check",
+      "schedule": "0 8 * * *"
+    }
   ]
 }
