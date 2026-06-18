@@ -122,6 +122,67 @@ export async function leaveEvent(eventId, userId) {
 }
 
 /**
+ * Fetch a single event by id, including the live attendee count.
+ * Used by the Event Detail page on open / refresh.
+ */
+export async function fetchEventById(eventId) {
+  if (!isSupabaseConfigured) return { data: null, error: null }
+  if (!eventId)              return { data: null, error: new Error('missing event id') }
+
+  const { data, error } = await supabase
+    .from('events')
+    .select(`
+      id, title, description, start_at, location, category,
+      max_attendees, host_user_id, host_display_name, host_type,
+      image_url, is_sponsored, created_at,
+      status, cancellation_reason, cancelled_at,
+      event_attendees ( count )
+    `)
+    .eq('id', eventId)
+    .maybeSingle()
+
+  if (error) return { data: null, error }
+  if (!data) return { data: null, error: null }
+  return {
+    data: { ...data, attendee_count: data.event_attendees?.[0]?.count || 0 },
+    error: null,
+  }
+}
+
+/**
+ * Fetch the attendee list for an event with each user's first name
+ * and avatar_url. Sorted by join time, oldest first (so the host can
+ * see in what order people RSVPed).
+ *
+ * RLS on event_attendees allows any authenticated user to SELECT so
+ * non-attendees browsing the detail page can see "who's going".
+ */
+export async function fetchEventAttendees(eventId) {
+  if (!isSupabaseConfigured) return { data: [], error: null }
+  if (!eventId)              return { data: [], error: new Error('missing event id') }
+
+  const { data, error } = await supabase
+    .from('event_attendees')
+    .select(`
+      user_id, joined_at,
+      profile:profiles ( id, name, avatar_url )
+    `)
+    .eq('event_id', eventId)
+    .order('joined_at', { ascending: true })
+
+  if (error) return { data: [], error }
+  return {
+    data: (data || []).map(row => ({
+      user_id:    row.user_id,
+      joined_at:  row.joined_at,
+      name:       row.profile?.name || 'Member',
+      avatar_url: row.profile?.avatar_url || null,
+    })),
+    error: null,
+  }
+}
+
+/**
  * Cancel an event (host only — enforced by RLS UPDATE policy).
  *
  * Sets status='cancelled' and stamps the reason. The DB trigger

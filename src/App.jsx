@@ -21,6 +21,7 @@ import MyPostsPage from './components/MyPostsPage'
 import AdminEmailTest from './components/AdminEmailTest'
 import EventsList from './components/EventsList'
 import CreateEventForm from './components/CreateEventForm'
+import EventDetailPage from './components/EventDetailPage'
 import ProfilePage from './components/ProfilePage'
 import { isAdmin } from './data/adminEmails'
 import { submitReport, blockUser, fetchBlockedIds } from './lib/safety'
@@ -102,6 +103,9 @@ function AppShell() {
   const [profileSubTab, setProfileSubTab] = useState('profile')
   const [showAdminEmailTest, setShowAdminEmailTest] = useState(false)
   const [showCreateEvent, setShowCreateEvent] = useState(false)
+  // Currently opened event id — when set, Events tab renders the
+  // detail page instead of the list. Null = list view.
+  const [viewingEventId, setViewingEventId] = useState(null)
   // Bump this to force EventsList to refetch after a new event is created.
   const [eventsRefreshKey, setEventsRefreshKey] = useState(0)
   const [requests, setRequests]   = useState([])
@@ -505,11 +509,13 @@ function AppShell() {
         setTab('profile')
         setProfileSubTab('reviews')
         break
-      case 'event_cancelled':
-        // Slice B will deep-link into the Event Detail page using
-        // n.payload.event_id. For now just open the Events tab.
+      case 'event_cancelled': {
+        const eventId = n.payload?.event_id
         setTab('events')
+        if (eventId) setViewingEventId(eventId)
+        else         setViewingEventId(null)
         break
+      }
       default:
         break
     }
@@ -1020,13 +1026,20 @@ function AppShell() {
               onOpenAdminEmailTest={() => setShowAdminEmailTest(true)}
             />
           )}
-          {tab === 'events' && !showCreateEvent && (
+          {tab === 'events' && viewingEventId && (
+            <EventDetailPage
+              eventId={viewingEventId}
+              onBack={() => { setViewingEventId(null); setEventsRefreshKey(k => k + 1) }}
+            />
+          )}
+          {tab === 'events' && !viewingEventId && !showCreateEvent && (
             <EventsList
               key={eventsRefreshKey}
               onCreateEvent={() => setShowCreateEvent(true)}
+              onOpenEvent={(id) => setViewingEventId(id)}
             />
           )}
-          {tab === 'events' && showCreateEvent && (
+          {tab === 'events' && !viewingEventId && showCreateEvent && (
             <CreateEventForm
               onCreated={() => {
                 setShowCreateEvent(false)

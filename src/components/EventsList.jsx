@@ -16,7 +16,7 @@ const C = {
   border:    '#F0ECE4',
 }
 
-export default function EventsList({ onCreateEvent }) {
+export default function EventsList({ onCreateEvent, onOpenEvent }) {
   const { user } = useAuth()
 
   const [events, setEvents]         = useState([])
@@ -273,6 +273,7 @@ export default function EventsList({ onCreateEvent }) {
                 onJoin={handleJoin}
                 onLeave={requestLeave}
                 onCancel={requestCancel}
+                onOpen={onOpenEvent}
               />
             ))}
           </div>

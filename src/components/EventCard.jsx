@@ -29,7 +29,10 @@ function formatEventDate(iso) {
   return `${dateStr} · ${timeStr}`
 }
 
-export default function EventCard({ event, joined, joining, onJoin, onLeave, onCancel, isHost }) {
+export default function EventCard({ event, joined, joining, onJoin, onLeave, onCancel, onOpen, isHost }) {
+  // Stop propagation on action buttons so they don't trigger the
+  // card-level onOpen handler.
+  const stop = (handler) => (e) => { e?.stopPropagation?.(); handler?.() }
   const emoji = categoryEmoji(event.category)
   const spotsLeft = Math.max(0, (event.max_attendees || 0) - (event.attendee_count || 0))
   const isFull = spotsLeft === 0 && !joined
@@ -40,12 +43,17 @@ export default function EventCard({ event, joined, joining, onJoin, onLeave, onC
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
+      onClick={() => onOpen?.(event.id)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen?.(event.id) } }}
       style={{
         background: C.white,
         border: `1px solid ${C.border}`,
         borderRadius: 18,
         overflow: 'hidden',
         boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
+        cursor: onOpen ? 'pointer' : 'default',
       }}
     >
       {/* Top gold accent for sponsored events */}
@@ -173,7 +181,7 @@ export default function EventCard({ event, joined, joining, onJoin, onLeave, onC
               </span>
               <button
                 type="button"
-                onClick={() => onCancel?.(event.id)}
+                onClick={stop(() => onCancel?.(event.id))}
                 title="Cancel event"
                 aria-label="Cancel event"
                 style={{
@@ -196,7 +204,7 @@ export default function EventCard({ event, joined, joining, onJoin, onLeave, onC
           ) : joined ? (
             <button
               type="button"
-              onClick={() => onLeave?.(event.id)}
+              onClick={stop(() => onLeave?.(event.id))}
               title="Leave event"
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 5,
@@ -218,7 +226,7 @@ export default function EventCard({ event, joined, joining, onJoin, onLeave, onC
           ) : (
             <button
               type="button"
-              onClick={() => !joining && !isFull && onJoin?.(event.id)}
+              onClick={stop(() => { if (!joining && !isFull) onJoin?.(event.id) })}
               disabled={joining || isFull}
               style={{
                 padding: '8px 16px',
