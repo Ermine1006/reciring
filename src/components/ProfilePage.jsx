@@ -18,10 +18,13 @@ const C = {
   border:    '#F0ECE4',
 }
 
+// Sub-tab labels are short on purpose so all 4 fit on one row inside the
+// segmented control without overflow. The parent "Profile" bottom-tab
+// gives context (e.g. "Profile > Rank" reads naturally).
 const SUB_TABS = [
-  { id: 'profile',     label: 'My Profile' },
-  { id: 'reviews',     label: 'Reviews' },
-  { id: 'leaderboard', label: 'Leaderboard' },
+  { id: 'profile',     label: 'Profile'  },
+  { id: 'reviews',     label: 'Reviews'  },
+  { id: 'leaderboard', label: 'Rank'     },
   { id: 'settings',    label: 'Settings' },
 ]
 
@@ -82,15 +85,19 @@ export default function ProfilePage({
           Profile
         </h1>
 
-        {/* Sub-tab pill row */}
+        {/* Segmented control — all 4 sub-tabs in one rounded container,
+              each takes equal width so the row never overflows. */}
         <div
+          role="tablist"
           style={{
-            display: 'flex', gap: 6, marginTop: 14,
-            overflowX: 'auto',
-            WebkitOverflowScrolling: 'touch',
-            scrollbarWidth: 'none',
+            display: 'flex',
+            marginTop: 14,
+            background: '#F2EEE5',
+            border: `1px solid ${C.border}`,
+            borderRadius: 12,
+            padding: 3,
+            gap: 2,
           }}
-          className="phone-scroll-x"
         >
           {SUB_TABS.map(t => {
             const isActive = active === t.id
@@ -98,21 +105,27 @@ export default function ProfilePage({
               <button
                 key={t.id}
                 type="button"
+                role="tab"
+                aria-selected={isActive}
                 onClick={() => setActive(t.id)}
                 style={{
-                  flexShrink: 0,
-                  padding: '7px 14px',
-                  borderRadius: 99,
-                  background: isActive ? `linear-gradient(135deg, ${C.gold}, ${C.goldDark})` : C.white,
+                  flex: 1,
+                  minWidth: 0,
+                  padding: '8px 6px',
+                  borderRadius: 9,
+                  background: isActive ? `linear-gradient(135deg, ${C.gold}, ${C.goldDark})` : 'transparent',
                   color: isActive ? '#fff' : C.textSub,
-                  border: `1px solid ${isActive ? C.gold : C.border}`,
+                  border: 'none',
                   fontSize: 12, fontWeight: 600,
-                  letterSpacing: '0.04em',
+                  letterSpacing: '0.02em',
                   fontFamily: 'Inter, system-ui, sans-serif',
                   cursor: 'pointer',
-                  boxShadow: isActive ? '0 2px 8px rgba(200,169,106,0.25)' : 'none',
-                  transition: 'all 0.15s',
+                  boxShadow: isActive ? '0 1px 4px rgba(200,169,106,0.35)' : 'none',
+                  transition: 'all 0.18s',
+                  textAlign: 'center',
                   whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
                 }}
               >
                 {t.label}
