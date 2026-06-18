@@ -154,29 +154,39 @@ export async function fetchEventById(eventId) {
  * and avatar_url. Sorted by join time, oldest first (so the host can
  * see in what order people RSVPed).
  *
- * RLS on event_attendees allows any authenticated user to SELECT so
- * non-attendees browsing the detail page can see "who's going".
+ * Done as TWO queries (attendees, then profiles by id) instead of an
+ * embedded PostgREST join — there's no FK from event_attendees.user_id
+ * → public.profiles.id (the existing FK is to auth.users.id), so
+ * `select profile:profiles(...)` silently returns nulls. The manual
+ * stitch is reliable without schema changes.
  */
 export async function fetchEventAttendees(eventId) {
   if (!isSupabaseConfigured) return { data: [], error: null }
   if (!eventId)              return { data: [], error: new Error('missing event id') }
 
-  const { data, error } = await supabase
+  const { data: rows, error } = await supabase
     .from('event_attendees')
-    .select(`
-      user_id, joined_at,
-      profile:profiles ( id, name, avatar_url )
-    `)
+    .select('user_id, joined_at')
     .eq('event_id', eventId)
     .order('joined_at', { ascending: true })
 
-  if (error) return { data: [], error }
+  if (error)                  return { data: [], error }
+  if (!rows || rows.length === 0) return { data: [], error: null }
+
+  const userIds = rows.map(r => r.user_id)
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id, name, avatar_url')
+    .in('id', userIds)
+
+  const byId = new Map((profiles || []).map(p => [p.id, p]))
+
   return {
-    data: (data || []).map(row => ({
-      user_id:    row.user_id,
-      joined_at:  row.joined_at,
-      name:       row.profile?.name || 'Member',
-      avatar_url: row.profile?.avatar_url || null,
+    data: rows.map(r => ({
+      user_id:    r.user_id,
+      joined_at:  r.joined_at,
+      name:       byId.get(r.user_id)?.name || 'Member',
+      avatar_url: byId.get(r.user_id)?.avatar_url || null,
     })),
     error: null,
   }
