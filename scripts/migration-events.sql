@@ -43,9 +43,12 @@ CREATE TABLE IF NOT EXISTS public.events (
   created_at         timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_events_upcoming
-  ON public.events (start_at)
-  WHERE start_at > now();
+-- Plain index on start_at. The original draft used a partial index
+-- WHERE start_at > now(), but Postgres rejects predicates that depend
+-- on non-IMMUTABLE functions (the index can't change as time passes).
+-- A regular index is fine — small overhead, identical query speed.
+CREATE INDEX IF NOT EXISTS idx_events_start_at
+  ON public.events (start_at);
 
 CREATE INDEX IF NOT EXISTS idx_events_host
   ON public.events (host_user_id);
