@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
-import { fetchUpcomingEvents, fetchMyJoinedEventIds, joinEvent } from '../lib/events'
+import { fetchUpcomingEvents, fetchMyJoinedEventIds, joinEvent, leaveEvent, cancelEvent } from '../lib/events'
 import EventCard from './EventCard'
 
 const C = {
@@ -24,6 +24,9 @@ export default function EventsList({ onCreateEvent }) {
   const [loading, setLoading]       = useState(true)
   const [filter, setFilter]         = useState('upcoming') // 'upcoming' | 'joined'
   const [joiningId, setJoiningId]   = useState(null)
+  const [leaveTarget, setLeaveTarget]   = useState(null)  // event being left (pre-confirm)
+  const [cancelTarget, setCancelTarget] = useState(null)  // event being cancelled (pre-confirm)
+  const [actionSaving, setActionSaving] = useState(false)
   const [toast, setToast]           = useState(null)
   // Local optimistic attendance counts so the UI updates instantly on
   // join without waiting for the next refetch.
@@ -70,6 +73,64 @@ export default function EventsList({ onCreateEvent }) {
       return
     }
     setToast({ type: 'ok', msg: 'Joined — see you there!' })
+  }
+
+  // Leave flow — opens a confirmation modal first.
+  const requestLeave = (eventId) => {
+    const ev = events.find(e => e.id === eventId)
+    if (ev) setLeaveTarget(ev)
+  }
+
+  const confirmLeave = async () => {
+    if (!user || !leaveTarget) return
+    setActionSaving(true); setToast(null)
+    const ev = leaveTarget
+
+    // Optimistic: remove from joined set, decrement counter
+    setJoinedIds(prev => { const next = new Set(prev); next.delete(ev.id); return next })
+    setEvents(prev => prev.map(e =>
+      e.id === ev.id ? { ...e, attendee_count: Math.max(0, (e.attendee_count || 0) - 1) } : e,
+    ))
+
+    const { error } = await leaveEvent(ev.id, user.id)
+    setActionSaving(false)
+    setLeaveTarget(null)
+
+    if (error) {
+      // Rollback
+      setJoinedIds(prev => new Set([...prev, ev.id]))
+      setEvents(prev => prev.map(e =>
+        e.id === ev.id ? { ...e, attendee_count: (e.attendee_count || 0) + 1 } : e,
+      ))
+      setToast({ type: 'err', msg: error.message || 'Could not leave event' })
+      return
+    }
+    setToast({ type: 'ok', msg: 'Left event' })
+  }
+
+  // Cancel flow — host only. Opens a reason picker modal first.
+  const requestCancel = (eventId) => {
+    const ev = events.find(e => e.id === eventId)
+    if (ev) setCancelTarget(ev)
+  }
+
+  const confirmCancel = async (reason) => {
+    if (!cancelTarget) return
+    setActionSaving(true); setToast(null)
+    const ev = cancelTarget
+
+    const { error } = await cancelEvent(ev.id, reason)
+    setActionSaving(false)
+    setCancelTarget(null)
+
+    if (error) {
+      setToast({ type: 'err', msg: error.message || 'Could not cancel event' })
+      return
+    }
+    // Drop the cancelled event from the local list (fetchUpcomingEvents
+    // filters it out anyway, but refresh would be a roundtrip away)
+    setEvents(prev => prev.filter(e => e.id !== ev.id))
+    setToast({ type: 'ok', msg: 'Event cancelled — attendees notified' })
   }
 
   const visible = useMemo(() => {
@@ -210,12 +271,290 @@ export default function EventsList({ onCreateEvent }) {
                 joining={joiningId === ev.id}
                 isHost={user && ev.host_user_id === user.id}
                 onJoin={handleJoin}
+                onLeave={requestLeave}
+                onCancel={requestCancel}
               />
             ))}
           </div>
         )}
       </motion.div>
+
+      {/* Leave confirmation */}
+      <ConfirmModal
+        open={!!leaveTarget}
+        title="Leave this event?"
+        body={leaveTarget ? `You'll be removed from "${leaveTarget.title}" and a spot will open up for someone else.` : ''}
+        confirmLabel={actionSaving ? 'Leaving…' : 'Leave Event'}
+        confirmIntent="danger"
+        busy={actionSaving}
+        onCancel={() => !actionSaving && setLeaveTarget(null)}
+        onConfirm={confirmLeave}
+      />
+
+      {/* Cancel host confirmation with reason picker */}
+      <CancelEventModal
+        open={!!cancelTarget}
+        event={cancelTarget}
+        busy={actionSaving}
+        onCancel={() => !actionSaving && setCancelTarget(null)}
+        onConfirm={confirmCancel}
+      />
     </div>
+  )
+}
+
+// ── Generic two-button confirm modal ───────────────────────
+function ConfirmModal({ open, title, body, confirmLabel, confirmIntent, busy, onCancel, onConfirm }) {
+  return (
+    <AnimatePresence>
+      {open && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            onClick={onCancel}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 80,
+              background: 'rgba(17,17,17,0.5)',
+              backdropFilter: 'blur(4px)',
+            }}
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.94, y: 12 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: 8 }}
+            transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+            role="dialog"
+            aria-modal="true"
+            style={{
+              position: 'fixed', top: '50%', left: '50%',
+              transform: 'translate(-50%, -50%)',
+              zIndex: 81,
+              width: 'calc(100% - 32px)', maxWidth: 340,
+              background: C.white,
+              borderRadius: 22,
+              padding: '26px 22px 22px',
+              boxShadow: '0 24px 60px rgba(0,0,0,0.22)',
+            }}
+          >
+            <h3 style={{
+              fontSize: 18, fontWeight: 600, color: C.text,
+              fontFamily: 'Fraunces, Georgia, serif',
+              margin: '0 0 8px', textAlign: 'center',
+            }}>
+              {title}
+            </h3>
+            <p style={{
+              fontSize: 13, color: C.textSub, lineHeight: 1.55,
+              fontFamily: 'Inter, system-ui, sans-serif',
+              margin: '0 0 20px', textAlign: 'center',
+            }}>
+              {body}
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <button
+                type="button"
+                onClick={onConfirm}
+                disabled={busy}
+                style={{
+                  width: '100%', padding: '13px 0',
+                  borderRadius: 12, border: 'none',
+                  background: confirmIntent === 'danger' ? '#DC2626' : `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
+                  color: '#fff',
+                  fontSize: 14, fontWeight: 600,
+                  fontFamily: 'Inter, system-ui, sans-serif',
+                  cursor: busy ? 'default' : 'pointer',
+                  opacity: busy ? 0.7 : 1,
+                  boxShadow: confirmIntent === 'danger' ? '0 4px 14px rgba(220,38,38,0.32)' : '0 4px 14px rgba(200,169,106,0.32)',
+                }}
+              >
+                {confirmLabel}
+              </button>
+              <button
+                type="button"
+                onClick={onCancel}
+                disabled={busy}
+                style={{
+                  width: '100%', padding: '13px 0',
+                  borderRadius: 12,
+                  background: C.white,
+                  color: C.text,
+                  border: `1.5px solid #F0ECE4`,
+                  fontSize: 14, fontWeight: 600,
+                  fontFamily: 'Inter, system-ui, sans-serif',
+                  cursor: busy ? 'default' : 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  )
+}
+
+// ── Cancel event modal — reason picker + free-text "Other" ─
+function CancelEventModal({ open, event, busy, onCancel, onConfirm }) {
+  const PRESET_REASONS = ['Weather', 'Low attendance', 'Personal emergency', 'Other']
+  const [selected, setSelected] = useState(PRESET_REASONS[0])
+  const [otherText, setOtherText] = useState('')
+
+  // Reset state each time the modal opens for a new event.
+  useEffect(() => {
+    if (open) { setSelected(PRESET_REASONS[0]); setOtherText('') }
+  }, [open, event?.id])
+
+  const finalReason = selected === 'Other' ? otherText.trim() : selected
+  const canConfirm = !busy && (selected !== 'Other' || otherText.trim().length > 0)
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            onClick={onCancel}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 80,
+              background: 'rgba(17,17,17,0.5)',
+              backdropFilter: 'blur(4px)',
+            }}
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.94, y: 12 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: 8 }}
+            transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+            role="dialog"
+            aria-modal="true"
+            style={{
+              position: 'fixed', top: '50%', left: '50%',
+              transform: 'translate(-50%, -50%)',
+              zIndex: 81,
+              width: 'calc(100% - 32px)', maxWidth: 360,
+              background: C.white,
+              borderRadius: 22,
+              padding: '26px 22px 22px',
+              boxShadow: '0 24px 60px rgba(0,0,0,0.22)',
+            }}
+          >
+            <h3 style={{
+              fontSize: 18, fontWeight: 600, color: C.text,
+              fontFamily: 'Fraunces, Georgia, serif',
+              margin: '0 0 6px', textAlign: 'center',
+            }}>
+              Cancel "{event?.title}"?
+            </h3>
+            <p style={{
+              fontSize: 13, color: C.textSub, lineHeight: 1.55,
+              fontFamily: 'Inter, system-ui, sans-serif',
+              margin: '0 0 18px', textAlign: 'center',
+            }}>
+              All {event?.attendee_count || 0} attendees will be notified.
+            </p>
+
+            <p style={{
+              fontSize: 11, fontWeight: 600, letterSpacing: '0.14em',
+              textTransform: 'uppercase', color: C.textSub,
+              fontFamily: 'Inter, system-ui, sans-serif',
+              margin: '0 0 10px',
+            }}>
+              Reason
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
+              {PRESET_REASONS.map(r => {
+                const isSelected = selected === r
+                return (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => setSelected(r)}
+                    style={{
+                      padding: '7px 12px',
+                      borderRadius: 99,
+                      background: isSelected ? `linear-gradient(135deg, ${C.gold}, ${C.goldDark})` : C.white,
+                      color: isSelected ? '#fff' : C.textSub,
+                      border: `1.5px solid ${isSelected ? C.gold : C.border}`,
+                      fontSize: 12, fontWeight: 600,
+                      fontFamily: 'Inter, system-ui, sans-serif',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    {r}
+                  </button>
+                )
+              })}
+            </div>
+
+            {selected === 'Other' && (
+              <textarea
+                value={otherText}
+                onChange={(e) => setOtherText(e.target.value.slice(0, 200))}
+                placeholder="Tell attendees what happened…"
+                rows={3}
+                autoFocus
+                style={{
+                  width: '100%', resize: 'vertical',
+                  padding: '10px 12px', borderRadius: 12,
+                  border: `1.5px solid ${C.border}`,
+                  background: '#FAFAFA',
+                  fontFamily: 'Inter, system-ui, sans-serif',
+                  fontSize: 13, lineHeight: 1.5,
+                  outline: 'none',
+                  marginBottom: 14,
+                  minHeight: 64,
+                }}
+              />
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <button
+                type="button"
+                onClick={() => canConfirm && onConfirm(finalReason)}
+                disabled={!canConfirm}
+                style={{
+                  width: '100%', padding: '13px 0',
+                  borderRadius: 12, border: 'none',
+                  background: canConfirm ? '#DC2626' : '#F3F4F6',
+                  color: canConfirm ? '#fff' : C.textMuted,
+                  fontSize: 14, fontWeight: 600,
+                  fontFamily: 'Inter, system-ui, sans-serif',
+                  cursor: canConfirm ? 'pointer' : 'default',
+                  boxShadow: canConfirm ? '0 4px 14px rgba(220,38,38,0.32)' : 'none',
+                }}
+              >
+                {busy ? 'Cancelling…' : 'Cancel event'}
+              </button>
+              <button
+                type="button"
+                onClick={onCancel}
+                disabled={busy}
+                style={{
+                  width: '100%', padding: '13px 0',
+                  borderRadius: 12,
+                  background: C.white,
+                  color: C.text,
+                  border: `1.5px solid ${C.border}`,
+                  fontSize: 14, fontWeight: 600,
+                  fontFamily: 'Inter, system-ui, sans-serif',
+                  cursor: busy ? 'default' : 'pointer',
+                }}
+              >
+                Keep event
+              </button>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
   )
 }
 

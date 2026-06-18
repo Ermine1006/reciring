@@ -29,10 +29,11 @@ function formatEventDate(iso) {
   return `${dateStr} · ${timeStr}`
 }
 
-export default function EventCard({ event, joined, joining, onJoin, isHost }) {
+export default function EventCard({ event, joined, joining, onJoin, onLeave, onCancel, isHost }) {
   const emoji = categoryEmoji(event.category)
   const spotsLeft = Math.max(0, (event.max_attendees || 0) - (event.attendee_count || 0))
   const isFull = spotsLeft === 0 && !joined
+  const isCancelled = event.status === 'cancelled'
   const sponsorBadge = HOST_TYPE_LABEL[event.host_type]
 
   return (
@@ -128,40 +129,92 @@ export default function EventCard({ event, joined, joining, onJoin, isHost }) {
               Hosted by <span style={{ color: C.text, fontWeight: 600 }}>{event.host_display_name}</span>
             </p>
             <p style={{
-              fontSize: 11, color: isFull ? C.danger : C.textMuted,
+              fontSize: 11,
+              color: isCancelled ? C.danger : isFull ? C.danger : C.textMuted,
               fontFamily: 'Inter, system-ui, sans-serif',
               margin: '2px 0 0',
-              fontWeight: isFull ? 600 : 500,
+              fontWeight: (isCancelled || isFull) ? 600 : 500,
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
             }}>
-              {isFull
-                ? 'Full'
-                : `${spotsLeft} spot${spotsLeft === 1 ? '' : 's'} left`}
-              {' '}· {event.attendee_count || 0}/{event.max_attendees}
+              {isCancelled
+                ? `Cancelled${event.cancellation_reason ? ` · ${event.cancellation_reason}` : ''}`
+                : (
+                  <>
+                    {isFull
+                      ? 'Full'
+                      : `${spotsLeft} spot${spotsLeft === 1 ? '' : 's'} left`}
+                    {' '}· {event.attendee_count || 0}/{event.max_attendees}
+                  </>
+                )}
             </p>
           </div>
 
-          {isHost ? (
+          {isCancelled ? (
             <span style={{
-              fontSize: 11, fontWeight: 600,
-              letterSpacing: '0.1em', textTransform: 'uppercase',
-              color: C.goldDark, background: C.goldBg,
-              border: `1px solid ${C.goldLight}`,
+              fontSize: 11, fontWeight: 700,
+              letterSpacing: '0.12em', textTransform: 'uppercase',
+              color: '#fff', background: C.danger,
               borderRadius: 10, padding: '8px 14px',
               fontFamily: 'Inter, system-ui, sans-serif',
             }}>
-              Your event
+              Cancelled
             </span>
+          ) : isHost ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{
+                fontSize: 11, fontWeight: 600,
+                letterSpacing: '0.1em', textTransform: 'uppercase',
+                color: C.goldDark, background: C.goldBg,
+                border: `1px solid ${C.goldLight}`,
+                borderRadius: 10, padding: '8px 12px',
+                fontFamily: 'Inter, system-ui, sans-serif',
+              }}>
+                Your event
+              </span>
+              <button
+                type="button"
+                onClick={() => onCancel?.(event.id)}
+                title="Cancel event"
+                aria-label="Cancel event"
+                style={{
+                  width: 32, height: 32, borderRadius: 10,
+                  background: C.white,
+                  border: `1px solid #FECACA`,
+                  color: C.danger,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = '#FEF2F2' }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = C.white }}
+              >
+                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth={2.2} viewBox="0 0 24 24" strokeLinecap="round">
+                  <path d="M6 6l12 12M18 6L6 18" />
+                </svg>
+              </button>
+            </div>
           ) : joined ? (
-            <span style={{
-              display: 'inline-flex', alignItems: 'center', gap: 5,
-              fontSize: 12, fontWeight: 700,
-              color: '#fff',
-              background: C.success,
-              borderRadius: 10, padding: '8px 14px',
-              fontFamily: 'Inter, system-ui, sans-serif',
-            }}>
+            <button
+              type="button"
+              onClick={() => onLeave?.(event.id)}
+              title="Leave event"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 5,
+                fontSize: 12, fontWeight: 700,
+                color: '#fff',
+                background: C.success,
+                border: 'none',
+                borderRadius: 10, padding: '8px 14px',
+                fontFamily: 'Inter, system-ui, sans-serif',
+                cursor: 'pointer',
+                boxShadow: '0 2px 6px rgba(22,163,74,0.25)',
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#15803D' }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = C.success }}
+            >
               ✓ Joined
-            </span>
+            </button>
           ) : (
             <button
               type="button"

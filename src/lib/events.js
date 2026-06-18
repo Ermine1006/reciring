@@ -3,9 +3,10 @@ import { supabase, isSupabaseConfigured } from './supabase'
 /**
  * Fetch upcoming events with attendee counts.
  *
- * Uses a single query with an embedded count aggregate so the UI gets
- * `attendee_count` per event without N+1. PostgREST returns it as
- * `event_attendees: [{ count }]` when we ask for `count` on the join.
+ * Excludes cancelled events by default — cancelled events are still in
+ * the DB (for audit + attendee history) but shouldn't surface in the
+ * Upcoming feed. Slice B's detail page will still load cancelled
+ * events directly by id.
  *
  * Sorted by soonest start time first.
  */
@@ -18,9 +19,11 @@ export async function fetchUpcomingEvents() {
       id, title, description, start_at, location, category,
       max_attendees, host_user_id, host_display_name, host_type,
       image_url, is_sponsored, created_at,
+      status, cancellation_reason, cancelled_at,
       event_attendees ( count )
     `)
     .gte('start_at', new Date().toISOString())
+    .neq('status', 'cancelled')
     .order('start_at', { ascending: true })
 
   if (error) return { data: [], error }
@@ -116,4 +119,38 @@ export async function leaveEvent(eventId, userId) {
     .eq('event_id', eventId)
     .eq('user_id', userId)
   return { error }
+}
+
+/**
+ * Cancel an event (host only — enforced by RLS UPDATE policy).
+ *
+ * Sets status='cancelled' and stamps the reason. The DB trigger
+ * `trg_notify_event_cancellation` fans out a notification to every
+ * attendee in the same transaction; `trg_stamp_event_cancelled_at`
+ * fills `cancelled_at` automatically.
+ *
+ * `reason` is short text — the picker in the UI offers Weather /
+ * Low attendance / Personal emergency / Other; "Other" passes through
+ * the user's free-text input.
+ */
+export async function cancelEvent(eventId, reason) {
+  if (!isSupabaseConfigured) return { error: new Error('Supabase not configured') }
+  if (!eventId)              return { error: new Error('missing event id') }
+
+  const cleanReason = typeof reason === 'string' ? reason.trim().slice(0, 200) : ''
+
+  const { data, error } = await supabase
+    .from('events')
+    .update({
+      status: 'cancelled',
+      cancellation_reason: cleanReason || null,
+    })
+    .eq('id', eventId)
+    .select('id, status')
+
+  if (error) return { error }
+  if (!data || data.length === 0) {
+    return { error: new Error('Cancel had no effect — RLS may have blocked you (only the host can cancel).') }
+  }
+  return { error: null }
 }

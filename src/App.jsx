@@ -497,13 +497,18 @@ function AppShell() {
         }
         break
       case 'feedback_request':
-        if (matchId) {
-          setReviewMatchId(matchId)
-          setTab('reviews')
-        }
+        if (matchId) setReviewMatchId(matchId)
+        setTab('profile')
+        setProfileSubTab('reviews')
         break
       case 'review_received':
-        setTab('reviews')
+        setTab('profile')
+        setProfileSubTab('reviews')
+        break
+      case 'event_cancelled':
+        // Slice B will deep-link into the Event Detail page using
+        // n.payload.event_id. For now just open the Events tab.
+        setTab('events')
         break
       default:
         break
