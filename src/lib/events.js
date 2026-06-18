@@ -193,6 +193,40 @@ export async function fetchEventAttendees(eventId) {
 }
 
 /**
+ * Update an event's editable fields (host only — RLS enforces it).
+ *
+ * `fields` is a partial object; only present keys are updated. Allowed
+ * keys map to the form: title, description, start_at, location,
+ * category, max_attendees, host_type, image_url. Other columns
+ * (status, cancelled_at, host_user_id, host_display_name, created_at)
+ * are intentionally NOT editable here — status changes go through
+ * cancelEvent; the rest are immutable.
+ */
+export async function updateEvent(eventId, fields) {
+  if (!isSupabaseConfigured) return { data: null, error: new Error('Supabase not configured') }
+  if (!eventId)              return { data: null, error: new Error('missing event id') }
+
+  const ALLOWED = ['title','description','start_at','location','category','max_attendees','host_type','image_url']
+  const patch = {}
+  for (const key of ALLOWED) {
+    if (key in (fields || {})) patch[key] = fields[key]
+  }
+  if (Object.keys(patch).length === 0) {
+    return { data: null, error: new Error('Nothing to update') }
+  }
+
+  const { data, error } = await supabase
+    .from('events')
+    .update(patch)
+    .eq('id', eventId)
+    .select()
+    .single()
+
+  if (error) return { data: null, error }
+  return { data, error: null }
+}
+
+/**
  * Cancel an event (host only — enforced by RLS UPDATE policy).
  *
  * Sets status='cancelled' and stamps the reason. The DB trigger

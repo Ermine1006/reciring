@@ -56,7 +56,7 @@ const HOST_TYPE_LABEL = {
  * is tapped. Self-contained: handles its own loads, realtime sub, join/
  * leave/cancel actions, group thread, and back navigation.
  */
-export default function EventDetailPage({ eventId, onBack, onRequestLeave, onRequestCancel }) {
+export default function EventDetailPage({ eventId, onBack, onEdit }) {
   const { user } = useAuth()
 
   const [event, setEvent]       = useState(null)
@@ -433,22 +433,42 @@ export default function EventDetailPage({ eventId, onBack, onRequestLeave, onReq
         {!isCancelled && (
           <div style={{ marginBottom: 16 }}>
             {isHost ? (
-              <button
-                type="button"
-                onClick={handleCancel}
-                style={{
-                  width: '100%', padding: '14px 0',
-                  borderRadius: 12,
-                  background: C.white, color: C.danger,
-                  border: `1.5px solid ${C.danger}`,
-                  fontSize: 14, fontWeight: 700,
-                  letterSpacing: '0.08em', textTransform: 'uppercase',
-                  fontFamily: 'Inter, system-ui, sans-serif',
-                  cursor: 'pointer',
-                }}
-              >
-                Cancel event
-              </button>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => onEdit?.(event.id)}
+                  style={{
+                    flex: 1, padding: '14px 0',
+                    borderRadius: 12,
+                    background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
+                    color: '#fff',
+                    border: 'none',
+                    fontSize: 14, fontWeight: 700,
+                    letterSpacing: '0.08em', textTransform: 'uppercase',
+                    fontFamily: 'Inter, system-ui, sans-serif',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 14px rgba(200,169,106,0.32)',
+                  }}
+                >
+                  Edit event
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancel}
+                  style={{
+                    flex: 1, padding: '14px 0',
+                    borderRadius: 12,
+                    background: C.white, color: C.danger,
+                    border: `1.5px solid ${C.danger}`,
+                    fontSize: 14, fontWeight: 700,
+                    letterSpacing: '0.08em', textTransform: 'uppercase',
+                    fontFamily: 'Inter, system-ui, sans-serif',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Cancel event
+                </button>
+              </div>
             ) : joined ? (
               <button
                 type="button"

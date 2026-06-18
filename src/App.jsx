@@ -21,6 +21,7 @@ import MyPostsPage from './components/MyPostsPage'
 import AdminEmailTest from './components/AdminEmailTest'
 import EventsList from './components/EventsList'
 import CreateEventForm from './components/CreateEventForm'
+import EditEventForm from './components/EditEventForm'
 import EventDetailPage from './components/EventDetailPage'
 import ProfilePage from './components/ProfilePage'
 import { isAdmin } from './data/adminEmails'
@@ -106,8 +107,14 @@ function AppShell() {
   // Currently opened event id — when set, Events tab renders the
   // detail page instead of the list. Null = list view.
   const [viewingEventId, setViewingEventId] = useState(null)
+  // When set, Events tab renders EditEventForm overlay on top of the
+  // detail page. The detail page id stays in viewingEventId so closing
+  // the editor returns there cleanly.
+  const [editingEventId, setEditingEventId] = useState(null)
   // Bump this to force EventsList to refetch after a new event is created.
   const [eventsRefreshKey, setEventsRefreshKey] = useState(0)
+  // Bump this to force EventDetailPage to refetch after save.
+  const [eventDetailRefreshKey, setEventDetailRefreshKey] = useState(0)
   const [requests, setRequests]   = useState([])
   const [matches, setMatches]     = useState([])
   const [chatMatchId, setChatMatchId] = useState(null)
@@ -509,9 +516,12 @@ function AppShell() {
         setTab('profile')
         setProfileSubTab('reviews')
         break
-      case 'event_cancelled': {
+      case 'event_cancelled':
+      case 'event_joined':
+      case 'event_message': {
         const eventId = n.payload?.event_id
         setTab('events')
+        setEditingEventId(null)
         if (eventId) setViewingEventId(eventId)
         else         setViewingEventId(null)
         break
@@ -1026,20 +1036,33 @@ function AppShell() {
               onOpenAdminEmailTest={() => setShowAdminEmailTest(true)}
             />
           )}
-          {tab === 'events' && viewingEventId && (
-            <EventDetailPage
-              eventId={viewingEventId}
-              onBack={() => { setViewingEventId(null); setEventsRefreshKey(k => k + 1) }}
+          {tab === 'events' && editingEventId && (
+            <EditEventForm
+              eventId={editingEventId}
+              onSaved={() => {
+                setEditingEventId(null)
+                setEventDetailRefreshKey(k => k + 1)
+                setEventsRefreshKey(k => k + 1)
+              }}
+              onClose={() => setEditingEventId(null)}
             />
           )}
-          {tab === 'events' && !viewingEventId && !showCreateEvent && (
+          {tab === 'events' && !editingEventId && viewingEventId && (
+            <EventDetailPage
+              key={`${viewingEventId}-${eventDetailRefreshKey}`}
+              eventId={viewingEventId}
+              onBack={() => { setViewingEventId(null); setEventsRefreshKey(k => k + 1) }}
+              onEdit={(id) => setEditingEventId(id)}
+            />
+          )}
+          {tab === 'events' && !editingEventId && !viewingEventId && !showCreateEvent && (
             <EventsList
               key={eventsRefreshKey}
               onCreateEvent={() => setShowCreateEvent(true)}
               onOpenEvent={(id) => setViewingEventId(id)}
             />
           )}
-          {tab === 'events' && !viewingEventId && showCreateEvent && (
+          {tab === 'events' && !editingEventId && !viewingEventId && showCreateEvent && (
             <CreateEventForm
               onCreated={() => {
                 setShowCreateEvent(false)
