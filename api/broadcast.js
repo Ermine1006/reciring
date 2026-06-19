@@ -31,6 +31,14 @@ import { makeUnsubscribeToken } from './lib/unsubscribe-token.js'
 
 const FROM = 'Reciring Team <hello@reciring.com>'
 
+// Resend free tier rate limit: 5 requests/sec. Sleep between sends
+// to stay comfortably below (~4/sec). For larger lists (>50) this
+// approaches Vercel's hobby-tier 10s function timeout — switch to
+// the Resend batch API at that scale.
+const SEND_INTERVAL_MS = 250
+
+const sleep = (ms) => new Promise(r => setTimeout(r, ms))
+
 // Templates eligible for broadcast.
 //   welcome           — sent via /api/send-email per signup; available
 //                       here only for admin test sends.
@@ -122,8 +130,15 @@ export default async function handler(req, res) {
   let failed = 0
   let unsubscribed = 0
   const errors = []
+  let isFirst = true
 
   for (const target of targets) {
+    // Throttle: pause between sends to stay under Resend's 5/sec
+    // rate limit. Skip the wait on the first iteration so a small
+    // broadcast doesn't pay an unnecessary 250ms.
+    if (!isFirst) await sleep(SEND_INTERVAL_MS)
+    isFirst = false
+
     if (target.email_subscribed === false) {
       unsubscribed++
       await admin.from('email_logs').insert({
