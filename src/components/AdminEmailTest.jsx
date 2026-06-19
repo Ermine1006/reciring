@@ -1,7 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
-import { supabase } from '../lib/supabase'
 
 const C = {
   gold:      '#C8A96A',
@@ -18,14 +17,59 @@ const C = {
   amber:     '#B45309',
 }
 
-// Templates registered on /api/broadcast. Add to this list as more are
-// implemented (announcement, weekly_digest, etc.). Keep the `id` field
-// matching the server-side key in api/broadcast.js TEMPLATES.
+// Template presets shown in the radio. `apiTemplate` is the key the
+// backend (api/broadcast.js → TEMPLATES) recognises. `locked` means
+// subject + body come straight from the template file and admins can't
+// override (welcome is the only one). `allowBroadcast` controls
+// whether the "Send Broadcast to all" button is enabled — welcome
+// shouldn't be broadcast to existing subscribed users.
 const TEMPLATES = [
-  { id: 'welcome', label: 'Welcome email', description: 'The standard new-user welcome.' },
+  {
+    id:             'welcome',
+    label:          'Welcome Email',
+    description:    'Standard new-user welcome. Subject + body fixed.',
+    apiTemplate:    'welcome',
+    locked:         true,
+    allowBroadcast: false,
+    defaultSubject: '',
+    defaultBody:    '',
+    eyebrow:        '',
+  },
+  {
+    id:             'product_update',
+    label:          'Product Update',
+    description:    'Announce new features or releases.',
+    apiTemplate:    'broadcast_message',
+    locked:         false,
+    allowBroadcast: true,
+    defaultSubject: "What's new at Reciring",
+    defaultBody:    "Hi —\n\nWe just shipped some updates we think you'll like:\n\n• \n• \n\nOpen the app to try them out.\n\n— The Reciring Team",
+    eyebrow:        'Product Update',
+  },
+  {
+    id:             'community_announcement',
+    label:          'Community Announcement',
+    description:    'Share community news, events, or recognition.',
+    apiTemplate:    'broadcast_message',
+    locked:         false,
+    allowBroadcast: true,
+    defaultSubject: 'A note from the Reciring community',
+    defaultBody:    "Hi —\n\nQuick update from the team:\n\n\n\n— The Reciring Team",
+    eyebrow:        'Community',
+  },
+  {
+    id:             'custom',
+    label:          'Custom',
+    description:    'Blank slate — write your own subject and body.',
+    apiTemplate:    'broadcast_message',
+    locked:         false,
+    allowBroadcast: true,
+    defaultSubject: '',
+    defaultBody:    '',
+    eyebrow:        '',
+  },
 ]
 
-// Lightweight email shape check — not RFC-strict, just catches typos.
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 function parseRecipients(raw) {
@@ -48,60 +92,46 @@ function parseRecipients(raw) {
 
 export default function AdminEmailTest({ onClose }) {
   const { session } = useAuth()
-  const [template, setTemplate] = useState('welcome')
+
+  const [templateId, setTemplateId]         = useState('welcome')
+  const [subject, setSubject]               = useState('')
+  const [body, setBody]                     = useState('')
   const [recipientsText, setRecipientsText] = useState('')
-  const [sending, setSending] = useState(false)
-  const [result, setResult]   = useState(null) // { sent, failed, unsubscribed, errors, recipients }
-  const [error, setError]     = useState(null)
+  const [sending, setSending]               = useState(false)
+  const [sendMode, setSendMode]             = useState(null) // 'test' | 'broadcast'
+  const [result, setResult]                 = useState(null)
+  const [error, setError]                   = useState(null)
 
-  // Subscription admin (resubscribe / unsubscribe by email)
-  const [subEmail, setSubEmail]       = useState('')
-  const [subAction, setSubAction]     = useState('subscribe') // 'subscribe' | 'unsubscribe'
-  const [subSaving, setSubSaving]     = useState(false)
-  const [subResult, setSubResult]     = useState(null)
-  const [subError, setSubError]       = useState(null)
+  const template = TEMPLATES.find(t => t.id === templateId) || TEMPLATES[0]
 
-  const handleSubscriptionUpdate = async () => {
-    const target = subEmail.trim().toLowerCase()
-    if (!EMAIL_RE.test(target)) { setSubError('Enter a valid email.'); return }
-    if (!session)                { setSubError('You are not signed in.'); return }
-
-    setSubSaving(true); setSubError(null); setSubResult(null)
-
-    let resp
-    try {
-      resp = await fetch('/api/admin/subscription', {
-        method: 'POST',
-        headers: {
-          Authorization:  `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: target, action: subAction }),
-      })
-    } catch (err) {
-      setSubSaving(false)
-      setSubError(err?.message || 'Network error')
-      return
-    }
-
-    let body = {}
-    try { body = await resp.json() } catch {}
-
-    setSubSaving(false)
-    if (!resp.ok) { setSubError(body.error || `Failed (${resp.status})`); return }
-    setSubResult(body)
-  }
+  // When template changes, reset subject + body to that template's
+  // defaults. Welcome stays empty (locked).
+  useEffect(() => {
+    setSubject(template.defaultSubject || '')
+    setBody(template.defaultBody || '')
+    setResult(null); setError(null)
+  }, [templateId])
 
   const { valid, invalid } = parseRecipients(recipientsText)
-  const canSend = valid.length > 0 && valid.length <= 10 && !sending
 
-  const handleSend = async () => {
-    if (!session) { setError('You are not signed in.'); return }
-    if (valid.length === 0) { setError('Enter at least one valid email.'); return }
-    if (valid.length > 10) { setError('Test send is capped at 10 recipients. Use the broadcast endpoint for larger lists.'); return }
+  // Test send: needs at least 1 valid recipient (cap 10) and a
+  // subject + body when the template isn't locked.
+  const canSendTest =
+    !sending
+    && valid.length > 0
+    && valid.length <= 10
+    && (template.locked || (subject.trim() && body.trim()))
 
-    setSending(true); setError(null); setResult(null)
+  // Broadcast: requires subject + body (locked templates can't broadcast).
+  const canSendBroadcast =
+    !sending
+    && template.allowBroadcast
+    && subject.trim()
+    && body.trim()
 
+  // ── Send paths ────────────────────────────────────────────
+
+  async function postBroadcast(payload) {
     let resp
     try {
       resp = await fetch('/api/broadcast', {
@@ -110,27 +140,90 @@ export default function AdminEmailTest({ onClose }) {
           Authorization:  `Bearer ${session.access_token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ template, recipients: valid }),
+        body: JSON.stringify(payload),
       })
     } catch (err) {
-      setSending(false)
-      setError(err?.message || 'Network error')
-      return
+      return { ok: false, error: err?.message || 'Network error' }
     }
-
     let body = {}
     try { body = await resp.json() } catch {}
+    if (!resp.ok) return { ok: false, error: body.error || `Failed (${resp.status})` }
+    return { ok: true, body }
+  }
 
-    setSending(false)
-    if (!resp.ok) {
-      setError(body.error || `Send failed (${resp.status})`)
-      return
+  const handleTest = async () => {
+    if (!session)        { setError('You are not signed in.'); return }
+    if (!canSendTest)    return
+    setSending(true); setSendMode('test'); setError(null); setResult(null)
+
+    const payload = {
+      template:   template.apiTemplate,
+      recipients: valid,
+      data: template.locked ? undefined : {
+        subject: subject.trim(),
+        body,
+        eyebrow: template.eyebrow,
+      },
     }
 
-    setResult({
-      ...body,
-      recipients: valid,
-    })
+    const { ok, body: respBody, error: err } = await postBroadcast(payload)
+    setSending(false)
+    if (!ok) { setError(err); return }
+    setResult({ ...respBody, mode: 'test', recipients: valid })
+  }
+
+  const handleBroadcast = async () => {
+    if (!session)             { setError('You are not signed in.'); return }
+    if (!canSendBroadcast)    return
+    const ok = window.confirm(
+      `Send this email to ALL subscribed users? This cannot be undone.\n\nTemplate: ${template.label}\nSubject: ${subject.trim()}`
+    )
+    if (!ok) return
+
+    setSending(true); setSendMode('broadcast'); setError(null); setResult(null)
+
+    const payload = {
+      template: template.apiTemplate,
+      audience: 'all',
+      data: {
+        subject: subject.trim(),
+        body,
+        eyebrow: template.eyebrow,
+      },
+    }
+
+    const { ok: success, body: respBody, error: err } = await postBroadcast(payload)
+    setSending(false)
+    if (!success) { setError(err); return }
+    setResult({ ...respBody, mode: 'broadcast' })
+  }
+
+  // ── Subscription admin (kept from previous version) ──────
+
+  const [subEmail, setSubEmail]   = useState('')
+  const [subAction, setSubAction] = useState('subscribe')
+  const [subSaving, setSubSaving] = useState(false)
+  const [subResult, setSubResult] = useState(null)
+  const [subError, setSubError]   = useState(null)
+
+  const handleSubscriptionUpdate = async () => {
+    const target = subEmail.trim().toLowerCase()
+    if (!EMAIL_RE.test(target)) { setSubError('Enter a valid email.'); return }
+    if (!session)                { setSubError('You are not signed in.'); return }
+    setSubSaving(true); setSubError(null); setSubResult(null)
+    let resp
+    try {
+      resp = await fetch('/api/admin/subscription', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: target, action: subAction }),
+      })
+    } catch (err) { setSubSaving(false); setSubError(err?.message || 'Network error'); return }
+    let body = {}
+    try { body = await resp.json() } catch {}
+    setSubSaving(false)
+    if (!resp.ok) { setSubError(body.error || `Failed (${resp.status})`); return }
+    setSubResult(body)
   }
 
   return (
@@ -147,7 +240,7 @@ export default function AdminEmailTest({ onClose }) {
               Admin
             </p>
             <h1 className="font-display" style={{ fontSize: 22, fontWeight: 600, color: C.text }}>
-              Send test email
+              Email center
             </h1>
           </div>
           <button
@@ -170,12 +263,12 @@ export default function AdminEmailTest({ onClose }) {
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {TEMPLATES.map(t => {
-              const active = template === t.id
+              const active = templateId === t.id
               return (
                 <button
                   key={t.id}
                   type="button"
-                  onClick={() => setTemplate(t.id)}
+                  onClick={() => setTemplateId(t.id)}
                   style={{
                     textAlign: 'left',
                     padding: '12px 14px',
@@ -185,9 +278,21 @@ export default function AdminEmailTest({ onClose }) {
                     cursor: 'pointer',
                   }}
                 >
-                  <p style={{ fontSize: 13, fontWeight: 600, color: active ? C.goldDark : C.text, margin: 0, fontFamily: 'Inter, system-ui, sans-serif' }}>
-                    {t.label}
-                  </p>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: active ? C.goldDark : C.text, margin: 0, fontFamily: 'Inter, system-ui, sans-serif' }}>
+                      {t.label}
+                    </p>
+                    {t.locked && (
+                      <span style={{
+                        fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase',
+                        color: C.textMuted, background: '#F3F4F6', border: `1px solid ${C.border}`,
+                        borderRadius: 99, padding: '2px 7px',
+                        fontFamily: 'Inter, system-ui, sans-serif',
+                      }}>
+                        Locked
+                      </span>
+                    )}
+                  </div>
                   <p style={{ fontSize: 11, color: C.textMuted, margin: '4px 0 0', fontFamily: 'Inter, system-ui, sans-serif', lineHeight: 1.5 }}>
                     {t.description}
                   </p>
@@ -197,96 +302,166 @@ export default function AdminEmailTest({ onClose }) {
           </div>
         </section>
 
-        {/* Recipients */}
+        {/* Subject */}
+        <section
+          className="rounded-2xl p-5 mb-4"
+          style={{ background: C.white, border: `1px solid ${C.border}` }}
+        >
+          <p className="text-xs uppercase tracking-wider mb-3" style={{ color: C.textMuted }}>
+            Subject
+          </p>
+          <input
+            type="text"
+            value={subject}
+            onChange={(e) => setSubject(e.target.value.slice(0, 200))}
+            disabled={template.locked}
+            placeholder={template.locked ? 'Set by the welcome template' : 'Email subject'}
+            style={{
+              width: '100%',
+              padding: '12px 14px',
+              borderRadius: 12,
+              border: `1.5px solid ${C.border}`,
+              background: template.locked ? '#F5F5F5' : '#FAFAFA',
+              fontSize: 14,
+              fontFamily: 'Inter, system-ui, sans-serif',
+              outline: 'none',
+              color: template.locked ? C.textMuted : C.text,
+              cursor: template.locked ? 'not-allowed' : 'text',
+            }}
+          />
+        </section>
+
+        {/* Body */}
         <section
           className="rounded-2xl p-5 mb-4"
           style={{ background: C.white, border: `1px solid ${C.border}` }}
         >
           <p className="text-xs uppercase tracking-wider mb-1" style={{ color: C.textMuted }}>
-            Recipients
+            Body
           </p>
           <p style={{ fontSize: 11, color: C.textMuted, marginBottom: 10, fontFamily: 'Inter, system-ui, sans-serif', lineHeight: 1.5 }}>
-            Up to 10 emails. One per line, or separated by commas / semicolons.
+            Plain text only. Blank lines = paragraphs. HTML is escaped for safety.
           </p>
+          <textarea
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            disabled={template.locked}
+            placeholder={template.locked ? 'Set by the welcome template' : 'Write your message…'}
+            rows={9}
+            style={{
+              width: '100%',
+              padding: '12px 14px',
+              borderRadius: 12,
+              border: `1.5px solid ${C.border}`,
+              background: template.locked ? '#F5F5F5' : '#FAFAFA',
+              fontSize: 13.5,
+              fontFamily: 'Inter, system-ui, sans-serif',
+              outline: 'none',
+              color: template.locked ? C.textMuted : C.text,
+              cursor: template.locked ? 'not-allowed' : 'text',
+              resize: 'vertical',
+              lineHeight: 1.55,
+              minHeight: 180,
+            }}
+          />
+        </section>
 
+        {/* Recipients (test list) */}
+        <section
+          className="rounded-2xl p-5 mb-4"
+          style={{ background: C.white, border: `1px solid ${C.border}` }}
+        >
+          <p className="text-xs uppercase tracking-wider mb-1" style={{ color: C.textMuted }}>
+            Test recipients
+          </p>
+          <p style={{ fontSize: 11, color: C.textMuted, marginBottom: 10, fontFamily: 'Inter, system-ui, sans-serif', lineHeight: 1.5 }}>
+            Up to 10 emails for <strong style={{ color: C.text }}>Send Test</strong>. Comma, semicolon, or newline separated. Ignored when broadcasting.
+          </p>
           <textarea
             value={recipientsText}
             onChange={(e) => setRecipientsText(e.target.value)}
-            placeholder={`example1@test.com\nexample2@test.com\nexample3@test.com`}
-            rows={6}
-            className="w-full rounded-xl px-4 py-3 text-sm font-mono"
+            placeholder={"example1@test.com\nexample2@test.com"}
+            rows={4}
             style={{
-              background: '#FAFAFA',
+              width: '100%',
+              padding: '12px 14px',
+              borderRadius: 12,
               border: `1.5px solid ${C.border}`,
+              background: '#FAFAFA',
               color: C.text,
               outline: 'none',
               fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
               fontSize: 13,
               lineHeight: 1.5,
               resize: 'vertical',
-              minHeight: 120,
+              minHeight: 100,
             }}
           />
-
-          {/* Live validation summary */}
           {(valid.length > 0 || invalid.length > 0) && (
-            <div style={{ display: 'flex', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
               {valid.length > 0 && (
-                <span style={{
-                  fontSize: 11, fontWeight: 600,
-                  color: C.success, background: '#F0FDF4', border: '1px solid #BBF7D0',
-                  borderRadius: 99, padding: '4px 10px',
-                  fontFamily: 'Inter, system-ui, sans-serif',
-                }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: C.success, background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: 99, padding: '4px 10px', fontFamily: 'Inter, system-ui, sans-serif' }}>
                   ✓ {valid.length} valid
                 </span>
               )}
               {invalid.length > 0 && (
-                <span style={{
-                  fontSize: 11, fontWeight: 600,
-                  color: C.amber, background: '#FFFBEB', border: '1px solid #FDE68A',
-                  borderRadius: 99, padding: '4px 10px',
-                  fontFamily: 'Inter, system-ui, sans-serif',
-                }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: C.amber, background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 99, padding: '4px 10px', fontFamily: 'Inter, system-ui, sans-serif' }}>
                   ⚠ {invalid.length} invalid (skipped)
                 </span>
               )}
               {valid.length > 10 && (
-                <span style={{
-                  fontSize: 11, fontWeight: 600,
-                  color: C.danger, background: '#FEF2F2', border: '1px solid #FECACA',
-                  borderRadius: 99, padding: '4px 10px',
-                  fontFamily: 'Inter, system-ui, sans-serif',
-                }}>
-                  Over cap (10 max)
+                <span style={{ fontSize: 11, fontWeight: 600, color: C.danger, background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 99, padding: '4px 10px', fontFamily: 'Inter, system-ui, sans-serif' }}>
+                  Over test cap (10 max)
                 </span>
               )}
             </div>
           )}
         </section>
 
-        {/* Send button */}
-        <button
-          type="button"
-          onClick={handleSend}
-          disabled={!canSend}
-          className="w-full py-3.5 rounded-xl text-sm font-semibold tracking-wide active:scale-[0.98] mb-4"
-          style={{
-            background: canSend
-              ? `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`
-              : '#F3F4F6',
-            color: canSend ? '#fff' : C.textMuted,
-            border: 'none',
-            boxShadow: canSend ? '0 6px 20px rgba(200,169,106,0.35)' : 'none',
-            cursor: canSend ? 'pointer' : 'default',
-          }}
-        >
-          {sending
-            ? 'Sending…'
-            : valid.length === 0
-              ? 'Send test'
-              : `Send test to ${valid.length} recipient${valid.length === 1 ? '' : 's'}`}
-        </button>
+        {/* Action buttons */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+          <button
+            type="button"
+            onClick={handleTest}
+            disabled={!canSendTest}
+            className="active:scale-[0.98]"
+            style={{
+              flex: 1,
+              padding: '13px 0',
+              borderRadius: 12,
+              background: canSendTest ? C.white : '#F3F4F6',
+              color:      canSendTest ? C.goldDark : C.textMuted,
+              border: `1.5px solid ${canSendTest ? C.goldLight : C.border}`,
+              fontSize: 13, fontWeight: 700,
+              letterSpacing: '0.08em', textTransform: 'uppercase',
+              fontFamily: 'Inter, system-ui, sans-serif',
+              cursor: canSendTest ? 'pointer' : 'default',
+            }}
+          >
+            {sending && sendMode === 'test' ? 'Sending…' : `Send Test${valid.length ? ` (${valid.length})` : ''}`}
+          </button>
+          <button
+            type="button"
+            onClick={handleBroadcast}
+            disabled={!canSendBroadcast}
+            className="active:scale-[0.98]"
+            style={{
+              flex: 1,
+              padding: '13px 0',
+              borderRadius: 12,
+              background: canSendBroadcast ? `linear-gradient(135deg, ${C.gold}, ${C.goldDark})` : '#F3F4F6',
+              color:      canSendBroadcast ? '#fff' : C.textMuted,
+              border: 'none',
+              boxShadow: canSendBroadcast ? '0 6px 18px rgba(200,169,106,0.34)' : 'none',
+              fontSize: 13, fontWeight: 700,
+              letterSpacing: '0.08em', textTransform: 'uppercase',
+              fontFamily: 'Inter, system-ui, sans-serif',
+              cursor: canSendBroadcast ? 'pointer' : 'default',
+            }}
+          >
+            {sending && sendMode === 'broadcast' ? 'Sending…' : 'Send Broadcast'}
+          </button>
+        </div>
 
         {error && (
           <div
@@ -299,24 +474,21 @@ export default function AdminEmailTest({ onClose }) {
           </div>
         )}
 
-        {/* Results */}
         {result && (
           <section
-            className="rounded-2xl p-5"
+            className="rounded-2xl p-5 mb-4"
             style={{ background: C.white, border: `1px solid ${C.border}` }}
           >
             <p className="text-xs uppercase tracking-wider mb-3" style={{ color: C.textMuted }}>
-              Result
+              Result · {result.mode === 'broadcast' ? 'Broadcast' : 'Test'}
             </p>
-
             <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
               <ResultBadge label="Sent"         count={result.sent}         color={C.success}  bg="#F0FDF4" border="#BBF7D0" />
               <ResultBadge label="Failed"       count={result.failed}       color={C.danger}   bg="#FEF2F2" border="#FECACA" />
               <ResultBadge label="Unsubscribed" count={result.unsubscribed} color={C.amber}    bg="#FFFBEB" border="#FDE68A" />
             </div>
-
             {result.errors && result.errors.length > 0 && (
-              <div style={{ marginBottom: 12 }}>
+              <div style={{ marginBottom: 4 }}>
                 <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: C.danger, marginBottom: 6, fontFamily: 'Inter, system-ui, sans-serif' }}>
                   Errors
                 </p>
@@ -327,9 +499,7 @@ export default function AdminEmailTest({ onClose }) {
                       padding: '8px 12px',
                       background: '#FEF2F2', border: '1px solid #FECACA',
                       borderRadius: 8, marginBottom: 6,
-                      fontFamily: 'Inter, system-ui, sans-serif',
-                      lineHeight: 1.45,
-                      wordBreak: 'break-word',
+                      fontFamily: 'Inter, system-ui, sans-serif', lineHeight: 1.45, wordBreak: 'break-word',
                     }}>
                       <span style={{ fontWeight: 600, color: C.danger }}>{e.recipient}:</span>{' '}
                       <span style={{ color: C.textSub }}>{e.error}</span>
@@ -338,14 +508,13 @@ export default function AdminEmailTest({ onClose }) {
                 </ul>
               </div>
             )}
-
             <p style={{ fontSize: 11, color: C.textMuted, fontFamily: 'Inter, system-ui, sans-serif', lineHeight: 1.5, margin: '10px 0 0' }}>
-              Every send (success, failure, or unsubscribed skip) is also recorded in <code style={{ background: '#F5F5F5', padding: '1px 5px', borderRadius: 4, fontFamily: 'ui-monospace, monospace' }}>email_logs</code> with the full Resend ID.
+              Every send (success, failure, unsubscribed skip) is recorded in <code style={{ background: '#F5F5F5', padding: '1px 5px', borderRadius: 4, fontFamily: 'ui-monospace, monospace' }}>email_logs</code> with the full Resend ID.
             </p>
           </section>
         )}
 
-        {/* ── Manage subscription (resubscribe / unsubscribe) ───── */}
+        {/* ── Manage subscription ──────────────────────────── */}
         <section
           className="rounded-2xl p-5 mt-6"
           style={{ background: C.white, border: `1px solid ${C.border}` }}
@@ -373,7 +542,6 @@ export default function AdminEmailTest({ onClose }) {
             }}
           />
 
-          {/* Action toggle */}
           <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
             {[
               { id: 'subscribe',   label: 'Resubscribe',  color: C.success, bg: '#F0FDF4', border: '#BBF7D0' },
@@ -386,9 +554,7 @@ export default function AdminEmailTest({ onClose }) {
                   type="button"
                   onClick={() => setSubAction(opt.id)}
                   style={{
-                    flex: 1,
-                    padding: '10px 12px',
-                    borderRadius: 12,
+                    flex: 1, padding: '10px 12px', borderRadius: 12,
                     background: active ? opt.bg : '#FAFAFA',
                     border: `1.5px solid ${active ? opt.border : C.border}`,
                     cursor: 'pointer',
@@ -410,14 +576,10 @@ export default function AdminEmailTest({ onClose }) {
             disabled={subSaving || !subEmail.trim()}
             className="w-full py-3 rounded-xl text-sm font-semibold tracking-wide active:scale-[0.98]"
             style={{
-              background: (subSaving || !subEmail.trim())
-                ? '#F3F4F6'
-                : `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
+              background: (subSaving || !subEmail.trim()) ? '#F3F4F6' : `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
               color: (subSaving || !subEmail.trim()) ? C.textMuted : '#fff',
               border: 'none',
-              boxShadow: (subSaving || !subEmail.trim())
-                ? 'none'
-                : '0 4px 14px rgba(200,169,106,0.3)',
+              boxShadow: (subSaving || !subEmail.trim()) ? 'none' : '0 4px 14px rgba(200,169,106,0.3)',
               cursor: (subSaving || !subEmail.trim()) ? 'default' : 'pointer',
             }}
           >
@@ -425,10 +587,7 @@ export default function AdminEmailTest({ onClose }) {
           </button>
 
           {subError && (
-            <div
-              className="rounded-xl p-3 mt-3"
-              style={{ background: '#FEF2F2', border: `1px solid #FECACA` }}
-            >
+            <div className="rounded-xl p-3 mt-3" style={{ background: '#FEF2F2', border: `1px solid #FECACA` }}>
               <p style={{ fontSize: 12, color: C.danger, fontFamily: 'Inter, system-ui, sans-serif', margin: 0 }}>
                 {subError}
               </p>
@@ -436,13 +595,10 @@ export default function AdminEmailTest({ onClose }) {
           )}
 
           {subResult && (
-            <div
-              className="rounded-xl p-3 mt-3"
-              style={{
-                background: subResult.status === 'subscribed' ? '#F0FDF4' : '#FFFBEB',
-                border: `1px solid ${subResult.status === 'subscribed' ? '#BBF7D0' : '#FDE68A'}`,
-              }}
-            >
+            <div className="rounded-xl p-3 mt-3" style={{
+              background: subResult.status === 'subscribed' ? '#F0FDF4' : '#FFFBEB',
+              border: `1px solid ${subResult.status === 'subscribed' ? '#BBF7D0' : '#FDE68A'}`,
+            }}>
               <p style={{
                 fontSize: 13, fontWeight: 600,
                 color: subResult.status === 'subscribed' ? C.success : C.amber,
@@ -451,8 +607,8 @@ export default function AdminEmailTest({ onClose }) {
                 {subResult.status === 'subscribed' ? '✓ Resubscribed' : '⚠ Unsubscribed'}
               </p>
               <p style={{ fontSize: 12, color: C.textSub, fontFamily: 'Inter, system-ui, sans-serif', margin: 0, lineHeight: 1.5 }}>
-                <span style={{ fontFamily: 'ui-monospace, monospace', color: C.text }}>{subResult.email}</span>
-                {' '}is now <strong>{subResult.status}</strong>
+                <span style={{ fontFamily: 'ui-monospace, monospace', color: C.text }}>{subResult.email}</span>{' '}
+                is now <strong>{subResult.status}</strong>
                 {subResult.previous && subResult.previous !== subResult.status && (
                   <> (was <em>{subResult.previous}</em>)</>
                 )}.

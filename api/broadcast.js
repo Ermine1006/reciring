@@ -24,15 +24,20 @@
 import { Resend } from 'resend'
 import { createClient } from '@supabase/supabase-js'
 import { welcomeTemplate } from './templates/welcome.js'
+import { broadcastMessageTemplate } from './templates/broadcast-message.js'
 import { isAdmin } from './lib/admin.js'
 import { makeUnsubscribeToken } from './lib/unsubscribe-token.js'
 
 const FROM = 'Reciring Team <hello@reciring.com>'
 
-// Templates eligible for broadcast. Welcome is here for testing only —
-// in normal flow it's sent via /api/send-email per signup.
+// Templates eligible for broadcast.
+//   welcome           — sent via /api/send-email per signup; available
+//                       here only for admin test sends.
+//   broadcast_message — generic announcement template; admin supplies
+//                       subject + body + eyebrow via the data field.
 const TEMPLATES = {
-  welcome: welcomeTemplate,
+  welcome:           welcomeTemplate,
+  broadcast_message: broadcastMessageTemplate,
 }
 
 export default async function handler(req, res) {

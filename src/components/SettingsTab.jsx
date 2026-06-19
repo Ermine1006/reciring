@@ -207,13 +207,13 @@ export default function SettingsTab({ onOpenAdminEmailTest }) {
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
-            Send test email
+            Email center
           </button>
           <p style={{
             fontSize: 11, color: C.textMuted, marginTop: 10, lineHeight: 1.5,
             fontFamily: 'Inter, system-ui, sans-serif', textAlign: 'center',
           }}>
-            Admin-only tools for testing broadcasts and managing subscriptions.
+            Compose broadcasts, send test emails, manage subscriptions.
           </p>
         </Section>
       )}
