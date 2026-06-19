@@ -36,6 +36,17 @@ const TEMPLATES = [
     eyebrow:        '',
   },
   {
+    id:             'events_launch',
+    label:          'Events Launch 🎉',
+    description:    'Premium launch email for the Events feature. Fixed layout, hero + screenshot + founder note.',
+    apiTemplate:    'events_launch',
+    locked:         true,
+    allowBroadcast: true,
+    defaultSubject: '',
+    defaultBody:    '',
+    eyebrow:        '',
+  },
+  {
     id:             'product_update',
     label:          'Product Update',
     description:    'Announce new features or releases.',

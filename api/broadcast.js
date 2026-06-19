@@ -25,6 +25,7 @@ import { Resend } from 'resend'
 import { createClient } from '@supabase/supabase-js'
 import { welcomeTemplate } from './templates/welcome.js'
 import { broadcastMessageTemplate } from './templates/broadcast-message.js'
+import { eventsLaunchTemplate } from './templates/events-launch.js'
 import { isAdmin } from './lib/admin.js'
 import { makeUnsubscribeToken } from './lib/unsubscribe-token.js'
 
@@ -35,9 +36,12 @@ const FROM = 'Reciring Team <hello@reciring.com>'
 //                       here only for admin test sends.
 //   broadcast_message — generic announcement template; admin supplies
 //                       subject + body + eyebrow via the data field.
+//   events_launch     — dedicated Events Launch announcement, fixed
+//                       subject + body (premium product-update layout).
 const TEMPLATES = {
   welcome:           welcomeTemplate,
   broadcast_message: broadcastMessageTemplate,
+  events_launch:     eventsLaunchTemplate,
 }
 
 export default async function handler(req, res) {
