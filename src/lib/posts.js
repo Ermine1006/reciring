@@ -8,12 +8,18 @@ import { supabase, isSupabaseConfigured } from './supabase'
 export async function fetchPosts() {
   if (!isSupabaseConfigured) return { data: null, error: null }
 
-  // Try with profile join first for ranking data
+  // Try with profile join — pulls ranking data AND the fields the
+  // visibility helper needs (name, program, headline, career_stage,
+  // industry_interests, avatar_url, visibility).
   const { data, error } = await supabase
     .from('posts')
     .select(`
       *,
-      creator:profiles ( total_points, meetings_scheduled, meetings_completed )
+      creator:profiles (
+        total_points, meetings_scheduled, meetings_completed,
+        visibility, name, program, headline, career_stage,
+        industry_interests, avatar_url
+      )
     `)
     .order('created_at', { ascending: false })
 
@@ -106,6 +112,17 @@ export function rowToCard(row) {
       scheduled:  creator.meetings_scheduled || 0,
       completed:  creator.meetings_completed || 0,
       industries: row.industry_tag || [],
+    },
+    // Full creator slice for the visibility helper (posterDisplay).
+    // Falls back to {} when the embedded join failed.
+    creator: {
+      visibility:         creator.visibility || 'private',
+      name:               creator.name || null,
+      program:            creator.program || null,
+      headline:           creator.headline || null,
+      career_stage:       creator.career_stage || null,
+      industry_interests: creator.industry_interests || [],
+      avatar_url:         creator.avatar_url || null,
     },
   }
 }

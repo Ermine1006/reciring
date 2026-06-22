@@ -5,6 +5,7 @@ import { PROGRAMS, CAREER_STAGES, NETWORKING_INTENTS } from '../data/onboardingO
 import { useAuth } from '../context/AuthContext'
 import ReciRingLogo from './ReciRingLogo'
 import Chip from './Chip'
+import { VISIBILITY_OPTIONS, VISIBILITY_PRIVATE } from '../lib/visibility'
 
 const C = {
   gold:      '#C8A96A',
@@ -88,6 +89,7 @@ export default function OnboardingProfile() {
   const [canHelpWith, setCanHelpWith]             = useState([])
   const [skillsToLearn, setSkillsToLearn]         = useState([])
   const [networkingIntent, setNetworkingIntent]   = useState([])
+  const [visibility, setVisibility]               = useState(VISIBILITY_PRIVATE)
 
   // Step 3
   const [promptAskMe, setPromptAskMe]     = useState('')
@@ -141,6 +143,7 @@ export default function OnboardingProfile() {
       networking_intent:  networkingIntent,
       prompt_ask_me:      promptAskMe.trim(),
       prompt_weekend:     promptWeekend.trim(),
+      visibility,
       onboarding_done:    true,
     })
 
@@ -338,6 +341,38 @@ export default function OnboardingProfile() {
                         )}
                       />
                     ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label style={labelStyle}>Profile visibility</label>
+                  <p style={helperStyle}>
+                    How peers see your posts in Discover. You can change this later in Settings.
+                  </p>
+                  <div className="flex flex-col gap-2">
+                    {VISIBILITY_OPTIONS.map(opt => {
+                      const active = visibility === opt.id
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => setVisibility(opt.id)}
+                          className="text-left rounded-xl border px-4 py-3 transition"
+                          style={{
+                            borderColor: active ? '#C8A96A' : 'rgba(0,0,0,0.12)',
+                            background:  active ? 'rgba(200,169,106,0.10)' : '#fff',
+                          }}
+                        >
+                          <div className="flex items-center gap-2 font-medium" style={{ color: '#1a1a1a' }}>
+                            <span>{opt.badge}</span>
+                            <span>{opt.label}</span>
+                          </div>
+                          <div className="text-xs mt-1" style={{ color: 'rgba(0,0,0,0.55)' }}>
+                            {opt.description}
+                          </div>
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
               </>

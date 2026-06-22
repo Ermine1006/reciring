@@ -6,6 +6,7 @@ import { PROGRAMS, CAREER_STAGES, NETWORKING_INTENTS } from '../data/onboardingO
 import AnonymousAvatar from './AnonymousAvatar'
 import Chip from './Chip'
 import PRESET_AVATARS from '../data/presetAvatars'
+import { VISIBILITY_OPTIONS, VISIBILITY_PRIVATE } from '../lib/visibility'
 
 const C = {
   gold:      '#C8A96A',
@@ -112,6 +113,7 @@ export default function SettingsPage() {
   // Personality
   const [promptAskMe, setPromptAskMe]     = useState(profile?.prompt_ask_me || '')
   const [promptWeekend, setPromptWeekend] = useState(profile?.prompt_weekend || '')
+  const [visibility, setVisibility]       = useState(profile?.visibility || VISIBILITY_PRIVATE)
 
   // Save state — account-level state (email subscription, delete,
   // support modal) moved to SettingsTab.
@@ -136,6 +138,7 @@ export default function SettingsPage() {
       networking_intent:  networkingIntent,
       prompt_ask_me:      promptAskMe.trim(),
       prompt_weekend:     promptWeekend.trim(),
+      visibility,
     })
     setSaving(false)
     setStatus(error
@@ -242,6 +245,41 @@ export default function SettingsPage() {
               {CAREER_STAGES.map(s => (
                 <Chip key={s} label={s} active={careerStage === s} onClick={() => setCareerStage(s)} />
               ))}
+            </div>
+          </Field>
+        </Section>
+
+        {/* ── 1b. Profile visibility ─────────────────────────── */}
+        <Section title="Profile visibility">
+          <Field
+            label="How others see your posts in Discover"
+            helper="You can change this anytime. Matching and chat are unaffected."
+            last
+          >
+            <div className="flex flex-col gap-2">
+              {VISIBILITY_OPTIONS.map(opt => {
+                const active = visibility === opt.id
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setVisibility(opt.id)}
+                    className="text-left rounded-xl border px-4 py-3 transition"
+                    style={{
+                      borderColor: active ? '#C8A96A' : 'rgba(0,0,0,0.12)',
+                      background:  active ? 'rgba(200,169,106,0.10)' : '#fff',
+                    }}
+                  >
+                    <div className="flex items-center gap-2 font-medium" style={{ color: '#1a1a1a' }}>
+                      <span>{opt.badge}</span>
+                      <span>{opt.label}</span>
+                    </div>
+                    <div className="text-xs mt-1" style={{ color: 'rgba(0,0,0,0.55)' }}>
+                      {opt.description}
+                    </div>
+                  </button>
+                )
+              })}
             </div>
           </Field>
         </Section>

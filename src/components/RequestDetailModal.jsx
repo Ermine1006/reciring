@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Handshake } from 'lucide-react'
 import AnonymousAvatar from './AnonymousAvatar'
 import ReportModal from './ReportModal'
+import { posterDisplay } from '../lib/visibility'
+import { resolveAvatarSeed } from './SettingsPage'
 
 const C = {
   gold:       '#C8A96A',
@@ -195,20 +197,36 @@ export default function RequestDetailModal({ request, matchReason, onClose, onMa
           </div>
 
           {/* ── Footer identity ───────────────────────────── */}
+          {(() => {
+            const display = posterDisplay(request)
+            const avatarSeed = display.useAvatar
+              ? (resolveAvatarSeed(display.avatarUrl) || request.id)
+              : request.id
+            return (
           <div
             className="flex items-center gap-2"
             style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.05)', marginBottom: 8 }}
           >
             <div style={{ borderRadius: '50%', boxShadow: '0 2px 8px rgba(0,0,0,0.12)', flexShrink: 0 }}>
-              <AnonymousAvatar seed={request.id} size={36} />
+              <AnonymousAvatar seed={avatarSeed} size={36} />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <p style={{
-                fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase',
-                fontWeight: 500, color: C.textMuted, opacity: 0.6,
+                fontSize: 11,
+                letterSpacing: display.isPublic ? '0.04em' : '0.12em',
+                textTransform: display.isPublic ? 'none' : 'uppercase',
+                fontWeight: display.isPublic ? 600 : 500,
+                color: display.isPublic ? C.text : C.textMuted,
+                opacity: display.isPublic ? 0.95 : 0.6,
                 fontFamily: 'Inter, system-ui, sans-serif',
               }}>
-                Anonymous · Rotman Peer
+                {display.isPublic && <span style={{ marginRight: 5, opacity: 0.85 }}>🌟</span>}
+                {display.primary}
+                {display.secondary && (
+                  <span style={{ color: C.textMuted, opacity: 0.7, fontWeight: 400 }}>
+                    {' · '}{display.secondary}
+                  </span>
+                )}
               </p>
               {matchReason && (
                 <p style={{
@@ -282,6 +300,8 @@ export default function RequestDetailModal({ request, matchReason, onClose, onMa
               )}
             </div>
           </div>
+            )
+          })()}
         </div>
 
         {/* ── Sticky CTA ─────────────────────────────────── */}

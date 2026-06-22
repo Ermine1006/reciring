@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Handshake, X } from 'lucide-react'
 import AnonymousAvatar from './AnonymousAvatar'
+import { posterDisplay } from '../lib/visibility'
+import { resolveAvatarSeed } from './SettingsPage'
 
 const SWIPE_THRESHOLD = 80
 const ROTATION_RANGE  = 10
@@ -323,6 +325,12 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
         </div>
 
         {/* Footer */}
+        {(() => {
+          const display = posterDisplay(request)
+          const avatarSeed = display.useAvatar
+            ? (resolveAvatarSeed(display.avatarUrl) || request.id)
+            : request.id
+          return (
         <div
           className="flex items-center gap-2"
           style={{
@@ -330,26 +338,35 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
             borderTop: '1px solid rgba(0,0,0,0.05)',
           }}
         >
-          {/* Avatar with soft shadow */}
+          {/* Avatar — preset for public users with avatar_url, otherwise anonymous */}
           <div style={{
             borderRadius: '50%',
             boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
             flexShrink: 0,
           }}>
-            <AnonymousAvatar seed={request.id} size={36} />
+            <AnonymousAvatar seed={avatarSeed} size={36} />
           </div>
 
           <div style={{ flex: 1, minWidth: 0 }}>
             <p style={{
               fontSize: 11,
-              letterSpacing: '0.12em',
-              textTransform: 'uppercase',
-              fontWeight: 500,
-              color: C.textMuted,
-              opacity: 0.6,
+              letterSpacing: display.isPublic ? '0.04em' : '0.12em',
+              textTransform: display.isPublic ? 'none' : 'uppercase',
+              fontWeight: display.isPublic ? 600 : 500,
+              color: display.isPublic ? C.text : C.textMuted,
+              opacity: display.isPublic ? 0.95 : 0.6,
               fontFamily: 'Inter, system-ui, sans-serif',
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
             }}>
-              Anonymous · Rotman Peer
+              {display.isPublic && (
+                <span style={{ marginRight: 5, opacity: 0.85 }}>🌟</span>
+              )}
+              {display.primary}
+              {display.secondary && (
+                <span style={{ color: C.textMuted, opacity: 0.7, fontWeight: 400 }}>
+                  {' · '}{display.secondary}
+                </span>
+              )}
             </p>
             {matchReason && (
               <p style={{
@@ -384,6 +401,8 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
             </div>
           )}
         </div>
+          )
+        })()}
 
       </div>
     </motion.div>
