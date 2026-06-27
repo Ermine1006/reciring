@@ -58,15 +58,22 @@ export default function CoffeeChatModal({ onConfirm, onClose, initialValues }) {
         style={{
           width: '100%', background: C.white,
           borderRadius: '28px 28px 0 0',
-          padding: '8px 24px 36px',
           boxShadow: '0 -12px 40px rgba(0,0,0,0.14)',
+          // Flex column with a hard ceiling so the buttons can never
+          // get pushed below the viewport on small iPhones (SE etc.).
+          // Body scrolls, footer stays pinned above the home indicator.
+          display: 'flex', flexDirection: 'column',
+          maxHeight: '90dvh',
         }}
         onClick={e => e.stopPropagation()}
       >
         {/* Drag handle */}
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 18px' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 6px', flexShrink: 0 }}>
           <div style={{ width: 36, height: 4, borderRadius: 99, background: '#E5E7EB' }} />
         </div>
+
+        {/* Scrollable body */}
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '12px 24px 8px' }}>
 
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
@@ -161,31 +168,43 @@ export default function CoffeeChatModal({ onConfirm, onClose, initialValues }) {
           </label>
         </div>
 
-        {/* Confirm */}
-        <button
-          onClick={handleConfirm}
-          style={{
-            width: '100%', marginTop: 28, padding: '15px 0', borderRadius: 16,
-            background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
-            color: '#fff', fontSize: 15, fontWeight: 600,
-            fontFamily: 'Inter, system-ui, sans-serif',
-            letterSpacing: '0.04em', border: 'none', cursor: 'pointer',
-            boxShadow: '0 8px 24px rgba(200,169,106,0.35)',
-          }}
-        >
-          Send Suggestion
-        </button>
-        <button
-          onClick={onClose}
-          style={{
-            width: '100%', marginTop: 10, padding: '10px 0',
-            background: 'transparent', border: 'none',
-            color: C.textMuted, fontSize: 13,
-            fontFamily: 'Inter, system-ui, sans-serif', cursor: 'pointer',
-          }}
-        >
-          Cancel
-        </button>
+        </div>
+        {/* /Scrollable body */}
+
+        {/* Footer — flex-shrink-0 so it stays pinned at the bottom of the
+            sheet. paddingBottom uses env(safe-area-inset-bottom) so the
+            actions never sit under the iOS home indicator. */}
+        <div style={{
+          flexShrink: 0,
+          padding: '14px 24px calc(20px + env(safe-area-inset-bottom))',
+          borderTop: '1px solid #F3F4F6',
+          background: C.white,
+        }}>
+          <button
+            onClick={handleConfirm}
+            style={{
+              width: '100%', padding: '15px 0', borderRadius: 16,
+              background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
+              color: '#fff', fontSize: 15, fontWeight: 600,
+              fontFamily: 'Inter, system-ui, sans-serif',
+              letterSpacing: '0.04em', border: 'none', cursor: 'pointer',
+              boxShadow: '0 8px 24px rgba(200,169,106,0.35)',
+            }}
+          >
+            Send Suggestion
+          </button>
+          <button
+            onClick={onClose}
+            style={{
+              width: '100%', marginTop: 10, padding: '10px 0',
+              background: 'transparent', border: 'none',
+              color: C.textMuted, fontSize: 13,
+              fontFamily: 'Inter, system-ui, sans-serif', cursor: 'pointer',
+            }}
+          >
+            Cancel
+          </button>
+        </div>
       </motion.div>
     </div>
   )

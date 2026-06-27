@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import CardStack from './components/CardStack'
-import SubmitRequest from './components/SubmitRequest'
+import PostHub from './components/PostHub'
 import MatchesList from './components/MatchesList'
 import RatingReview from './components/RatingReview'
 import PendingReviewsList from './components/PendingReviewsList'
@@ -598,7 +598,6 @@ function AppShell() {
       const { data: card, error } = await createPost(user.id, newReq)
       if (error) return { error }
       setRequests((prev) => [card, ...prev])
-      setTab('discover')
       return {}
     }
     // Fallback for unconfigured / demo mode
@@ -606,7 +605,6 @@ function AppShell() {
       { id: `req-${Date.now()}`, ...newReq, createdAt: 'Just now' },
       ...prev,
     ])
-    setTab('discover')
     return {}
   }
 
@@ -863,7 +861,7 @@ function AppShell() {
         className="
           relative flex flex-col
           w-full          sm:w-[390px]
-          min-h-[100dvh]  sm:min-h-0 sm:h-[844px]
+          h-[100dvh]      sm:h-[844px]
                           sm:rounded-[52px] sm:overflow-hidden
                           sm:my-6
         "
@@ -983,9 +981,13 @@ function AppShell() {
             />
           )}
           {tab === 'post' && (
-            <div className="flex-1 phone-scroll" style={{ background: '#F9F7F4' }}>
-              <SubmitRequest onSubmitted={handleNewRequest} />
-            </div>
+            <PostHub
+              myPosts={myPosts}
+              onCreatePost={handleNewRequest}
+              onEditPost={handleEditPost}
+              onDeletePost={handleDeletePost}
+              isSupabaseConfigured={isSupabaseConfigured}
+            />
           )}
           {tab === 'matches' && !chatMatchId && (
             <div className="flex-1 phone-scroll" style={{ background: '#F9F7F4' }}>
@@ -1076,12 +1078,16 @@ function AppShell() {
         </main>
 
         {/* ── Bottom tab bar ────────────────────────────────── */}
+        {/* paddingBottom uses env(safe-area-inset-bottom) so on real iOS
+            the home indicator never overlaps the tab buttons. Falls back
+            to 8px on browsers where the inset is 0 (desktop, Android). */}
         <nav
           className="flex-shrink-0 flex justify-around items-center pt-2 px-1"
           style={{
             background: 'rgba(255,255,255,0.96)',
             borderTop: `1px solid ${C.border}`,
             backdropFilter: 'blur(20px)',
+            paddingBottom: 'max(8px, env(safe-area-inset-bottom))',
           }}
         >
           {TABS.map((t) => {
@@ -1110,9 +1116,11 @@ function AppShell() {
           })}
         </nav>
 
-        {/* iOS home indicator */}
+        {/* Decorative iOS home indicator — desktop-only (the real OS
+            already draws one on mobile, and the nav's safe-area padding
+            already reserves room for it). */}
         <div
-          className="flex-shrink-0 flex justify-center py-2"
+          className="hidden sm:flex flex-shrink-0 justify-center py-2"
           style={{ background: 'rgba(255,255,255,0.96)' }}
         >
           <div style={{ width: 134, height: 5, borderRadius: 99, background: 'rgba(0,0,0,0.18)' }} />

@@ -843,6 +843,11 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
       )}
 
       {/* ── Input bar ── */}
+      {/* This sits as a flex sibling directly above the bottom nav, which
+          owns the env(safe-area-inset-bottom) padding. So no extra inset
+          here — that would double-pad above the home indicator. The
+          phone-frame uses h-[100dvh], so when the iOS keyboard opens the
+          frame collapses and the input stays above the keyboard. */}
       <div style={{
         display: 'flex', gap: 8, alignItems: 'flex-end',
         padding: '8px 16px 14px',
