@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import SubmitRequest from './SubmitRequest'
 import MyPostsPage from './MyPostsPage'
+import AppScreen from './AppScreen'
 
 const C = {
   gold:     '#C8A96A',
@@ -46,7 +47,7 @@ export default function PostHub({
   }
 
   return (
-    <div className="flex-1 phone-scroll" style={{ background: C.bg, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+    <AppScreen scroll={false} background={C.bg}>
       {/* Top segmented control */}
       <div style={{ padding: '12px 16px 8px', flexShrink: 0, background: C.bg }}>
         <div
@@ -140,6 +141,6 @@ export default function PostHub({
           />
         )}
       </div>
-    </div>
+    </AppScreen>
   )
 }

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import CardStack from './components/CardStack'
 import PostHub from './components/PostHub'
+import AppScreen from './components/AppScreen'
 import MatchesList from './components/MatchesList'
 import RatingReview from './components/RatingReview'
 import PendingReviewsList from './components/PendingReviewsList'
@@ -990,13 +991,13 @@ function AppShell() {
             />
           )}
           {tab === 'matches' && !chatMatchId && (
-            <div className="flex-1 phone-scroll" style={{ background: '#F9F7F4' }}>
+            <AppScreen>
               <MatchesList
                 matches={matches}
                 onOpenChat={(id) => setChatMatchId(id)}
                 revealedMatchIds={revealedMatchIds}
               />
-            </div>
+            </AppScreen>
           )}
           {tab === 'matches' && chatMatchId && (
             <div className="flex-1 min-h-0 overflow-hidden" style={{ display: 'flex', flexDirection: 'column' }}>

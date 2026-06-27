@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { fetchUpcomingEvents, fetchMyJoinedEventIds, joinEvent, leaveEvent, cancelEvent } from '../lib/events'
 import EventCard from './EventCard'
+import AppScreen from './AppScreen'
 
 const C = {
   gold:      '#C8A96A',
@@ -139,7 +140,7 @@ export default function EventsList({ onCreateEvent, onOpenEvent }) {
   }, [events, joinedIds, filter])
 
   return (
-    <div className="flex-1 phone-scroll" style={{ background: '#F9F7F4' }}>
+    <AppScreen>
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -300,7 +301,7 @@ export default function EventsList({ onCreateEvent, onOpenEvent }) {
         onCancel={() => !actionSaving && setCancelTarget(null)}
         onConfirm={confirmCancel}
       />
-    </div>
+    </AppScreen>
   )
 }
 
