@@ -1145,6 +1145,7 @@ function AppShell() {
           match={feedbackPromptMatch}
           onReview={handleFeedbackReview}
           onSnooze={handleFeedbackSnooze}
+          onDismiss={() => setFeedbackPromptOpen(false)}
           onUnmatch={(id) => { handleFeedbackSnooze(); handleUnmatch(id) }}
         />
       </div>

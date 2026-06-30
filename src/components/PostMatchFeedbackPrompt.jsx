@@ -24,17 +24,27 @@ const C = {
  *   open       — bool, controls visibility
  *   match      — the UI match object ({ id, request, peerId, ... })
  *   onReview   — called when user picks "Yes, rate now" (parent navigates to RatingReview)
- *   onSnooze   — called when user picks "Not yet" (parent persists snooze)
+ *   onSnooze   — called when user EXPLICITLY picks "Remind me later" (parent persists 48h snooze)
+ *   onDismiss  — called when user taps the backdrop. Closes the modal WITHOUT
+ *                persisting a snooze, so an accidental tap-outside doesn't
+ *                silence the reminder for two days.
  *   onUnmatch  — optional, called when user picks "Didn't happen — unmatch"
  */
-export default function PostMatchFeedbackPrompt({ open, match, onReview, onSnooze, onUnmatch }) {
+export default function PostMatchFeedbackPrompt({ open, match, onReview, onSnooze, onDismiss, onUnmatch }) {
   const [step, setStep] = useState('ask') // 'ask' | 'no'
 
   if (!match) return null
 
-  const handleClose = () => {
+  // Explicit "Remind me later" → snooze 48h via parent
+  const handleSnooze = () => {
     setStep('ask')
     onSnooze?.()
+  }
+
+  // Backdrop tap → close without snoozing
+  const handleDismiss = () => {
+    setStep('ask')
+    onDismiss?.()
   }
 
   return (
@@ -47,7 +57,7 @@ export default function PostMatchFeedbackPrompt({ open, match, onReview, onSnooz
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.18 }}
-            onClick={handleClose}
+            onClick={handleDismiss}
             style={{
               position: 'fixed', inset: 0, zIndex: 70,
               background: 'rgba(17,17,17,0.45)',
@@ -146,7 +156,7 @@ export default function PostMatchFeedbackPrompt({ open, match, onReview, onSnooz
 
                 <button
                   type="button"
-                  onClick={handleClose}
+                  onClick={handleSnooze}
                   style={{
                     display: 'block', margin: '14px auto 0',
                     background: 'none', border: 'none', cursor: 'pointer',
@@ -181,7 +191,7 @@ export default function PostMatchFeedbackPrompt({ open, match, onReview, onSnooz
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   <button
                     type="button"
-                    onClick={handleClose}
+                    onClick={handleSnooze}
                     style={{
                       width: '100%', padding: '13px 16px',
                       borderRadius: 14,
