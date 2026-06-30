@@ -147,7 +147,11 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="flex-1 phone-scroll" style={{ background: '#F9F7F4' }}>
+    // Plain block — the scroll container lives in the parent (ProfilePage).
+    // Nesting another flex-1 phone-scroll here would break scrolling: the
+    // flex parent would size this child by its flex factor, hiding the
+    // overflow.
+    <div style={{ background: '#F9F7F4' }}>
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}

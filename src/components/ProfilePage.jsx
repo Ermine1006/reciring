@@ -71,8 +71,11 @@ export default function ProfilePage({
   }, [active]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="flex-1 phone-scroll" style={{ background: '#F9F7F4', display: 'flex', flexDirection: 'column' }}>
-      {/* Page header */}
+    <div
+      className="flex-1 flex flex-col min-h-0"
+      style={{ background: '#F9F7F4' }}
+    >
+      {/* Page header — non-scrolling */}
       <div style={{
         flexShrink: 0,
         padding: '20px 20px 14px',
@@ -135,14 +138,17 @@ export default function ProfilePage({
         </div>
       </div>
 
-      {/* Active sub-tab body */}
-      <div style={{ flex: 1, minHeight: 0 }}>
+      {/* Active sub-tab body — this is the SINGLE scroll container for
+          the Profile tab. Sub-tab content (SettingsPage, etc.) renders
+          inside as plain blocks; do NOT nest another phone-scroll here
+          or the inner content stops being scrollable (flex computes the
+          inner child as flex:1 and ignores its overflowing content). */}
+      <div className="flex-1 phone-scroll min-h-0">
         <motion.div
           key={active}
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.16 }}
-          style={{ height: '100%' }}
         >
           {active === 'profile' && <SettingsPage />}
 

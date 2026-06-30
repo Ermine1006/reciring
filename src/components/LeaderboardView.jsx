@@ -58,7 +58,12 @@ export default function LeaderboardView() {
   const canUnlockCert = MOCK_ME.points >= 100
 
   return (
-    <div className="flex-1 phone-scroll" style={{ background: C.bg }}>
+    // Plain block — the scroll container lives in the parent (ProfilePage).
+    // Nesting another flex-1 phone-scroll here breaks scrolling: the
+    // outer is overflow:auto block, so a child with flex-1 has no flex
+    // parent and overflow-y:auto can't activate without a constrained
+    // height.
+    <div style={{ background: C.bg }}>
       <div style={{ padding: '24px 20px 40px' }}>
 
         {/* ── Page header ── */}
