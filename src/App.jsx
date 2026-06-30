@@ -488,7 +488,11 @@ function AppShell() {
   const handleFeedbackReview = useCallback((matchId) => {
     setFeedbackPromptOpen(false)
     setReviewMatchId(matchId)
-    setTab('reviews')
+    // Reviews is a SUB-tab under Profile, not a top-level tab.
+    // Setting tab='reviews' falls through every render block and
+    // shows a blank screen.
+    setTab('profile')
+    setProfileSubTab('reviews')
   }, [])
 
   const handleFeedbackSnooze = useCallback(() => {
