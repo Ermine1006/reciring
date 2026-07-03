@@ -69,6 +69,7 @@ export default function EditEventForm({ eventId, onSaved, onClose }) {
   const [minAttendees, setMinAttendees] = useState(0)
   const [hostType, setHostType]         = useState('individual')
   const [imageUrl, setImageUrl]         = useState('')
+  const [attendeeVisibility, setAttendeeVisibility] = useState('public')
 
   const [saving, setSaving] = useState(false)
   const [error, setError]   = useState(null)
@@ -96,6 +97,7 @@ export default function EditEventForm({ eventId, onSaved, onClose }) {
       setMinAttendees(ev.min_attendees || 0)
       setHostType(ev.host_type || 'individual')
       setImageUrl(ev.image_url || '')
+      setAttendeeVisibility(ev.attendee_visibility || 'public')
       setLoading(false)
     })
     return () => { cancelled = true }
@@ -131,6 +133,7 @@ export default function EditEventForm({ eventId, onSaved, onClose }) {
       min_attendees: clampedMin,
       host_type:     hostType,
       image_url:     imageUrl.trim() || null,
+      attendee_visibility: attendeeVisibility,
     })
 
     setSaving(false)
@@ -316,6 +319,45 @@ export default function EditEventForm({ eventId, onSaved, onClose }) {
                     onClick={() => setHostType(opt.id)}
                   />
                 ))}
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 18 }}>
+              <label style={labelStyle}>Attendee list</label>
+              <p style={{ fontSize: 12, color: C.textMuted, margin: '2px 0 8px', lineHeight: 1.45 }}>
+                Who can see the participant list. Emails stay host-only either way.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {[
+                  { id: 'public',  badge: '🌐', label: 'Public',  desc: 'Attendees and browsers can see each other — recommended for networking events.' },
+                  { id: 'private', badge: '🔒', label: 'Private', desc: 'Only the host sees names; everyone else sees the attendee count.' },
+                ].map(opt => {
+                  const active = attendeeVisibility === opt.id
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => setAttendeeVisibility(opt.id)}
+                      style={{
+                        textAlign: 'left',
+                        padding: '10px 14px',
+                        borderRadius: 12,
+                        border: active ? `1.5px solid ${C.gold}` : '1.5px solid rgba(0,0,0,0.12)',
+                        background: active ? 'rgba(200,169,106,0.10)' : '#fff',
+                        cursor: 'pointer',
+                        fontFamily: 'Inter, system-ui, sans-serif',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, fontWeight: 600, color: '#1a1a1a' }}>
+                        <span>{opt.badge}</span>
+                        <span>{opt.label}</span>
+                      </div>
+                      <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.55)', marginTop: 3, lineHeight: 1.4 }}>
+                        {opt.desc}
+                      </div>
+                    </button>
+                  )
+                })}
               </div>
             </div>
 
