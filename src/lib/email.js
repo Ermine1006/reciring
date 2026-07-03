@@ -54,6 +54,97 @@ export async function sendWelcomeEmail({ toEmail, displayName }) {
 }
 
 /**
+ * Registration-confirmation email. Called from EventDetailPage after
+ * a successful joinEvent; sends to the user's own address (allowed by
+ * /api/send-email's send-to-self rule). Fire-and-forget at the call
+ * site.
+ */
+export async function sendEventRegistrationEmail({ toEmail, displayName, event }) {
+  return sendEmail({
+    template: 'event_registration',
+    to:       toEmail,
+    data: {
+      displayName,
+      eventTitle:       event?.title || '',
+      eventStartAt:     event?.start_at || null,
+      eventLocation:    event?.location || '',
+      hostName:         event?.host_display_name || 'the host',
+      eventDescription: event?.description || '',
+      eventUrl:         buildEventUrl(event?.id),
+    },
+  })
+}
+
+/**
+ * Self-unregister cancellation email. mode='self'. Sends to the
+ * user's own address after a successful leaveEvent.
+ */
+export async function sendEventUnregisterEmail({ toEmail, displayName, event }) {
+  return sendEmail({
+    template: 'event_cancellation',
+    to:       toEmail,
+    data: {
+      displayName,
+      mode:            'self',
+      eventTitle:      event?.title || '',
+      eventStartAt:    event?.start_at || null,
+      eventLocation:   event?.location || '',
+      hostName:        event?.host_display_name || 'the host',
+      eventUrl:        buildEventUrl(event?.id),
+    },
+  })
+}
+
+/**
+ * Host-initiated cancellation fan-out. Called after cancelEvent
+ * succeeds; hits /api/event/notify-cancellation which verifies the
+ * caller is the host and mails every remaining attendee.
+ *
+ * Returns { data, error }. Fire-and-forget at the call site — the
+ * cancellation itself already succeeded and the notifications are
+ * best-effort.
+ */
+export async function notifyEventCancellation(eventId) {
+  if (!isSupabaseConfigured) return { data: null, error: new Error('Supabase not configured') }
+  if (!eventId)              return { data: null, error: new Error('missing eventId') }
+
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) return { data: null, error: new Error('Not signed in') }
+
+  let resp
+  try {
+    resp = await fetch('/api/event/notify-cancellation', {
+      method: 'POST',
+      headers: {
+        Authorization:  `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ eventId }),
+    })
+  } catch (err) {
+    return { data: null, error: new Error(err?.message || 'network error') }
+  }
+
+  let result = {}
+  try { result = await resp.json() } catch {}
+
+  if (!resp.ok) {
+    return { data: null, error: new Error(result.error || `notify failed (${resp.status})`) }
+  }
+  return { data: result, error: null }
+}
+
+// Deep link to the event detail page. The app is a SPA that reads
+// the ?event= query string on load and routes to that event.
+function buildEventUrl(eventId) {
+  if (!eventId) return typeof window !== 'undefined' ? window.location.origin : 'https://reciring.com'
+  const base = typeof window !== 'undefined' && window.location.origin
+    ? window.location.origin
+    : 'https://reciring.com'
+  return `${base.replace(/\/$/, '')}/?event=${encodeURIComponent(eventId)}`
+}
+
+/**
  * Toggle the current user's email subscription. Writes both the
  * profiles flag (fast-read state) and an audit row in
  * email_subscriptions in a single shot. RLS guarantees the user can

@@ -22,6 +22,8 @@
 import { Resend } from 'resend'
 import { createClient } from '@supabase/supabase-js'
 import { welcomeTemplate } from './templates/welcome.js'
+import { eventRegistrationTemplate } from './templates/event-registration.js'
+import { eventCancellationTemplate } from './templates/event-cancellation.js'
 import { isAdmin } from './lib/admin.js'
 import { makeUnsubscribeToken } from './lib/unsubscribe-token.js'
 
@@ -31,7 +33,12 @@ const FROM = 'Reciring Team <hello@reciring.com>'
 // regardless of unsubscribe flag, never deduped). Transactional emails
 // are user-initiated or signup-related; marketing emails are not.
 const TEMPLATES = {
-  welcome: { build: welcomeTemplate, transactional: true,  dedupe: true  },
+  welcome:             { build: welcomeTemplate,             transactional: true, dedupe: true  },
+  // Users may join/leave/rejoin the same event; dedupe: false so every
+  // action confirms. Transactional so unsubscribed users still get
+  // confirmation of their own action.
+  event_registration:  { build: eventRegistrationTemplate,   transactional: true, dedupe: false },
+  event_cancellation:  { build: eventCancellationTemplate,   transactional: true, dedupe: false },
 }
 
 export default async function handler(req, res) {

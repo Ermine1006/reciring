@@ -17,6 +17,7 @@ import {
 import { categoryEmoji } from '../data/eventCategories'
 import AnonymousAvatar from './AnonymousAvatar'
 import { resolveAvatarSeed } from './SettingsPage'
+import { sendEventRegistrationEmail, sendEventUnregisterEmail, notifyEventCancellation } from '../lib/email'
 
 const C = {
   gold:      '#C8A96A',
@@ -43,6 +44,12 @@ function formatLongDate(iso) {
 
 function formatTime(iso) {
   return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+}
+
+// Pluck the first token of a display name for email greetings. Falls
+// back to an empty string so callers can `|| 'there'` themselves.
+function firstName(s) {
+  return String(s || '').trim().split(/\s+/)[0] || ''
 }
 
 // Relative join time for the host's participants list. Shows "just now"
@@ -73,7 +80,7 @@ const HOST_TYPE_LABEL = {
  * leave/cancel actions, group thread, and back navigation.
  */
 export default function EventDetailPage({ eventId, onBack, onEdit }) {
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
 
   const [event, setEvent]       = useState(null)
   const [attendees, setAttendees] = useState([])
@@ -172,6 +179,15 @@ export default function EventDetailPage({ eventId, onBack, onEdit }) {
       return
     }
     setToast({ type: 'ok', msg: "You're in. See you there." })
+    // Fire-and-forget registration confirmation email to the user's
+    // own address. Server enforces send-to-self, so this cannot spam.
+    if (user.email) {
+      sendEventRegistrationEmail({
+        toEmail:     user.email,
+        displayName: firstName(profile?.name) || firstName(user.email.split('@')[0]),
+        event,
+      }).catch(err => console.warn('[ReciRing] registration email failed:', err?.message))
+    }
     // Pull the attendee row in so the list updates. The joiner is not
     // the host (they're joining someone else's event), so contact is
     // never included here.
@@ -194,6 +210,13 @@ export default function EventDetailPage({ eventId, onBack, onEdit }) {
       return
     }
     setToast({ type: 'ok', msg: 'Left event' })
+    if (user.email) {
+      sendEventUnregisterEmail({
+        toEmail:     user.email,
+        displayName: firstName(profile?.name) || firstName(user.email.split('@')[0]),
+        event,
+      }).catch(err => console.warn('[ReciRing] unregister email failed:', err?.message))
+    }
     setAttendees(prev => prev.filter(a => a.user_id !== user.id))
   }
 
@@ -225,6 +248,13 @@ export default function EventDetailPage({ eventId, onBack, onEdit }) {
     if (error) { setToast({ type: 'err', msg: error.message || 'Cancel failed' }); return }
     setToast({ type: 'ok', msg: 'Event cancelled — attendees notified' })
     setEvent(prev => ({ ...prev, status: 'cancelled', cancellation_reason: reason }))
+    // Fan out the cancellation email to remaining attendees. The DB
+    // trigger already delivered an in-app notification; this covers
+    // people who mainly rely on email. Fire-and-forget: the DB state
+    // is what matters — email is best-effort.
+    notifyEventCancellation(event.id).catch(err =>
+      console.warn('[ReciRing] cancellation email fan-out failed:', err?.message)
+    )
   }
 
   const handleSendMessage = async () => {
