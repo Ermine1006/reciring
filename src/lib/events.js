@@ -20,6 +20,7 @@ export async function fetchUpcomingEvents() {
       max_attendees, min_attendees, host_user_id, host_display_name, host_type,
       image_url, is_sponsored, created_at,
       status, cancellation_reason, cancelled_at,
+      attendee_visibility,
       event_attendees ( count )
     `)
     .gte('start_at', new Date().toISOString())
@@ -78,6 +79,7 @@ export async function createEvent(fields) {
       host_type:         fields.host_type || 'individual',
       image_url:         fields.image_url || null,
       is_sponsored:      Boolean(fields.is_sponsored),
+      attendee_visibility: fields.attendee_visibility || 'public',
     })
     .select()
     .single()
@@ -137,6 +139,7 @@ export async function fetchEventById(eventId) {
       max_attendees, min_attendees, host_user_id, host_display_name, host_type,
       image_url, is_sponsored, created_at,
       status, cancellation_reason, cancelled_at,
+      attendee_visibility,
       event_attendees ( count )
     `)
     .eq('id', eventId)
@@ -160,8 +163,17 @@ export async function fetchEventById(eventId) {
  * → public.profiles.id (the existing FK is to auth.users.id), so
  * `select profile:profiles(...)` silently returns nulls. The manual
  * stitch is reliable without schema changes.
+ *
+ * When `includeContact` is true, the profile select is widened to
+ * include `email` and `program` for the host's "Manage participants"
+ * view. Callers should ONLY pass true when the current user is the
+ * event host — the UI enforces this. Note that `profiles` currently
+ * has an open SELECT policy at the DB level, so this widening is a
+ * client-side defense-in-depth (a determined caller could still hit
+ * profiles directly), not a hard boundary. A future migration should
+ * lock the host-only email path down via a SECURITY DEFINER function.
  */
-export async function fetchEventAttendees(eventId) {
+export async function fetchEventAttendees(eventId, { includeContact = false } = {}) {
   if (!isSupabaseConfigured) return { data: [], error: null }
   if (!eventId)              return { data: [], error: new Error('missing event id') }
 
@@ -175,20 +187,28 @@ export async function fetchEventAttendees(eventId) {
   if (!rows || rows.length === 0) return { data: [], error: null }
 
   const userIds = rows.map(r => r.user_id)
+  const profileSelect = includeContact
+    ? 'id, name, avatar_url, email, program'
+    : 'id, name, avatar_url'
   const { data: profiles } = await supabase
     .from('profiles')
-    .select('id, name, avatar_url')
+    .select(profileSelect)
     .in('id', userIds)
 
   const byId = new Map((profiles || []).map(p => [p.id, p]))
 
   return {
-    data: rows.map(r => ({
-      user_id:    r.user_id,
-      joined_at:  r.joined_at,
-      name:       byId.get(r.user_id)?.name || 'Member',
-      avatar_url: byId.get(r.user_id)?.avatar_url || null,
-    })),
+    data: rows.map(r => {
+      const p = byId.get(r.user_id)
+      return {
+        user_id:    r.user_id,
+        joined_at:  r.joined_at,
+        name:       p?.name || 'Member',
+        avatar_url: p?.avatar_url || null,
+        email:      includeContact ? (p?.email   || null) : null,
+        program:    includeContact ? (p?.program || null) : null,
+      }
+    }),
     error: null,
   }
 }
@@ -207,7 +227,7 @@ export async function updateEvent(eventId, fields) {
   if (!isSupabaseConfigured) return { data: null, error: new Error('Supabase not configured') }
   if (!eventId)              return { data: null, error: new Error('missing event id') }
 
-  const ALLOWED = ['title','description','start_at','location','category','max_attendees','min_attendees','host_type','image_url']
+  const ALLOWED = ['title','description','start_at','location','category','max_attendees','min_attendees','host_type','image_url','attendee_visibility']
   const patch = {}
   for (const key of ALLOWED) {
     if (key in (fields || {})) patch[key] = fields[key]

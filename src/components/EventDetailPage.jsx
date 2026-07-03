@@ -45,6 +45,22 @@ function formatTime(iso) {
   return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 }
 
+// Relative join time for the host's participants list. Shows "just now"
+// under a minute, otherwise "3h ago" / "2d ago" / an absolute date past
+// a week — the host mostly cares about who signed up recently.
+function formatJoinedTime(iso) {
+  if (!iso) return ''
+  const diff = Date.now() - new Date(iso).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1)   return 'just now'
+  if (mins < 60)  return `${mins}m ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24)   return `${hrs}h ago`
+  const days = Math.floor(hrs / 24)
+  if (days < 7)   return `${days}d ago`
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
 const HOST_TYPE_LABEL = {
   individual: '',
   club:       'Club',
@@ -65,6 +81,7 @@ export default function EventDetailPage({ eventId, onBack, onEdit }) {
   const [loading, setLoading]   = useState(true)
   const [joinPending, setJoinPending] = useState(false)
   const [toast, setToast]       = useState(null)
+  const [copiedEmails, setCopiedEmails] = useState(false)
 
   // Chat
   const [messages, setMessages] = useState([])
@@ -84,17 +101,20 @@ export default function EventDetailPage({ eventId, onBack, onEdit }) {
   const refresh = useCallback(async () => {
     if (!eventId) return
     setLoading(true)
+    // Fetch the event first so we can decide whether to include
+    // participant contact info (host-only) in the attendees select.
+    // Loading everything else is still parallel.
     const [
       { data: ev },
-      { data: atts },
       { data: joinedSet },
       { data: msgs },
     ] = await Promise.all([
       fetchEventById(eventId),
-      fetchEventAttendees(eventId),
       user ? fetchMyJoinedEventIds(user.id) : Promise.resolve({ data: new Set() }),
       fetchEventMessages(eventId),
     ])
+    const includeContact = Boolean(user && ev && ev.host_user_id === user.id)
+    const { data: atts } = await fetchEventAttendees(eventId, { includeContact })
     setEvent(ev)
     setAttendees(atts || [])
     setJoined(Boolean(user && joinedSet?.has?.(eventId)))
@@ -152,8 +172,10 @@ export default function EventDetailPage({ eventId, onBack, onEdit }) {
       return
     }
     setToast({ type: 'ok', msg: "You're in. See you there." })
-    // Pull the attendee row in so the list updates
-    const { data: atts } = await fetchEventAttendees(event.id)
+    // Pull the attendee row in so the list updates. The joiner is not
+    // the host (they're joining someone else's event), so contact is
+    // never included here.
+    const { data: atts } = await fetchEventAttendees(event.id, { includeContact: isHost })
     setAttendees(atts || [])
   }
 
@@ -173,6 +195,26 @@ export default function EventDetailPage({ eventId, onBack, onEdit }) {
     }
     setToast({ type: 'ok', msg: 'Left event' })
     setAttendees(prev => prev.filter(a => a.user_id !== user.id))
+  }
+
+  const handleCopyEmails = async () => {
+    const emails = attendees.map(a => a.email).filter(Boolean).join(', ')
+    if (!emails) return
+    try {
+      await navigator.clipboard.writeText(emails)
+      setCopiedEmails(true)
+      setTimeout(() => setCopiedEmails(false), 2000)
+    } catch {
+      // Fallback: legacy execCommand for older iOS Safari + insecure origins
+      const ta = document.createElement('textarea')
+      ta.value = emails
+      ta.style.position = 'fixed'; ta.style.left = '-9999px'
+      document.body.appendChild(ta)
+      ta.select()
+      try { document.execCommand('copy'); setCopiedEmails(true); setTimeout(() => setCopiedEmails(false), 2000) }
+      catch { setToast({ type: 'err', msg: 'Copy failed — select emails manually' }) }
+      document.body.removeChild(ta)
+    }
   }
 
   const handleCancel = async () => {
@@ -377,51 +419,210 @@ export default function EventDetailPage({ eventId, onBack, onEdit }) {
           </section>
         )}
 
-        {/* Attendees */}
-        <section style={cardStyle}>
-          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12 }}>
-            <p style={{ ...sectionLabelStyle, margin: 0 }}>
-              Participants ({event.attendee_count || 0}/{event.max_attendees})
-            </p>
-            {!isCancelled && (
-              <p style={{
-                fontSize: 11, fontWeight: 600,
-                color: isFull ? C.danger : C.textMuted,
-                fontFamily: 'Inter, system-ui, sans-serif', margin: 0,
-              }}>
-                {isFull ? 'Full' : `${spotsLeft} spot${spotsLeft === 1 ? '' : 's'} left`}
-              </p>
-            )}
-          </div>
-          {attendees.length === 0 ? (
-            <p style={{
-              fontSize: 13, color: C.textMuted, lineHeight: 1.55,
-              fontFamily: 'Inter, system-ui, sans-serif', margin: 0,
-            }}>
-              No one's joined yet — be the first.
-            </p>
-          ) : (
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {attendees.map(a => {
-                const seed = resolveAvatarSeed(a.avatar_url) || a.user_id
-                return (
-                  <li key={a.user_id} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <AnonymousAvatar seed={seed} size={32} />
+        {/* Participants — three cases:
+              1. Host view → "Manage participants" with contact details
+              2. Non-host + private list → count only, names withheld
+              3. Non-host + public list → avatars + first names           */}
+        {(() => {
+          const isPrivate = event.attendee_visibility === 'private'
+          const attendeeCount = event.attendee_count || 0
+          const spotsLine = isFull
+            ? 'Full'
+            : `${spotsLeft} spot${spotsLeft === 1 ? '' : 's'} left`
+
+          // ── Host view: full contact list ──────────────────────
+          if (isHost) {
+            return (
+              <section style={cardStyle}>
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <p style={{ ...sectionLabelStyle, margin: 0 }}>
+                    Manage participants ({attendeeCount}/{event.max_attendees})
+                  </p>
+                  {!isCancelled && (
                     <p style={{
-                      fontSize: 14, color: C.text, fontWeight: 500,
+                      fontSize: 11, fontWeight: 600,
+                      color: isFull ? C.danger : C.textMuted,
                       fontFamily: 'Inter, system-ui, sans-serif', margin: 0,
                     }}>
-                      {a.name}
-                      {a.user_id === user?.id && (
-                        <span style={{ color: C.textMuted, fontWeight: 400, marginLeft: 6 }}>· You</span>
-                      )}
+                      {spotsLine}
                     </p>
-                  </li>
-                )
-              })}
-            </ul>
-          )}
-        </section>
+                  )}
+                </div>
+
+                {attendees.length === 0 ? (
+                  <p style={{
+                    fontSize: 13, color: C.textMuted, lineHeight: 1.55,
+                    fontFamily: 'Inter, system-ui, sans-serif', margin: '12px 0 0',
+                  }}>
+                    No one's joined yet.
+                  </p>
+                ) : (
+                  <>
+                    {/* Copy emails action */}
+                    {attendees.some(a => a.email) && (
+                      <button
+                        type="button"
+                        onClick={handleCopyEmails}
+                        style={{
+                          margin: '10px 0 14px',
+                          padding: '8px 14px',
+                          background: C.goldBg,
+                          border: `1.5px solid ${C.goldLight}`,
+                          borderRadius: 999,
+                          color: C.goldDark,
+                          fontSize: 12, fontWeight: 600,
+                          fontFamily: 'Inter, system-ui, sans-serif',
+                          cursor: 'pointer',
+                          display: 'inline-flex', alignItems: 'center', gap: 6,
+                        }}
+                      >
+                        {copiedEmails ? '✓ Copied' : `📋 Copy ${attendees.filter(a => a.email).length} emails`}
+                      </button>
+                    )}
+
+                    <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      {attendees.map(a => {
+                        const seed = resolveAvatarSeed(a.avatar_url) || a.user_id
+                        return (
+                          <li key={a.user_id} style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                            <AnonymousAvatar seed={seed} size={36} />
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <p style={{
+                                fontSize: 14, color: C.text, fontWeight: 600,
+                                fontFamily: 'Inter, system-ui, sans-serif',
+                                margin: 0, lineHeight: 1.3,
+                              }}>
+                                {a.name}
+                                {a.program && (
+                                  <span style={{ color: C.textMuted, fontWeight: 400, marginLeft: 6 }}>
+                                    · {a.program}
+                                  </span>
+                                )}
+                                {a.user_id === user?.id && (
+                                  <span style={{ color: C.textMuted, fontWeight: 400, marginLeft: 6 }}>· You</span>
+                                )}
+                              </p>
+                              {a.email && (
+                                <a
+                                  href={`mailto:${a.email}`}
+                                  style={{
+                                    display: 'inline-block',
+                                    fontSize: 12, color: C.goldDark,
+                                    fontFamily: 'Inter, system-ui, sans-serif',
+                                    textDecoration: 'none',
+                                    marginTop: 2,
+                                    wordBreak: 'break-all',
+                                  }}
+                                >
+                                  {a.email}
+                                </a>
+                              )}
+                              <p style={{
+                                fontSize: 11, color: C.textMuted,
+                                fontFamily: 'Inter, system-ui, sans-serif',
+                                margin: '2px 0 0',
+                              }}>
+                                Joined {formatJoinedTime(a.joined_at)}
+                              </p>
+                            </div>
+                          </li>
+                        )
+                      })}
+                    </ul>
+
+                    <p style={{
+                      marginTop: 14,
+                      fontSize: 11, color: C.textMuted, lineHeight: 1.5,
+                      fontFamily: 'Inter, system-ui, sans-serif',
+                    }}>
+                      Emails are visible only to the host for event coordination.
+                    </p>
+                  </>
+                )}
+              </section>
+            )
+          }
+
+          // ── Non-host + private: count only ────────────────────
+          if (isPrivate) {
+            return (
+              <section style={cardStyle}>
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <p style={{ ...sectionLabelStyle, margin: 0 }}>Participants</p>
+                  {!isCancelled && (
+                    <p style={{
+                      fontSize: 11, fontWeight: 600,
+                      color: isFull ? C.danger : C.textMuted,
+                      fontFamily: 'Inter, system-ui, sans-serif', margin: 0,
+                    }}>
+                      {spotsLine}
+                    </p>
+                  )}
+                </div>
+                <p style={{
+                  fontSize: 15, color: C.text, fontWeight: 500,
+                  fontFamily: 'Inter, system-ui, sans-serif', margin: '0 0 6px',
+                }}>
+                  🔒 {attendeeCount} {attendeeCount === 1 ? 'person' : 'people'} attending
+                </p>
+                <p style={{
+                  fontSize: 12, color: C.textMuted, lineHeight: 1.55,
+                  fontFamily: 'Inter, system-ui, sans-serif', margin: 0,
+                }}>
+                  The host has set this event's attendee list to private.
+                </p>
+              </section>
+            )
+          }
+
+          // ── Non-host + public: avatars + first names ──────────
+          return (
+            <section style={cardStyle}>
+              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12 }}>
+                <p style={{ ...sectionLabelStyle, margin: 0 }}>
+                  Participants ({attendeeCount}/{event.max_attendees})
+                </p>
+                {!isCancelled && (
+                  <p style={{
+                    fontSize: 11, fontWeight: 600,
+                    color: isFull ? C.danger : C.textMuted,
+                    fontFamily: 'Inter, system-ui, sans-serif', margin: 0,
+                  }}>
+                    {spotsLine}
+                  </p>
+                )}
+              </div>
+              {attendees.length === 0 ? (
+                <p style={{
+                  fontSize: 13, color: C.textMuted, lineHeight: 1.55,
+                  fontFamily: 'Inter, system-ui, sans-serif', margin: 0,
+                }}>
+                  No one's joined yet — be the first.
+                </p>
+              ) : (
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {attendees.map(a => {
+                    const seed = resolveAvatarSeed(a.avatar_url) || a.user_id
+                    return (
+                      <li key={a.user_id} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <AnonymousAvatar seed={seed} size={32} />
+                        <p style={{
+                          fontSize: 14, color: C.text, fontWeight: 500,
+                          fontFamily: 'Inter, system-ui, sans-serif', margin: 0,
+                        }}>
+                          {a.name}
+                          {a.user_id === user?.id && (
+                            <span style={{ color: C.textMuted, fontWeight: 400, marginLeft: 6 }}>· You</span>
+                          )}
+                        </p>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </section>
+          )
+        })()}
 
         {/* Toast */}
         {toast && (
