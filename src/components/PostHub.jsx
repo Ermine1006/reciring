@@ -126,10 +126,17 @@ export default function PostHub({
         </AnimatePresence>
       </div>
 
-      {/* Body */}
+      {/* Body — flex column so each sub-tab can own its own scroll. */}
+      {/*                                                              */}
+      {/* SubmitRequest is a plain content component (no scroll         */}
+      {/* wrapper of its own), so we give it a flex-1 phone-scroll here.*/}
+      {/* MyPostsPage already renders itself with flex-1 phone-scroll,  */}
+      {/* so it drops straight in.                                      */}
       <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
         {subTab === 'create' && (
-          <SubmitRequest onSubmitted={handleSubmitted} />
+          <div className="flex-1 phone-scroll min-h-0">
+            <SubmitRequest onSubmitted={handleSubmitted} />
+          </div>
         )}
         {subTab === 'manage' && (
           <MyPostsPage
