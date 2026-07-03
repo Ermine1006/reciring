@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
+import AdminEmailComposer from './AdminEmailComposer'
+import AdminEmailPreview from './AdminEmailPreview'
 
 const C = {
   gold:      '#C8A96A',
@@ -83,6 +85,39 @@ const TEMPLATES = [
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+// Serialize the composer / legacy body into the payload shape
+// broadcast-message expects. Custom uses `blocks`; others use `body`.
+function buildTemplateData(template, isCustom, subject, body, blocks) {
+  if (isCustom) {
+    return {
+      subject: subject.trim(),
+      blocks,
+      eyebrow: template.eyebrow,
+    }
+  }
+  return {
+    subject: subject.trim(),
+    body,
+    eyebrow: template.eyebrow,
+  }
+}
+
+// A block "has content" if the admin actually typed something. Empty
+// dividers count as content (they're intentional). Empty CTA labels
+// or URLs count as content too — the renderer handles missing URLs
+// gracefully and the admin may still want the button.
+function hasBlockContent(b) {
+  if (!b) return false
+  if (b.type === 'divider') return true
+  if (b.type === 'bullets' || b.type === 'numbers') {
+    return Array.isArray(b.items) && b.items.some(t => String(t || '').trim())
+  }
+  if (b.type === 'cta') {
+    return Boolean(String(b.text || '').trim() || String(b.url || '').trim())
+  }
+  return Boolean(String(b.text || '').trim())
+}
+
 function parseRecipients(raw) {
   const tokens = String(raw || '')
     .split(/[,\n;]+/)
@@ -107,6 +142,14 @@ export default function AdminEmailTest({ onClose }) {
   const [templateId, setTemplateId]         = useState('welcome')
   const [subject, setSubject]               = useState('')
   const [body, setBody]                     = useState('')
+  // Block-based body used only by the Custom template. The composer
+  // owns nothing; state lives here so the preview + payload builder
+  // can read from the same source of truth. Sample blocks keep the
+  // first-open experience useful instead of a blank canvas.
+  const [blocks, setBlocks]                 = useState(() => [
+    { type: 'title',     text: 'Hi Reciring community —' },
+    { type: 'paragraph', text: 'Add your message here. Use **bold**, *italic*, or [links](https://reciring.com).' },
+  ])
   const [recipientsText, setRecipientsText] = useState('')
   const [sending, setSending]               = useState(false)
   const [sendMode, setSendMode]             = useState(null) // 'test' | 'broadcast'
@@ -125,20 +168,27 @@ export default function AdminEmailTest({ onClose }) {
 
   const { valid, invalid } = parseRecipients(recipientsText)
 
-  // Test send: needs at least 1 valid recipient (cap 10) and a
-  // subject + body when the template isn't locked.
+  // A composer-based template (Custom) needs the block list to be
+  // non-empty. Legacy templates need a plain-text body.
+  const isCustom = template.id === 'custom'
+  const hasContent = isCustom
+    ? blocks.length > 0 && blocks.some(b => hasBlockContent(b))
+    : Boolean(body.trim())
+
+  // Test send: needs at least 1 valid recipient (cap 10) and content
+  // when the template isn't locked.
   const canSendTest =
     !sending
     && valid.length > 0
     && valid.length <= 10
-    && (template.locked || (subject.trim() && body.trim()))
+    && (template.locked || (subject.trim() && hasContent))
 
-  // Broadcast: requires subject + body (locked templates can't broadcast).
+  // Broadcast: same content gate; locked templates can't broadcast.
   const canSendBroadcast =
     !sending
     && template.allowBroadcast
     && subject.trim()
-    && body.trim()
+    && hasContent
 
   // ── Send paths ────────────────────────────────────────────
 
@@ -170,11 +220,7 @@ export default function AdminEmailTest({ onClose }) {
     const payload = {
       template:   template.apiTemplate,
       recipients: valid,
-      data: template.locked ? undefined : {
-        subject: subject.trim(),
-        body,
-        eyebrow: template.eyebrow,
-      },
+      data: template.locked ? undefined : buildTemplateData(template, isCustom, subject, body, blocks),
     }
 
     const { ok, body: respBody, error: err } = await postBroadcast(payload)
@@ -196,11 +242,7 @@ export default function AdminEmailTest({ onClose }) {
     const payload = {
       template: template.apiTemplate,
       audience: 'all',
-      data: {
-        subject: subject.trim(),
-        body,
-        eyebrow: template.eyebrow,
-      },
+      data: buildTemplateData(template, isCustom, subject, body, blocks),
     }
 
     const { ok: success, body: respBody, error: err } = await postBroadcast(payload)
@@ -342,7 +384,7 @@ export default function AdminEmailTest({ onClose }) {
           />
         </section>
 
-        {/* Body */}
+        {/* Body — composer for Custom, plain textarea otherwise */}
         <section
           className="rounded-2xl p-5 mb-4"
           style={{ background: C.white, border: `1px solid ${C.border}` }}
@@ -351,31 +393,58 @@ export default function AdminEmailTest({ onClose }) {
             Body
           </p>
           <p style={{ fontSize: 11, color: C.textMuted, marginBottom: 10, fontFamily: 'Inter, system-ui, sans-serif', lineHeight: 1.5 }}>
-            Plain text only. Blank lines = paragraphs. HTML is escaped for safety.
+            {isCustom
+              ? 'Build the email from blocks. Paragraphs support **bold**, *italic*, and [links](url).'
+              : 'Plain text only. Blank lines = paragraphs. HTML is escaped for safety.'}
           </p>
-          <textarea
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            disabled={template.locked}
-            placeholder={template.locked ? 'Set by the welcome template' : 'Write your message…'}
-            rows={9}
-            style={{
-              width: '100%',
-              padding: '12px 14px',
-              borderRadius: 12,
-              border: `1.5px solid ${C.border}`,
-              background: template.locked ? '#F5F5F5' : '#FAFAFA',
-              fontSize: 13.5,
-              fontFamily: 'Inter, system-ui, sans-serif',
-              outline: 'none',
-              color: template.locked ? C.textMuted : C.text,
-              cursor: template.locked ? 'not-allowed' : 'text',
-              resize: 'vertical',
-              lineHeight: 1.55,
-              minHeight: 180,
-            }}
-          />
+
+          {isCustom ? (
+            <AdminEmailComposer blocks={blocks} onChange={setBlocks} />
+          ) : (
+            <textarea
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              disabled={template.locked}
+              placeholder={template.locked ? 'Set by the welcome template' : 'Write your message…'}
+              rows={9}
+              style={{
+                width: '100%',
+                padding: '12px 14px',
+                borderRadius: 12,
+                border: `1.5px solid ${C.border}`,
+                background: template.locked ? '#F5F5F5' : '#FAFAFA',
+                fontSize: 13.5,
+                fontFamily: 'Inter, system-ui, sans-serif',
+                outline: 'none',
+                color: template.locked ? C.textMuted : C.text,
+                cursor: template.locked ? 'not-allowed' : 'text',
+                resize: 'vertical',
+                lineHeight: 1.55,
+                minHeight: 180,
+              }}
+            />
+          )}
         </section>
+
+        {/* Preview — Custom only. Other templates render their own
+            layouts on the server; a shared preview would misrepresent
+            them. Custom uses the shared blocks renderer so the iframe
+            is byte-for-byte what recipients get. */}
+        {isCustom && (
+          <section
+            className="rounded-2xl p-5 mb-4"
+            style={{ background: C.white, border: `1px solid ${C.border}` }}
+          >
+            <p className="text-xs uppercase tracking-wider mb-3" style={{ color: C.textMuted }}>
+              Preview
+            </p>
+            <AdminEmailPreview
+              subject={subject}
+              eyebrow={template.eyebrow}
+              blocks={blocks}
+            />
+          </section>
+        )}
 
         {/* Recipients (test list) */}
         <section
