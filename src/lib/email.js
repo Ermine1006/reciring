@@ -54,57 +54,31 @@ export async function sendWelcomeEmail({ toEmail, displayName }) {
 }
 
 /**
- * Registration-confirmation email. Called from EventDetailPage after
- * a successful joinEvent; sends to the user's own address (allowed by
- * /api/send-email's send-to-self rule). Fire-and-forget at the call
- * site.
- */
-export async function sendEventRegistrationEmail({ toEmail, displayName, event }) {
-  return sendEmail({
-    template: 'event_registration',
-    to:       toEmail,
-    data: {
-      displayName,
-      eventTitle:       event?.title || '',
-      eventStartAt:     event?.start_at || null,
-      eventLocation:    event?.location || '',
-      hostName:         event?.host_display_name || 'the host',
-      eventDescription: event?.description || '',
-      eventUrl:         buildEventUrl(event?.id),
-    },
-  })
-}
-
-/**
- * Self-unregister cancellation email. mode='self'. Sends to the
- * user's own address after a successful leaveEvent.
- */
-export async function sendEventUnregisterEmail({ toEmail, displayName, event }) {
-  return sendEmail({
-    template: 'event_cancellation',
-    to:       toEmail,
-    data: {
-      displayName,
-      mode:            'self',
-      eventTitle:      event?.title || '',
-      eventStartAt:    event?.start_at || null,
-      eventLocation:   event?.location || '',
-      hostName:        event?.host_display_name || 'the host',
-      eventUrl:        buildEventUrl(event?.id),
-    },
-  })
-}
-
-/**
- * Host-initiated cancellation fan-out. Called after cancelEvent
- * succeeds; hits /api/event/notify-cancellation which verifies the
- * caller is the host and mails every remaining attendee.
+ * Event-related email helpers. All three post to /api/send-email with
+ * an action-based body; the server loads the event, resolves the
+ * caller (or attendees for the host action), and renders the template.
+ * Callers pass just the eventId — no need to marshal event details.
  *
- * Returns { data, error }. Fire-and-forget at the call site — the
- * cancellation itself already succeeded and the notifications are
- * best-effort.
+ * Fire-and-forget at the call site: email failures shouldn't block
+ * the DB action that already succeeded.
+ */
+export async function sendEventRegistrationEmail({ eventId }) {
+  return postEventAction('event_join_confirmation', eventId)
+}
+
+export async function sendEventUnregisterEmail({ eventId }) {
+  return postEventAction('event_leave_confirmation', eventId)
+}
+
+/**
+ * Host-initiated cancellation fan-out. Server verifies the caller is
+ * the event host and mails every remaining attendee.
  */
 export async function notifyEventCancellation(eventId) {
+  return postEventAction('event_cancel_notification', eventId)
+}
+
+async function postEventAction(action, eventId) {
   if (!isSupabaseConfigured) return { data: null, error: new Error('Supabase not configured') }
   if (!eventId)              return { data: null, error: new Error('missing eventId') }
 
@@ -113,13 +87,13 @@ export async function notifyEventCancellation(eventId) {
 
   let resp
   try {
-    resp = await fetch('/api/event/notify-cancellation', {
+    resp = await fetch('/api/send-email', {
       method: 'POST',
       headers: {
         Authorization:  `Bearer ${session.access_token}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ eventId }),
+      body: JSON.stringify({ action, eventId }),
     })
   } catch (err) {
     return { data: null, error: new Error(err?.message || 'network error') }
@@ -129,19 +103,9 @@ export async function notifyEventCancellation(eventId) {
   try { result = await resp.json() } catch {}
 
   if (!resp.ok) {
-    return { data: null, error: new Error(result.error || `notify failed (${resp.status})`) }
+    return { data: null, error: new Error(result.error || `send failed (${resp.status})`) }
   }
   return { data: result, error: null }
-}
-
-// Deep link to the event detail page. The app is a SPA that reads
-// the ?event= query string on load and routes to that event.
-function buildEventUrl(eventId) {
-  if (!eventId) return typeof window !== 'undefined' ? window.location.origin : 'https://reciring.com'
-  const base = typeof window !== 'undefined' && window.location.origin
-    ? window.location.origin
-    : 'https://reciring.com'
-  return `${base.replace(/\/$/, '')}/?event=${encodeURIComponent(eventId)}`
 }
 
 /**

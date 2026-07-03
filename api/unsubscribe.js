@@ -10,7 +10,7 @@
 // On failure: returns a 400 HTML page with a brief error.
 
 import { createClient } from '@supabase/supabase-js'
-import { verifyUnsubscribeToken } from './lib/unsubscribe-token.js'
+import { verifyUnsubscribeToken } from './_lib/unsubscribe-token.js'
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {

@@ -23,11 +23,11 @@
 
 import { Resend } from 'resend'
 import { createClient } from '@supabase/supabase-js'
-import { welcomeTemplate } from './templates/welcome.js'
-import { broadcastMessageTemplate } from './templates/broadcast-message.js'
-import { eventsLaunchTemplate } from './templates/events-launch.js'
-import { isAdmin } from './lib/admin.js'
-import { makeUnsubscribeToken } from './lib/unsubscribe-token.js'
+import { welcomeTemplate } from './_templates/welcome.js'
+import { broadcastMessageTemplate } from './_templates/broadcast-message.js'
+import { eventsLaunchTemplate } from './_templates/events-launch.js'
+import { isAdmin } from './_lib/admin.js'
+import { makeUnsubscribeToken } from './_lib/unsubscribe-token.js'
 
 const FROM = 'Reciring Team <hello@reciring.com>'
 

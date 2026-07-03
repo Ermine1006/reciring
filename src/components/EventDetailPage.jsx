@@ -46,12 +46,6 @@ function formatTime(iso) {
   return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 }
 
-// Pluck the first token of a display name for email greetings. Falls
-// back to an empty string so callers can `|| 'there'` themselves.
-function firstName(s) {
-  return String(s || '').trim().split(/\s+/)[0] || ''
-}
-
 // Relative join time for the host's participants list. Shows "just now"
 // under a minute, otherwise "3h ago" / "2d ago" / an absolute date past
 // a week — the host mostly cares about who signed up recently.
@@ -80,7 +74,7 @@ const HOST_TYPE_LABEL = {
  * leave/cancel actions, group thread, and back navigation.
  */
 export default function EventDetailPage({ eventId, onBack, onEdit }) {
-  const { user, profile } = useAuth()
+  const { user } = useAuth()
 
   const [event, setEvent]       = useState(null)
   const [attendees, setAttendees] = useState([])
@@ -179,15 +173,10 @@ export default function EventDetailPage({ eventId, onBack, onEdit }) {
       return
     }
     setToast({ type: 'ok', msg: "You're in. See you there." })
-    // Fire-and-forget registration confirmation email to the user's
-    // own address. Server enforces send-to-self, so this cannot spam.
-    if (user.email) {
-      sendEventRegistrationEmail({
-        toEmail:     user.email,
-        displayName: firstName(profile?.name) || firstName(user.email.split('@')[0]),
-        event,
-      }).catch(err => console.warn('[ReciRing] registration email failed:', err?.message))
-    }
+    // Fire-and-forget registration confirmation email — server loads
+    // the event, resolves the caller's email, and renders the template.
+    sendEventRegistrationEmail({ eventId: event.id })
+      .catch(err => console.warn('[ReciRing] registration email failed:', err?.message))
     // Pull the attendee row in so the list updates. The joiner is not
     // the host (they're joining someone else's event), so contact is
     // never included here.
@@ -210,13 +199,8 @@ export default function EventDetailPage({ eventId, onBack, onEdit }) {
       return
     }
     setToast({ type: 'ok', msg: 'Left event' })
-    if (user.email) {
-      sendEventUnregisterEmail({
-        toEmail:     user.email,
-        displayName: firstName(profile?.name) || firstName(user.email.split('@')[0]),
-        event,
-      }).catch(err => console.warn('[ReciRing] unregister email failed:', err?.message))
-    }
+    sendEventUnregisterEmail({ eventId: event.id })
+      .catch(err => console.warn('[ReciRing] unregister email failed:', err?.message))
     setAttendees(prev => prev.filter(a => a.user_id !== user.id))
   }
 

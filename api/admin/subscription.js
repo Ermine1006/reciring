@@ -14,7 +14,7 @@
 // no profile row, returns 404 — we don't create stub rows.
 
 import { createClient } from '@supabase/supabase-js'
-import { isAdmin } from '../lib/admin.js'
+import { isAdmin } from '../_lib/admin.js'
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
