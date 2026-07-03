@@ -157,7 +157,7 @@ export default async function handler(req, res) {
       ? `${APP_URL.replace(/\/$/, '')}/api/unsubscribe?token=${encodeURIComponent(makeUnsubscribeToken(target.id, SERVICE_KEY))}`
       : null
 
-    const { subject, html } = builder({
+    const { subject, html, text } = builder({
       displayName: extraData.displayName || target.email?.split('@')[0] || 'there',
       userEmail:   target.email,
       appUrl:      APP_URL,
@@ -168,7 +168,12 @@ export default async function handler(req, res) {
     let resendId = null
     let sendError = null
     try {
-      const { data, error } = await resend.emails.send({ from: FROM, to: [target.email], subject, html })
+      // `text` is the auto-generated plain-text fallback when a template
+      // returns one (block-based Custom emails). Resend keeps `text`
+      // optional; omitting sends HTML-only, same as before.
+      const payload = { from: FROM, to: [target.email], subject, html }
+      if (text) payload.text = text
+      const { data, error } = await resend.emails.send(payload)
       if (error) sendError = error
       else       resendId = data?.id || null
     } catch (err) {

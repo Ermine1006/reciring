@@ -1,30 +1,60 @@
 // Generic broadcast / announcement template.
 //
 // Powers Product Update / Community Announcement / Custom modes in the
-// admin email center. Admins write subject + body in plain text; the
-// template HTML-escapes everything and wraps it in the standard
-// Reciring shell (gold accent stripe, eyebrow, footer with unsubscribe).
+// admin email center. TWO input paths:
+//
+//   1. Legacy plain-text body — Product Update + Community Announcement
+//      still send `body` (string). Escaped and wrapped in the classic
+//      shell (title h1, gold CTA to app, gold accent stripe).
+//
+//   2. Block-based body — Custom mode sends `blocks` (JSON). Rendered
+//      via the shared renderBlocksEmail() so the composer's preview
+//      matches exactly. In this path we return early; the block
+//      renderer owns the full document.
 //
 // Variables (from data):
 //   subject  — email subject; falls back to a generic line
-//   body     — plain text body. Blank lines split into <p>; single \n
-//              becomes <br>. Always HTML-escaped — admins cannot inject
-//              arbitrary HTML (deliberate; safer for compliance + DKIM).
+//   body     — plain text body (legacy path). Blank lines → <p>,
+//              single \n → <br>. Always HTML-escaped.
+//   blocks   — Block[] (new path). See src/lib/emailBlocks.js for the
+//              whitelist of types + fields.
 //   eyebrow  — small uppercase label above the body
 //              (e.g. "Product Update" / "Community" / "" for Custom).
 //
 //   userEmail / appUrl / unsubscribeUrl — provided by the function
 //   wrapper, same as the welcome template.
 
+import { renderBlocksEmail, renderBlocksToText, BLOCK_TYPES } from '../../src/lib/emailBlocks.js'
+
 export function broadcastMessageTemplate({
   subject,
   body,
+  blocks,
   eyebrow,
   userEmail,
   appUrl,
   unsubscribeUrl,
 }) {
   const safeSubject = (subject || '').trim() || 'A message from Reciring'
+
+  // ── Block-based path (Custom mode) ─────────────────────────
+  if (Array.isArray(blocks) && blocks.length > 0) {
+    // Whitelist-filter before we even render. renderBlocksEmail also
+    // filters internally, but doing it here means the plain-text
+    // fallback sees the same clean list.
+    const clean = blocks.filter(b => b && BLOCK_TYPES.has(b.type))
+    const html = renderBlocksEmail({
+      subject: safeSubject,
+      eyebrow,
+      blocks: clean,
+      appUrl,
+      unsubscribeUrl,
+    })
+    const text = renderBlocksToText(clean)
+    return { subject: safeSubject, html, text }
+  }
+
+  // ── Legacy plain-text path (Product Update / Announcement) ──
   const safeEmail   = escapeHtml(userEmail || '')
   const safeUrl     = escapeHtml(appUrl || 'https://reciring.com')
   const safeUnsub   = escapeHtml(unsubscribeUrl || '')
