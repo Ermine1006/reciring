@@ -1155,7 +1155,7 @@ function AppShell() {
 
 /* ─── Root App — auth gate ─────────────────────────────────────── */
 function AppRoot() {
-  const { session, profile, loading, isConfigured } = useAuth()
+  const { session, profile, loading, isConfigured, passwordRecovery } = useAuth()
 
   // 1. No backend → skip auth entirely
   if (!isConfigured) return <AppShell />
@@ -1184,7 +1184,12 @@ function AppRoot() {
     )
   }
 
-  // 4. Not logged in
+  // 4. Password-recovery mode — user clicked the reset link. LoginScreen
+  //    shows the set-new-password panel. This takes precedence over
+  //    signed-in state because the recovery session is partial.
+  if (passwordRecovery) return <LoginScreen />
+
+  // 5. Not logged in
   if (!session) return <LoginScreen />
 
   // 5. Logged in but hasn't completed onboarding

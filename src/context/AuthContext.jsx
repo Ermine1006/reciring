@@ -8,6 +8,11 @@ export function AuthProvider({ children }) {
   const [session, setSession] = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(isSupabaseConfigured)
+  // Password-recovery mode is flipped on when Supabase fires the
+  // PASSWORD_RECOVERY auth event (user clicked the reset link in their
+  // email). LoginScreen surfaces a "Set new password" panel while this
+  // is true. Cleared automatically after updateUser succeeds.
+  const [passwordRecovery, setPasswordRecovery] = useState(false)
   // Guard against double-subscribe in StrictMode / HMR
   const initialized = useRef(false)
 
@@ -44,6 +49,16 @@ export function AuthProvider({ children }) {
         // stays stable, no need to re-trigger profile loads.
         if (event === 'TOKEN_REFRESHED') {
           setSession(s)
+          return
+        }
+        // Supabase fires PASSWORD_RECOVERY when the app is loaded via a
+        // reset-password link. The session is a partial recovery session
+        // — we treat the app as gated by LoginScreen's set-password
+        // panel until updateUser succeeds.
+        if (event === 'PASSWORD_RECOVERY') {
+          setPasswordRecovery(true)
+          setSession(s)
+          setLoading(false)
           return
         }
         setSession(s)
@@ -155,6 +170,30 @@ export function AuthProvider({ children }) {
     setProfile(null)
   }
 
+  // Send a password-reset email. Supabase's response is deliberately
+  // opaque about whether the address exists (privacy) — the caller
+  // should always show a neutral confirmation to match. redirectTo
+  // brings the user back to the app; Supabase auto-detects the
+  // recovery hash and fires PASSWORD_RECOVERY which flips the UI into
+  // set-new-password mode.
+  async function resetPassword(email) {
+    if (!isSupabaseConfigured) return { error: new Error('Supabase not configured.') }
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin,
+    })
+    return { data, error }
+  }
+
+  // Called after PASSWORD_RECOVERY once the user types a new password.
+  // The recovery session lets updateUser through without re-auth. On
+  // success we clear the recovery flag so the app resumes normally.
+  async function updatePassword(newPassword) {
+    if (!isSupabaseConfigured) return { error: new Error('Supabase not configured.') }
+    const { data, error } = await supabase.auth.updateUser({ password: newPassword })
+    if (!error) setPasswordRecovery(false)
+    return { data, error }
+  }
+
   async function updateProfile(updates) {
     if (!isSupabaseConfigured || !session?.user) {
       return { error: new Error('Not signed in.') }
@@ -220,6 +259,9 @@ export function AuthProvider({ children }) {
       signIn,
       signInWithGoogle,
       signOut,
+      resetPassword,
+      updatePassword,
+      passwordRecovery,
       updateProfile,
       deleteAccount,
     }}>
