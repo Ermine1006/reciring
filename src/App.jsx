@@ -12,6 +12,7 @@ import ChatView from './components/ChatView'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import LoginScreen from './components/LoginScreen'
 import EmailConfirmed from './components/EmailConfirmed'
+import ResetPasswordPage from './components/ResetPasswordPage'
 import NewMatchModal from './components/NewMatchModal'
 import NotificationBell from './components/NotificationBell'
 import PostMatchFeedbackPrompt from './components/PostMatchFeedbackPrompt'
@@ -1160,7 +1161,21 @@ function AppRoot() {
   // 1. No backend → skip auth entirely
   if (!isConfigured) return <AppShell />
 
-  // 2. Configured but still bootstrapping session
+  // 2. Password-recovery route — checked FIRST, before the loading
+  //    spinner, so a slow session bootstrap can't mask the recovery
+  //    UI. Route-based detection is deterministic: Supabase's
+  //    PASSWORD_RECOVERY event doesn't fire reliably on the newer
+  //    PKCE flow (URL uses ?code=... in query, not #type=recovery in
+  //    hash), so we also accept the flag for legacy hash links.
+  const path = window.location.pathname
+  const hash = window.location.hash
+  const isRecoveryRoute =
+    path === '/reset-password'
+    || passwordRecovery
+    || hash.includes('type=recovery')
+  if (isRecoveryRoute) return <ResetPasswordPage />
+
+  // 3. Configured but still bootstrapping session
   if (loading) {
     return (
       <div
@@ -1172,8 +1187,8 @@ function AppRoot() {
     )
   }
 
-  // 3. Email-confirmed landing page (after clicking confirmation link)
-  if (window.location.pathname === '/auth/confirmed') {
+  // 4. Email-confirmed landing page (after clicking confirmation link)
+  if (path === '/auth/confirmed') {
     return (
       <EmailConfirmed
         onGoToLogin={() => {
@@ -1183,11 +1198,6 @@ function AppRoot() {
       />
     )
   }
-
-  // 4. Password-recovery mode — user clicked the reset link. LoginScreen
-  //    shows the set-new-password panel. This takes precedence over
-  //    signed-in state because the recovery session is partial.
-  if (passwordRecovery) return <LoginScreen />
 
   // 5. Not logged in
   if (!session) return <LoginScreen />

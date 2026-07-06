@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { isAllowedEmail } from '../config/auth'
@@ -21,28 +21,21 @@ const C = {
 const SUPPORT_EMAIL = 'hello@reciring.com'
 
 export default function LoginScreen() {
-  const { signIn, signUp, signInWithGoogle, resetPassword, updatePassword, passwordRecovery } = useAuth()
+  const { signIn, signUp, signInWithGoogle, resetPassword } = useAuth()
 
-  // 'signin' → default; 'forgot' → email-only reset form;
-  // 'reset'  → set-new-password form (also entered directly via
-  //            PASSWORD_RECOVERY hash from Supabase).
-  const [mode, setMode]         = useState(passwordRecovery ? 'reset' : 'signin')
+  // 'signin' → default; 'forgot' → email-only reset form.
+  // The set-new-password step lives on the dedicated /reset-password
+  // route (ResetPasswordPage) — routing there is deterministic and
+  // doesn't rely on the PASSWORD_RECOVERY event, which was the source
+  // of the bug where the reset link opened the login page instead.
+  const [mode, setMode]         = useState('signin')
 
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
-  const [newPassword, setNewPassword] = useState('')
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState(null)
   const [info, setInfo]         = useState(null)
   const [showForgotEmail, setShowForgotEmail] = useState(false)
-
-  // Supabase's PASSWORD_RECOVERY event may fire after this component
-  // mounts (async hash parsing). Flip into reset mode when it lands.
-  useEffect(() => {
-    if (passwordRecovery && mode !== 'reset') {
-      setMode('reset'); setError(null); setInfo(null)
-    }
-  }, [passwordRecovery]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handle = async (mode) => {
     setError(null)
@@ -95,28 +88,6 @@ export default function LoginScreen() {
     setInfo("If an account exists, we'll send you a reset link. Check your inbox.")
   }
 
-  // ── Recovery: set new password ────────────────────────────
-  const handleSetNewPassword = async () => {
-    setError(null); setInfo(null)
-    if (!newPassword || newPassword.length < 6) {
-      setError('New password must be at least 6 characters.')
-      return
-    }
-    setLoading(true)
-    const { error: err } = await updatePassword(newPassword)
-    setLoading(false)
-    if (err) { setError(err.message || 'Could not update password.'); return }
-    setInfo('Password updated. Sign in with your new password.')
-    setMode('signin')
-    setPassword('')
-    setNewPassword('')
-    // Clear any Supabase recovery tokens from the URL hash so a reload
-    // doesn't drop us back into recovery mode.
-    if (window.location.hash.includes('type=recovery') || window.location.hash.includes('access_token=')) {
-      window.history.replaceState({}, '', window.location.pathname + window.location.search)
-    }
-  }
-
   const inputStyle = (hasError) => ({
     background: '#FAFAFA',
     border: `1.5px solid ${hasError ? '#EF4444' : C.border}`,
@@ -148,33 +119,28 @@ export default function LoginScreen() {
           className="text-center font-display mb-2"
           style={{ fontSize: 22, fontWeight: 600, color: C.text }}
         >
-          {mode === 'reset'  ? 'Set a new password' :
-           mode === 'forgot' ? 'Reset your password' :
-                               'Welcome to ReciRing'}
+          {mode === 'forgot' ? 'Reset your password' : 'Welcome to ReciRing'}
         </h1>
         <p className="text-center mb-6" style={{ fontSize: 13, color: C.textSub, lineHeight: 1.5 }}>
-          {mode === 'reset'  ? 'Choose a password with at least 6 characters.' :
-           mode === 'forgot' ? "Enter your email and we'll send you a reset link." :
-                               'Sign in or create your account.'}
+          {mode === 'forgot'
+            ? "Enter your email and we'll send you a reset link."
+            : 'Sign in or create your account.'}
         </p>
 
         <form onSubmit={(e) => {
           e.preventDefault()
           if (mode === 'forgot') return handleForgotSubmit()
-          if (mode === 'reset')  return handleSetNewPassword()
           return handle('signin')
         }}>
-          {mode !== 'reset' && (
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="your.name@mail.utoronto.ca"
-              autoFocus
-              className="w-full rounded-xl px-4 py-3 text-sm mb-3 transition-all duration-200"
-              style={inputStyle(!!error)}
-            />
-          )}
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="your.name@mail.utoronto.ca"
+            autoFocus
+            className="w-full rounded-xl px-4 py-3 text-sm mb-3 transition-all duration-200"
+            style={inputStyle(!!error)}
+          />
 
           {mode === 'signin' && (
             <>
@@ -201,18 +167,6 @@ export default function LoginScreen() {
                 </button>
               </div>
             </>
-          )}
-
-          {mode === 'reset' && (
-            <input
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="New password (min 6 characters)"
-              autoFocus
-              className="w-full rounded-xl px-4 py-3 text-sm transition-all duration-200"
-              style={inputStyle(!!error)}
-            />
           )}
 
           {error && (
@@ -326,23 +280,6 @@ export default function LoginScreen() {
               </>
             )}
 
-            {mode === 'reset' && (
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3.5 rounded-xl text-sm font-semibold tracking-wide transition-all duration-200 active:scale-[0.98]"
-                style={{
-                  background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
-                  color: '#fff',
-                  boxShadow: '0 6px 20px rgba(200,169,106,0.35)',
-                  border: 'none',
-                  cursor: loading ? 'default' : 'pointer',
-                  opacity: loading ? 0.6 : 1,
-                }}
-              >
-                {loading ? 'Saving…' : 'Save new password'}
-              </button>
-            )}
           </div>
         </form>
 

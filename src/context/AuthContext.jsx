@@ -172,14 +172,18 @@ export function AuthProvider({ children }) {
 
   // Send a password-reset email. Supabase's response is deliberately
   // opaque about whether the address exists (privacy) — the caller
-  // should always show a neutral confirmation to match. redirectTo
-  // brings the user back to the app; Supabase auto-detects the
-  // recovery hash and fires PASSWORD_RECOVERY which flips the UI into
-  // set-new-password mode.
+  // should always show a neutral confirmation to match.
+  //
+  // redirectTo points at the dedicated /reset-password route rather
+  // than the app root. The route-based detection in AppRoot is what
+  // the recovery flow actually depends on — the PASSWORD_RECOVERY
+  // event doesn't reliably fire on the newer PKCE flow (URL uses
+  // ?code=... in query, not #type=recovery in hash), and the older
+  // implementation missed it silently.
   async function resetPassword(email) {
     if (!isSupabaseConfigured) return { error: new Error('Supabase not configured.') }
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin,
+      redirectTo: `${window.location.origin}/reset-password`,
     })
     return { data, error }
   }
