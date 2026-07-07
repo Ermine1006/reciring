@@ -190,7 +190,7 @@ export default function EventsList({ onCreateEvent, onOpenEvent }) {
             fontFamily: 'Inter, system-ui, sans-serif',
             margin: '6px 0 0',
           }}>
-            Real-life meetups for the Reciring community.
+            Real-life meetups for the Mutu community.
           </p>
         </div>
 
@@ -657,7 +657,7 @@ function EmptyState({ filter, onCreateEvent }) {
         fontFamily: 'Inter, system-ui, sans-serif',
         textAlign: 'center', maxWidth: 300, margin: '0 auto 18px',
       }}>
-        Real-life meetups are how Reciring becomes lasting friendships, partnerships, and trusted intros. Anyone can host.
+        Real-life meetups are how Mutu becomes lasting friendships, partnerships, and trusted intros. Anyone can host.
       </p>
 
       {/* Example chips */}

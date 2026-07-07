@@ -32,7 +32,7 @@ export default function Certificate({ points, onClose }) {
         backgroundColor: CREAM,
       })
       const link = document.createElement('a')
-      link.download = 'reciring-community-connector.png'
+      link.download = 'mutu-community-connector.png'
       link.href = dataUrl
       link.click()
       setDone(true)
@@ -85,7 +85,7 @@ export default function Certificate({ points, onClose }) {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 18 }}>
             <RingsIcon size={30} />
             <span style={{ fontFamily: 'Georgia, serif', fontSize: 20, fontWeight: 600, color: '#111', letterSpacing: '-0.02em' }}>
-              ReciRing
+              Mutu
             </span>
           </div>
 
@@ -117,7 +117,7 @@ export default function Certificate({ points, onClose }) {
           <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${GOLD}, transparent)`, marginBottom: 14 }} />
 
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 16 }}>
-            <span style={{ fontSize: 11, color: '#999', letterSpacing: '0.08em' }}>RECIRING</span>
+            <span style={{ fontSize: 11, color: '#999', letterSpacing: '0.08em' }}>MUTU</span>
             <span style={{ color: GOLD_LIGHT }}>✦</span>
             <span style={{ fontSize: 11, color: '#999', letterSpacing: '0.08em' }}>ROTMAN MBA</span>
             <span style={{ color: GOLD_LIGHT }}>✦</span>

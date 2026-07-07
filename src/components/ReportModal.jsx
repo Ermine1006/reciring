@@ -120,7 +120,7 @@ export default function ReportModal({ type = 'post', targetId, onSubmit, onClose
               Report {type === 'user' ? 'user' : 'post'}
             </h2>
             <p style={{ fontSize: 13, color: C.textSub, marginBottom: 16, lineHeight: 1.5 }}>
-              Help us keep ReciRing safe. Select a reason below.
+              Help us keep Mutu safe. Select a reason below.
             </p>
 
             {/* Reason list */}

@@ -79,7 +79,7 @@ function shell(title, bodyHtml) {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${escapeHtml(title)} · Reciring</title>
+<title>${escapeHtml(title)} · Mutu</title>
 <style>
   html, body { margin: 0; padding: 0; height: 100%; }
   body {
@@ -134,7 +134,7 @@ function confirmationPage(email) {
     <p>We've stopped sending non-essential emails to <span class="email">${escapeHtml(email)}</span>.</p>
     <p>Account-related and transactional emails (security, password resets) will still reach you.</p>
     <p>Changed your mind? Update your preferences in your profile settings.</p>
-    <a href="https://reciring.com">Back to Reciring</a>
+    <a href="https://reciring.com">Back to Mutu</a>
   `)
 }
 
@@ -143,7 +143,7 @@ function errorPage(message) {
     <p style="font-size:36px; margin:0 0 14px;">⚠️</p>
     <h1>Something went wrong</h1>
     <p>${escapeHtml(message)}</p>
-    <a href="https://reciring.com">Back to Reciring</a>
+    <a href="https://reciring.com">Back to Mutu</a>
   `)
 }
 

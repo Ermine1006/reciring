@@ -29,7 +29,7 @@ import { eventsLaunchTemplate } from './_templates/events-launch.js'
 import { isAdmin } from './_lib/admin.js'
 import { makeUnsubscribeToken } from './_lib/unsubscribe-token.js'
 
-const FROM = 'Reciring Team <hello@reciring.com>'
+const FROM = 'Mutu Team <hello@reciring.com>'
 
 // Resend free tier rate limit: 5 requests/sec. Sleep between sends
 // to stay comfortably below (~4/sec). For larger lists (>50) this

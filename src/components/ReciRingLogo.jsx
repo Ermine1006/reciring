@@ -90,7 +90,7 @@ export default function ReciRingLogo({ size = 30 }) {
         transform: hovered ? 'translateY(-2px)' : 'translateY(0)',
         transition: 'transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1)',
       }}
-      aria-label="ReciRing — home"
+      aria-label="Mutu — home"
     >
       {/* Interlocking rings icon */}
       <div
@@ -121,7 +121,7 @@ export default function ReciRingLogo({ size = 30 }) {
           userSelect: 'none',
         }}
       >
-        ReciRing
+        Mutu
       </span>
     </button>
   )

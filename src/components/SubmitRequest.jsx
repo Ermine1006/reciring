@@ -260,7 +260,7 @@ export default function SubmitRequest({ onSubmitted }) {
       {/* ── Page header ── */}
       <div className="mb-6">
         <p className="text-[10px] tracking-[0.28em] font-semibold uppercase mb-1" style={{ color: C.gold }}>
-          ReciRing
+          Mutu
         </p>
         <h2 className="font-display text-[24px] font-semibold" style={{ color: C.text }}>
           Post a request

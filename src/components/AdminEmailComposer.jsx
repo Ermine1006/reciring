@@ -322,7 +322,7 @@ function BlockEditor({ block, onUpdate }) {
           <TextField
             value={block.text || ''}
             onChange={v => onUpdate({ text: v })}
-            placeholder="Button label (e.g. Open Reciring)"
+            placeholder="Button label (e.g. Open Mutu)"
             maxLength={40}
           />
           <TextField

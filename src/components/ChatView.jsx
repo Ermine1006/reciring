@@ -128,7 +128,7 @@ function MeetingCard({ msg, onConfirm, onSuggestAnother, onReschedule }) {
           <div style={{ display: 'flex', gap: 8 }}>
             <button
               onClick={() => {
-                const title = encodeURIComponent('Coffee Chat — ReciRing')
+                const title = encodeURIComponent('Coffee Chat — Mutu')
                 const dtStart = new Date(meeting.datetime).toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '')
                 const dtEnd = new Date(new Date(meeting.datetime).getTime() + 30 * 60000).toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '')
                 const loc = encodeURIComponent(meeting.location)

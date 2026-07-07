@@ -69,7 +69,7 @@ export default function LeaderboardView() {
         {/* ── Page header ── */}
         <div style={{ marginBottom: 24 }}>
           <p style={{ fontSize: 10, letterSpacing: '0.28em', fontWeight: 600, textTransform: 'uppercase', color: C.gold, fontFamily: 'Inter, system-ui, sans-serif', marginBottom: 4 }}>
-            ReciRing
+            Mutu
           </p>
           <h2 style={{ fontSize: 24, fontWeight: 600, color: C.text, fontFamily: 'Fraunces, Georgia, serif', letterSpacing: '-0.02em', marginBottom: 4 }}>
             Active Contributors

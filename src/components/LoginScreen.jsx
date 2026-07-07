@@ -47,7 +47,7 @@ export default function LoginScreen() {
       return
     }
     if (!isAllowedEmail(trimmed)) {
-      setError('ReciRing is open to UofT students only. Please use your @mail.utoronto.ca or @rotman.utoronto.ca email.')
+      setError('Mutu is open to UofT students only. Please use your @mail.utoronto.ca or @rotman.utoronto.ca email.')
       return
     }
     if (password.length < 6) {
@@ -119,7 +119,7 @@ export default function LoginScreen() {
           className="text-center font-display mb-2"
           style={{ fontSize: 22, fontWeight: 600, color: C.text }}
         >
-          {mode === 'forgot' ? 'Reset your password' : 'Welcome to ReciRing'}
+          {mode === 'forgot' ? 'Reset your password' : 'Welcome to Mutu'}
         </h1>
         <p className="text-center mb-6" style={{ fontSize: 13, color: C.textSub, lineHeight: 1.5 }}>
           {mode === 'forgot'
@@ -308,7 +308,7 @@ export default function LoginScreen() {
                 fontFamily: 'Inter, system-ui, sans-serif',
               }}>
                 <p style={{ margin: '0 0 6px', fontWeight: 600, color: C.goldDark }}>
-                  Reciring uses your email as your username.
+                  Mutu uses your email as your username.
                 </p>
                 <p style={{ margin: 0, color: C.textSub }}>
                   Try your UofT email first — most members use{' '}

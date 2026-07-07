@@ -30,7 +30,7 @@ import { eventCancellationTemplate } from './_templates/event-cancellation.js'
 import { isAdmin } from './_lib/admin.js'
 import { makeUnsubscribeToken } from './_lib/unsubscribe-token.js'
 
-const FROM = 'Reciring Team <hello@reciring.com>'
+const FROM = 'Mutu Team <hello@reciring.com>'
 // ~4/sec, comfortably under Resend's free-tier 5/sec cap. Only used
 // for the host cancellation fan-out — single-recipient sends don't
 // need to throttle.

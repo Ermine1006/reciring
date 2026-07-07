@@ -22,7 +22,7 @@ export function eventsLaunchTemplate({ userEmail, appUrl, unsubscribeUrl }) {
   const safeUnsub = escapeHtml(unsubscribeUrl || '')
   const safeShot  = escapeHtml(SCREENSHOT_URL)
 
-  const subject = 'Events are now live on Reciring 🎉'
+  const subject = 'Events are now live on Mutu 🎉'
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -47,7 +47,7 @@ export function eventsLaunchTemplate({ userEmail, appUrl, unsubscribeUrl }) {
             <td style="padding:36px 40px 28px 40px; text-align:center;">
               <!-- Logo wordmark -->
               <p style="font-family:'Playfair Display',Georgia,serif; font-size:18px; font-weight:500; color:#A88245; letter-spacing:0.18em; margin:0 0 22px;">
-                R E C I R I N G
+                M U T U
               </p>
               <!-- Eyebrow label -->
               <p style="font-size:10px; font-weight:700; letter-spacing:0.28em; text-transform:uppercase; color:#C8A96A; margin:0 0 14px;">
@@ -110,7 +110,7 @@ export function eventsLaunchTemplate({ userEmail, appUrl, unsubscribeUrl }) {
               <a href="${safeUrl}" style="display:block; text-decoration:none;">
                 <img
                   src="${safeShot}"
-                  alt="The Reciring Events page"
+                  alt="The Mutu Events page"
                   width="100%"
                   style="display:block; width:100%; height:auto; max-width:496px; border-radius:16px; box-shadow:0 8px 24px rgba(0,0,0,0.10), 0 0 0 1px rgba(0,0,0,0.04); border:0;"
                 />
@@ -139,13 +139,13 @@ export function eventsLaunchTemplate({ userEmail, appUrl, unsubscribeUrl }) {
                             Serine
                           </p>
                           <p style="font-size:11px; color:#9CA3AF; margin:1px 0 0; letter-spacing:0.08em; text-transform:uppercase; font-weight:600;">
-                            Founder · Reciring
+                            Founder · Mutu
                           </p>
                         </td>
                       </tr>
                     </table>
                     <p style="font-size:13.5px; line-height:1.65; color:#3D3020; margin:0; font-style:italic;">
-                      "Thank you for being one of our earliest members. Your feedback continues to shape Reciring, and we're excited to keep building alongside this community."
+                      "Thank you for being one of our earliest members. Your feedback continues to shape Mutu, and we're excited to keep building alongside this community."
                     </p>
                   </td>
                 </tr>
@@ -158,7 +158,7 @@ export function eventsLaunchTemplate({ userEmail, appUrl, unsubscribeUrl }) {
             <td style="padding:28px 40px 32px;">
               <div style="height:1px; background:linear-gradient(90deg,transparent,#E6D3A3,transparent); margin-bottom:18px;"></div>
               <p style="font-size:11px; color:#9CA3AF; line-height:1.6; margin:0; text-align:center;">
-                Sent to <span style="color:#6B7280;">${safeEmail}</span> · Reciring Team
+                Sent to <span style="color:#6B7280;">${safeEmail}</span> · Mutu Team
               </p>
               ${safeUnsub ? `<p style="font-size:11px; color:#9CA3AF; line-height:1.6; margin:6px 0 0; text-align:center;">
                 <a href="${safeUnsub}" style="color:#A88245; text-decoration:underline;">Unsubscribe from non-essential mail</a>

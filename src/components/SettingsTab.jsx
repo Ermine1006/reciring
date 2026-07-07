@@ -111,7 +111,7 @@ export default function SettingsTab({ onOpenAdminEmailTest }) {
               fontSize: 14, fontWeight: 600, color: C.text,
               fontFamily: 'Inter, system-ui, sans-serif', margin: 0,
             }}>
-              Receive Reciring emails
+              Receive Mutu emails
             </p>
             <p style={{
               fontSize: 12, color: C.textMuted, lineHeight: 1.5,
@@ -127,7 +127,7 @@ export default function SettingsTab({ onOpenAdminEmailTest }) {
             disabled={emailToggleSaving}
             role="switch"
             aria-checked={emailSubscribed}
-            aria-label="Receive Reciring emails"
+            aria-label="Receive Mutu emails"
             style={{
               flexShrink: 0,
               width: 52, height: 30,
@@ -185,7 +185,7 @@ export default function SettingsTab({ onOpenAdminEmailTest }) {
             fontSize: 12, color: '#92400E', lineHeight: 1.5,
             fontFamily: 'Inter, system-ui, sans-serif',
           }}>
-            You're currently opted out of non-essential Reciring emails. Toggle on anytime to start receiving updates again — your unsubscribe record is updated automatically.
+            You're currently opted out of non-essential Mutu emails. Toggle on anytime to start receiving updates again — your unsubscribe record is updated automatically.
           </p>
         )}
       </Section>
@@ -349,7 +349,7 @@ export default function SettingsTab({ onOpenAdminEmailTest }) {
               </p>
 
               <a
-                href="mailto:erminelyu@gmail.com?subject=ReciRing%20Support%20Request"
+                href="mailto:erminelyu@gmail.com?subject=Mutu%20Support%20Request"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full py-3 rounded-xl text-sm font-semibold active:scale-[0.98] flex items-center justify-center gap-2"

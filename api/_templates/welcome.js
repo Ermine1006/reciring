@@ -17,14 +17,14 @@ export function welcomeTemplate({ displayName, userEmail, appUrl, unsubscribeUrl
   const safeUrl   = escapeHtml(appUrl || 'https://reciring.com')
   const safeUnsub = escapeHtml(unsubscribeUrl || '')
 
-  const subject = `Welcome to Reciring, ${safeName}`
+  const subject = `Welcome to Mutu, ${safeName}`
 
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Welcome to Reciring</title>
+<title>Welcome to Mutu</title>
 </head>
 <body style="margin:0; padding:0; background:#EEE9E0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; -webkit-font-smoothing:antialiased;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#EEE9E0; padding:32px 16px;">
@@ -41,7 +41,7 @@ export function welcomeTemplate({ displayName, userEmail, appUrl, unsubscribeUrl
             <td style="padding:40px 40px 22px 40px; text-align:center;">
               <p style="font-size:42px; line-height:1; margin:0 0 18px;">🤝</p>
               <h1 style="font-family:'Playfair Display',Georgia,serif; font-size:26px; font-weight:500; color:#A88245; margin:0 0 10px; letter-spacing:0.02em;">
-                Welcome to Reciring
+                Welcome to Mutu
               </h1>
               <p style="font-size:15px; line-height:1.55; color:#6B7280; margin:0;">
                 Hi ${safeName} — your profile is now live and ready to connect with the community.
@@ -61,13 +61,13 @@ export function welcomeTemplate({ displayName, userEmail, appUrl, unsubscribeUrl
             <td style="padding:24px 40px 8px;">
               <div style="background:#FBF6EC; border:1px solid #E6D3A3; border-radius:14px; padding:20px 22px;">
                 <p style="font-size:11px; letter-spacing:0.18em; text-transform:uppercase; font-weight:600; color:#C8A96A; margin:0 0 10px;">
-                  Why Reciring?
+                  Why Mutu?
                 </p>
                 <p style="font-size:14px; line-height:1.6; color:#3D3020; margin:0 0 10px; font-weight:600;">
                   The most valuable opportunities often come from people you don't know yet.
                 </p>
                 <p style="font-size:13.5px; line-height:1.6; color:#6B5A40; margin:0;">
-                  Reciring helps uncover the expertise, experience, and opportunities hidden within your community — making invisible networks visible and useful.
+                  Mutu helps uncover the expertise, experience, and opportunities hidden within your community — making invisible networks visible and useful.
                 </p>
               </div>
             </td>
@@ -130,8 +130,8 @@ export function welcomeTemplate({ displayName, userEmail, appUrl, unsubscribeUrl
                 Your identity remains hidden until both parties agree to reveal themselves.
               </p>
               <p style="font-size:11px; color:#9CA3AF; line-height:1.6; margin:0 0 4px; text-align:center;">
-                You're receiving this because you signed up for Reciring with <span style="color:#6B7280;">${safeEmail}</span>.<br>
-                Reciring Team · A Rotman MBA community for warm introductions.
+                You're receiving this because you signed up for Mutu with <span style="color:#6B7280;">${safeEmail}</span>.<br>
+                Mutu Team · A Rotman MBA community for warm introductions.
               </p>
               ${safeUnsub ? `<p style="font-size:11px; color:#9CA3AF; line-height:1.6; margin:6px 0 0; text-align:center;">
                 Prefer fewer emails? <a href="${safeUnsub}" style="color:#A88245; text-decoration:underline;">Unsubscribe from non-essential mail</a>.

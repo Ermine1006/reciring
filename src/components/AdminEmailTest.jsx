@@ -55,8 +55,8 @@ const TEMPLATES = [
     apiTemplate:    'broadcast_message',
     locked:         false,
     allowBroadcast: true,
-    defaultSubject: "What's new at Reciring",
-    defaultBody:    "Hi —\n\nWe just shipped some updates we think you'll like:\n\n• \n• \n\nOpen the app to try them out.\n\n— The Reciring Team",
+    defaultSubject: "What's new at Mutu",
+    defaultBody:    "Hi —\n\nWe just shipped some updates we think you'll like:\n\n• \n• \n\nOpen the app to try them out.\n\n— The Mutu Team",
     eyebrow:        'Product Update',
   },
   {
@@ -66,8 +66,8 @@ const TEMPLATES = [
     apiTemplate:    'broadcast_message',
     locked:         false,
     allowBroadcast: true,
-    defaultSubject: 'A note from the Reciring community',
-    defaultBody:    "Hi —\n\nQuick update from the team:\n\n\n\n— The Reciring Team",
+    defaultSubject: 'A note from the Mutu community',
+    defaultBody:    "Hi —\n\nQuick update from the team:\n\n\n\n— The Mutu Team",
     eyebrow:        'Community',
   },
   {
@@ -147,7 +147,7 @@ export default function AdminEmailTest({ onClose }) {
   // can read from the same source of truth. Sample blocks keep the
   // first-open experience useful instead of a blank canvas.
   const [blocks, setBlocks]                 = useState(() => [
-    { type: 'title',     text: 'Hi Reciring community —' },
+    { type: 'title',     text: 'Hi Mutu community —' },
     { type: 'paragraph', text: 'Add your message here. Use **bold**, *italic*, or [links](https://reciring.com).' },
   ])
   const [recipientsText, setRecipientsText] = useState('')

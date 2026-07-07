@@ -75,7 +75,7 @@ export function eventCancellationTemplate({
           <tr>
             <td style="padding:36px 40px 24px 40px; text-align:center;">
               <p style="font-family:'Playfair Display',Georgia,serif; font-size:18px; font-weight:500; color:#A88245; letter-spacing:0.18em; margin:0 0 22px;">
-                R E C I R I N G
+                M U T U
               </p>
               <p style="font-size:10px; font-weight:700; letter-spacing:0.28em; text-transform:uppercase; color:#C8A96A; margin:0 0 14px;">
                 ${escapeHtml(eyebrow)}
@@ -139,7 +139,7 @@ export function eventCancellationTemplate({
           <tr>
             <td style="padding:20px 40px 32px 40px; text-align:center; border-top:1px solid #F0ECE4;">
               <p style="font-size:11px; color:#9CA3AF; margin:0 0 8px; line-height:1.6;">
-                Sent from Reciring — the Rotman peer network.
+                Sent from Mutu — the Rotman peer network.
               </p>
               <p style="font-size:11px; color:#9CA3AF; margin:0; line-height:1.6;">
                 <a href="${safeApp}" style="color:#A88245; text-decoration:none;">reciring.com</a>${safeUnsub ? `

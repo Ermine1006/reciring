@@ -35,7 +35,7 @@ export function broadcastMessageTemplate({
   appUrl,
   unsubscribeUrl,
 }) {
-  const safeSubject = (subject || '').trim() || 'A message from Reciring'
+  const safeSubject = (subject || '').trim() || 'A message from Mutu'
 
   // ── Block-based path (Custom mode) ─────────────────────────
   if (Array.isArray(blocks) && blocks.length > 0) {
@@ -95,7 +95,7 @@ export function broadcastMessageTemplate({
           <tr>
             <td style="padding:0 40px 36px; text-align:center;">
               <a href="${safeUrl}" style="display:inline-block; padding:13px 32px; background:#A88245; background-image:linear-gradient(135deg,#C8A96A 0%,#A88245 100%); color:#FFFFFF; text-decoration:none; border-radius:12px; font-size:13px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase;">
-                Open Reciring
+                Open Mutu
               </a>
             </td>
           </tr>
@@ -104,7 +104,7 @@ export function broadcastMessageTemplate({
           <tr>
             <td style="padding:20px 40px 28px; background:#FAFAF8; border-top:1px solid #F0ECE4;">
               <p style="font-size:11px; color:#9CA3AF; line-height:1.6; margin:0 0 6px; text-align:center;">
-                Sent to <span style="color:#6B7280;">${safeEmail}</span> · Reciring Team
+                Sent to <span style="color:#6B7280;">${safeEmail}</span> · Mutu Team
               </p>
               ${safeUnsub ? `<p style="font-size:11px; color:#9CA3AF; line-height:1.6; margin:6px 0 0; text-align:center;">
                 <a href="${safeUnsub}" style="color:#A88245; text-decoration:underline;">Unsubscribe from non-essential mail</a>

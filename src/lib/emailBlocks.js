@@ -60,7 +60,7 @@ const C = {
  *   unsubscribeUrl  — appended to footer if provided
  */
 export function renderBlocksEmail({ subject, eyebrow, blocks, appUrl, unsubscribeUrl }) {
-  const safeTitle  = escapeHtml((subject || 'A message from Reciring').trim())
+  const safeTitle  = escapeHtml((subject || 'A message from Mutu').trim())
   const safeApp    = escapeHtml(appUrl || 'https://reciring.com')
   const safeUnsub  = escapeHtml(unsubscribeUrl || '')
   const safeEyebrow = escapeHtml((eyebrow || '').trim())
@@ -89,7 +89,7 @@ export function renderBlocksEmail({ subject, eyebrow, blocks, appUrl, unsubscrib
           <tr>
             <td style="padding:28px 40px 0 40px; text-align:center;">
               <p style="font-family:${C.serif}; font-size:18px; font-weight:500; color:${C.goldDark}; letter-spacing:0.18em; margin:0;">
-                R E C I R I N G
+                M U T U
               </p>
               ${safeEyebrow ? `<p style="font-size:11px; letter-spacing:0.22em; text-transform:uppercase; font-weight:700; color:${C.gold}; margin:18px 0 0;">${safeEyebrow}</p>` : ''}
             </td>
@@ -106,7 +106,7 @@ export function renderBlocksEmail({ subject, eyebrow, blocks, appUrl, unsubscrib
           <tr>
             <td style="padding:20px 40px 32px 40px; text-align:center; border-top:1px solid ${C.border};">
               <p style="font-size:11px; color:${C.textMuted}; margin:0 0 8px; line-height:1.6;">
-                Sent from Reciring — the Rotman peer network.
+                Sent from Mutu — the Rotman peer network.
               </p>
               <p style="font-size:11px; color:${C.textMuted}; margin:0; line-height:1.6;">
                 <a href="${safeApp}" style="color:${C.goldDark}; text-decoration:none;">reciring.com</a>${safeUnsub ? `
