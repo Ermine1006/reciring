@@ -349,7 +349,7 @@ export default function SettingsTab({ onOpenAdminEmailTest }) {
               </p>
 
               <a
-                href="mailto:erminelyu@gmail.com?subject=Mutu%20Support%20Request"
+                href="mailto:hello@muturing.com?subject=Mutu%20Support%20Request"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full py-3 rounded-xl text-sm font-semibold active:scale-[0.98] flex items-center justify-center gap-2"
@@ -372,7 +372,7 @@ export default function SettingsTab({ onOpenAdminEmailTest }) {
               <button
                 type="button"
                 onClick={() => {
-                  navigator.clipboard.writeText('erminelyu@gmail.com').then(() => {
+                  navigator.clipboard.writeText('hello@muturing.com').then(() => {
                     setCopied(true)
                     setTimeout(() => setCopied(false), 2000)
                   })

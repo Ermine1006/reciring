@@ -18,7 +18,7 @@ const C = {
 
 // Support email surfaced in the Forgot-email helper. Kept next to the
 // gold token so future tweaks stay in one place.
-const SUPPORT_EMAIL = 'hello@reciring.com'
+const SUPPORT_EMAIL = 'hello@muturing.com'
 
 export default function LoginScreen() {
   const { signIn, signUp, signInWithGoogle, resetPassword } = useAuth()
