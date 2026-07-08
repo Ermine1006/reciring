@@ -33,8 +33,8 @@ export function eventRegistrationTemplate({
   const safeWhere  = escapeHtml(eventLocation || 'Details on the event page')
   const safeHost   = escapeHtml(hostName || 'the host')
   const safeDesc   = escapeHtml(eventDescription || '')
-  const safeUrl    = escapeHtml(eventUrl || appUrl || 'https://reciring.com')
-  const safeApp    = escapeHtml(appUrl || 'https://reciring.com')
+  const safeUrl    = escapeHtml(eventUrl || appUrl || 'https://muturing.com')
+  const safeApp    = escapeHtml(appUrl || 'https://muturing.com')
   const safeUnsub  = escapeHtml(unsubscribeUrl || '')
 
   const subject = `You're in — ${eventTitle || 'your event'}`
@@ -136,7 +136,7 @@ export function eventRegistrationTemplate({
                 Sent from Mutu — the Rotman peer network.
               </p>
               <p style="font-size:11px; color:#9CA3AF; margin:0; line-height:1.6;">
-                <a href="${safeApp}" style="color:#A88245; text-decoration:none;">reciring.com</a>${safeUnsub ? `
+                <a href="${safeApp}" style="color:#A88245; text-decoration:none;">muturing.com</a>${safeUnsub ? `
                 &nbsp;·&nbsp;
                 <a href="${safeUnsub}" style="color:#9CA3AF; text-decoration:none;">Unsubscribe</a>` : ''}
               </p>

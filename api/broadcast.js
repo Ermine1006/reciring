@@ -28,8 +28,9 @@ import { broadcastMessageTemplate } from './_templates/broadcast-message.js'
 import { eventsLaunchTemplate } from './_templates/events-launch.js'
 import { isAdmin } from './_lib/admin.js'
 import { makeUnsubscribeToken } from './_lib/unsubscribe-token.js'
+import { EMAIL_FROM, APP_URL as APP_URL_FALLBACK } from '../src/lib/branding.js'
 
-const FROM = 'Mutu Team <hello@reciring.com>'
+const FROM = EMAIL_FROM
 
 // Resend free tier rate limit: 5 requests/sec. Sleep between sends
 // to stay comfortably below (~4/sec). For larger lists (>50) this
@@ -64,7 +65,7 @@ export default async function handler(req, res) {
   const ANON_KEY     = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
   const SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY
   const RESEND_KEY   = process.env.RESEND_API_KEY
-  const APP_URL      = process.env.APP_URL || 'https://reciring.com'
+  const APP_URL      = process.env.APP_URL || APP_URL_FALLBACK
 
   if (!SUPABASE_URL || !ANON_KEY || !SERVICE_KEY || !RESEND_KEY) {
     return res.status(500).json({ error: 'server not configured' })

@@ -61,7 +61,7 @@ const C = {
  */
 export function renderBlocksEmail({ subject, eyebrow, blocks, appUrl, unsubscribeUrl }) {
   const safeTitle  = escapeHtml((subject || 'A message from Mutu').trim())
-  const safeApp    = escapeHtml(appUrl || 'https://reciring.com')
+  const safeApp    = escapeHtml(appUrl || 'https://muturing.com')
   const safeUnsub  = escapeHtml(unsubscribeUrl || '')
   const safeEyebrow = escapeHtml((eyebrow || '').trim())
 
@@ -109,7 +109,7 @@ export function renderBlocksEmail({ subject, eyebrow, blocks, appUrl, unsubscrib
                 Sent from Mutu — the Rotman peer network.
               </p>
               <p style="font-size:11px; color:${C.textMuted}; margin:0; line-height:1.6;">
-                <a href="${safeApp}" style="color:${C.goldDark}; text-decoration:none;">reciring.com</a>${safeUnsub ? `
+                <a href="${safeApp}" style="color:${C.goldDark}; text-decoration:none;">muturing.com</a>${safeUnsub ? `
                 &nbsp;·&nbsp;
                 <a href="${safeUnsub}" style="color:${C.textMuted}; text-decoration:none;">Unsubscribe</a>` : ''}
               </p>
@@ -308,7 +308,7 @@ export function safeUrl(raw) {
   try {
     // URL parser needs a base for relative inputs; using the app origin
     // means bare paths like "/discover" resolve safely.
-    const parsed = new URL(trimmed, 'https://reciring.com')
+    const parsed = new URL(trimmed, 'https://muturing.com')
     if (!URL_PROTOCOL_ALLOWLIST.has(parsed.protocol)) return null
     return escapeHtml(parsed.toString())
   } catch {

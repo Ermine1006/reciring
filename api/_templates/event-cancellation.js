@@ -37,8 +37,8 @@ export function eventCancellationTemplate({
   const safeWhere  = escapeHtml(eventLocation || '—')
   const safeHost   = escapeHtml(hostName || 'the host')
   const safeReason = escapeHtml(cancellationReason || '')
-  const safeUrl    = escapeHtml(eventUrl || appUrl || 'https://reciring.com')
-  const safeApp    = escapeHtml(appUrl || 'https://reciring.com')
+  const safeUrl    = escapeHtml(eventUrl || appUrl || 'https://muturing.com')
+  const safeApp    = escapeHtml(appUrl || 'https://muturing.com')
   const safeUnsub  = escapeHtml(unsubscribeUrl || '')
 
   const subject = isHostCancel
@@ -142,7 +142,7 @@ export function eventCancellationTemplate({
                 Sent from Mutu — the Rotman peer network.
               </p>
               <p style="font-size:11px; color:#9CA3AF; margin:0; line-height:1.6;">
-                <a href="${safeApp}" style="color:#A88245; text-decoration:none;">reciring.com</a>${safeUnsub ? `
+                <a href="${safeApp}" style="color:#A88245; text-decoration:none;">muturing.com</a>${safeUnsub ? `
                 &nbsp;·&nbsp;
                 <a href="${safeUnsub}" style="color:#9CA3AF; text-decoration:none;">Unsubscribe</a>` : ''}
               </p>

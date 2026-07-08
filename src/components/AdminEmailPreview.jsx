@@ -32,8 +32,8 @@ export default function AdminEmailPreview({ subject, eyebrow, blocks }) {
       subject,
       eyebrow,
       blocks,
-      appUrl:         'https://reciring.com',
-      unsubscribeUrl: 'https://reciring.com/api/unsubscribe?token=preview',
+      appUrl:         'https://muturing.com',
+      unsubscribeUrl: 'https://muturing.com/api/unsubscribe?token=preview',
     }),
     [subject, eyebrow, blocks]
   )

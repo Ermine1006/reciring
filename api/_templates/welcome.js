@@ -14,7 +14,7 @@
 export function welcomeTemplate({ displayName, userEmail, appUrl, unsubscribeUrl }) {
   const safeName  = escapeHtml(displayName || 'there')
   const safeEmail = escapeHtml(userEmail || '')
-  const safeUrl   = escapeHtml(appUrl || 'https://reciring.com')
+  const safeUrl   = escapeHtml(appUrl || 'https://muturing.com')
   const safeUnsub = escapeHtml(unsubscribeUrl || '')
 
   const subject = `Welcome to Mutu, ${safeName}`

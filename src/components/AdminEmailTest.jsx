@@ -148,7 +148,7 @@ export default function AdminEmailTest({ onClose }) {
   // first-open experience useful instead of a blank canvas.
   const [blocks, setBlocks]                 = useState(() => [
     { type: 'title',     text: 'Hi Mutu community —' },
-    { type: 'paragraph', text: 'Add your message here. Use **bold**, *italic*, or [links](https://reciring.com).' },
+    { type: 'paragraph', text: 'Add your message here. Use **bold**, *italic*, or [links](https://muturing.com).' },
   ])
   const [recipientsText, setRecipientsText] = useState('')
   const [sending, setSending]               = useState(false)

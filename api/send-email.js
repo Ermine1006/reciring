@@ -29,8 +29,9 @@ import { eventRegistrationTemplate } from './_templates/event-registration.js'
 import { eventCancellationTemplate } from './_templates/event-cancellation.js'
 import { isAdmin } from './_lib/admin.js'
 import { makeUnsubscribeToken } from './_lib/unsubscribe-token.js'
+import { EMAIL_FROM, APP_URL as APP_URL_FALLBACK } from '../src/lib/branding.js'
 
-const FROM = 'Mutu Team <hello@reciring.com>'
+const FROM = EMAIL_FROM
 // ~4/sec, comfortably under Resend's free-tier 5/sec cap. Only used
 // for the host cancellation fan-out — single-recipient sends don't
 // need to throttle.
@@ -65,7 +66,7 @@ export default async function handler(req, res) {
   const ANON_KEY     = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
   const SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY
   const RESEND_KEY   = process.env.RESEND_API_KEY
-  const APP_URL      = process.env.APP_URL || 'https://reciring.com'
+  const APP_URL      = process.env.APP_URL || APP_URL_FALLBACK
 
   if (!SUPABASE_URL || !ANON_KEY || !SERVICE_KEY || !RESEND_KEY) {
     return res.status(500).json({

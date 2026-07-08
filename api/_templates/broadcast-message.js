@@ -56,7 +56,7 @@ export function broadcastMessageTemplate({
 
   // ── Legacy plain-text path (Product Update / Announcement) ──
   const safeEmail   = escapeHtml(userEmail || '')
-  const safeUrl     = escapeHtml(appUrl || 'https://reciring.com')
+  const safeUrl     = escapeHtml(appUrl || 'https://muturing.com')
   const safeUnsub   = escapeHtml(unsubscribeUrl || '')
   const safeEyebrow = escapeHtml((eyebrow || '').trim())
   const bodyHtml    = bodyToHtml(body || '')

@@ -328,7 +328,7 @@ function BlockEditor({ block, onUpdate }) {
           <TextField
             value={block.url || ''}
             onChange={v => onUpdate({ url: v })}
-            placeholder="https://reciring.com/…"
+            placeholder="https://muturing.com/…"
             mono
           />
         </div>

@@ -14,11 +14,11 @@
 //   - Any CDN with HTTPS + persistent URL
 // If you leave the placeholder, the section still renders but the
 // image will fail to load in recipient inboxes.
-const SCREENSHOT_URL = 'https://reciring.com/email-assets/events-launch.png'
+const SCREENSHOT_URL = 'https://muturing.com/email-assets/events-launch.png'
 
 export function eventsLaunchTemplate({ userEmail, appUrl, unsubscribeUrl }) {
   const safeEmail = escapeHtml(userEmail || '')
-  const safeUrl   = escapeHtml(appUrl || 'https://reciring.com')
+  const safeUrl   = escapeHtml(appUrl || 'https://muturing.com')
   const safeUnsub = escapeHtml(unsubscribeUrl || '')
   const safeShot  = escapeHtml(SCREENSHOT_URL)
 
