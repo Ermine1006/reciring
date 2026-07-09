@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { isInstitutionalEmail, isGmailEmail } from '../config/auth'
-import { checkInviteByEmail, checkInviteByCode, inviteReasonLabel } from '../lib/invites'
+import { checkAccessCode, accessCodeReasonLabel } from '../lib/accessCodes'
 import ReciRingLogo from './ReciRingLogo'
 
 const C = {
@@ -36,7 +36,10 @@ export default function LoginScreen() {
 
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
-  const [inviteCode, setInviteCode] = useState('')
+  // Access code = invite OR referral. Single input, both types are
+  // validated against the same access_codes table (see
+  // src/lib/accessCodes.js).
+  const [accessCode, setAccessCode] = useState('')
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState(null)
   const [info, setInfo]         = useState(null)
@@ -64,16 +67,14 @@ export default function LoginScreen() {
     try {
       const params = new URLSearchParams(window.location.search)
       const code = params.get('error')
-      if (code === 'invite_required') {
-        setError(
-          'Gmail login is available only for verified members or users with an invite code. Please use your UofT email or request an invitation.',
-        )
+      if (code === 'invite_required' || code === 'gmail_requires_invite_or_referral') {
+        setError('Gmail login requires an invite code or a referral from an existing Mutu member.')
         params.delete('error')
         const remaining = params.toString()
         const cleaned = window.location.pathname + (remaining ? `?${remaining}` : '')
         window.history.replaceState({}, '', cleaned)
-      } else if (code === 'unsupported_domain') {
-        setError("This email domain isn't supported. Please use your UofT email, or ask an admin to invite you.")
+      } else if (code === 'unsupported_domain' || code === 'unsupported_email') {
+        setError("This email isn't eligible for Mutu yet. Sign up with your UofT email, or use an invite or referral code.")
         params.delete('error')
         const remaining = params.toString()
         const cleaned = window.location.pathname + (remaining ? `?${remaining}` : '')
@@ -100,23 +101,28 @@ export default function LoginScreen() {
     // valid invite (by email OR by code the user typed here); anything
     // else → blocked outright.
     if (!isInstitutional && !isGmail) {
-      setError("This email domain isn't supported. Please use your UofT email, or ask an admin to invite you.")
+      setError("This email isn't eligible for Mutu yet. Sign up with your UofT email, or use an invite or referral code.")
       return
     }
 
     if (isGmail) {
+      // Password path for Gmail requires a code up front — there's no
+      // "existing linked member" fallback for password sign-in because
+      // Supabase treats email+password as a distinct identity from
+      // OAuth. Pre-validate the typed code so we don't spin up an auth
+      // attempt against a dead code.
       setLoading(true)
-      const gate = await checkGmailInvite(trimmed, inviteCode)
+      const gate = await preflightGmailCode(accessCode)
       if (!gate.ok) {
         setLoading(false)
         setError(gate.reason)
         return
       }
-      // Stash the code so the post-signin gate in AuthContext can
-      // redeem it (it also re-validates server-side). This handles the
-      // race where two clients try to redeem the same code — only one
-      // will land, and the other gets a fresh error at that stage.
-      if (gate.stashCode) safeStashSession('mutu:pendingInviteCode', gate.stashCode)
+      // Stash for the AuthContext gate to redeem after Supabase auth.
+      // Server-side re-validation in the redeem_access_code RPC is the
+      // real boundary; this stash just avoids losing the code across
+      // the redirect.
+      safeStashSession('mutu_access_code', gate.stashCode)
       setLoading(false)
     }
 
@@ -135,33 +141,32 @@ export default function LoginScreen() {
     }
   }
 
-  // Reused for both password + OAuth paths. Returns:
-  //   { ok: true, stashCode: string | null }
-  //   { ok: false, reason: string }
-  async function checkGmailInvite(emailAddr, code) {
-    // Pre-issued email invite → no code required.
-    const byEmail = await checkInviteByEmail(emailAddr)
-    if (byEmail.invite) return { ok: true, stashCode: null }
-    if (byEmail.reason) return { ok: false, reason: inviteReasonLabel(byEmail.reason) }
-
-    // Fall back to the code the user typed.
+  // Pre-flight validation for the password signup path. A blank code
+  // is a hard fail here (password Gmail signups have no fallback);
+  // for the OAuth path, empty code is allowed since existing linked
+  // members complete their sign-in with no code entry.
+  async function preflightGmailCode(code) {
     const trimmedCode = String(code || '').trim()
     if (!trimmedCode) {
       return {
         ok: false,
-        reason: 'Mutu is currently invite-only for Gmail accounts. Enter your invite code above, or use your UofT email.',
+        reason: 'Gmail login requires an invite code or a referral from an existing Mutu member.',
       }
     }
-    const byCode = await checkInviteByCode(emailAddr, trimmedCode)
-    if (byCode.invite) return { ok: true, stashCode: trimmedCode }
-    return { ok: false, reason: inviteReasonLabel(byCode.reason || 'invite_not_found') }
+    const check = await checkAccessCode(trimmedCode)
+    if (check.code) return { ok: true, stashCode: trimmedCode }
+    return { ok: false, reason: accessCodeReasonLabel(check.reason || 'code_not_found') }
   }
 
-  // sessionStorage stash used to bridge the invite code across the
+  // sessionStorage stash used to bridge the access code across the
   // Google OAuth redirect. Same helper as in AuthContext — wrapped so
   // a private-browsing SecurityError doesn't crash the flow.
   function safeStashSession(key, value) {
     try { if (typeof window !== 'undefined') window.sessionStorage.setItem(key, value) }
+    catch {}
+  }
+  function safeClearStash(key) {
+    try { if (typeof window !== 'undefined') window.sessionStorage.removeItem(key) }
     catch {}
   }
 
@@ -173,7 +178,7 @@ export default function LoginScreen() {
     // Reset links go to whoever owns the address, so keep this permissive
     // — the invite gate re-validates on the following sign-in.
     if (!isInstitutional && !isGmail) {
-      setError("This email domain isn't supported. Please use your UofT email, or ask an admin to invite you.")
+      setError("This email isn't eligible for Mutu yet. Sign up with your UofT email, or use an invite or referral code.")
       return
     }
     setLoading(true)
@@ -221,7 +226,7 @@ export default function LoginScreen() {
         <p className="text-center mb-6" style={{ fontSize: 13, color: C.textSub, lineHeight: 1.5 }}>
           {mode === 'forgot'
             ? "Enter your email and we'll send you a reset link."
-            : 'Use your UofT email to join directly. Already verified members can continue with their linked Google account. New Gmail users need an invite code.'}
+            : 'Use your UofT email to join directly. Already verified members can continue with their linked Google account. New Gmail users need an invite code or a referral from an existing member.'}
         </p>
 
         <form onSubmit={(e) => {
@@ -249,16 +254,17 @@ export default function LoginScreen() {
                 className="w-full rounded-xl px-4 py-3 text-sm transition-all duration-200"
                 style={inputStyle(!!error)}
               />
-              {/* Invite code — only shown when the email is Gmail-family.
-                  Empty by default; users with a pre-issued email invite
-                  can leave it blank and still sign in. */}
+              {/* Access code — inline field for the password path when
+                  the email is Gmail. The Google OAuth section below
+                  has its own input for the OAuth path so an existing
+                  linked member can sign in without touching this. */}
               {isGmail && (
                 <div className="mt-3">
                   <input
                     type="text"
-                    value={inviteCode}
-                    onChange={(e) => setInviteCode(e.target.value)}
-                    placeholder="Invite code (optional if you were pre-invited)"
+                    value={accessCode}
+                    onChange={(e) => setAccessCode(e.target.value)}
+                    placeholder="Enter invite or referral code"
                     autoComplete="off"
                     autoCapitalize="characters"
                     className="w-full rounded-xl px-4 py-3 text-sm transition-all duration-200"
@@ -272,7 +278,7 @@ export default function LoginScreen() {
                     }}
                   />
                   <p className="mt-1.5" style={{ fontSize: 11, color: C.textMuted, lineHeight: 1.5 }}>
-                    Gmail login is invite-only. Ask an admin for a code, or use your UofT email.
+                    Gmail login requires an invite code or a referral from an existing Mutu member.
                   </p>
                 </div>
               )}
@@ -346,26 +352,61 @@ export default function LoginScreen() {
                   <div style={{ flex: 1, height: 1, background: C.border }} />
                 </div>
 
-                {/* Google OAuth — sign up or sign in.
-                    If the email field already has a Gmail address, we
-                    pre-validate the invite here so the user doesn't
-                    round-trip through Google's consent screen only to
-                    be kicked back out. If the field is blank, we let
-                    them through and the post-signin gate catches any
-                    unauthorized Google account after the callback. */}
+                {/* Section 2 — Google login. Two audiences share this
+                    button: (a) existing linked members (no code needed;
+                    the post-OAuth gate finds their linked email), and
+                    (b) new Gmail users with an invite or referral code
+                    (typed into the input above the button). */}
+                <p className="text-center" style={{
+                  fontSize: 13, fontWeight: 600, color: C.text,
+                  margin: '4px 0 6px',
+                  fontFamily: 'Inter, system-ui, sans-serif',
+                }}>
+                  New to Mutu with Gmail?
+                </p>
+                <input
+                  type="text"
+                  value={accessCode}
+                  onChange={(e) => setAccessCode(e.target.value)}
+                  placeholder="Enter invite or referral code"
+                  autoComplete="off"
+                  autoCapitalize="characters"
+                  className="w-full rounded-xl px-4 py-3 text-sm mb-1"
+                  style={{
+                    background: '#FBF6EC',
+                    border: `1.5px solid ${C.goldLight}`,
+                    color: C.text,
+                    outline: 'none',
+                    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+                    letterSpacing: '0.04em',
+                  }}
+                />
+
+                {/* Google OAuth. We do NOT block on an empty code here
+                    — existing linked members need to sign in without
+                    entering anything. If a code IS provided, stash it
+                    so the post-OAuth gate redeems it; the code is
+                    re-validated server-side via redeem_access_code, so
+                    the client stash is not a security boundary. */}
                 <button
                   type="button"
                   onClick={async () => {
                     setError(null); setInfo(null)
-                    if (emailLower && isGmail) {
-                      setLoading(true)
-                      const gate = await checkGmailInvite(emailLower, inviteCode)
-                      if (!gate.ok) {
-                        setLoading(false)
-                        setError(gate.reason)
+                    const trimmedCode = accessCode.trim()
+                    if (trimmedCode) {
+                      // Cheap client-side pre-check gives a fast reject on
+                      // typo'd codes so the user doesn't sit through Google
+                      // consent. The RPC re-validates on the callback.
+                      const check = await checkAccessCode(trimmedCode)
+                      if (!check.code) {
+                        setError(accessCodeReasonLabel(check.reason || 'code_not_found'))
                         return
                       }
-                      if (gate.stashCode) safeStashSession('mutu:pendingInviteCode', gate.stashCode)
+                      safeStashSession('mutu_access_code', trimmedCode)
+                    } else {
+                      // Clear any stale code so a previous test doesn't
+                      // leak into this attempt.
+                      safeClearStash('mutu_access_code')
                     }
                     setLoading(true)
                     const { error: oauthErr } = await signInWithGoogle()
@@ -390,6 +431,13 @@ export default function LoginScreen() {
                   </svg>
                   Continue with Google
                 </button>
+                <p className="text-center" style={{
+                  fontSize: 11, color: C.textMuted, lineHeight: 1.5,
+                  margin: '4px 0 0',
+                  fontFamily: 'Inter, system-ui, sans-serif',
+                }}>
+                  Already linked your Google account? Continue with Google without a code.
+                </p>
               </>
             )}
 

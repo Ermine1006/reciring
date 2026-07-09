@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, useRef } from 'react'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { sendWelcomeEmail } from '../lib/email'
 import { isInstitutionalEmail, isGmailEmail, canUserAccessMutu } from '../config/auth'
-import { checkInviteByEmail, checkInviteByCode, redeemInvite } from '../lib/invites'
+import { checkAccessCode, redeemAccessCode } from '../lib/accessCodes'
 import { checkLinkedVerifiedEmail, checkPremiumAccess } from '../lib/access'
 import { isAdmin } from '../data/adminEmails'
 
@@ -131,29 +131,40 @@ export function AuthProvider({ children }) {
       return ensureProfile(user, { accessType: 'institutional_email' })
     }
 
-    // 3. Full four-check chain: linked verified email → invite (email
-    //    or stashed code) → premium status.
+    // 3. Full access chain: linked verified email → invite/referral
+    //    code (from sessionStorage) → premium status.
     const decision = await canUserAccessMutu(email, {
+      userId: user.id,
       checkLinkedVerifiedEmail,
-      checkInviteByEmail,
-      checkInviteByCode,
-      redeemInvite,
+      checkAccessCode,
+      redeemAccessCode,
       checkPremiumAccess,
-      stashedCode: safeReadSession('mutu:pendingInviteCode'),
+      stashedCode: safeReadSession('mutu_access_code'),
     })
 
     if (decision.ok) {
-      safeClearSession('mutu:pendingInviteCode')
-      return ensureProfile(user, { accessType: decision.accessType })
+      safeClearSession('mutu_access_code')
+      return ensureProfile(user, {
+        accessType:       decision.accessType,
+        referredByUserId: decision.referredByUserId,
+        joinedWithCode:   decision.joinedWithCode,
+      })
     }
 
-    if (decision.reason === 'gmail_no_access') {
+    // Copy per product spec — no "ask an admin to invite you."
+    if (decision.reason === 'gmail_requires_invite_or_referral') {
       return denyAccess(
-        'Gmail login is available only for verified members or users with an invite code.',
+        'Gmail login requires an invite code or a referral from an existing Mutu member.',
+      )
+    }
+    // A specific code-reject reason (expired / used / revoked / etc.).
+    if (typeof decision.reason === 'string' && decision.reason.startsWith('code_')) {
+      return denyAccess(
+        "That code didn't work. Enter a valid invite or referral code, or ask a Mutu member for a new one.",
       )
     }
     return denyAccess(
-      "This email domain isn't supported. Please use your UofT email, or ask an admin to invite you.",
+      "This email isn't eligible for Mutu yet. Sign up with your UofT email, or use an invite or referral code.",
     )
   }
 
@@ -192,7 +203,7 @@ export function AuthProvider({ children }) {
   }
 
   // ── Ensure profile row exists — never block the app on failure ─
-  async function ensureProfile(user, { accessType } = {}) {
+  async function ensureProfile(user, { accessType, referredByUserId, joinedWithCode } = {}) {
     try {
       const { data: existing, error: fetchError } = await supabase
         .from('profiles')
@@ -220,10 +231,13 @@ export function AuthProvider({ children }) {
       // records as 'admin' rather than 'student'.
       const emailLower = String(user.email || '').toLowerCase().trim()
       let memberType = 'student'
-      if (accessType === 'invite_code')           memberType = 'invited'
-      else if (accessType === 'linked_personal_email') memberType = 'alumni'
-      else if (accessType === 'premium')          memberType = 'premium'
-      if (isAdmin(emailLower))                    memberType = 'admin'
+      if (accessType === 'invite_code')                   memberType = 'invited'
+      else if (accessType === 'referral_code')            memberType = 'invited'
+      else if (accessType === 'linked_google'
+            || accessType === 'linked_personal_email')    memberType = 'alumni'
+      else if (accessType === 'premium'
+            || accessType === 'admin_approved')           memberType = 'premium'
+      if (isAdmin(emailLower))                            memberType = 'admin'
 
       const now = new Date().toISOString()
       const { data: created, error: insertError } = await supabase
@@ -235,11 +249,13 @@ export function AuthProvider({ children }) {
           avatar_url:                  null,
           // The gate above ensures accessType is always set for newly-
           // created profiles. Grandfathered rows already carry 'legacy'
-          // from the backfill in migration-invites.sql.
+          // from an earlier migration backfill.
           access_type:                 accessType || 'legacy',
           access_status:               'active',
           member_type:                 memberType,
           institutional_verified_at:   accessType === 'institutional_email' ? now : null,
+          referred_by_user_id:         referredByUserId || null,
+          joined_with_code:            joinedWithCode || null,
         })
         .select()
         .single()
