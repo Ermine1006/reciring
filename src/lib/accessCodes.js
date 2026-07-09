@@ -104,7 +104,11 @@ export function accessCodeReasonLabel(reason) {
     case 'code_already_used':      return 'This code has already been used.'
     case 'code_expired':           return 'This code has expired.'
     case 'code_referrer_inactive': return 'The member who shared this code is no longer active — ask them for a new one.'
-    default:                       return "We couldn't validate that code. Please try again."
+    default:
+      // Include the raw reason token so first-week diagnostics don't
+      // require opening DevTools. Safe to inline — the token is a
+      // controlled snake_case string, never user input.
+      return `We couldn't validate that code (${reason || 'unknown'}). Try again or ping support.`
   }
 }
 
