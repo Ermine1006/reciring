@@ -1,8 +1,9 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { sendWelcomeEmail } from '../lib/email'
-import { isInstitutionalEmail, isGmailEmail } from '../config/auth'
+import { isInstitutionalEmail, isGmailEmail, canUserAccessApp } from '../config/auth'
 import { checkInviteByEmail, checkInviteByCode, redeemInvite } from '../lib/invites'
+import { isAdmin } from '../data/adminEmails'
 
 const AuthContext = createContext(null)
 
@@ -82,91 +83,109 @@ export function AuthProvider({ children }) {
   // ── Access gate ─────────────────────────────────────────────
   //
   // Runs BEFORE ensureProfile on every authenticated session (bootstrap
-  // + auth event). Decides whether the signed-in user is allowed into
-  // the app. Three cases:
+  // + auth event). Enforces the "UofT direct, Gmail invite-only" rule
+  // AFTER Supabase auth succeeds — this is the actual boundary a
+  // Google OAuth callback has to cross.
   //
-  //   1. Existing profile → grandfathered. Always allowed regardless
-  //      of the new rules. Prevents accidentally locking out members
-  //      who signed up before the invite gate existed.
-  //   2. Institutional email (UofT / Rotman family per src/config/auth.js)
-  //      → allowed. Profile gets access_type='institutional_email'.
-  //   3. Gmail email → check invite table. If pre-issued for this
-  //      address OR a code the user typed (stored in sessionStorage
-  //      by LoginScreen before OAuth redirect) is valid → redeem +
-  //      allow with access_type='invited_google'. Otherwise → signOut
-  //      immediately and surface a message via accessDenied.
+  // Order of checks:
+  //   1. Admin email → allow (admins bypass the invite gate; otherwise
+  //      the operator gets locked out of their own product).
+  //   2. Institutional email → allow. Existing UofT profiles are
+  //      grandfathered here since ensureProfile picks up the existing
+  //      row. New signups get access_type='institutional_email'.
+  //   3. Gmail → check invite (pre-issued for this email OR a code
+  //      stashed in sessionStorage by LoginScreen before OAuth). NO
+  //      profile-based grandfathering — a pre-existing Gmail profile
+  //      row alone doesn't authorize; the invite has to be valid.
+  //   4. Anything else → deny.
   //
-  // Anything outside cases 2 and 3 is rejected the same way as
-  // case 3-fail. Client-side check is defence-in-depth against a
-  // stale JWT; the profiles.access_type CHECK constraint in the
-  // migration is the DB-level guarantee that only these three values
-  // ever land on a row.
+  // Reject path (denyAccess) clears UI state SYNCHRONOUSLY so AppRoot
+  // renders LoginScreen this tick, THEN calls signOut in the
+  // background to purge Supabase's localStorage session.
+  //
+  // Client-side check is defence in depth against a stale JWT; the
+  // profiles.access_type CHECK constraint in the migration is the
+  // DB-level guarantee that only allowed values ever land on a row.
   async function gateAndEnsureProfile(user) {
     if (!user) { setLoading(false); return }
-    const email = String(user.email || '').toLowerCase()
+    // Hold on the spinner while the async gate runs. Without this,
+    // AppRoot sees session=truthy + profile=null and briefly renders
+    // AppShell before the gate finishes.
+    setLoading(true)
+    setProfile(null)
 
-    // Case 1: grandfather anyone who already has a profile row.
-    const { data: existingProfile } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('id', user.id)
-      .maybeSingle()
-    if (existingProfile) {
-      return ensureProfile(user)
+    const email = String(user.email || '').toLowerCase().trim()
+
+    // 1. Admins bypass the invite gate.
+    if (isAdmin(email)) {
+      return ensureProfile(user, {
+        accessType: isInstitutionalEmail(email) ? 'institutional_email' : 'invited_google',
+      })
     }
 
-    // Case 2: institutional email → allow.
+    // 2. Institutional → allowed. If a row already exists (grandfathered
+    //    UofT member), ensureProfile picks it up unchanged. New signup
+    //    → access_type is set on insert.
     if (isInstitutionalEmail(email)) {
       return ensureProfile(user, { accessType: 'institutional_email' })
     }
 
-    // Case 3: Gmail → invite required.
-    if (isGmailEmail(email)) {
-      // 3a. Pre-issued email invite.
-      const byEmail = await checkInviteByEmail(email)
-      if (byEmail.invite) {
-        const redemption = await redeemInvite({ email })
-        if (redemption.ok) return ensureProfile(user, { accessType: 'invited_google' })
-        // Race: someone else redeemed it while we were checking. Fall
-        // through to code check below.
-      }
-      // 3b. Code stashed in sessionStorage by LoginScreen before OAuth.
-      const stashedCode = safeReadSession('mutu:pendingInviteCode')
-      if (stashedCode) {
-        const byCode = await checkInviteByCode(email, stashedCode)
-        if (byCode.invite) {
-          const redemption = await redeemInvite({ email, code: stashedCode })
-          if (redemption.ok) {
-            safeClearSession('mutu:pendingInviteCode')
-            return ensureProfile(user, { accessType: 'invited_google' })
-          }
-        }
-      }
-      // No pre-issued invite and no valid code → reject.
+    // 3 + 4. Delegate to the shared access-check helper. It runs the
+    //        invite lookups and returns { ok, accessType?, reason? }.
+    const decision = await canUserAccessApp(email, {
+      checkInviteByEmail,
+      checkInviteByCode,
+      redeemInvite,
+      stashedCode: safeReadSession('mutu:pendingInviteCode'),
+    })
+
+    if (decision.ok) {
+      safeClearSession('mutu:pendingInviteCode')
+      return ensureProfile(user, { accessType: decision.accessType })
+    }
+
+    if (decision.reason === 'gmail_invite_required') {
       return denyAccess(
         'Mutu is currently invite-only for Gmail accounts. Please use your UofT email or request an invitation.',
       )
     }
-
-    // Anything else (personal domain, Microsoft consumer, unknown ISP) →
-    // reject. Extend the allowlist in src/config/auth.js to open this.
     return denyAccess(
       "This email domain isn't supported. Please use your UofT email, or ask an admin to invite you.",
     )
   }
 
-  // Sign the rejected user back out and surface a reason the login
-  // screen can display. Order matters — the signOut has to complete
-  // before setLoading(false), otherwise AppRoot briefly sees
-  // session=truthy, profile=null and shows a blank shell.
-  async function denyAccess(message) {
+  // Reject an authenticated user who didn't pass the gate. The tricky
+  // part is that supabase.auth.signOut() is async — awaiting it before
+  // clearing session state leaves a window where AppRoot sees a
+  // truthy session with no profile and renders AppShell. Fix: clear
+  // React state FIRST (synchronous), then purge Supabase's persistent
+  // localStorage session in the background.
+  function denyAccess(message) {
+    // Order matters — every setter here runs before React re-renders
+    // AppRoot, so the very next render already shows LoginScreen with
+    // the error rather than a flash of AppShell.
     setAccessDenied(message)
     setProfile(null)
-    try { await supabase.auth.signOut() }
-    catch (err) { console.warn('[ReciRing] denyAccess signOut error (ignored):', err?.message) }
     setSession(null)
     setLoading(false)
     safeClearSession('mutu:pendingInviteCode')
+
+    // Background: purge Supabase's localStorage session so a hard
+    // refresh doesn't restore the rejected identity. Fire-and-forget
+    // — the UI is already on LoginScreen.
+    supabase.auth.signOut().catch(err => {
+      console.warn('[ReciRing] denyAccess signOut error (ignored):', err?.message)
+    })
+
+    // Reflect the reject in the URL so the LoginScreen error banner
+    // survives a reload. Also, when Supabase's OAuth callback lands
+    // at "/#access_token=…", replacing the URL cleans up the hash.
+    try {
+      const url = new URL(window.location.href)
+      url.searchParams.set('error', 'invite_required')
+      url.hash = ''
+      window.history.replaceState({}, '', url.toString())
+    } catch {}
   }
 
   // ── Ensure profile row exists — never block the app on failure ─

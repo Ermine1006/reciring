@@ -51,6 +51,57 @@ export function isAllowedEmail(email) {
   return isInstitutionalEmail(email) || isGmailEmail(email)
 }
 
+// High-level access check used by the post-OAuth gate + defensive
+// re-checks in profile creation. Async because Gmail authorization
+// requires a database lookup (either a pre-issued email invite or a
+// code the user typed in LoginScreen and stashed in sessionStorage).
+//
+// Returns { ok: boolean, accessType?: string, reason?: string }.
+// accessType is one of the values allowed by the profiles.access_type
+// CHECK constraint; the caller writes it verbatim on profile insert.
+//
+// Order of checks:
+//   1. Institutional email → allow.
+//   2. Gmail → check invite table (by email) then sessionStorage code.
+//   3. Anything else → deny.
+//
+// The `redeemFn`/`checkEmailFn`/`checkCodeFn` args exist so this
+// module stays free of the Supabase client — the caller injects
+// invites-lib functions so we don't create a client circular dep.
+export async function canUserAccessApp(email, {
+  checkInviteByEmail,
+  checkInviteByCode,
+  redeemInvite,
+  stashedCode,
+} = {}) {
+  const normalized = String(email || '').toLowerCase().trim()
+  if (!normalized) return { ok: false, reason: 'no_email' }
+
+  if (isInstitutionalEmail(normalized)) {
+    return { ok: true, accessType: 'institutional_email' }
+  }
+
+  if (isGmailEmail(normalized)) {
+    if (typeof checkInviteByEmail === 'function') {
+      const byEmail = await checkInviteByEmail(normalized)
+      if (byEmail?.invite && typeof redeemInvite === 'function') {
+        const r = await redeemInvite({ email: normalized })
+        if (r?.ok) return { ok: true, accessType: 'invited_google' }
+      }
+    }
+    if (stashedCode && typeof checkInviteByCode === 'function') {
+      const byCode = await checkInviteByCode(normalized, stashedCode)
+      if (byCode?.invite && typeof redeemInvite === 'function') {
+        const r = await redeemInvite({ email: normalized, code: stashedCode })
+        if (r?.ok) return { ok: true, accessType: 'invited_google' }
+      }
+    }
+    return { ok: false, reason: 'gmail_invite_required' }
+  }
+
+  return { ok: false, reason: 'unsupported_domain' }
+}
+
 // ── Internals ───────────────────────────────────────────────────────
 
 function extractDomain(email) {

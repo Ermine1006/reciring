@@ -56,6 +56,32 @@ export default function LoginScreen() {
     }
   }, [accessDenied]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // On mount, look for ?error=invite_required in the URL. AuthContext
+  // writes this when it kicks a Gmail user out post-OAuth, so a hard
+  // reload after the reject still shows the banner. Clean the URL
+  // after reading so the message doesn't stick across navigation.
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search)
+      const code = params.get('error')
+      if (code === 'invite_required') {
+        setError(
+          'Mutu is currently invite-only for Gmail accounts. Please use your UofT email or request an invitation.',
+        )
+        params.delete('error')
+        const remaining = params.toString()
+        const cleaned = window.location.pathname + (remaining ? `?${remaining}` : '')
+        window.history.replaceState({}, '', cleaned)
+      } else if (code === 'unsupported_domain') {
+        setError("This email domain isn't supported. Please use your UofT email, or ask an admin to invite you.")
+        params.delete('error')
+        const remaining = params.toString()
+        const cleaned = window.location.pathname + (remaining ? `?${remaining}` : '')
+        window.history.replaceState({}, '', cleaned)
+      }
+    } catch {}
+  }, [])
+
   const handle = async (mode) => {
     setError(null)
     setInfo(null)
