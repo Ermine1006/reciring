@@ -14,6 +14,7 @@ import LoginScreen from './components/LoginScreen'
 import EmailConfirmed from './components/EmailConfirmed'
 import ResetPasswordPage from './components/ResetPasswordPage'
 import NewMatchModal from './components/NewMatchModal'
+import LinkAccountPrompt from './components/LinkAccountPrompt'
 import NotificationBell from './components/NotificationBell'
 import PostMatchFeedbackPrompt from './components/PostMatchFeedbackPrompt'
 import SettingsPage, { resolveAvatarSeed } from './components/SettingsPage'
@@ -1149,6 +1150,9 @@ function AppShell() {
           onDismiss={() => setFeedbackPromptOpen(false)}
           onUnmatch={(id) => { handleFeedbackSnooze(); handleUnmatch(id) }}
         />
+
+        {/* ── Link Google account prompt (one-shot, institutional) ─ */}
+        <LinkAccountPrompt />
       </div>
     </div>
   )

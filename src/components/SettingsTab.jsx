@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { setMyEmailSubscription } from '../lib/email'
 import { isAdmin } from '../data/adminEmails'
+import LinkedAccountsSection from './LinkedAccountsSection'
 
 const C = {
   gold:      '#C8A96A',
@@ -189,6 +190,9 @@ export default function SettingsTab({ onOpenAdminEmailTest }) {
           </p>
         )}
       </Section>
+
+      {/* ── Linked accounts — post-graduation continuity ──────── */}
+      <LinkedAccountsSection />
 
       {/* ── Admin (only for admin emails) ─────────────────────── */}
       {userIsAdmin && (

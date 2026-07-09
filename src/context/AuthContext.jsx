@@ -319,6 +319,56 @@ export function AuthProvider({ children }) {
     return { data, error }
   }
 
+  // Link a Google account to the current session's auth user so the
+  // member can sign in with either their institutional email OR their
+  // Gmail after graduation. Requires an active session — Supabase's
+  // linkIdentity attaches the new provider to the CURRENT auth user
+  // rather than creating a new one.
+  //
+  // Redirects to Google's consent screen and returns via the same
+  // callback flow as sign-in. The post-callback gate recognizes the
+  // Google email as linked (because auth.identities now includes it,
+  // and we mirror the address into user_emails on return).
+  async function linkGoogleIdentity() {
+    if (!isSupabaseConfigured) return { error: new Error('Supabase not configured.') }
+    if (!session) return { error: new Error('Sign in first, then link.') }
+    if (typeof supabase.auth.linkIdentity !== 'function') {
+      return { error: new Error('This Supabase client is too old — update @supabase/supabase-js to link identities.') }
+    }
+    const { data, error } = await supabase.auth.linkIdentity({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/?linked=google`,
+      },
+    })
+    return { data, error }
+  }
+
+  // Return every email address linked to the current session's auth
+  // user, freshest first. Used by the Settings "Linked accounts"
+  // section. RLS on user_emails allows any authenticated user to read;
+  // filtering to the current user is a client-side courtesy.
+  async function listMyLinkedEmails() {
+    if (!isSupabaseConfigured || !session?.user?.id) return { data: [], error: null }
+    const { data, error } = await supabase
+      .from('user_emails')
+      .select('id, email, email_type, is_verified, verified_at, created_at')
+      .eq('user_id', session.user.id)
+      .order('created_at', { ascending: false })
+    return { data: data || [], error }
+  }
+
+  // Delete a linked email row. Only the row's owner can delete via RLS
+  // (see migration-access-model.sql). The primary institutional row
+  // that granted eligibility is protected here client-side; the DB
+  // wouldn't refuse it but removing your only verification would
+  // brick access next login.
+  async function unlinkEmail(id) {
+    if (!isSupabaseConfigured) return { error: new Error('Supabase not configured.') }
+    const { error } = await supabase.from('user_emails').delete().eq('id', id)
+    return { error }
+  }
+
   // ── SessionStorage helpers ────────────────────────────────────
   //
   // Wrapped so a SecurityError in private-browsing or a locked-down
@@ -437,6 +487,9 @@ export function AuthProvider({ children }) {
       signUp,
       signIn,
       signInWithGoogle,
+      linkGoogleIdentity,
+      listMyLinkedEmails,
+      unlinkEmail,
       signOut,
       resetPassword,
       updatePassword,
