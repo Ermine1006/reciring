@@ -66,7 +66,7 @@ export default function LoginScreen() {
       const code = params.get('error')
       if (code === 'invite_required') {
         setError(
-          'Mutu is currently invite-only for Gmail accounts. Please use your UofT email or request an invitation.',
+          'Gmail login is available only for verified members or users with an invite code. Please use your UofT email or request an invitation.',
         )
         params.delete('error')
         const remaining = params.toString()
@@ -221,7 +221,7 @@ export default function LoginScreen() {
         <p className="text-center mb-6" style={{ fontSize: 13, color: C.textSub, lineHeight: 1.5 }}>
           {mode === 'forgot'
             ? "Enter your email and we'll send you a reset link."
-            : 'Use your UofT email to sign up directly. Gmail login is available by invitation only.'}
+            : 'Use your UofT email to join directly. Already verified members can continue with their linked Google account. New Gmail users need an invite code.'}
         </p>
 
         <form onSubmit={(e) => {

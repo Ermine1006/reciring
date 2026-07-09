@@ -1,8 +1,9 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { sendWelcomeEmail } from '../lib/email'
-import { isInstitutionalEmail, isGmailEmail, canUserAccessApp } from '../config/auth'
+import { isInstitutionalEmail, isGmailEmail, canUserAccessMutu } from '../config/auth'
 import { checkInviteByEmail, checkInviteByCode, redeemInvite } from '../lib/invites'
+import { checkLinkedVerifiedEmail, checkPremiumAccess } from '../lib/access'
 import { isAdmin } from '../data/adminEmails'
 
 const AuthContext = createContext(null)
@@ -130,12 +131,14 @@ export function AuthProvider({ children }) {
       return ensureProfile(user, { accessType: 'institutional_email' })
     }
 
-    // 3 + 4. Delegate to the shared access-check helper. It runs the
-    //        invite lookups and returns { ok, accessType?, reason? }.
-    const decision = await canUserAccessApp(email, {
+    // 3. Full four-check chain: linked verified email → invite (email
+    //    or stashed code) → premium status.
+    const decision = await canUserAccessMutu(email, {
+      checkLinkedVerifiedEmail,
       checkInviteByEmail,
       checkInviteByCode,
       redeemInvite,
+      checkPremiumAccess,
       stashedCode: safeReadSession('mutu:pendingInviteCode'),
     })
 
@@ -144,9 +147,9 @@ export function AuthProvider({ children }) {
       return ensureProfile(user, { accessType: decision.accessType })
     }
 
-    if (decision.reason === 'gmail_invite_required') {
+    if (decision.reason === 'gmail_no_access') {
       return denyAccess(
-        'Mutu is currently invite-only for Gmail accounts. Please use your UofT email or request an invitation.',
+        'Gmail login is available only for verified members or users with an invite code.',
       )
     }
     return denyAccess(
@@ -212,20 +215,56 @@ export function AuthProvider({ children }) {
       }
 
       console.log('[ReciRing] Creating new profile for', user.email, 'access_type:', accessType)
+      // Derive member_type from the pathway that granted access. Admin
+      // check runs last so an admin-listed institutional email still
+      // records as 'admin' rather than 'student'.
+      const emailLower = String(user.email || '').toLowerCase().trim()
+      let memberType = 'student'
+      if (accessType === 'invite_code')           memberType = 'invited'
+      else if (accessType === 'linked_personal_email') memberType = 'alumni'
+      else if (accessType === 'premium')          memberType = 'premium'
+      if (isAdmin(emailLower))                    memberType = 'admin'
+
+      const now = new Date().toISOString()
       const { data: created, error: insertError } = await supabase
         .from('profiles')
         .insert({
-          id:          user.id,
-          email:       user.email,
-          name:        user.user_metadata?.full_name || user.email?.split('@')[0] || 'Member',
-          avatar_url:  null,
+          id:                          user.id,
+          email:                       user.email,
+          name:                        user.user_metadata?.full_name || user.email?.split('@')[0] || 'Member',
+          avatar_url:                  null,
           // The gate above ensures accessType is always set for newly-
           // created profiles. Grandfathered rows already carry 'legacy'
           // from the backfill in migration-invites.sql.
-          access_type: accessType || 'legacy',
+          access_type:                 accessType || 'legacy',
+          access_status:               'active',
+          member_type:                 memberType,
+          institutional_verified_at:   accessType === 'institutional_email' ? now : null,
         })
         .select()
         .single()
+
+      // Register the session email in user_emails so future logins via
+      // this address are recognized as a linked, verified account.
+      // Best-effort — a fetch failure here shouldn't block onboarding.
+      if (!insertError && user.email) {
+        const email_type =
+          accessType === 'institutional_email' ? 'institutional' :
+          accessType === 'linked_personal_email' ? 'personal' :
+          'personal'
+        supabase.from('user_emails').insert({
+          user_id:     user.id,
+          email:       emailLower,
+          email_type,
+          is_verified: true,
+          verified_at: now,
+        }).then(({ error: linkErr }) => {
+          if (linkErr && linkErr.code !== '23505') {
+            // 23505 = unique_violation. Silent when the row is already there.
+            console.warn('[Mutu] user_emails insert (non-fatal):', linkErr.message)
+          }
+        })
+      }
 
       if (insertError) {
         console.error('[ReciRing] Profile create error (non-fatal):', insertError)
