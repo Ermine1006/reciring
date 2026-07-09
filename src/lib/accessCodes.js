@@ -37,7 +37,11 @@ export async function checkAccessCode(rawCode) {
     .ilike('code', cleaned)
     .maybeSingle()
 
-  if (error || !data) return { code: null, reason: 'code_not_found' }
+  if (error) {
+    console.warn('[Mutu] checkAccessCode select error:', error.message, error)
+    return { code: null, reason: 'code_not_found' }
+  }
+  if (!data) return { code: null, reason: 'code_not_found' }
 
   if (data.status === 'revoked') return { code: null, reason: 'code_revoked' }
   if (data.status === 'used')    return { code: null, reason: 'code_already_used' }
@@ -72,7 +76,13 @@ export async function redeemAccessCode({ code, email, userId }) {
     p_email:   String(email).trim().toLowerCase(),
     p_user_id: userId,
   })
-  if (error) return { ok: false, reason: extractReason(error.message) }
+  if (error) {
+    // Surface the raw Postgres error so operators can distinguish
+    // "code expired" from "function does not exist" (migration not
+    // applied) from "permission denied" (GRANT missing).
+    console.warn('[Mutu] redeem_access_code RPC error:', error.message, error)
+    return { ok: false, reason: extractReason(error.message) }
+  }
   if (!data || data.length === 0) return { ok: false, reason: 'code_not_found' }
   const row = data[0]
   return {

@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, useRef } from 'react'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { sendWelcomeEmail } from '../lib/email'
 import { isInstitutionalEmail, isGmailEmail, canUserAccessMutu } from '../config/auth'
-import { checkAccessCode, redeemAccessCode } from '../lib/accessCodes'
+import { checkAccessCode, redeemAccessCode, accessCodeReasonLabel } from '../lib/accessCodes'
 import { checkLinkedVerifiedEmail, checkPremiumAccess } from '../lib/access'
 import { isAdmin } from '../data/adminEmails'
 
@@ -151,17 +151,22 @@ export function AuthProvider({ children }) {
       })
     }
 
+    // Log the raw reason so operators can inspect DevTools if the
+    // user-facing message isn't specific enough. Non-fatal.
+    console.warn('[Mutu] access denied:', decision.reason, 'email:', email)
+
     // Copy per product spec — no "ask an admin to invite you."
     if (decision.reason === 'gmail_requires_invite_or_referral') {
       return denyAccess(
         'Gmail login requires an invite code or a referral from an existing Mutu member.',
       )
     }
-    // A specific code-reject reason (expired / used / revoked / etc.).
+    // A specific code-reject reason. Use accessCodeReasonLabel so
+    // "expired" / "already used" / "revoked" / "not found" get
+    // distinct messages — critical for debugging seed / migration
+    // issues in production.
     if (typeof decision.reason === 'string' && decision.reason.startsWith('code_')) {
-      return denyAccess(
-        "That code didn't work. Enter a valid invite or referral code, or ask a Mutu member for a new one.",
-      )
+      return denyAccess(accessCodeReasonLabel(decision.reason))
     }
     return denyAccess(
       "This email isn't eligible for Mutu yet. Sign up with your UofT email, or use an invite or referral code.",
