@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { sendWelcomeEmail } from '../lib/email'
+import { isInstitutionalEmail, isGmailEmail } from '../config/auth'
+import { checkInviteByEmail, checkInviteByCode, redeemInvite } from '../lib/invites'
 
 const AuthContext = createContext(null)
 
@@ -13,6 +15,10 @@ export function AuthProvider({ children }) {
   // email). LoginScreen surfaces a "Set new password" panel while this
   // is true. Cleared automatically after updateUser succeeds.
   const [passwordRecovery, setPasswordRecovery] = useState(false)
+  // Set when the post-signin invite gate rejects a user. LoginScreen
+  // reads this and shows the reason once we've bounced them back out.
+  // Cleared when the user starts a new sign-in attempt.
+  const [accessDenied, setAccessDenied] = useState(null)
   // Guard against double-subscribe in StrictMode / HMR
   const initialized = useRef(false)
 
@@ -33,7 +39,7 @@ export function AuthProvider({ children }) {
         if (error) console.warn('[ReciRing] getSession error (non-fatal):', error.message)
         console.log('[ReciRing] bootstrap session:', !!s, s?.user?.email)
         setSession(s)
-        if (s) ensureProfile(s.user)
+        if (s) gateAndEnsureProfile(s.user)
         else setLoading(false)
       })
       .catch((err) => {
@@ -62,7 +68,7 @@ export function AuthProvider({ children }) {
           return
         }
         setSession(s)
-        if (s) ensureProfile(s.user)
+        if (s) gateAndEnsureProfile(s.user)
         else { setProfile(null); setLoading(false) }
       },
     )
@@ -73,8 +79,98 @@ export function AuthProvider({ children }) {
     }
   }, [])
 
+  // ── Access gate ─────────────────────────────────────────────
+  //
+  // Runs BEFORE ensureProfile on every authenticated session (bootstrap
+  // + auth event). Decides whether the signed-in user is allowed into
+  // the app. Three cases:
+  //
+  //   1. Existing profile → grandfathered. Always allowed regardless
+  //      of the new rules. Prevents accidentally locking out members
+  //      who signed up before the invite gate existed.
+  //   2. Institutional email (UofT / Rotman family per src/config/auth.js)
+  //      → allowed. Profile gets access_type='institutional_email'.
+  //   3. Gmail email → check invite table. If pre-issued for this
+  //      address OR a code the user typed (stored in sessionStorage
+  //      by LoginScreen before OAuth redirect) is valid → redeem +
+  //      allow with access_type='invited_google'. Otherwise → signOut
+  //      immediately and surface a message via accessDenied.
+  //
+  // Anything outside cases 2 and 3 is rejected the same way as
+  // case 3-fail. Client-side check is defence-in-depth against a
+  // stale JWT; the profiles.access_type CHECK constraint in the
+  // migration is the DB-level guarantee that only these three values
+  // ever land on a row.
+  async function gateAndEnsureProfile(user) {
+    if (!user) { setLoading(false); return }
+    const email = String(user.email || '').toLowerCase()
+
+    // Case 1: grandfather anyone who already has a profile row.
+    const { data: existingProfile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', user.id)
+      .maybeSingle()
+    if (existingProfile) {
+      return ensureProfile(user)
+    }
+
+    // Case 2: institutional email → allow.
+    if (isInstitutionalEmail(email)) {
+      return ensureProfile(user, { accessType: 'institutional_email' })
+    }
+
+    // Case 3: Gmail → invite required.
+    if (isGmailEmail(email)) {
+      // 3a. Pre-issued email invite.
+      const byEmail = await checkInviteByEmail(email)
+      if (byEmail.invite) {
+        const redemption = await redeemInvite({ email })
+        if (redemption.ok) return ensureProfile(user, { accessType: 'invited_google' })
+        // Race: someone else redeemed it while we were checking. Fall
+        // through to code check below.
+      }
+      // 3b. Code stashed in sessionStorage by LoginScreen before OAuth.
+      const stashedCode = safeReadSession('mutu:pendingInviteCode')
+      if (stashedCode) {
+        const byCode = await checkInviteByCode(email, stashedCode)
+        if (byCode.invite) {
+          const redemption = await redeemInvite({ email, code: stashedCode })
+          if (redemption.ok) {
+            safeClearSession('mutu:pendingInviteCode')
+            return ensureProfile(user, { accessType: 'invited_google' })
+          }
+        }
+      }
+      // No pre-issued invite and no valid code → reject.
+      return denyAccess(
+        'Mutu is currently invite-only for Gmail accounts. Please use your UofT email or request an invitation.',
+      )
+    }
+
+    // Anything else (personal domain, Microsoft consumer, unknown ISP) →
+    // reject. Extend the allowlist in src/config/auth.js to open this.
+    return denyAccess(
+      "This email domain isn't supported. Please use your UofT email, or ask an admin to invite you.",
+    )
+  }
+
+  // Sign the rejected user back out and surface a reason the login
+  // screen can display. Order matters — the signOut has to complete
+  // before setLoading(false), otherwise AppRoot briefly sees
+  // session=truthy, profile=null and shows a blank shell.
+  async function denyAccess(message) {
+    setAccessDenied(message)
+    setProfile(null)
+    try { await supabase.auth.signOut() }
+    catch (err) { console.warn('[ReciRing] denyAccess signOut error (ignored):', err?.message) }
+    setSession(null)
+    setLoading(false)
+    safeClearSession('mutu:pendingInviteCode')
+  }
+
   // ── Ensure profile row exists — never block the app on failure ─
-  async function ensureProfile(user) {
+  async function ensureProfile(user, { accessType } = {}) {
     try {
       const { data: existing, error: fetchError } = await supabase
         .from('profiles')
@@ -96,14 +192,18 @@ export function AuthProvider({ children }) {
         return
       }
 
-      console.log('[ReciRing] Creating new profile for', user.email)
+      console.log('[ReciRing] Creating new profile for', user.email, 'access_type:', accessType)
       const { data: created, error: insertError } = await supabase
         .from('profiles')
         .insert({
-          id:         user.id,
-          email:      user.email,
-          name:       user.user_metadata?.full_name || user.email?.split('@')[0] || 'Member',
-          avatar_url: null,
+          id:          user.id,
+          email:       user.email,
+          name:        user.user_metadata?.full_name || user.email?.split('@')[0] || 'Member',
+          avatar_url:  null,
+          // The gate above ensures accessType is always set for newly-
+          // created profiles. Grandfathered rows already carry 'legacy'
+          // from the backfill in migration-invites.sql.
+          access_type: accessType || 'legacy',
         })
         .select()
         .single()
@@ -160,6 +260,23 @@ export function AuthProvider({ children }) {
     })
     return { data, error }
   }
+
+  // ── SessionStorage helpers ────────────────────────────────────
+  //
+  // Wrapped so a SecurityError in private-browsing or a locked-down
+  // iframe doesn't crash the auth flow. LoginScreen stashes an invite
+  // code here before an OAuth redirect; gateAndEnsureProfile reads it
+  // when the user lands back.
+  function safeReadSession(key) {
+    try { return typeof window !== 'undefined' ? window.sessionStorage.getItem(key) : null }
+    catch { return null }
+  }
+  function safeClearSession(key) {
+    try { if (typeof window !== 'undefined') window.sessionStorage.removeItem(key) }
+    catch {}
+  }
+
+  function clearAccessDenied() { setAccessDenied(null) }
 
   async function signOut() {
     if (isSupabaseConfigured) {
@@ -266,6 +383,8 @@ export function AuthProvider({ children }) {
       resetPassword,
       updatePassword,
       passwordRecovery,
+      accessDenied,
+      clearAccessDenied,
       updateProfile,
       deleteAccount,
     }}>

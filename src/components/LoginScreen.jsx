@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
-import { isAllowedEmail } from '../config/auth'
+import { isInstitutionalEmail, isGmailEmail } from '../config/auth'
+import { checkInviteByEmail, checkInviteByCode, inviteReasonLabel } from '../lib/invites'
 import ReciRingLogo from './ReciRingLogo'
 
 const C = {
@@ -21,7 +22,10 @@ const C = {
 const SUPPORT_EMAIL = 'hello@muturing.com'
 
 export default function LoginScreen() {
-  const { signIn, signUp, signInWithGoogle, resetPassword } = useAuth()
+  const {
+    signIn, signUp, signInWithGoogle, resetPassword,
+    accessDenied, clearAccessDenied,
+  } = useAuth()
 
   // 'signin' → default; 'forgot' → email-only reset form.
   // The set-new-password step lives on the dedicated /reset-password
@@ -32,10 +36,25 @@ export default function LoginScreen() {
 
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
+  const [inviteCode, setInviteCode] = useState('')
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState(null)
   const [info, setInfo]         = useState(null)
   const [showForgotEmail, setShowForgotEmail] = useState(false)
+
+  const emailLower = email.trim().toLowerCase()
+  const isGmail          = isGmailEmail(emailLower)
+  const isInstitutional  = isInstitutionalEmail(emailLower)
+
+  // If the user was bounced out by the post-signin gate, hydrate the
+  // error banner from the context flag once and clear it so subsequent
+  // attempts don't keep showing a stale message.
+  useEffect(() => {
+    if (accessDenied) {
+      setError(accessDenied)
+      clearAccessDenied()
+    }
+  }, [accessDenied]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handle = async (mode) => {
     setError(null)
@@ -46,13 +65,33 @@ export default function LoginScreen() {
       setError('Email and password required.')
       return
     }
-    if (!isAllowedEmail(trimmed)) {
-      setError('Mutu is open to UofT students only. Please use your @mail.utoronto.ca or @rotman.utoronto.ca email.')
-      return
-    }
     if (password.length < 6) {
       setError('Password must be at least 6 characters.')
       return
+    }
+
+    // Domain gate. Institutional → straight through; Gmail → need a
+    // valid invite (by email OR by code the user typed here); anything
+    // else → blocked outright.
+    if (!isInstitutional && !isGmail) {
+      setError("This email domain isn't supported. Please use your UofT email, or ask an admin to invite you.")
+      return
+    }
+
+    if (isGmail) {
+      setLoading(true)
+      const gate = await checkGmailInvite(trimmed, inviteCode)
+      if (!gate.ok) {
+        setLoading(false)
+        setError(gate.reason)
+        return
+      }
+      // Stash the code so the post-signin gate in AuthContext can
+      // redeem it (it also re-validates server-side). This handles the
+      // race where two clients try to redeem the same code — only one
+      // will land, and the other gets a fresh error at that stage.
+      if (gate.stashCode) safeStashSession('mutu:pendingInviteCode', gate.stashCode)
+      setLoading(false)
     }
 
     setLoading(true)
@@ -70,13 +109,45 @@ export default function LoginScreen() {
     }
   }
 
+  // Reused for both password + OAuth paths. Returns:
+  //   { ok: true, stashCode: string | null }
+  //   { ok: false, reason: string }
+  async function checkGmailInvite(emailAddr, code) {
+    // Pre-issued email invite → no code required.
+    const byEmail = await checkInviteByEmail(emailAddr)
+    if (byEmail.invite) return { ok: true, stashCode: null }
+    if (byEmail.reason) return { ok: false, reason: inviteReasonLabel(byEmail.reason) }
+
+    // Fall back to the code the user typed.
+    const trimmedCode = String(code || '').trim()
+    if (!trimmedCode) {
+      return {
+        ok: false,
+        reason: 'Mutu is currently invite-only for Gmail accounts. Enter your invite code above, or use your UofT email.',
+      }
+    }
+    const byCode = await checkInviteByCode(emailAddr, trimmedCode)
+    if (byCode.invite) return { ok: true, stashCode: trimmedCode }
+    return { ok: false, reason: inviteReasonLabel(byCode.reason || 'invite_not_found') }
+  }
+
+  // sessionStorage stash used to bridge the invite code across the
+  // Google OAuth redirect. Same helper as in AuthContext — wrapped so
+  // a private-browsing SecurityError doesn't crash the flow.
+  function safeStashSession(key, value) {
+    try { if (typeof window !== 'undefined') window.sessionStorage.setItem(key, value) }
+    catch {}
+  }
+
   // ── Forgot password: send the reset email ─────────────────
   const handleForgotSubmit = async () => {
     setError(null); setInfo(null)
     const trimmed = email.trim().toLowerCase()
     if (!trimmed) { setError('Enter your email above.'); return }
-    if (!isAllowedEmail(trimmed)) {
-      setError('Use your @mail.utoronto.ca or @rotman.utoronto.ca email.')
+    // Reset links go to whoever owns the address, so keep this permissive
+    // — the invite gate re-validates on the following sign-in.
+    if (!isInstitutional && !isGmail) {
+      setError("This email domain isn't supported. Please use your UofT email, or ask an admin to invite you.")
       return
     }
     setLoading(true)
@@ -124,7 +195,7 @@ export default function LoginScreen() {
         <p className="text-center mb-6" style={{ fontSize: 13, color: C.textSub, lineHeight: 1.5 }}>
           {mode === 'forgot'
             ? "Enter your email and we'll send you a reset link."
-            : 'Sign in or create your account.'}
+            : 'Use your UofT email to sign up directly. Gmail login is available by invitation only.'}
         </p>
 
         <form onSubmit={(e) => {
@@ -152,6 +223,33 @@ export default function LoginScreen() {
                 className="w-full rounded-xl px-4 py-3 text-sm transition-all duration-200"
                 style={inputStyle(!!error)}
               />
+              {/* Invite code — only shown when the email is Gmail-family.
+                  Empty by default; users with a pre-issued email invite
+                  can leave it blank and still sign in. */}
+              {isGmail && (
+                <div className="mt-3">
+                  <input
+                    type="text"
+                    value={inviteCode}
+                    onChange={(e) => setInviteCode(e.target.value)}
+                    placeholder="Invite code (optional if you were pre-invited)"
+                    autoComplete="off"
+                    autoCapitalize="characters"
+                    className="w-full rounded-xl px-4 py-3 text-sm transition-all duration-200"
+                    style={{
+                      background: '#FBF6EC',
+                      border: `1.5px solid ${C.goldLight}`,
+                      color: C.text,
+                      outline: 'none',
+                      fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+                      letterSpacing: '0.04em',
+                    }}
+                  />
+                  <p className="mt-1.5" style={{ fontSize: 11, color: C.textMuted, lineHeight: 1.5 }}>
+                    Gmail login is invite-only. Ask an admin for a code, or use your UofT email.
+                  </p>
+                </div>
+              )}
               {/* Forgot password link */}
               <div className="flex justify-end mt-2">
                 <button
@@ -222,11 +320,28 @@ export default function LoginScreen() {
                   <div style={{ flex: 1, height: 1, background: C.border }} />
                 </div>
 
-                {/* Google OAuth — sign up or sign in */}
+                {/* Google OAuth — sign up or sign in.
+                    If the email field already has a Gmail address, we
+                    pre-validate the invite here so the user doesn't
+                    round-trip through Google's consent screen only to
+                    be kicked back out. If the field is blank, we let
+                    them through and the post-signin gate catches any
+                    unauthorized Google account after the callback. */}
                 <button
                   type="button"
                   onClick={async () => {
-                    setError(null); setInfo(null); setLoading(true)
+                    setError(null); setInfo(null)
+                    if (emailLower && isGmail) {
+                      setLoading(true)
+                      const gate = await checkGmailInvite(emailLower, inviteCode)
+                      if (!gate.ok) {
+                        setLoading(false)
+                        setError(gate.reason)
+                        return
+                      }
+                      if (gate.stashCode) safeStashSession('mutu:pendingInviteCode', gate.stashCode)
+                    }
+                    setLoading(true)
                     const { error: oauthErr } = await signInWithGoogle()
                     setLoading(false)
                     if (oauthErr) setError(oauthErr.message)
