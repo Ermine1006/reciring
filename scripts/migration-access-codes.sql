@@ -207,12 +207,13 @@ begin
   if v_status = 'revoked'                            then raise exception 'code_revoked';         end if;
   if v_status = 'used'                               then raise exception 'code_already_used';    end if;
   if v_expires_at is not null and v_expires_at < now() then
-    -- Lazy-expire so we don't need a cron sweep.
-    update public.access_codes set status = 'expired' where id = v_id;
+    -- Lazy-expire so we don't need a cron sweep. Alias the target so
+    -- `id` doesn't collide with the RETURNS TABLE parameter names.
+    update public.access_codes ac set status = 'expired' where ac.id = v_id;
     raise exception 'code_expired';
   end if;
   if v_used_count >= v_max_uses                      then
-    update public.access_codes set status = 'used' where id = v_id;
+    update public.access_codes ac set status = 'used' where ac.id = v_id;
     raise exception 'code_already_used';
   end if;
 
@@ -233,11 +234,19 @@ begin
     end if;
   end if;
 
-  update public.access_codes
-     set used_count = used_count + 1,
-         status     = case when used_count + 1 >= max_uses then 'used' else 'active' end
-   where id = v_id
-   returning code_type, status, created_by_user_id
+  -- ALIAS the target table as `ac` and qualify every column reference
+  -- with `ac.`. Without this, the `RETURNING code_type, status,
+  -- created_by_user_id` clause is ambiguous because the RETURNS TABLE
+  -- declaration exposes output parameters with the same names — plpgsql
+  -- can't tell whether "code_type" refers to the column or the OUT param
+  -- and raises: column reference "code_type" is ambiguous. That error
+  -- was the root cause of the "We couldn't validate that code
+  -- (code_type)." user-facing message.
+  update public.access_codes ac
+     set used_count = ac.used_count + 1,
+         status     = case when ac.used_count + 1 >= ac.max_uses then 'used' else 'active' end
+   where ac.id = v_id
+   returning ac.code_type, ac.status, ac.created_by_user_id
      into v_type, v_status, v_created_by;
 
   insert into public.access_code_redemptions (
