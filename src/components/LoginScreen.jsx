@@ -27,11 +27,14 @@ export default function LoginScreen() {
     accessDenied, clearAccessDenied,
   } = useAuth()
 
-  // 'signin' → default; 'forgot' → email-only reset form.
-  // The set-new-password step lives on the dedicated /reset-password
-  // route (ResetPasswordPage) — routing there is deterministic and
-  // doesn't rely on the PASSWORD_RECOVERY event, which was the source
-  // of the bug where the reset link opened the login page instead.
+  // 'signin' (default) | 'signup' | 'forgot'.
+  //   • signin/signup toggle via the pill tab at the top of the form.
+  //   • forgot is entered via the "Forgot password?" link; the
+  //     set-new-password step lives on the dedicated /reset-password
+  //     route (ResetPasswordPage) — routing there is deterministic
+  //     and doesn't rely on the PASSWORD_RECOVERY event, which was
+  //     the source of the bug where the reset link opened the login
+  //     page instead.
   const [mode, setMode]         = useState('signin')
 
   const [email, setEmail]       = useState('')
@@ -83,7 +86,21 @@ export default function LoginScreen() {
     } catch {}
   }, [])
 
-  const handle = async (mode) => {
+  // Sign in / Create account submit. Reads `mode` from state so the
+  // signature stays clean — no parameter overriding the state name.
+  //
+  // Sign in: any email is allowed at this stage; Supabase is the
+  //   authority on whether credentials are valid. When it returns the
+  //   default "Invalid login credentials" message we remap to a copy
+  //   that hints at the "account doesn't exist yet" case, which is
+  //   what most first-time users actually hit.
+  //
+  // Create account: institutional-only. Gmail users belong to the
+  //   OAuth flow in Section 2 (invite code / referral / linked); the
+  //   password signup path enforces UofT/Rotman up front so we don't
+  //   spawn phantom Supabase auth users on Gmail addresses that will
+  //   never redeem an invite.
+  const handleSubmit = async () => {
     setError(null)
     setInfo(null)
 
@@ -97,65 +114,61 @@ export default function LoginScreen() {
       return
     }
 
-    // Domain gate. Institutional → straight through; Gmail → need a
-    // valid invite (by email OR by code the user typed here); anything
-    // else → blocked outright.
-    if (!isInstitutional && !isGmail) {
-      setError("This email isn't eligible for Mutu yet. Sign up with your UofT email, or use an invite or referral code.")
+    if (mode === 'signup') {
+      // Institutional-only. Gmail users use Section 2 (Google OAuth
+      // with invite/referral). Personal domains aren't supported for
+      // signup at all right now.
+      if (!isInstitutional) {
+        if (isGmail) {
+          setError('Use your UofT email to create an account here, or continue with Google below (with an invite or referral code if you\'re new).')
+        } else {
+          setError("This email isn't eligible for Mutu. Use your UofT email (@utoronto.ca, @mail.utoronto.ca, @rotman.utoronto.ca, or @alum.utoronto.ca).")
+        }
+        return
+      }
+
+      setLoading(true)
+      const { data, error: authError } = await signUp(trimmed, password)
+      setLoading(false)
+
+      if (authError) {
+        // Common signup errors: "User already registered" (they meant
+        // to sign in), rate limit, weak password. Pass Supabase's
+        // message through — it's usually specific enough.
+        if (/already.*registered|already.*exists/i.test(authError.message || '')) {
+          setError("An account with this email already exists. Switch to Sign in above.")
+        } else {
+          setError(authError.message)
+        }
+        return
+      }
+      // Supabase returns a user object but no session when email
+      // confirmation is required in project settings.
+      if (!data?.session) {
+        setInfo('Check your UofT email to confirm your account, then sign in.')
+      }
       return
     }
 
-    if (isGmail) {
-      // Password path for Gmail requires a code up front — there's no
-      // "existing linked member" fallback for password sign-in because
-      // Supabase treats email+password as a distinct identity from
-      // OAuth. Pre-validate the typed code so we don't spin up an auth
-      // attempt against a dead code.
-      setLoading(true)
-      const gate = await preflightGmailCode(accessCode)
-      if (!gate.ok) {
-        setLoading(false)
-        setError(gate.reason)
-        return
-      }
-      // Stash for the AuthContext gate to redeem after Supabase auth.
-      // Server-side re-validation in the redeem_access_code RPC is the
-      // real boundary; this stash just avoids losing the code across
-      // the redirect.
-      safeStashSession('mutu_access_code', gate.stashCode)
-      setLoading(false)
-    }
-
+    // mode === 'signin'
     setLoading(true)
-    const fn = mode === 'signup' ? signUp : signIn
-    const { data, error: authError } = await fn(trimmed, password)
+    const { data, error: authError } = await signIn(trimmed, password)
     setLoading(false)
 
     if (authError) {
-      setError(authError.message)
-      return
-    }
-    // If email confirmation is enabled, signUp returns a user but no session
-    if (mode === 'signup' && !data?.session) {
-      setInfo('Check your email to confirm your account, then sign in.')
-    }
-  }
-
-  // Pre-flight validation for the password signup path. A blank code
-  // is a hard fail here (password Gmail signups have no fallback);
-  // for the OAuth path, empty code is allowed since existing linked
-  // members complete their sign-in with no code entry.
-  async function preflightGmailCode(code) {
-    const trimmedCode = String(code || '').trim()
-    if (!trimmedCode) {
-      return {
-        ok: false,
-        reason: 'Gmail login requires an invite code or a referral from an existing Mutu member.',
+      const msg = String(authError.message || '')
+      // Remap the notorious "Invalid login credentials" default so
+      // brand-new users understand they need to create an account
+      // first. Wrong-password gets the same copy; the tab toggle
+      // right above the field makes the fix one click away.
+      if (/invalid.*credentials|invalid.*login/i.test(msg)) {
+        setError('Email or password is incorrect. If you are new to Mutu, click "Create account" above.')
+      } else if (/email.*not.*confirmed/i.test(msg)) {
+        setError('Confirm your account first — check your inbox for the Mutu confirmation email.')
+      } else {
+        setError(msg)
       }
     }
-    const check = await checkAccessCode(trimmedCode)
-    if (check.code) return { ok: true, stashCode: trimmedCode }
-    return { ok: false, reason: accessCodeReasonLabel(check.reason || 'code_not_found') }
   }
 
   // sessionStorage stash used to bridge the access code across the
@@ -229,10 +242,48 @@ export default function LoginScreen() {
             : 'Use your UofT email to join directly. Already verified members can continue with their linked Google account. New Gmail users need an invite code or a referral from an existing member.'}
         </p>
 
+        {/* Sign in / Create account pill toggle — swaps the submit
+            button copy and the underlying Supabase call. Only shown
+            outside forgot mode. */}
+        {mode !== 'forgot' && (
+          <div
+            role="tablist"
+            className="mb-4 flex rounded-xl overflow-hidden"
+            style={{ background: '#F5F0E5', padding: 3, gap: 2 }}
+          >
+            {[
+              { id: 'signin', label: 'Sign in' },
+              { id: 'signup', label: 'Create account' },
+            ].map(t => {
+              const active = mode === t.id
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => { setMode(t.id); setError(null); setInfo(null) }}
+                  className="flex-1 py-2 text-xs font-semibold tracking-wide rounded-lg"
+                  style={{
+                    background: active ? `linear-gradient(135deg, ${C.gold}, ${C.goldDark})` : 'transparent',
+                    color: active ? '#fff' : C.textSub,
+                    border: 'none',
+                    cursor: 'pointer',
+                    boxShadow: active ? '0 2px 6px rgba(200,169,106,0.28)' : 'none',
+                    transition: 'all 0.18s',
+                  }}
+                >
+                  {t.label}
+                </button>
+              )
+            })}
+          </div>
+        )}
+
         <form onSubmit={(e) => {
           e.preventDefault()
           if (mode === 'forgot') return handleForgotSubmit()
-          return handle('signin')
+          return handleSubmit()
         }}>
           <input
             type="email"
@@ -244,7 +295,7 @@ export default function LoginScreen() {
             style={inputStyle(!!error)}
           />
 
-          {mode === 'signin' && (
+          {(mode === 'signin' || mode === 'signup') && (
             <>
               <input
                 type="password"
@@ -254,48 +305,28 @@ export default function LoginScreen() {
                 className="w-full rounded-xl px-4 py-3 text-sm transition-all duration-200"
                 style={inputStyle(!!error)}
               />
-              {/* Access code — inline field for the password path when
-                  the email is Gmail. The Google OAuth section below
-                  has its own input for the OAuth path so an existing
-                  linked member can sign in without touching this. */}
-              {isGmail && (
-                <div className="mt-3">
-                  <input
-                    type="text"
-                    value={accessCode}
-                    onChange={(e) => setAccessCode(e.target.value)}
-                    placeholder="Enter invite or referral code"
-                    autoComplete="off"
-                    autoCapitalize="characters"
-                    className="w-full rounded-xl px-4 py-3 text-sm transition-all duration-200"
+              {/* Forgot password link — sign-in mode only. */}
+              {mode === 'signin' && (
+                <div className="flex justify-end mt-2">
+                  <button
+                    type="button"
+                    onClick={() => { setMode('forgot'); setError(null); setInfo(null) }}
                     style={{
-                      background: '#FBF6EC',
-                      border: `1.5px solid ${C.goldLight}`,
-                      color: C.text,
-                      outline: 'none',
-                      fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-                      letterSpacing: '0.04em',
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      fontSize: 12, fontWeight: 500, color: C.goldDark,
+                      padding: 0,
                     }}
-                  />
-                  <p className="mt-1.5" style={{ fontSize: 11, color: C.textMuted, lineHeight: 1.5 }}>
-                    Gmail login requires an invite code or a referral from an existing Mutu member.
-                  </p>
+                  >
+                    Forgot password?
+                  </button>
                 </div>
               )}
-              {/* Forgot password link */}
-              <div className="flex justify-end mt-2">
-                <button
-                  type="button"
-                  onClick={() => { setMode('forgot'); setError(null); setInfo(null) }}
-                  style={{
-                    background: 'none', border: 'none', cursor: 'pointer',
-                    fontSize: 12, fontWeight: 500, color: C.goldDark,
-                    padding: 0,
-                  }}
-                >
-                  Forgot password?
-                </button>
-              </div>
+              {/* Signup-mode helper: emphasize institutional-only. */}
+              {mode === 'signup' && (
+                <p className="mt-2" style={{ fontSize: 11, color: C.textMuted, lineHeight: 1.5 }}>
+                  Password signup is for UofT / Rotman emails. Gmail users, use "Continue with Google" below (with an invite or referral code if you're new).
+                </p>
+              )}
             </>
           )}
 
@@ -311,7 +342,7 @@ export default function LoginScreen() {
           )}
 
           <div className="flex flex-col gap-2 mt-5">
-            {mode === 'signin' && (
+            {(mode === 'signin' || mode === 'signup') && (
               <>
                 <button
                   type="submit"
@@ -326,23 +357,9 @@ export default function LoginScreen() {
                     opacity: loading ? 0.6 : 1,
                   }}
                 >
-                  {loading ? 'Please wait…' : 'Sign in'}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handle('signup')}
-                  disabled={loading}
-                  className="w-full py-3.5 rounded-xl text-sm font-semibold tracking-wide transition-all duration-200 active:scale-[0.98]"
-                  style={{
-                    background: C.white,
-                    color: C.goldDark,
-                    border: `1.5px solid ${C.goldLight}`,
-                    cursor: loading ? 'default' : 'pointer',
-                    opacity: loading ? 0.6 : 1,
-                  }}
-                >
-                  Sign up
+                  {loading
+                    ? 'Please wait…'
+                    : (mode === 'signup' ? 'Create account' : 'Sign in')}
                 </button>
 
                 {/* Divider */}
