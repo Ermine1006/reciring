@@ -194,6 +194,10 @@ export default function SubmitRequest({ onSubmitted }) {
   const [industry, setIndustry] = useState([])
   const [time,     setTime]     = useState('15 min')
   const [urgency,  setUrgency]  = useState(null)
+  // Default true — matches the previous always-anonymous behaviour so
+  // existing users don't accidentally out themselves on first post
+  // after the update ships.
+  const [isAnonymous, setIsAnonymous] = useState(true)
 
   /* ── Derived state ── */
   const tags = [...helpType, ...industry]
@@ -227,6 +231,7 @@ export default function SubmitRequest({ onSubmitted }) {
         tags,
         time,
         urgency,
+        is_anonymous: isAnonymous,
       })
       if (result?.error) {
         setSubmitError(result.error.message || 'Failed to post.')
@@ -528,6 +533,45 @@ export default function SubmitRequest({ onSubmitted }) {
           </div>
         </div>
 
+        {/* ── Anonymous / real-name toggle ───────────────────── */}
+        <div
+          role="tablist"
+          className="mb-1 flex rounded-xl overflow-hidden"
+          style={{ background: '#F5F0E5', padding: 3, gap: 2 }}
+        >
+          {[
+            { id: true,  label: '🔒 Anonymous', hint: 'Members see your program & interests, not your name.' },
+            { id: false, label: '👤 Real name',   hint: 'Members see your first name, avatar, and program.' },
+          ].map(opt => {
+            const active = isAnonymous === opt.id
+            return (
+              <button
+                key={String(opt.id)}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setIsAnonymous(opt.id)}
+                className="flex-1 py-2 text-xs font-semibold tracking-wide rounded-lg"
+                style={{
+                  background: active ? `linear-gradient(135deg, ${C.gold}, ${C.goldDark})` : 'transparent',
+                  color: active ? '#fff' : C.textMuted,
+                  border: 'none',
+                  cursor: 'pointer',
+                  boxShadow: active ? '0 2px 6px rgba(200,169,106,0.28)' : 'none',
+                  transition: 'all 0.18s',
+                }}
+              >
+                {opt.label}
+              </button>
+            )
+          })}
+        </div>
+        <p className="text-center text-[11px]" style={{ color: C.textMuted, lineHeight: 1.5 }}>
+          {isAnonymous
+            ? 'Members see your program & interests, not your name.'
+            : 'Members see your first name, avatar, and program.'}
+        </p>
+
         {/* ── Submit ─────────────────────────────────────── */}
         {submitError && (
           <p className="text-center text-xs" style={{ color: '#DC2626' }}>{submitError}</p>
@@ -543,12 +587,10 @@ export default function SubmitRequest({ onSubmitted }) {
             opacity:    submitting ? 0.6 : 1,
           }}
         >
-          {submitting ? 'Posting…' : 'Post anonymously'}
+          {submitting
+            ? 'Posting…'
+            : (isAnonymous ? 'Post anonymously' : 'Post with my name')}
         </button>
-
-        <p className="text-center text-[11px]" style={{ color: C.textMuted }}>
-          Your identity is never revealed to other members.
-        </p>
       </form>
     </motion.div>
   )

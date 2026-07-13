@@ -53,7 +53,9 @@ export async function createPost(userId, fields) {
       industry_tag:    fields.industry   || [],
       time_commitment: fields.time       || '15 min',
       urgency:         fields.urgency    || null,
-      is_anonymous:    true,
+      // Default true so callers that don't pass a flag keep the old
+      // always-anonymous behaviour. SubmitRequest now always sends it.
+      is_anonymous:    fields.is_anonymous ?? true,
     })
     .select()
     .single()
@@ -107,6 +109,10 @@ export function rowToCard(row) {
     urgency:      row.urgency,
     createdAt:    formatRelative(row.created_at),
     createdAtRaw: row.created_at,   // ISO string for freshness scoring
+    // Per-post override: true → force anonymous label regardless of
+    // creator.visibility; false → force real-name label if creator
+    // has a name on file. See src/lib/visibility.js::posterDisplay.
+    isAnonymous:  row.is_anonymous !== false,
     poster: {
       points:     creator.total_points       || 0,
       scheduled:  creator.meetings_scheduled || 0,

@@ -49,7 +49,24 @@ function joinNonEmpty(parts, sep = ' · ') {
 export function posterDisplay(post) {
   const c = post?.creator || {}
 
-  if (c.visibility === VISIBILITY_PUBLIC && c.name) {
+  // Per-post override. Users pick anonymous vs real-name each time
+  // they submit a request (see SubmitRequest). This flag takes
+  // precedence over their profile-level visibility setting so a
+  // Public-profile user can still post anonymously about sensitive
+  // topics, and a Private-profile user can attach their real name
+  // to a specific ask.
+  //   post.isAnonymous === false → real-name (needs c.name to work)
+  //   post.isAnonymous === true  → anonymous, regardless of profile
+  //   undefined/null             → fall back to profile visibility
+  const perPostRealName  = post?.isAnonymous === false
+  const perPostAnonymous = post?.isAnonymous === true
+  const profilePublic    = c.visibility === VISIBILITY_PUBLIC
+
+  const showRealName =
+    Boolean(c.name)
+    && (perPostRealName || (!perPostAnonymous && profilePublic))
+
+  if (showRealName) {
     return {
       isPublic:  true,
       primary:   firstName(c.name),

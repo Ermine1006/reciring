@@ -1,5 +1,5 @@
 -- ============================================================
--- Mutu MVP: seed the LAUNCH-2026 invite code
+-- Mutu MVP: seed the MUTUAL invite code
 --
 -- Run AFTER scripts/migration-access-codes.sql. Idempotent — safe
 -- to re-run; the ON CONFLICT clause leaves an existing code alone.
@@ -10,7 +10,7 @@
 -- After running, verify with:
 --   select code, code_type, status, max_uses, used_count, expires_at
 --     from public.access_codes
---    where code = 'LAUNCH-2026';
+--    where code = 'MUTUAL';
 -- ============================================================
 
 insert into public.access_codes (
@@ -22,7 +22,7 @@ insert into public.access_codes (
   expires_at      -- null = never expires
 )
 values (
-  'LAUNCH-2026',
+  'MUTUAL',
   'invite',
   'active',
   100,            -- generous for beta; tighten later
