@@ -1044,6 +1044,13 @@ function AppShell() {
               onClearReviewMatch={() => setReviewMatchId(null)}
               onSubmitReview={handleSubmitReview}
               onOpenAdminEmailTest={() => setShowAdminEmailTest(true)}
+              onOpenEvent={(id) => {
+                // Deep-link from Profile → Memory into an event's detail
+                // page. Switching tab AND setting viewingEventId in one
+                // shot keeps the transition smooth.
+                setViewingEventId(id)
+                setTab('events')
+              }}
             />
           )}
           {tab === 'events' && editingEventId && (

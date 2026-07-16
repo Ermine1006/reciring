@@ -18,6 +18,10 @@ import { categoryEmoji } from '../data/eventCategories'
 import AnonymousAvatar from './AnonymousAvatar'
 import { resolveAvatarSeed } from './SettingsPage'
 import { sendEventRegistrationEmail, sendEventUnregisterEmail, notifyEventCancellation } from '../lib/email'
+import EventModeSection from './EventModeSection'
+import EventRecapPage from './EventRecapPage'
+import PendingConfirmationsBanner from './PendingConfirmationsBanner'
+import { listEncountersForEvent } from '../lib/eventEncounters'
 
 const C = {
   gold:      '#C8A96A',
@@ -83,6 +87,13 @@ export default function EventDetailPage({ eventId, onBack, onEdit }) {
   const [joinPending, setJoinPending] = useState(false)
   const [toast, setToast]       = useState(null)
   const [copiedEmails, setCopiedEmails] = useState(false)
+  // 'overview' (default) | 'event_mode' | 'recap'
+  //   • event_mode: attendee list with "I met this person" flow.
+  //   • recap:      post-event summary + opportunity recall.
+  // The toggle is only visible when useful — see canEnterEventMode
+  // and canOpenRecap below.
+  const [viewMode, setViewMode] = useState('overview')
+  const [myEncounters, setMyEncounters] = useState([])
 
   // Chat
   const [messages, setMessages] = useState([])
@@ -120,8 +131,25 @@ export default function EventDetailPage({ eventId, onBack, onEdit }) {
     setAttendees(atts || [])
     setJoined(Boolean(user && joinedSet?.has?.(eventId)))
     setMessages(msgs || [])
+
+    // Encounters for the Event Networking Memory feature. RLS-scoped
+    // to the current user — no host/attendee peeks at private notes.
+    if (user) {
+      const { data: encs } = await listEncountersForEvent(eventId)
+      setMyEncounters(encs || [])
+    } else {
+      setMyEncounters([])
+    }
+
     setLoading(false)
   }, [eventId, user?.id])
+
+  // Local reload used by Event Mode after "I met" / edit / undo.
+  async function reloadEncounters() {
+    if (!eventId || !user) return
+    const { data: encs } = await listEncountersForEvent(eventId)
+    setMyEncounters(encs || [])
+  }
 
   useEffect(() => { refresh() }, [refresh])
 
@@ -327,6 +355,84 @@ export default function EventDetailPage({ eventId, onBack, onEdit }) {
           )}
         </div>
 
+        {/* Incoming confirmation requests — surfaces even when the
+            user hasn't opened Event Mode yet. Visible for members
+            + host alike. */}
+        {(joined || isHost) && !isCancelled && (
+          <PendingConfirmationsBanner
+            eventId={event.id}
+            onAcceptedOrDeclined={reloadEncounters}
+          />
+        )}
+
+        {/* Event Mode / Recap toggle. Visible when the user is
+            joined (or the host) and the event isn't cancelled. In
+            the prototype we don't gate by event time — the operator
+            can flip into Event Mode manually to test the flow. */}
+        {(joined || isHost) && !isCancelled && (
+          <div style={{
+            display: 'flex', gap: 4, marginBottom: 14,
+            background: '#F2EEE5', padding: 3, borderRadius: 12,
+          }}>
+            {[
+              { id: 'overview',   label: 'Overview' },
+              { id: 'event_mode', label: 'Event Mode' },
+              { id: 'recap',      label: `Your Recap${myEncounters.length ? ` · ${myEncounters.length}` : ''}` },
+            ].map(t => {
+              const active = viewMode === t.id
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setViewMode(t.id)}
+                  style={{
+                    flex: 1,
+                    padding: '8px 6px',
+                    borderRadius: 9,
+                    background: active ? `linear-gradient(135deg, ${C.gold}, ${C.goldDark})` : 'transparent',
+                    color: active ? '#fff' : C.textSub,
+                    border: 'none',
+                    fontSize: 11, fontWeight: 600,
+                    letterSpacing: '0.02em',
+                    fontFamily: 'Inter, system-ui, sans-serif',
+                    cursor: 'pointer',
+                    boxShadow: active ? '0 1px 4px rgba(200,169,106,0.35)' : 'none',
+                    transition: 'all 0.18s',
+                  }}
+                >
+                  {t.label}
+                </button>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Recap mode replaces the entire overview body. */}
+        {viewMode === 'recap' && (
+          <EventRecapPage
+            eventId={event.id}
+            event={event}
+            allAttendees={attendees}
+            onBackToOverview={() => setViewMode('overview')}
+          />
+        )}
+
+        {/* Event Mode appears as a top card, keeps the rest below
+            so people can still see event details while logging. */}
+        {viewMode === 'event_mode' && (
+          <EventModeSection
+            eventId={event.id}
+            attendees={attendees}
+            encounters={myEncounters}
+            currentUserId={user?.id}
+            onEncountersChanged={reloadEncounters}
+          />
+        )}
+
+        {/* Header card + rest of the normal overview render only
+            when we're not in dedicated recap mode. */}
+        {viewMode !== 'recap' && (
+          <>
         {/* Header card */}
         <section style={cardStyle}>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, marginBottom: 14 }}>
@@ -870,6 +976,8 @@ export default function EventDetailPage({ eventId, onBack, onEdit }) {
             </div>
           )}
         </section>
+          </>
+        )}
       </motion.div>
     </div>
   )

@@ -5,6 +5,7 @@ import SettingsTab from './SettingsTab'
 import PendingReviewsList from './PendingReviewsList'
 import RatingReview from './RatingReview'
 import LeaderboardView from './LeaderboardView'
+import MyEventMemoryPage from './MyEventMemoryPage'
 
 const C = {
   gold:      '#C8A96A',
@@ -23,6 +24,7 @@ const C = {
 // gives context (e.g. "Profile > Rank" reads naturally).
 const SUB_TABS = [
   { id: 'profile',     label: 'Profile'  },
+  { id: 'memory',      label: 'Memory'   },
   { id: 'reviews',     label: 'Reviews'  },
   { id: 'leaderboard', label: 'Rank'     },
   { id: 'settings',    label: 'Settings' },
@@ -55,6 +57,8 @@ export default function ProfilePage({
   onSubmitReview,
   // Settings sub-tab
   onOpenAdminEmailTest,
+  // Memory sub-tab — deep-link to an event's detail page
+  onOpenEvent,
 }) {
   // If parent didn't supply controlled state, fall back to local.
   const [localSub, setLocalSub] = useState('profile')
@@ -151,6 +155,10 @@ export default function ProfilePage({
           transition={{ duration: 0.16 }}
         >
           {active === 'profile' && <SettingsPage />}
+
+          {active === 'memory' && (
+            <MyEventMemoryPage onOpenEvent={onOpenEvent} />
+          )}
 
           {active === 'reviews' && (
             <div className="px-2" style={{ padding: '0 0 16px' }}>
