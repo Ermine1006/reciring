@@ -6,9 +6,13 @@
   "scripts": {
     "dev": "vite",
     "build": "node ./node_modules/vite/bin/vite.js build",
+    "build:ios": "VITE_API_BASE_URL=https://reciring.com npm run build && npx cap sync ios",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@capacitor/cli": "^8.4.2",
+    "@capacitor/core": "^8.4.2",
+    "@capacitor/ios": "^8.4.2",
     "@supabase/supabase-js": "^2.110.2",
     "@vitejs/plugin-react": "^4.3.3",
     "autoprefixer": "^10.4.20",

@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from './supabase'
+import { apiUrl } from './apiBase'
 
 /**
  * Generic send wrapper. Calls the Vercel /api/send-email function
@@ -19,7 +20,7 @@ export async function sendEmail({ template, to, data = {} }) {
 
   let resp
   try {
-    resp = await fetch('/api/send-email', {
+    resp = await fetch(apiUrl('/api/send-email'), {
       method: 'POST',
       headers: {
         Authorization:   `Bearer ${session.access_token}`,
@@ -87,7 +88,7 @@ async function postEventAction(action, eventId) {
 
   let resp
   try {
-    resp = await fetch('/api/send-email', {
+    resp = await fetch(apiUrl('/api/send-email'), {
       method: 'POST',
       headers: {
         Authorization:  `Bearer ${session.access_token}`,

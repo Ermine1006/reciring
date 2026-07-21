@@ -39,6 +39,28 @@ body {
   overscroll-behavior-y: contain;
 }
 
+/* On a real phone the header sits flush against the top of the screen, so it
+   has to clear the notch / Dynamic Island. env(safe-area-inset-top) is 0 in a
+   desktop browser, which keeps the max() at the pt-5 value the class already
+   sets. Scoped below the sm breakpoint so the desktop phone-frame mock keeps
+   its sm:pt-14, which clears the *fake* island drawn in App.jsx instead. */
+@media (max-width: 639px) {
+  .app-header {
+    padding-top: max(1.25rem, env(safe-area-inset-top));
+  }
+
+  /* The sign-in card is taller than a phone viewport, and items-center clips
+     an overflowing child at BOTH ends — which is what buried the logo under
+     the Dynamic Island. Anchor to the top and let it scroll instead. Desktop
+     keeps items-center: there the card fits inside the phone-frame mock. */
+  .login-shell {
+    align-items: flex-start;
+    overflow-y: auto;
+    padding-top: max(1.5rem, env(safe-area-inset-top));
+    padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+  }
+}
+
 ::placeholder {
   color: #C4C9D4;
 }

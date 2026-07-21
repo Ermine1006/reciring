@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
+import { apiUrl } from '../lib/apiBase'
 import AdminEmailComposer from './AdminEmailComposer'
 import AdminEmailPreview from './AdminEmailPreview'
 
@@ -195,7 +196,7 @@ export default function AdminEmailTest({ onClose }) {
   async function postBroadcast(payload) {
     let resp
     try {
-      resp = await fetch('/api/broadcast', {
+      resp = await fetch(apiUrl('/api/broadcast'), {
         method: 'POST',
         headers: {
           Authorization:  `Bearer ${session.access_token}`,
@@ -266,7 +267,7 @@ export default function AdminEmailTest({ onClose }) {
     setSubSaving(true); setSubError(null); setSubResult(null)
     let resp
     try {
-      resp = await fetch('/api/admin/subscription', {
+      resp = await fetch(apiUrl('/api/admin/subscription'), {
         method: 'POST',
         headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: target, action: subAction }),
