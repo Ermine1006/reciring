@@ -43,18 +43,37 @@ export default function ResetPasswordPage() {
   const [error, setError]               = useState(null)
   const [success, setSuccess]           = useState(false)
 
-  // If the user opened /reset-password directly with no recovery
-  // context (no code in query, no tokens in hash, no session), the
-  // reset can't succeed. Surface it up front rather than after a
-  // failed submit.
-  const hasRecoveryContext =
-    Boolean(session)
-    || new URLSearchParams(window.location.search).has('code')
-    || window.location.hash.includes('access_token=')
-    || window.location.hash.includes('type=recovery')
+  // The link lands with ?code=… (PKCE) or #access_token=… (hash) and the
+  // Supabase client trades it for a session *asynchronously*. Until that
+  // lands there is nothing for updateUser to authenticate against, so a
+  // fast typist could submit first and get "Auth session missing" — which
+  // the old copy reported as an expired link. Track the exchange instead:
+  //
+  //   missing  — opened /reset-password with no recovery context at all
+  //   pending  — a code/token is present, waiting on the exchange
+  //   ready    — session established, safe to submit
+  //   failed   — exchange did not produce a session in time
+  const [linkState, setLinkState] = useState(() => {
+    if (session) return 'ready'
+    const hasCode = new URLSearchParams(window.location.search).has('code')
+    const hasHash = window.location.hash.includes('access_token=')
+      || window.location.hash.includes('type=recovery')
+    return hasCode || hasHash ? 'pending' : 'missing'
+  })
+
+  useEffect(() => {
+    if (session) { setLinkState('ready'); return }
+    if (linkState !== 'pending') return
+    // No session after a generous wait means the exchange really did fail:
+    // the one-time token was already spent, or the PKCE verifier is absent
+    // because the link opened in a different browser than the request did.
+    const t = setTimeout(() => setLinkState('failed'), 8000)
+    return () => clearTimeout(t)
+  }, [session, linkState])
 
   const canSubmit =
     !loading
+    && linkState === 'ready'
     && password.length >= 6
     && password === confirm
 
@@ -72,11 +91,11 @@ export default function ResetPasswordPage() {
     const { error: err } = await updatePassword(password)
     setLoading(false)
     if (err) {
-      // Common error: "Auth session missing" — the recovery link was
-      // consumed already or the session expired. Show something the
-      // user can act on.
+      // canSubmit gates on linkState === 'ready', so a missing session here
+      // means the recovery session expired between landing and submitting
+      // rather than the link never having worked.
       const msg = /session/i.test(err.message)
-        ? 'Reset link expired or already used. Request a fresh one from the login page.'
+        ? 'Your reset session expired. Request a fresh link from the login page.'
         : (err.message || 'Could not update password.')
       setError(msg)
       return
@@ -172,10 +191,24 @@ export default function ResetPasswordPage() {
               }}
             />
 
-            {!hasRecoveryContext && (
+            {linkState === 'pending' && (
+              <p className="mt-3 text-center" style={{ fontSize: 12, color: C.textMuted, lineHeight: 1.5 }}>
+                Verifying your reset link…
+              </p>
+            )}
+
+            {linkState === 'missing' && (
               <p className="mt-3 text-center" style={{ fontSize: 12, color: C.textMuted, lineHeight: 1.5 }}>
                 No active reset session detected. If you got here from an email link and see this,
                 request a fresh reset from the login page.
+              </p>
+            )}
+
+            {linkState === 'failed' && (
+              <p className="mt-3 text-center" style={{ fontSize: 12, color: '#EF4444', lineHeight: 1.5 }}>
+                We couldn't verify this reset link. It may have already been used or expired — or it
+                was opened in a different browser than the one you requested it from. Request a fresh
+                link and open it in the same browser.
               </p>
             )}
 
@@ -198,7 +231,9 @@ export default function ResetPasswordPage() {
                 opacity: loading ? 0.6 : 1,
               }}
             >
-              {loading ? 'Saving…' : 'Save new password'}
+              {loading
+                ? 'Saving…'
+                : linkState === 'pending' ? 'Verifying link…' : 'Save new password'}
             </button>
 
             <button
