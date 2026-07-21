@@ -172,7 +172,7 @@ export default function OnboardingProfile() {
 
   return (
     <div
-      className="w-full min-h-[100dvh] flex items-start sm:items-center justify-center px-4 py-8"
+      className="safe-screen w-full min-h-[100dvh] flex items-start sm:items-center justify-center px-4 py-8"
       style={{ background: '#EEE9E0' }}
     >
       <motion.div

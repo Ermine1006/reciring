@@ -212,7 +212,7 @@ export default function LoginScreen() {
 
   return (
     <div
-      className="login-shell w-full min-h-[100dvh] flex items-center justify-center px-6"
+      className="safe-screen w-full min-h-[100dvh] flex items-center justify-center px-6"
       style={{ background: '#EEE9E0' }}
     >
       <motion.div

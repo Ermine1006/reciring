@@ -49,15 +49,25 @@ body {
     padding-top: max(1.25rem, env(safe-area-inset-top));
   }
 
-  /* The sign-in card is taller than a phone viewport, and items-center clips
-     an overflowing child at BOTH ends — which is what buried the logo under
-     the Dynamic Island. Anchor to the top and let it scroll instead. Desktop
-     keeps items-center: there the card fits inside the phone-frame mock. */
-  .login-shell {
+  /* Every screen that centres a single card in the full viewport — sign-in,
+     onboarding, reset-password, the post-confirmation and error screens.
+     Two problems on a phone, both fixed here:
+
+       • items-center clips an overflowing child at BOTH ends, so a card
+         taller than the viewport loses its top under the Dynamic Island.
+         This is what buried the sign-in logo. Anchor to the top and scroll.
+       • A card can be short enough to fit until the keyboard opens and
+         halves the viewport, at which point the same clipping starts.
+
+     The 2rem floor matches the largest base padding any of these screens
+     sets (py-8), so none of them loses spacing. env() is 0 in a desktop
+     browser, and the sm breakpoint keeps the desktop phone-frame mock
+     centred as before. */
+  .safe-screen {
     align-items: flex-start;
     overflow-y: auto;
-    padding-top: max(1.5rem, env(safe-area-inset-top));
-    padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+    padding-top: max(2rem, env(safe-area-inset-top));
+    padding-bottom: max(2rem, env(safe-area-inset-bottom));
   }
 }
 

@@ -22,7 +22,7 @@ export default class ErrorBoundary extends Component {
     if (!this.state.error) return this.props.children
     return (
       <div
-        className="w-full min-h-[100dvh] flex items-center justify-center px-6"
+        className="safe-screen w-full min-h-[100dvh] flex items-center justify-center px-6"
         style={{ background: '#EEE9E0' }}
       >
         <div
