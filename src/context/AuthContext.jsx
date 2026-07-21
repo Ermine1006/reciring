@@ -1,10 +1,64 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react'
+import { App as CapApp } from '@capacitor/app'
+import { Browser } from '@capacitor/browser'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { sendWelcomeEmail } from '../lib/email'
+import { isNativeApp, authRedirect, emailRedirect } from '../lib/platform'
 import { isInstitutionalEmail, isGmailEmail, canUserAccessMutu } from '../config/auth'
 import { checkAccessCode, redeemAccessCode, accessCodeReasonLabel } from '../lib/accessCodes'
 import { checkLinkedVerifiedEmail, checkPremiumAccess } from '../lib/access'
 import { isAdmin } from '../data/adminEmails'
+
+// Run an OAuth provider flow inside the native shell. On the web Supabase
+// redirects the whole page and handles the return itself; in the app there is
+// no page to redirect, so we ask for the provider URL without redirecting,
+// open it in the system browser (SFSafariViewController — shares no cookies
+// with the webview, which is what Google requires), and wait for iOS to hand
+// the com.muturing.mutu://auth/callback URL back through the App plugin.
+// startFlow is whichever Supabase call applies: signInWithOAuth or
+// linkIdentity, already given skipBrowserRedirect and the custom redirectTo.
+async function runNativeOAuth(startFlow) {
+  const { data, error } = await startFlow()
+  if (error) return { error }
+  if (!data?.url) return { error: new Error('No provider URL returned.') }
+
+  // Resolve when the deep link comes back, so callers can await the whole
+  // round-trip and surface a single error.
+  return new Promise((resolve) => {
+    let settled = false
+    const finish = (result) => {
+      if (settled) return
+      settled = true
+      handle.remove()
+      Browser.close().catch(() => {})
+      resolve(result)
+    }
+
+    const listener = CapApp.addListener('appUrlOpen', async ({ url }) => {
+      if (!url || !url.startsWith('com.muturing.mutu://')) return
+      // PKCE: the callback carries ?code=…; trade it for a session. An
+      // ?error=… instead means the user cancelled or Google refused.
+      try {
+        const parsed = new URL(url)
+        const code = parsed.searchParams.get('code')
+        const oauthErr = parsed.searchParams.get('error_description')
+          || parsed.searchParams.get('error')
+        if (oauthErr) return finish({ error: new Error(oauthErr) })
+        if (!code)    return finish({ error: new Error('Callback missing code.') })
+        const { error: exErr } = await supabase.auth.exchangeCodeForSession(code)
+        finish({ error: exErr || null })
+      } catch (e) {
+        finish({ error: e instanceof Error ? e : new Error('Callback parse failed.') })
+      }
+    })
+    // addListener resolves to the handle asynchronously; keep a ref for remove.
+    let handle = { remove: () => listener.then(l => l.remove()).catch(() => {}) }
+
+    Browser.open({ url: data.url }).catch((e) =>
+      finish({ error: e instanceof Error ? e : new Error('Could not open browser.') })
+    )
+  })
+}
 
 const AuthContext = createContext(null)
 
@@ -369,7 +423,7 @@ export function AuthProvider({ children }) {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: `${window.location.origin}/auth/confirmed` },
+      options: { emailRedirectTo: emailRedirect('/auth/confirmed') },
     })
     return { data, error }
   }
@@ -381,6 +435,21 @@ export function AuthProvider({ children }) {
 
   async function signInWithGoogle() {
     if (!isSupabaseConfigured) return { error: new Error('Supabase not configured.') }
+    if (isNativeApp) {
+      return runNativeOAuth(() =>
+        supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: authRedirect('/auth/callback'),
+            queryParams: { prompt: 'select_account' },
+            skipBrowserRedirect: true,
+          },
+        })
+      )
+    }
+    // Web unchanged: full-page redirect to the origin root, handled by
+    // detectSessionInUrl. Keeping the exact prior target avoids relying on an
+    // allow-list entry the deployed Supabase project may not have.
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -406,6 +475,19 @@ export function AuthProvider({ children }) {
     if (!session) return { error: new Error('Sign in first, then link.') }
     if (typeof supabase.auth.linkIdentity !== 'function') {
       return { error: new Error('This Supabase client is too old — update @supabase/supabase-js to link identities.') }
+    }
+    if (isNativeApp) {
+      // mirrorGoogleIdentity on the next auth event records the link in
+      // user_emails, so no ?linked=google marker is needed in the app.
+      return runNativeOAuth(() =>
+        supabase.auth.linkIdentity({
+          provider: 'google',
+          options: {
+            redirectTo: authRedirect('/auth/callback'),
+            skipBrowserRedirect: true,
+          },
+        })
+      )
     }
     const { data, error } = await supabase.auth.linkIdentity({
       provider: 'google',
@@ -480,7 +562,7 @@ export function AuthProvider({ children }) {
   async function resetPassword(email) {
     if (!isSupabaseConfigured) return { error: new Error('Supabase not configured.') }
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: emailRedirect('/reset-password'),
     })
     return { data, error }
   }
