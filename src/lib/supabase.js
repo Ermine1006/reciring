@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { Capacitor } from '@capacitor/core'
 
 const supabaseUrl  = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnon = import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -35,6 +36,17 @@ function getClient() {
       detectSessionInUrl: true,
       storageKey: 'reciring-auth',
       flowType: 'pkce',
+      // In the iOS WKWebView the page origin is capacitor://localhost, and
+      // supabase-js's default cross-tab lock (navigator.locks) deadlocks under
+      // a custom-scheme origin: signInWithPassword acquires the lock and never
+      // releases it, so the button hangs on "Please wait…" forever while the
+      // same call resolves normally on the web. The app is a single webview
+      // with no cross-tab races, so a passthrough lock is safe here. Native
+      // only — the web build keeps navigator.locks so multiple browser tabs
+      // still serialise token refreshes.
+      ...(Capacitor.isNativePlatform()
+        ? { lock: async (_name, _acquireTimeout, fn) => fn() }
+        : {}),
     },
   })
   globalThis[CLIENT_KEY] = client

@@ -29,12 +29,13 @@ async function runNativeOAuth(startFlow) {
     const finish = (result) => {
       if (settled) return
       settled = true
-      handle.remove()
+      urlSub.then(s => s.remove()).catch(() => {})
+      closeSub.then(s => s.remove()).catch(() => {})
       Browser.close().catch(() => {})
       resolve(result)
     }
 
-    const listener = CapApp.addListener('appUrlOpen', async ({ url }) => {
+    const urlSub = CapApp.addListener('appUrlOpen', async ({ url }) => {
       if (!url || !url.startsWith('com.muturing.mutu://')) return
       // PKCE: the callback carries ?code=…; trade it for a session. An
       // ?error=… instead means the user cancelled or Google refused.
@@ -51,8 +52,17 @@ async function runNativeOAuth(startFlow) {
         finish({ error: e instanceof Error ? e : new Error('Callback parse failed.') })
       }
     })
-    // addListener resolves to the handle asynchronously; keep a ref for remove.
-    let handle = { remove: () => listener.then(l => l.remove()).catch(() => {}) }
+
+    // The user can dismiss the browser without ever reaching the callback —
+    // tapping Cancel on Google's consent screen, or swiping the sheet away.
+    // That fires no appUrlOpen, so without this the promise would hang and the
+    // button would sit on "Please wait…" forever. browserFinished also fires
+    // when finish() calls Browser.close() after success, but settled is true
+    // by then, so this only wins on a genuine cancel. Resolve with no error:
+    // a deliberate cancel is not something to show a red message about.
+    const closeSub = Browser.addListener('browserFinished', () => {
+      finish({ error: null, cancelled: true })
+    })
 
     Browser.open({ url: data.url }).catch((e) =>
       finish({ error: e instanceof Error ? e : new Error('Could not open browser.') })
