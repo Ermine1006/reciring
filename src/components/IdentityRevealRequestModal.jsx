@@ -52,6 +52,17 @@ export default function IdentityRevealRequestModal({ open, onAccept, onDecline, 
               backdropFilter: 'blur(4px)',
             }}
           />
+          {/* Flex wrapper does the centring — see PostMatchFeedbackPrompt:
+              Framer Motion owns the transform property on an animating card,
+              so a translate(-50%,-50%) in its style is silently overwritten. */}
+          <div
+            style={{
+              position: 'fixed', inset: 0, zIndex: 81,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              padding: 16,
+              pointerEvents: 'none',
+            }}
+          >
           <motion.div
             initial={{ opacity: 0, scale: 0.92, y: 16 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -60,11 +71,8 @@ export default function IdentityRevealRequestModal({ open, onAccept, onDecline, 
             role="dialog"
             aria-modal="true"
             style={{
-              position: 'fixed',
-              top: '50%', left: '50%',
-              transform: 'translate(-50%, -50%)',
-              zIndex: 81,
-              width: 'calc(100% - 32px)', maxWidth: 360,
+              width: '100%', maxWidth: 360,
+              pointerEvents: 'auto',
               background: C.white,
               borderRadius: 24,
               padding: '32px 26px 26px',
@@ -179,6 +187,7 @@ export default function IdentityRevealRequestModal({ open, onAccept, onDecline, 
               </button>
             )}
           </motion.div>
+          </div>
         </>
       )}
     </AnimatePresence>

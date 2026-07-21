@@ -323,6 +323,17 @@ function ConfirmModal({ open, title, body, confirmLabel, confirmIntent, busy, on
               backdropFilter: 'blur(4px)',
             }}
           />
+          {/* Flex wrapper does the centring — see PostMatchFeedbackPrompt:
+              Framer Motion owns the transform property on an animating card,
+              so a translate(-50%,-50%) in its style is silently overwritten. */}
+          <div
+            style={{
+              position: 'fixed', inset: 0, zIndex: 81,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              padding: 16,
+              pointerEvents: 'none',
+            }}
+          >
           <motion.div
             initial={{ opacity: 0, scale: 0.94, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -331,10 +342,8 @@ function ConfirmModal({ open, title, body, confirmLabel, confirmIntent, busy, on
             role="dialog"
             aria-modal="true"
             style={{
-              position: 'fixed', top: '50%', left: '50%',
-              transform: 'translate(-50%, -50%)',
-              zIndex: 81,
-              width: 'calc(100% - 32px)', maxWidth: 340,
+              width: '100%', maxWidth: 340,
+              pointerEvents: 'auto',
               background: C.white,
               borderRadius: 22,
               padding: '26px 22px 22px',
@@ -393,6 +402,7 @@ function ConfirmModal({ open, title, body, confirmLabel, confirmIntent, busy, on
               </button>
             </div>
           </motion.div>
+          </div>
         </>
       )}
     </AnimatePresence>
@@ -429,6 +439,17 @@ function CancelEventModal({ open, event, busy, onCancel, onConfirm }) {
               backdropFilter: 'blur(4px)',
             }}
           />
+          {/* Flex wrapper does the centring — see PostMatchFeedbackPrompt:
+              Framer Motion owns the transform property on an animating card,
+              so a translate(-50%,-50%) in its style is silently overwritten. */}
+          <div
+            style={{
+              position: 'fixed', inset: 0, zIndex: 81,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              padding: 16,
+              pointerEvents: 'none',
+            }}
+          >
           <motion.div
             initial={{ opacity: 0, scale: 0.94, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -437,10 +458,8 @@ function CancelEventModal({ open, event, busy, onCancel, onConfirm }) {
             role="dialog"
             aria-modal="true"
             style={{
-              position: 'fixed', top: '50%', left: '50%',
-              transform: 'translate(-50%, -50%)',
-              zIndex: 81,
-              width: 'calc(100% - 32px)', maxWidth: 360,
+              width: '100%', maxWidth: 360,
+              pointerEvents: 'auto',
               background: C.white,
               borderRadius: 22,
               padding: '26px 22px 22px',
@@ -554,6 +573,7 @@ function CancelEventModal({ open, event, busy, onCancel, onConfirm }) {
               </button>
             </div>
           </motion.div>
+          </div>
         </>
       )}
     </AnimatePresence>

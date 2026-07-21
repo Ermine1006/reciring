@@ -86,6 +86,18 @@ export default function LinkAccountPrompt() {
           background: 'rgba(17,17,17,0.45)', backdropFilter: 'blur(4px)',
         }}
       />
+      {/* Flex wrapper does the centring — see PostMatchFeedbackPrompt: Framer
+          Motion owns the transform property on an animating card, so a
+          translate(-50%,-50%) in its style is silently overwritten. */}
+      <div
+        key="card-wrap"
+        style={{
+          position: 'fixed', inset: 0, zIndex: 61,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: 16,
+          pointerEvents: 'none',
+        }}
+      >
       <motion.div
         key="card"
         initial={{ opacity: 0, scale: 0.92, y: 16 }}
@@ -95,10 +107,8 @@ export default function LinkAccountPrompt() {
         role="dialog"
         aria-modal="true"
         style={{
-          position: 'fixed', top: '50%', left: '50%',
-          transform: 'translate(-50%, -50%)',
-          zIndex: 61,
-          width: 'calc(100% - 32px)', maxWidth: 360,
+          width: '100%', maxWidth: 360,
+          pointerEvents: 'auto',
           background: C.white, borderRadius: 24,
           padding: '28px 24px 22px',
           boxShadow: '0 24px 60px rgba(0,0,0,0.22), 0 4px 16px rgba(200,169,106,0.18)',
@@ -179,6 +189,7 @@ export default function LinkAccountPrompt() {
           </p>
         )}
       </motion.div>
+      </div>
     </AnimatePresence>
   )
 }

@@ -64,7 +64,19 @@ export default function PostMatchFeedbackPrompt({ open, match, onReview, onSnooz
               backdropFilter: 'blur(4px)',
             }}
           />
-          {/* Card */}
+          {/* Card. Centred by this flex wrapper rather than by a translate on
+              the card itself: the card animates scale/y, and Framer Motion
+              writes the whole transform property, so a hand-written
+              translate(-50%,-50%) there gets clobbered and the card lands with
+              its top-left corner at the screen centre. */}
+          <div
+            style={{
+              position: 'fixed', inset: 0, zIndex: 71,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              padding: 16,
+              pointerEvents: 'none',
+            }}
+          >
           <motion.div
             initial={{ opacity: 0, scale: 0.92, y: 16 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -73,11 +85,8 @@ export default function PostMatchFeedbackPrompt({ open, match, onReview, onSnooz
             role="dialog"
             aria-modal="true"
             style={{
-              position: 'fixed',
-              top: '50%', left: '50%',
-              transform: 'translate(-50%, -50%)',
-              zIndex: 71,
-              width: 'calc(100% - 32px)', maxWidth: 340,
+              width: '100%', maxWidth: 340,
+              pointerEvents: 'auto',
               background: C.white,
               borderRadius: 24,
               padding: '28px 24px 24px',
@@ -228,6 +237,7 @@ export default function PostMatchFeedbackPrompt({ open, match, onReview, onSnooz
               </>
             )}
           </motion.div>
+          </div>
         </>
       )}
     </AnimatePresence>
