@@ -207,9 +207,60 @@ export function AuthProvider({ children }) {
     } catch {}
   }
 
+  // ── Mirror a linked Google identity into user_emails ───────────
+  //
+  // linkIdentity() records the provider in Supabase's auth.identities, but
+  // everything in the app that asks "has this user linked an account?" reads
+  // user_emails instead. Nothing bridged the two: the only insert lives in
+  // the new-profile branch below, which existing users never reach because
+  // ensureProfile returns early once a profile row is found. The result was
+  // a loop — linking succeeded, the prompt kept re-appearing, and linking
+  // again changed nothing.
+  //
+  // Runs on every sign-in rather than only on the /?linked=google return, so
+  // accounts already stuck in that loop heal themselves on their next login
+  // without having to link a second time.
+  async function mirrorGoogleIdentity(user) {
+    if (!user?.id) return
+
+    // The user that comes off getSession()/onAuthStateChange is decoded from
+    // the JWT, and identities are not in the token — the field is optional on
+    // the type for exactly this reason. Fall back to asking the server.
+    let identities = user.identities
+    if (!identities) {
+      const { data, error } = await supabase.auth.getUserIdentities()
+      if (error) {
+        console.warn('[Mutu] getUserIdentities (non-fatal):', error.message)
+        return
+      }
+      identities = data?.identities || []
+    }
+
+    const google = identities.find(i => i.provider === 'google')
+    const googleEmail = String(google?.identity_data?.email || '').toLowerCase().trim()
+    if (!googleEmail) return
+
+    const { error } = await supabase.from('user_emails').insert({
+      user_id:     user.id,
+      email:       googleEmail,
+      email_type:  'google',
+      is_verified: true,
+      verified_at: new Date().toISOString(),
+    })
+    // 23505 = unique_violation: the row is already there, which is the
+    // steady state after the first successful sign-in post-link.
+    if (error && error.code !== '23505') {
+      console.warn('[Mutu] google identity mirror (non-fatal):', error.message)
+    }
+  }
+
   // ── Ensure profile row exists — never block the app on failure ─
   async function ensureProfile(user, { accessType, referredByUserId, joinedWithCode } = {}) {
     try {
+      // Before the early return below — existing users are exactly the ones
+      // that need this.
+      mirrorGoogleIdentity(user).catch(() => {})
+
       const { data: existing, error: fetchError } = await supabase
         .from('profiles')
         .select('*')
