@@ -23,7 +23,7 @@ const SUPPORT_EMAIL = 'hello@muturing.com'
 
 export default function LoginScreen() {
   const {
-    signIn, signUp, signInWithGoogle, resetPassword,
+    signIn, signUp, signInWithGoogle, resetPassword, verifyRecoveryCode,
     accessDenied, clearAccessDenied,
   } = useAuth()
 
@@ -45,6 +45,14 @@ export default function LoginScreen() {
   const [accessCode, setAccessCode] = useState('')
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState(null)
+  // Forgot-password is a two-step flow in-place: 'request' sends the code,
+  // 'verify' takes the code + new password. Kept on this screen (no browser
+  // hop) so it survives the code being opened anywhere, unlike the emailed
+  // link which needs the PKCE verifier from the requesting browser.
+  const [forgotStep, setForgotStep]     = useState('request')
+  const [resetCode, setResetCode]       = useState('')
+  const [newPassword, setNewPassword]   = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [info, setInfo]         = useState(null)
   const [showForgotEmail, setShowForgotEmail] = useState(false)
 
@@ -200,7 +208,42 @@ export default function LoginScreen() {
     // Neutral confirmation regardless of whether the address exists —
     // never leak account existence via the reset flow.
     if (err && !/rate/i.test(err.message)) console.warn('[ReciRing] reset password error:', err.message)
-    setInfo("If an account exists, we'll send you a reset link. Check your inbox.")
+    // Advance to the code-entry step. The email carries both a 6-digit code
+    // and a link; entering the code here works regardless of where the email
+    // is opened, so it's the path we steer everyone toward.
+    setForgotStep('verify')
+    setInfo("If an account exists, we've emailed you a code. Enter it below with your new password.")
+  }
+
+  // ── Forgot password step 2: verify code + set new password ──
+  const handleVerifyReset = async () => {
+    setError(null); setInfo(null)
+    if (resetCode.replace(/\s/g, '').length < 6) {
+      setError('Enter the code from your email.'); return
+    }
+    if (newPassword.length < 6) {
+      setError('New password must be at least 6 characters.'); return
+    }
+    if (newPassword !== confirmPassword) {
+      setError('Passwords do not match.'); return
+    }
+    setLoading(true)
+    const { error: err } = await verifyRecoveryCode(email.trim().toLowerCase(), resetCode, newPassword)
+    if (err) { setLoading(false); setError(err.message); return }
+    // verifyOtp establishes an authenticated session (persisted to storage)
+    // AND fires PASSWORD_RECOVERY, which flips the recovery flag; updateUser
+    // then flips it back. Those two async updates race and can strand the UI
+    // between the app and the reset page. A hard reload to root sidesteps it
+    // entirely: fresh state, and bootstrap's getSession reads the persisted
+    // session and routes straight into the app.
+    setInfo('Password updated. Signing you in…')
+    window.location.assign('/')
+  }
+
+  const backToSignIn = () => {
+    setMode('signin'); setForgotStep('request')
+    setResetCode(''); setNewPassword(''); setConfirmPassword('')
+    setError(null); setInfo(null)
   }
 
   const inputStyle = (hasError) => ({
@@ -238,7 +281,9 @@ export default function LoginScreen() {
         </h1>
         <p className="text-center mb-6" style={{ fontSize: 13, color: C.textSub, lineHeight: 1.5 }}>
           {mode === 'forgot'
-            ? "Enter your email and we'll send you a reset link."
+            ? (forgotStep === 'verify'
+                ? 'Enter the code from your email, then choose a new password.'
+                : "Enter your email and we'll send you a reset code.")
             : 'Use your UofT email to join directly. Already verified members can continue with their linked Google account. New Gmail users need an invite code or a referral from an existing member.'}
         </p>
 
@@ -282,7 +327,9 @@ export default function LoginScreen() {
 
         <form onSubmit={(e) => {
           e.preventDefault()
-          if (mode === 'forgot') return handleForgotSubmit()
+          if (mode === 'forgot') {
+            return forgotStep === 'verify' ? handleVerifyReset() : handleForgotSubmit()
+          }
           return handleSubmit()
         }}>
           <input
@@ -291,9 +338,44 @@ export default function LoginScreen() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="your.name@mail.utoronto.ca"
             autoFocus
+            readOnly={mode === 'forgot' && forgotStep === 'verify'}
             className="w-full rounded-xl px-4 py-3 text-sm mb-3 transition-all duration-200"
             style={inputStyle(!!error)}
           />
+
+          {/* Forgot step 2: 6-digit code + the new password, all in place. */}
+          {mode === 'forgot' && forgotStep === 'verify' && (
+            <>
+              <input
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                value={resetCode}
+                onChange={(e) => setResetCode(e.target.value.replace(/[^0-9]/g, '').slice(0, 10))}
+                placeholder="Code from your email"
+                className="w-full rounded-xl px-4 py-3 text-sm mb-3 transition-all duration-200 tracking-[0.3em] text-center"
+                style={inputStyle(!!error)}
+              />
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="New password (min 6 characters)"
+                autoComplete="new-password"
+                className="w-full rounded-xl px-4 py-3 text-sm mb-3 transition-all duration-200"
+                style={inputStyle(!!error)}
+              />
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirm new password"
+                autoComplete="new-password"
+                className="w-full rounded-xl px-4 py-3 text-sm transition-all duration-200"
+                style={inputStyle(!!error)}
+              />
+            </>
+          )}
 
           {(mode === 'signin' || mode === 'signup') && (
             <>
@@ -310,7 +392,7 @@ export default function LoginScreen() {
                 <div className="flex justify-end mt-2">
                   <button
                     type="button"
-                    onClick={() => { setMode('forgot'); setError(null); setInfo(null) }}
+                    onClick={() => { setMode('forgot'); setForgotStep('request'); setError(null); setInfo(null) }}
                     style={{
                       background: 'none', border: 'none', cursor: 'pointer',
                       fontSize: 12, fontWeight: 500, color: C.goldDark,
@@ -473,11 +555,23 @@ export default function LoginScreen() {
                     opacity: loading ? 0.6 : 1,
                   }}
                 >
-                  {loading ? 'Sending…' : 'Send reset link'}
+                  {forgotStep === 'verify'
+                    ? (loading ? 'Saving…' : 'Save new password')
+                    : (loading ? 'Sending…' : 'Send code')}
                 </button>
+                {forgotStep === 'verify' && (
+                  <button
+                    type="button"
+                    onClick={() => { setForgotStep('request'); setResetCode(''); setError(null); setInfo(null) }}
+                    className="w-full py-2.5 rounded-xl text-sm font-medium"
+                    style={{ background: 'transparent', border: 'none', color: C.textSub, cursor: 'pointer' }}
+                  >
+                    Didn't get a code? Send again
+                  </button>
+                )}
                 <button
                   type="button"
-                  onClick={() => { setMode('signin'); setError(null); setInfo(null) }}
+                  onClick={backToSignIn}
                   className="w-full py-2.5 rounded-xl text-sm font-medium"
                   style={{ background: 'transparent', border: 'none', color: C.textSub, cursor: 'pointer' }}
                 >

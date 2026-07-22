@@ -577,6 +577,37 @@ export function AuthProvider({ children }) {
     return { data, error }
   }
 
+  // Verify a 6-digit recovery code from the reset email and, if it checks
+  // out, set the new password in the same step. This is the robust reset path:
+  // the code is typed by hand, so unlike the emailed link it needs no PKCE
+  // verifier (works even when the request and the reset happen in different
+  // browsers or in the app) and can't be spent by a mail scanner pre-fetching
+  // a link. verifyOtp establishes a short recovery session; updateUser then
+  // rides that session, exactly like the link flow's post-exchange step.
+  async function verifyRecoveryCode(email, code, newPassword) {
+    if (!isSupabaseConfigured) return { error: new Error('Supabase not configured.') }
+    const cleanEmail = String(email || '').toLowerCase().trim()
+    const cleanCode = String(code || '').replace(/\s/g, '')
+    if (!cleanEmail) return { error: new Error('Email is missing.') }
+    if (cleanCode.length < 6) return { error: new Error('Enter the code from your email.') }
+
+    const { error: otpError } = await supabase.auth.verifyOtp({
+      email: cleanEmail,
+      token: cleanCode,
+      type: 'recovery',
+    })
+    if (otpError) {
+      const msg = /expired|invalid|token/i.test(otpError.message)
+        ? 'That code is incorrect or expired. Request a new one and try again.'
+        : otpError.message
+      return { error: new Error(msg) }
+    }
+
+    const { error: pwError } = await supabase.auth.updateUser({ password: newPassword })
+    if (!pwError) setPasswordRecovery(false)
+    return { error: pwError || null }
+  }
+
   // Called after PASSWORD_RECOVERY once the user types a new password.
   // The recovery session lets updateUser through without re-auth. On
   // success we clear the recovery flag so the app resumes normally.
@@ -657,6 +688,7 @@ export function AuthProvider({ children }) {
       signOut,
       resetPassword,
       updatePassword,
+      verifyRecoveryCode,
       passwordRecovery,
       accessDenied,
       clearAccessDenied,
