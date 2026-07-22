@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { TOPIC_CHIPS } from '../lib/eventEncounters'
 
@@ -70,7 +71,13 @@ export default function EventMemoryModal({
     onClose?.()
   }
 
-  return (
+  // Rendered through a portal: EventDetailPage wraps its content in a
+  // framer-motion container, and a transformed ancestor becomes the
+  // containing block for absolute AND fixed descendants alike — which is
+  // how the sheet's bottom edge ended up anchored below the visible fold,
+  // with the submit button unreachable. Escaping to document.body makes
+  // the viewport the anchor no matter what the page around it animates.
+  return createPortal(
     <AnimatePresence>
       {open && (
         <>
@@ -81,7 +88,12 @@ export default function EventMemoryModal({
             exit={{ opacity: 0 }}
             onClick={onClose}
             style={{
-              position: 'absolute', inset: 0, zIndex: 60,
+              // Fixed, not absolute: this sheet mounts inside the Events
+              // page's scrollable content, so an absolute bottom: 0 anchors
+              // to the bottom of the SCROLLED content — below the fold on a
+              // phone, leaving the submit button unreachable. Fixed pins to
+              // the visible viewport like every other dialog in the app.
+              position: 'fixed', inset: 0, zIndex: 60,
               background: 'rgba(17,17,17,0.45)',
               backdropFilter: 'blur(4px)',
             }}
@@ -93,7 +105,7 @@ export default function EventMemoryModal({
             exit={{ y: '100%' }}
             transition={{ type: 'spring', stiffness: 340, damping: 34 }}
             style={{
-              position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 61,
+              position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 61,
               maxHeight: '90dvh',
               background: C.white,
               borderRadius: '24px 24px 0 0',
@@ -250,6 +262,7 @@ export default function EventMemoryModal({
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   )
 }
