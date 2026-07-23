@@ -102,6 +102,29 @@ export default function CreateEventForm({ onCreated, onClose }) {
     })
   }, [title, description, date, time, location, category, maxAttendees, minAttendees, hostType, imageUrl, attendeeVisibility])
 
+  // Belt-and-suspenders save the instant the app is backgrounded. iOS can
+  // freeze/reclaim the webview the moment you switch apps — before the
+  // change-driven effect above has flushed the last keystroke. visibilitychange
+  // and pagehide both fire while the page is still alive, so the draft is
+  // guaranteed current at the exact moment loss would otherwise happen.
+  useEffect(() => {
+    const flush = () => {
+      if (document.visibilityState !== 'hidden') return
+      if (!(title || description || location || imageUrl)) return
+      writeDraft({
+        savedAt: Date.now(),
+        title, description, date, time, location, category,
+        maxAttendees, minAttendees, hostType, imageUrl, attendeeVisibility,
+      })
+    }
+    document.addEventListener('visibilitychange', flush)
+    window.addEventListener('pagehide', flush)
+    return () => {
+      document.removeEventListener('visibilitychange', flush)
+      window.removeEventListener('pagehide', flush)
+    }
+  }, [title, description, date, time, location, category, maxAttendees, minAttendees, hostType, imageUrl, attendeeVisibility])
+
   const [saving, setSaving]   = useState(false)
   const [error, setError]     = useState(null)
 
