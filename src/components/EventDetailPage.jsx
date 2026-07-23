@@ -15,8 +15,8 @@ import {
   subscribeEventMessages,
 } from '../lib/eventMessages'
 import { categoryEmoji } from '../data/eventCategories'
-import { WEB_ORIGIN } from '../lib/platform'
 import AnonymousAvatar from './AnonymousAvatar'
+import EventSharePoster from './EventSharePoster'
 import { resolveAvatarSeed } from './SettingsPage'
 import { sendEventRegistrationEmail, sendEventUnregisterEmail, notifyEventCancellation } from '../lib/email'
 import EventModeSection from './EventModeSection'
@@ -216,23 +216,10 @@ export default function EventDetailPage({ eventId, onBack, onEdit }) {
   // Share the event via the system share sheet (beta fb8 — testers wanted
   // to send events over Messages / WhatsApp / Instagram). navigator.share
   // opens the native sheet in both mobile Safari and the Capacitor webview;
-  // desktop browsers without it fall back to copying the link. The
-  // ?event= deep link is the same one the reminder emails already use.
-  const handleShare = async () => {
-    if (!event) return
-    const url = `${WEB_ORIGIN}/?event=${event.id}`
-    if (navigator.share) {
-      // A rejected promise here usually just means the user closed the sheet.
-      try { await navigator.share({ title: event.title, text: `${event.title} — join me on Mutu`, url }) } catch {}
-      return
-    }
-    try {
-      await navigator.clipboard.writeText(url)
-      setToast({ type: 'ok', msg: 'Event link copied' })
-    } catch {
-      setToast({ type: 'err', msg: url })
-    }
-  }
+  // The share button opens a poster sheet (EventSharePoster) rather than
+  // firing navigator.share directly: sharing a generated image lets people
+  // post the event to their Instagram story, which a bare link cannot (fb8).
+  const [showShare, setShowShare] = useState(false)
 
   const handleLeave = async () => {
     if (!user || !event) return
@@ -480,7 +467,7 @@ export default function EventDetailPage({ eventId, onBack, onEdit }) {
             {/* Share (fb8) */}
             <button
               type="button"
-              onClick={handleShare}
+              onClick={() => setShowShare(true)}
               aria-label="Share event"
               className="active:scale-95"
               style={{
@@ -1024,6 +1011,8 @@ export default function EventDetailPage({ eventId, onBack, onEdit }) {
           </>
         )}
       </motion.div>
+
+      <EventSharePoster event={event} open={showShare} onClose={() => setShowShare(false)} />
     </div>
   )
 }
