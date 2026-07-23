@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { fetchUpcomingEvents, fetchMyJoinedEventIds, joinEvent, leaveEvent, cancelEvent } from '../lib/events'
 import EventCard from './EventCard'
+import EventJoinIntentModal from './EventJoinIntentModal'
 import AppScreen from './AppScreen'
 
 const C = {
@@ -47,8 +48,18 @@ export default function EventsList({ onCreateEvent, onOpenEvent }) {
 
   useEffect(() => { refresh() }, [refresh])
 
-  const handleJoin = async (eventId) => {
+  // Tapping JOIN on a card opens the same intent sheet the detail page uses,
+  // so need/offer is captured no matter where the join starts.
+  const [intentEvent, setIntentEvent] = useState(null)
+  const handleJoin = (eventId) => {
     if (!user) return
+    const ev = events.find(e => e.id === eventId)
+    setIntentEvent(ev || { id: eventId })
+  }
+
+  const confirmJoin = async ({ needText, offerText }) => {
+    if (!user || !intentEvent) return { error: null }
+    const eventId = intentEvent.id
     setJoiningId(eventId)
     setToast(null)
 
@@ -59,7 +70,7 @@ export default function EventsList({ onCreateEvent, onOpenEvent }) {
       e.id === eventId ? { ...e, attendee_count: (e.attendee_count || 0) + 1 } : e,
     ))
 
-    const { error } = await joinEvent(eventId, user.id)
+    const { error } = await joinEvent(eventId, user.id, { needText, offerText })
     setJoiningId(null)
     if (error) {
       // Rollback
@@ -71,9 +82,11 @@ export default function EventsList({ onCreateEvent, onOpenEvent }) {
         e.id === eventId ? { ...e, attendee_count: Math.max(0, (e.attendee_count || 0) - 1) } : e,
       ))
       setToast({ type: 'err', msg: error.message || 'Could not join event' })
-      return
+      return { error }
     }
+    setIntentEvent(null)
     setToast({ type: 'ok', msg: 'Joined — see you there!' })
+    return { error: null }
   }
 
   // Leave flow — opens a confirmation modal first.
@@ -300,6 +313,12 @@ export default function EventsList({ onCreateEvent, onOpenEvent }) {
         busy={actionSaving}
         onCancel={() => !actionSaving && setCancelTarget(null)}
         onConfirm={confirmCancel}
+      />
+      <EventJoinIntentModal
+        open={Boolean(intentEvent)}
+        eventTitle={intentEvent?.title}
+        onConfirm={confirmJoin}
+        onClose={() => setIntentEvent(null)}
       />
     </AppScreen>
   )
