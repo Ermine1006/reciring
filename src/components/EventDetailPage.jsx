@@ -15,6 +15,7 @@ import {
   subscribeEventMessages,
 } from '../lib/eventMessages'
 import { categoryEmoji } from '../data/eventCategories'
+import { WEB_ORIGIN } from '../lib/platform'
 import AnonymousAvatar from './AnonymousAvatar'
 import { resolveAvatarSeed } from './SettingsPage'
 import { sendEventRegistrationEmail, sendEventUnregisterEmail, notifyEventCancellation } from '../lib/email'
@@ -210,6 +211,27 @@ export default function EventDetailPage({ eventId, onBack, onEdit }) {
     // never included here.
     const { data: atts } = await fetchEventAttendees(event.id, { includeContact: isHost })
     setAttendees(atts || [])
+  }
+
+  // Share the event via the system share sheet (beta fb8 — testers wanted
+  // to send events over Messages / WhatsApp / Instagram). navigator.share
+  // opens the native sheet in both mobile Safari and the Capacitor webview;
+  // desktop browsers without it fall back to copying the link. The
+  // ?event= deep link is the same one the reminder emails already use.
+  const handleShare = async () => {
+    if (!event) return
+    const url = `${WEB_ORIGIN}/?event=${event.id}`
+    if (navigator.share) {
+      // A rejected promise here usually just means the user closed the sheet.
+      try { await navigator.share({ title: event.title, text: `${event.title} — join me on Mutu`, url }) } catch {}
+      return
+    }
+    try {
+      await navigator.clipboard.writeText(url)
+      setToast({ type: 'ok', msg: 'Event link copied' })
+    } catch {
+      setToast({ type: 'err', msg: url })
+    }
   }
 
   const handleLeave = async () => {
@@ -455,6 +477,29 @@ export default function EventDetailPage({ eventId, onBack, onEdit }) {
                 {event.category}
               </p>
             </div>
+            {/* Share (fb8) */}
+            <button
+              type="button"
+              onClick={handleShare}
+              aria-label="Share event"
+              className="active:scale-95"
+              style={{
+                flexShrink: 0,
+                width: 36, height: 36, borderRadius: '50%',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: C.goldBg,
+                border: `1px solid ${C.goldLight}`,
+                cursor: 'pointer',
+                transition: 'transform 0.1s',
+              }}
+            >
+              {/* iOS-style share glyph */}
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.goldDark} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 3v12" />
+                <path d="M8 7l4-4 4 4" />
+                <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7" />
+              </svg>
+            </button>
           </div>
 
           {/* Meta rows */}

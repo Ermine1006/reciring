@@ -273,7 +273,13 @@ export default function EditEventForm({ eventId, onSaved, onClose }) {
                   min={1}
                   max={500}
                   value={maxAttendees}
-                  onChange={(e) => setMaxAttendees(Math.max(1, Math.min(500, Number(e.target.value) || 1)))}
+                  // Raw while typing, clamp on blur — clamping in onChange
+                  // makes the field impossible to clear (fb6); see
+                  // CreateEventForm for the full story.
+                  onChange={(e) => setMaxAttendees(e.target.value)}
+                  onBlur={() => {
+                    if (maxAttendees !== '') setMaxAttendees(Math.max(1, Math.min(500, Number(maxAttendees) || 1)))
+                  }}
                   style={inputStyle}
                 />
               </div>
@@ -284,7 +290,8 @@ export default function EditEventForm({ eventId, onSaved, onClose }) {
                   min={0}
                   max={maxAttendees}
                   value={minAttendees}
-                  onChange={(e) => setMinAttendees(Math.max(0, Math.min(Number(maxAttendees) || 0, Number(e.target.value) || 0)))}
+                  onChange={(e) => setMinAttendees(e.target.value)}
+                  onBlur={() => setMinAttendees(Math.max(0, Math.min(Number(maxAttendees) || 0, Number(minAttendees) || 0)))}
                   style={inputStyle}
                 />
               </div>

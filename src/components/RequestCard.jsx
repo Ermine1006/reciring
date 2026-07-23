@@ -29,22 +29,47 @@ const URGENCY = {
   soon:   { label: 'This week', bg: '#FFF8EB', border: '#FDE68A', color: '#92400E', dot: '#F59E0B' },
 }
 
+// One-time swipe hint. localStorage access is wrapped so a private-browsing
+// SecurityError degrades to "always show" rather than crashing the deck.
+const SWIPE_HINT_KEY = 'mutu:swipeHintSeen'
+function swipeHintSeen() {
+  try { return window.localStorage.getItem(SWIPE_HINT_KEY) === '1' } catch { return false }
+}
+function markSwipeHintSeen() {
+  try { window.localStorage.setItem(SWIPE_HINT_KEY, '1') } catch {}
+}
+
 export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight, isTop, matchReason, onTap }) {
   const [offset, setOffset] = useState(0)
   const [hasDragged, setHasDragged] = useState(false)
+  const [dragging, setDragging] = useState(false)
+  const [showHint, setShowHint] = useState(() => !swipeHintSeen())
   const rotate       = offset ? Math.min(Math.max(offset / 16, -ROTATION_RANGE), ROTATION_RANGE) : 0
-  const matchOpacity = offset ? Math.min( offset / SWIPE_THRESHOLD, 1) : 0
-  const passOpacity  = offset ? Math.min(-offset / SWIPE_THRESHOLD, 1) : 0
+  // Stamps reach full strength at ~45% of the swipe distance instead of 100%,
+  // so the meaning of the gesture is readable early in the drag (beta fb5).
+  const matchOpacity = offset ? Math.min( offset / (SWIPE_THRESHOLD * 0.45), 1) : 0
+  const passOpacity  = offset ? Math.min(-offset / (SWIPE_THRESHOLD * 0.45), 1) : 0
+  // While the finger is down the stamp tracks it instantly; on release the
+  // opacity transition below lets it linger and fade instead of vanishing
+  // the moment offset snaps back to 0.
+  const stampTransition = dragging
+    ? 'transform 0.05s'
+    : 'opacity 0.5s ease-out, transform 0.3s ease-out'
 
   const handleDrag = (_, info) => {
     if (!isTop) return
-    if (Math.abs(info.offset.x) > 4) setHasDragged(true)
+    if (Math.abs(info.offset.x) > 4) {
+      setHasDragged(true)
+      setDragging(true)
+      if (showHint) { setShowHint(false); markSwipeHintSeen() }
+    }
     setOffset(info.offset.x)
     onDrag?.(info.offset.x)
   }
 
   const handleDragEnd = (_, info) => {
     if (!isTop) return
+    setDragging(false)
     setOffset(0)
     onDrag?.(0)
     if (info.offset.x >  SWIPE_THRESHOLD) onSwipeRight()
@@ -114,7 +139,7 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
               top: 28, left: 20, zIndex: 20,
               opacity: matchOpacity,
               transform: `scale(${0.7 + matchOpacity * 0.3}) rotate(-12deg)`,
-              transition: 'transform 0.05s',
+              transition: stampTransition,
             }}
           >
             <div style={{
@@ -142,7 +167,7 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
               top: 28, right: 20, zIndex: 20,
               opacity: passOpacity,
               transform: `scale(${0.7 + passOpacity * 0.3}) rotate(12deg)`,
-              transition: 'transform 0.05s',
+              transition: stampTransition,
             }}
           >
             <div style={{
@@ -162,6 +187,43 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
               </span>
             </div>
           </div>
+
+          {/* First-use swipe hint (fb5) — shows until the very first real
+              drag anywhere in Discover, then never again (localStorage). */}
+          {showHint && (
+            <motion.div
+              className="absolute pointer-events-none"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              style={{
+                bottom: 18, left: 0, right: 0, zIndex: 20,
+                display: 'flex', justifyContent: 'center',
+              }}
+            >
+              <motion.div
+                animate={{ x: [-5, 5, -5] }}
+                transition={{ repeat: Infinity, duration: 2.2, ease: 'easeInOut' }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '8px 16px',
+                  borderRadius: 999,
+                  background: 'rgba(17,17,17,0.78)',
+                  backdropFilter: 'blur(6px)',
+                  boxShadow: '0 6px 20px rgba(0,0,0,0.18)',
+                }}
+              >
+                <X size={14} stroke="#D1D5DB" strokeWidth={2.6} />
+                <span style={{
+                  fontSize: 12, fontWeight: 600, color: '#E5E7EB',
+                  fontFamily: 'Inter, system-ui, sans-serif', whiteSpace: 'nowrap',
+                }}>
+                  ← Swipe left to pass&nbsp;&nbsp;·&nbsp;&nbsp;Swipe right to connect →
+                </span>
+                <Handshake size={14} stroke={C.goldLight} strokeWidth={2.2} />
+              </motion.div>
+            </motion.div>
+          )}
         </>
       )}
 
@@ -239,7 +301,10 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
           </div>
           <p
             style={{
-              fontSize: 17,
+              // 15px / 3 lines rather than 17px / 2: beta feedback (fb9) —
+              // titles like "Connect with others in the CPG Industry — Want
+              // to connect with…" were cutting off before the actual ask.
+              fontSize: 15,
               lineHeight: 1.45,
               fontWeight: 700,
               letterSpacing: '-0.01em',
@@ -249,7 +314,7 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
               wordWrap: 'break-word',
               overflowWrap: 'break-word',
               display: '-webkit-box',
-              WebkitLineClamp: 2,
+              WebkitLineClamp: 3,
               WebkitBoxOrient: 'vertical',
               overflow: 'hidden',
             }}
@@ -305,7 +370,8 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
           </div>
           <p
             style={{
-              fontSize: 17,
+              // Matches the needs block above: 15px / 3 lines (fb9).
+              fontSize: 15,
               lineHeight: 1.45,
               fontWeight: 700,
               letterSpacing: '-0.01em',
@@ -315,7 +381,7 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
               wordWrap: 'break-word',
               overflowWrap: 'break-word',
               display: '-webkit-box',
-              WebkitLineClamp: 2,
+              WebkitLineClamp: 3,
               WebkitBoxOrient: 'vertical',
               overflow: 'hidden',
             }}
@@ -365,6 +431,24 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
               {display.secondary && (
                 <span style={{ color: C.textMuted, opacity: 0.7, fontWeight: 400 }}>
                   {' · '}{display.secondary}
+                </span>
+              )}
+              {/* Student / Alumni badge (fb11) — anonymity-safe: says what
+                  kind of member this is, not who. Other member types
+                  (invited, premium, admin) stay unlabelled. */}
+              {(request.creator?.member_type === 'student' || request.creator?.member_type === 'alumni') && (
+                <span style={{
+                  marginLeft: 7,
+                  padding: '2px 8px',
+                  borderRadius: 999,
+                  fontSize: 9, fontWeight: 700, letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  color: request.creator.member_type === 'alumni' ? '#8C6B3F' : '#4B6B8C',
+                  background: request.creator.member_type === 'alumni' ? 'rgba(200,169,106,0.14)' : 'rgba(75,107,140,0.10)',
+                  border: `1px solid ${request.creator.member_type === 'alumni' ? 'rgba(200,169,106,0.4)' : 'rgba(75,107,140,0.25)'}`,
+                  verticalAlign: 'middle',
+                }}>
+                  {request.creator.member_type === 'alumni' ? 'Alumni' : 'Student'}
                 </span>
               )}
             </p>

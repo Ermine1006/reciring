@@ -18,7 +18,7 @@ export async function fetchPosts() {
       creator:profiles (
         total_points, meetings_scheduled, meetings_completed,
         visibility, name, program, headline, career_stage,
-        industry_interests, avatar_url
+        industry_interests, avatar_url, member_type
       )
     `)
     .order('created_at', { ascending: false })
@@ -129,6 +129,9 @@ export function rowToCard(row) {
       career_stage:       creator.career_stage || null,
       industry_interests: creator.industry_interests || [],
       avatar_url:         creator.avatar_url || null,
+      // 'student' | 'alumni' | … — surfaced as a badge on the card footer
+      // (beta fb11: "give some clues … like current student or alumni").
+      member_type:        creator.member_type || null,
     },
   }
 }

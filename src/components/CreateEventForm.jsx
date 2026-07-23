@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { createEvent } from '../lib/events'
@@ -44,20 +44,52 @@ function defaultDateValue() {
 }
 function defaultTimeValue() { return '18:00' }
 
+// Draft persistence (beta fb7): iOS reclaims the webview whenever the app
+// sits in the background — a tester tabbed away mid-form to look something
+// up and came back to an empty page. Mirror the fields into localStorage as
+// they change, restore on mount, expire after a day, clear on submit.
+// try/catch so private browsing degrades to "no drafts" instead of crashing.
+const DRAFT_KEY = 'mutu:eventDraft'
+const DRAFT_TTL_MS = 24 * 60 * 60 * 1000
+function readDraft() {
+  try {
+    const raw = window.localStorage.getItem(DRAFT_KEY)
+    if (!raw) return null
+    const d = JSON.parse(raw)
+    if (!d?.savedAt || Date.now() - d.savedAt > DRAFT_TTL_MS) return null
+    return d
+  } catch { return null }
+}
+function writeDraft(d) { try { window.localStorage.setItem(DRAFT_KEY, JSON.stringify(d)) } catch {} }
+function clearDraft()  { try { window.localStorage.removeItem(DRAFT_KEY) } catch {} }
+
 export default function CreateEventForm({ onCreated, onClose }) {
   const { user, profile } = useAuth()
 
-  const [title, setTitle]               = useState('')
-  const [description, setDescription]   = useState('')
-  const [date, setDate]                 = useState(defaultDateValue())
-  const [time, setTime]                 = useState(defaultTimeValue())
-  const [location, setLocation]         = useState('')
-  const [category, setCategory]         = useState('Social')
-  const [maxAttendees, setMaxAttendees] = useState(10)
-  const [minAttendees, setMinAttendees] = useState(0)
-  const [hostType, setHostType]         = useState('individual')
-  const [imageUrl, setImageUrl]         = useState('')
-  const [attendeeVisibility, setAttendeeVisibility] = useState('public')
+  const [draft] = useState(readDraft)
+  const [title, setTitle]               = useState(draft?.title ?? '')
+  const [description, setDescription]   = useState(draft?.description ?? '')
+  const [date, setDate]                 = useState(draft?.date ?? defaultDateValue())
+  const [time, setTime]                 = useState(draft?.time ?? defaultTimeValue())
+  const [location, setLocation]         = useState(draft?.location ?? '')
+  const [category, setCategory]         = useState(draft?.category ?? 'Social')
+  const [maxAttendees, setMaxAttendees] = useState(draft?.maxAttendees ?? 10)
+  const [minAttendees, setMinAttendees] = useState(draft?.minAttendees ?? 0)
+  const [hostType, setHostType]         = useState(draft?.hostType ?? 'individual')
+  const [imageUrl, setImageUrl]         = useState(draft?.imageUrl ?? '')
+  const [attendeeVisibility, setAttendeeVisibility] = useState(draft?.attendeeVisibility ?? 'public')
+
+  // Save on every change once the user has actually typed something — an
+  // untouched form shouldn't plant a draft that later resurrects defaults.
+  useEffect(() => {
+    const touched = title || description || location || imageUrl
+    if (!touched) return
+    writeDraft({
+      savedAt: Date.now(),
+      title, description, date, time, location, category,
+      maxAttendees, minAttendees, hostType, imageUrl, attendeeVisibility,
+    })
+  }, [title, description, date, time, location, category, maxAttendees, minAttendees, hostType, imageUrl, attendeeVisibility])
 
   const [saving, setSaving]   = useState(false)
   const [error, setError]     = useState(null)
@@ -112,6 +144,7 @@ export default function CreateEventForm({ onCreated, onClose }) {
       setError(err.message || 'Failed to create event.')
       return
     }
+    clearDraft()
     onCreated?.(data)
   }
 
@@ -224,7 +257,15 @@ export default function CreateEventForm({ onCreated, onClose }) {
                   min={1}
                   max={500}
                   value={maxAttendees}
-                  onChange={(e) => setMaxAttendees(Math.max(1, Math.min(500, Number(e.target.value) || 1)))}
+                  // Store the raw value while typing. Clamping inside onChange
+                  // turns '' into 1, which makes the field impossible to clear:
+                  // deleting snaps back to "1" and typing 5 produces "15"
+                  // (beta feedback fb6). Clamp on blur instead; submit already
+                  // re-clamps, and canSubmit blocks an empty field.
+                  onChange={(e) => setMaxAttendees(e.target.value)}
+                  onBlur={() => {
+                    if (maxAttendees !== '') setMaxAttendees(Math.max(1, Math.min(500, Number(maxAttendees) || 1)))
+                  }}
                   style={inputStyle}
                 />
               </div>
@@ -235,7 +276,8 @@ export default function CreateEventForm({ onCreated, onClose }) {
                   min={0}
                   max={maxAttendees}
                   value={minAttendees}
-                  onChange={(e) => setMinAttendees(Math.max(0, Math.min(Number(maxAttendees) || 0, Number(e.target.value) || 0)))}
+                  onChange={(e) => setMinAttendees(e.target.value)}
+                  onBlur={() => setMinAttendees(Math.max(0, Math.min(Number(maxAttendees) || 0, Number(minAttendees) || 0)))}
                   style={inputStyle}
                 />
               </div>
