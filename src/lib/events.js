@@ -148,13 +148,26 @@ export async function setEventModeration(eventId, status) {
  * constraint surfaces dup joins as Postgres code 23505 — we map
  * both into clean user-facing messages.
  */
-export async function joinEvent(eventId, userId) {
+export async function joinEvent(eventId, userId, intentions = {}) {
   if (!isSupabaseConfigured) return { error: new Error('Supabase not configured') }
   if (!eventId || !userId)   return { error: new Error('missing event or user') }
 
+  // need/offer captured at join time drive the in-event matcher. Trimmed to a
+  // sane length; empty strings store as null so "didn't fill it in" is
+  // distinguishable from "".
+  const clip = (s) => {
+    const t = String(s || '').trim().slice(0, 600)
+    return t || null
+  }
+
   const { error } = await supabase
     .from('event_attendees')
-    .insert({ event_id: eventId, user_id: userId })
+    .insert({
+      event_id:   eventId,
+      user_id:    userId,
+      need_text:  clip(intentions.needText),
+      offer_text: clip(intentions.offerText),
+    })
 
   if (error) {
     if (error.code === '23505') return { error: new Error('You already joined this event') }

@@ -17,6 +17,8 @@ import {
 import { categoryEmoji } from '../data/eventCategories'
 import AnonymousAvatar from './AnonymousAvatar'
 import EventSharePoster from './EventSharePoster'
+import EventJoinIntentModal from './EventJoinIntentModal'
+import EventMatchList from './EventMatchList'
 import { resolveAvatarSeed } from './SettingsPage'
 import { sendEventRegistrationEmail, sendEventUnregisterEmail, notifyEventCancellation } from '../lib/email'
 import EventModeSection from './EventModeSection'
@@ -187,20 +189,26 @@ export default function EventDetailPage({ eventId, onBack, onEdit }) {
   }, [messages.length])
 
   // ── Actions ───────────────────────────────────────────────
-  const handleJoin = async () => {
-    if (!user || !event) return
+  // Tapping "Join event" opens the intent sheet first (need/offer for this
+  // event); the sheet's confirm runs the real join below.
+  const [showJoinIntent, setShowJoinIntent] = useState(false)
+
+  const handleJoin = async ({ needText, offerText } = {}) => {
+    if (!user || !event) return { error: null }
     setJoinPending(true); setToast(null)
     // Optimistic
     setJoined(true)
     setEvent(prev => ({ ...prev, attendee_count: (prev.attendee_count || 0) + 1 }))
-    const { error } = await joinEvent(event.id, user.id)
+    const { error } = await joinEvent(event.id, user.id, { needText, offerText })
     setJoinPending(false)
     if (error) {
       setJoined(false)
       setEvent(prev => ({ ...prev, attendee_count: Math.max(0, (prev.attendee_count || 0) - 1) }))
+      // Surface in the sheet when it's driving the join; keep the toast too.
       setToast({ type: 'err', msg: error.message || 'Could not join' })
-      return
+      return { error }
     }
+    setShowJoinIntent(false)
     setToast({ type: 'ok', msg: "You're in. See you there." })
     // Fire-and-forget registration confirmation email — server loads
     // the event, resolves the caller's email, and renders the template.
@@ -211,6 +219,7 @@ export default function EventDetailPage({ eventId, onBack, onEdit }) {
     // never included here.
     const { data: atts } = await fetchEventAttendees(event.id, { includeContact: isHost })
     setAttendees(atts || [])
+    return { error: null }
   }
 
   // Share the event via the system share sheet (beta fb8 — testers wanted
@@ -571,6 +580,14 @@ export default function EventDetailPage({ eventId, onBack, onEdit }) {
           </section>
         )}
 
+        {/* Who to meet — only once the viewer has joined (they need to be an
+            attendee with stated intentions for the matcher to run). */}
+        {joined && user && !isCancelled && (
+          <section style={cardStyle}>
+            <EventMatchList eventId={event.id} userId={user.id} />
+          </section>
+        )}
+
         {/* Participants — three cases:
               1. Host view → "Manage participants" with contact details
               2. Non-host + private list → count only, names withheld
@@ -858,7 +875,7 @@ export default function EventDetailPage({ eventId, onBack, onEdit }) {
             ) : (
               <button
                 type="button"
-                onClick={handleJoin}
+                onClick={() => setShowJoinIntent(true)}
                 disabled={joinPending || isFull}
                 style={{
                   width: '100%', padding: '14px 0',
@@ -1013,6 +1030,12 @@ export default function EventDetailPage({ eventId, onBack, onEdit }) {
       </motion.div>
 
       <EventSharePoster event={event} open={showShare} onClose={() => setShowShare(false)} />
+      <EventJoinIntentModal
+        open={showJoinIntent}
+        eventTitle={event?.title}
+        onConfirm={handleJoin}
+        onClose={() => setShowJoinIntent(false)}
+      />
     </div>
   )
 }
