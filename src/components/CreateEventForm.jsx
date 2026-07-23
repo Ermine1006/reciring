@@ -63,6 +63,17 @@ function readDraft() {
 function writeDraft(d) { try { window.localStorage.setItem(DRAFT_KEY, JSON.stringify(d)) } catch {} }
 function clearDraft()  { try { window.localStorage.removeItem(DRAFT_KEY) } catch {} }
 
+// App.jsx uses this on boot to decide whether to reopen the create-event
+// form after an iOS webview reload. Tighter window than the draft's own TTL:
+// only auto-reopen when the user was interrupted moments ago. An older draft
+// still exists and still repopulates the fields, but only when the user opens
+// the form themselves — we don't hijack a fresh app launch hours later.
+const AUTO_RESUME_MS = 15 * 60 * 1000
+export function hasFreshEventDraft() {
+  const d = readDraft()
+  return Boolean(d && Date.now() - d.savedAt < AUTO_RESUME_MS)
+}
+
 export default function CreateEventForm({ onCreated, onClose }) {
   const { user, profile } = useAuth()
 
@@ -174,7 +185,9 @@ export default function CreateEventForm({ onCreated, onClose }) {
           </div>
           <button
             type="button"
-            onClick={onClose}
+            // Explicit cancel discards the draft; only a background reload
+            // (which never runs this) should resurrect the form.
+            onClick={() => { clearDraft(); onClose?.() }}
             style={{
               background: 'none', border: 'none', cursor: 'pointer',
               fontSize: 13, fontWeight: 500, color: C.goldDark,

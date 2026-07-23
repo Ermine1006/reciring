@@ -23,7 +23,7 @@ import AnonymousAvatar from './components/AnonymousAvatar'
 import MyPostsPage from './components/MyPostsPage'
 import AdminEmailTest from './components/AdminEmailTest'
 import EventsList from './components/EventsList'
-import CreateEventForm from './components/CreateEventForm'
+import CreateEventForm, { hasFreshEventDraft } from './components/CreateEventForm'
 import EditEventForm from './components/EditEventForm'
 import EventDetailPage from './components/EventDetailPage'
 import ProfilePage from './components/ProfilePage'
@@ -101,12 +101,18 @@ const TABS = [
 /* ─── App shell (authenticated) ─────────────────────────────────── */
 function AppShell() {
   const { session, user, profile, signOut } = useAuth()
-  const [tab, setTab]             = useState('discover')
+  // Boot straight back into the event-create form if an unexpired draft is
+  // waiting — an iOS webview reload mid-form otherwise dumps the user on the
+  // Discover tab, so the restored draft (fb7) would sit unseen behind a tab
+  // they'd have to navigate to. If a draft exists, start on Events with the
+  // form open so CreateEventForm mounts and repopulates from it immediately.
+  const resumingEventDraft = hasFreshEventDraft()
+  const [tab, setTab]             = useState(resumingEventDraft ? 'events' : 'discover')
   // Profile sub-tab is lifted to App so that chat→review deep-links can
   // jump straight to the Reviews sub-tab on the Profile page.
   const [profileSubTab, setProfileSubTab] = useState('profile')
   const [showAdminEmailTest, setShowAdminEmailTest] = useState(false)
-  const [showCreateEvent, setShowCreateEvent] = useState(false)
+  const [showCreateEvent, setShowCreateEvent] = useState(resumingEventDraft)
   // Currently opened event id — when set, Events tab renders the
   // detail page instead of the list. Null = list view.
   const [viewingEventId, setViewingEventId] = useState(null)
