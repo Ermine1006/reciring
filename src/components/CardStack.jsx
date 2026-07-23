@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useMemo } from 'react'
-import { motion, useMotionValue, useTransform } from 'framer-motion'
+import { motion, useMotionValue } from 'framer-motion'
 import { Handshake } from 'lucide-react'
 import RequestCard from './RequestCard'
 import RequestDetailModal from './RequestDetailModal'
@@ -103,7 +103,6 @@ export default function CardStack({ requests, unmatchedPostIds, interactionMap, 
   const [match, setMatch] = useState(null)
   const [detailRequest, setDetailRequest] = useState(null)
   const dragX   = useMotionValue(0)
-  const opacity = useTransform(dragX, [-120, 0], [0.45, 1])
 
   const toggleFilter = (key, value) => {
     setFilters(prev => ({
@@ -324,7 +323,12 @@ export default function CardStack({ requests, unmatchedPostIds, interactionMap, 
             <RequestCard key={nextRequest.id} request={nextRequest} isTop={false} matchReason={nextRequest._reason} />
           )}
 
-          <motion.div style={{ opacity }} className="absolute inset-0">
+          {/* Top card stays fully opaque while dragging. It used to fade to
+              0.45 on left swipe, which dimmed the PASS stamp along with it
+              (the stamp lives inside this card) and let the card behind bleed
+              through the edges — beta feedback: "can't see PASS on left
+              swipe". Rotation + translation + the stamp carry the gesture. */}
+          <motion.div className="absolute inset-0">
             <RequestCard
               key={topRequest.id}
               request={topRequest}
