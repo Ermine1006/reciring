@@ -90,16 +90,19 @@ export default function CreateEventForm({ onCreated, onClose }) {
   const [imageUrl, setImageUrl]         = useState(draft?.imageUrl ?? '')
   const [attendeeVisibility, setAttendeeVisibility] = useState(draft?.attendeeVisibility ?? 'public')
 
-  // Save on every change once the user has actually typed something — an
-  // untouched form shouldn't plant a draft that later resurrects defaults.
+  const snapshot = () => ({
+    savedAt: Date.now(),
+    title, description, date, time, location, category,
+    maxAttendees, minAttendees, hostType, imageUrl, attendeeVisibility,
+  })
+
+  // Save on every change. No "did they type something" guard: being on the
+  // create form IS the intent to create, and requiring a specific text field
+  // meant a form filled out only via date/time/attendee pickers never saved
+  // (a real gap behind the repeated "my draft is gone" reports). The draft
+  // clears on cancel and on submit, so an abandoned empty form is harmless.
   useEffect(() => {
-    const touched = title || description || location || imageUrl
-    if (!touched) return
-    writeDraft({
-      savedAt: Date.now(),
-      title, description, date, time, location, category,
-      maxAttendees, minAttendees, hostType, imageUrl, attendeeVisibility,
-    })
+    writeDraft(snapshot())
   }, [title, description, date, time, location, category, maxAttendees, minAttendees, hostType, imageUrl, attendeeVisibility])
 
   // Belt-and-suspenders save the instant the app is backgrounded. iOS can
@@ -108,22 +111,14 @@ export default function CreateEventForm({ onCreated, onClose }) {
   // and pagehide both fire while the page is still alive, so the draft is
   // guaranteed current at the exact moment loss would otherwise happen.
   useEffect(() => {
-    const flush = () => {
-      if (document.visibilityState !== 'hidden') return
-      if (!(title || description || location || imageUrl)) return
-      writeDraft({
-        savedAt: Date.now(),
-        title, description, date, time, location, category,
-        maxAttendees, minAttendees, hostType, imageUrl, attendeeVisibility,
-      })
-    }
+    const flush = () => { if (document.visibilityState === 'hidden') writeDraft(snapshot()) }
     document.addEventListener('visibilitychange', flush)
     window.addEventListener('pagehide', flush)
     return () => {
       document.removeEventListener('visibilitychange', flush)
       window.removeEventListener('pagehide', flush)
     }
-  }, [title, description, date, time, location, category, maxAttendees, minAttendees, hostType, imageUrl, attendeeVisibility])
+  }) // no deps: re-bind each render so the closure always sees current fields
 
   const [saving, setSaving]   = useState(false)
   const [error, setError]     = useState(null)
