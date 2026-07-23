@@ -13,20 +13,33 @@ import { supabase, isSupabaseConfigured } from './supabase'
 export async function fetchUpcomingEvents() {
   if (!isSupabaseConfigured) return { data: [], error: null }
 
-  const { data, error } = await supabase
+  // Resolve the viewer so their own not-yet-approved events still show up in
+  // their feed (flagged as pending), while everyone else only sees approved.
+  const { data: { session } } = await supabase.auth.getSession()
+  const uid = session?.user?.id
+
+  let query = supabase
     .from('events')
     .select(`
       id, title, description, start_at, location, category,
       max_attendees, min_attendees, host_user_id, host_display_name, host_type,
       image_url, is_sponsored, created_at,
       status, cancellation_reason, cancelled_at,
-      attendee_visibility,
+      attendee_visibility, moderation_status,
       event_attendees ( count )
     `)
     .gte('start_at', new Date().toISOString())
     .neq('status', 'cancelled')
     .neq('status', 'completed')
-    .order('start_at', { ascending: true })
+
+  // Approved for everyone, plus the viewer's own pending/rejected ones. RLS
+  // already blocks other people's pending events, but filtering here keeps
+  // them out of the main feed too.
+  query = uid
+    ? query.or(`moderation_status.eq.approved,host_user_id.eq.${uid}`)
+    : query.eq('moderation_status', 'approved')
+
+  const { data, error } = await query.order('start_at', { ascending: true })
 
   if (error) return { data: [], error }
   return {
@@ -65,6 +78,19 @@ export async function createEvent(fields) {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session?.user) return { data: null, error: new Error('Not signed in') }
 
+  // Moderation: only a host's FIRST event needs review. If they already have
+  // an approved event they're trusted, so auto-approve. Any DB hiccup here
+  // fails safe to 'pending' rather than publishing unreviewed.
+  let moderation_status = 'pending'
+  try {
+    const { count } = await supabase
+      .from('events')
+      .select('id', { count: 'exact', head: true })
+      .eq('host_user_id', session.user.id)
+      .eq('moderation_status', 'approved')
+    if ((count || 0) > 0) moderation_status = 'approved'
+  } catch { /* stays 'pending' */ }
+
   const { data, error } = await supabase
     .from('events')
     .insert({
@@ -80,11 +106,40 @@ export async function createEvent(fields) {
       image_url:         fields.image_url || null,
       is_sponsored:      Boolean(fields.is_sponsored),
       attendee_visibility: fields.attendee_visibility || 'public',
+      moderation_status,
     })
     .select()
     .single()
 
-  return { data, error }
+  return { data, error, pendingReview: moderation_status === 'pending' }
+}
+
+// ── Admin moderation queue ──────────────────────────────────────────
+// RLS restricts these to the admin email; a non-admin call returns nothing
+// (SELECT) or errors (UPDATE), so there's no client-side gate to trust here.
+
+export async function fetchPendingEvents() {
+  if (!isSupabaseConfigured) return { data: [], error: null }
+  const { data, error } = await supabase
+    .from('events')
+    .select(`
+      id, title, description, start_at, location, category,
+      max_attendees, host_user_id, host_display_name, host_type,
+      image_url, created_at, moderation_status
+    `)
+    .eq('moderation_status', 'pending')
+    .order('created_at', { ascending: true })
+  return { data: data || [], error }
+}
+
+export async function setEventModeration(eventId, status) {
+  if (!isSupabaseConfigured) return { error: new Error('Supabase not configured') }
+  if (!['approved', 'rejected'].includes(status)) return { error: new Error('Bad status') }
+  const { error } = await supabase
+    .from('events')
+    .update({ moderation_status: status })
+    .eq('id', eventId)
+  return { error }
 }
 
 /**

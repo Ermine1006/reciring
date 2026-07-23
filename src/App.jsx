@@ -22,6 +22,7 @@ import OnboardingProfile from './components/OnboardingProfile'
 import AnonymousAvatar from './components/AnonymousAvatar'
 import MyPostsPage from './components/MyPostsPage'
 import AdminEmailTest from './components/AdminEmailTest'
+import AdminEventReview from './components/AdminEventReview'
 import EventsList from './components/EventsList'
 import CreateEventForm, { hasFreshEventDraft } from './components/CreateEventForm'
 import EditEventForm from './components/EditEventForm'
@@ -108,10 +109,13 @@ function AppShell() {
   // form open so CreateEventForm mounts and repopulates from it immediately.
   const resumingEventDraft = hasFreshEventDraft()
   const [tab, setTab]             = useState(resumingEventDraft ? 'events' : 'discover')
+  // Transient banner, currently just the "first event is pending review" notice.
+  const [banner, setBanner] = useState(null)
   // Profile sub-tab is lifted to App so that chat→review deep-links can
   // jump straight to the Reviews sub-tab on the Profile page.
   const [profileSubTab, setProfileSubTab] = useState('profile')
   const [showAdminEmailTest, setShowAdminEmailTest] = useState(false)
+  const [showEventReview, setShowEventReview] = useState(false)
   const [showCreateEvent, setShowCreateEvent] = useState(resumingEventDraft)
   // Currently opened event id — when set, Events tab renders the
   // detail page instead of the list. Null = list view.
@@ -973,10 +977,31 @@ function AppShell() {
           />
         </header>
 
+        {/* Transient notice banner (e.g. first-event-pending-review) */}
+        {banner && (
+          <div
+            role="status"
+            onClick={() => setBanner(null)}
+            className="flex-shrink-0"
+            style={{
+              margin: '0 16px 8px', padding: '10px 14px',
+              background: '#FBF6EC', border: '1px solid #E6D3A3', borderRadius: 12,
+              fontSize: 12.5, lineHeight: 1.45, color: '#8C6B3F',
+              fontFamily: 'Inter, system-ui, sans-serif', cursor: 'pointer',
+              display: 'flex', gap: 8, alignItems: 'flex-start',
+            }}
+          >
+            <span style={{ flexShrink: 0 }}>⏳</span>
+            <span>{banner}</span>
+          </div>
+        )}
+
         {/* ── Main content ──────────────────────────────────── */}
         <main className="flex-1 flex flex-col min-h-0" style={{ background: '#F9F7F4' }}>
           {showAdminEmailTest && session && isAdmin(user?.email) ? (
             <AdminEmailTest onClose={() => setShowAdminEmailTest(false)} />
+          ) : showEventReview && session && isAdmin(user?.email) ? (
+            <AdminEventReview onClose={() => setShowEventReview(false)} />
           ) : <>
           {tab === 'discover' && (
             <CardStack
@@ -1050,6 +1075,7 @@ function AppShell() {
               onClearReviewMatch={() => setReviewMatchId(null)}
               onSubmitReview={handleSubmitReview}
               onOpenAdminEmailTest={() => setShowAdminEmailTest(true)}
+              onOpenEventReview={() => setShowEventReview(true)}
               onOpenEvent={(id) => {
                 // Deep-link from Profile → Memory into an event's detail
                 // page. Switching tab AND setting viewingEventId in one
@@ -1087,9 +1113,12 @@ function AppShell() {
           )}
           {tab === 'events' && !editingEventId && !viewingEventId && showCreateEvent && (
             <CreateEventForm
-              onCreated={() => {
+              onCreated={(_data, meta) => {
                 setShowCreateEvent(false)
                 setEventsRefreshKey(k => k + 1)
+                if (meta?.pendingReview) {
+                  setBanner("Your first event is in review — we'll publish it once it's approved. Others can't see it yet.")
+                }
               }}
               onClose={() => setShowCreateEvent(false)}
             />

@@ -45,7 +45,7 @@ function Section({ title, children }) {
  * Profile editing (display name, program, skills, etc.) lives in
  * SettingsPage which is now reused as the "My Profile" sub-tab.
  */
-export default function SettingsTab({ onOpenAdminEmailTest }) {
+export default function SettingsTab({ onOpenAdminEmailTest, onOpenEventReview }) {
   const { user, profile, signOut, deleteAccount } = useAuth()
 
   // Email subscription
@@ -212,6 +212,22 @@ export default function SettingsTab({ onOpenAdminEmailTest }) {
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
             Email center
+          </button>
+          <button
+            type="button"
+            onClick={onOpenEventReview}
+            className="w-full py-3 mt-2 rounded-xl text-sm font-semibold active:scale-[0.98] flex items-center justify-center gap-2"
+            style={{
+              background: C.goldBg,
+              color: C.goldDark,
+              border: `1.5px solid ${C.goldLight}`,
+              cursor: 'pointer',
+            }}
+          >
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Event review
           </button>
           <p style={{
             fontSize: 11, color: C.textMuted, marginTop: 10, lineHeight: 1.5,

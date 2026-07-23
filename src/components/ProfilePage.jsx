@@ -57,6 +57,7 @@ export default function ProfilePage({
   onSubmitReview,
   // Settings sub-tab
   onOpenAdminEmailTest,
+  onOpenEventReview,
   // Memory sub-tab — deep-link to an event's detail page
   onOpenEvent,
 }) {
@@ -184,7 +185,7 @@ export default function ProfilePage({
 
           {active === 'settings' && (
             <div className="px-5 pt-3 pb-10">
-              <SettingsTab onOpenAdminEmailTest={onOpenAdminEmailTest} />
+              <SettingsTab onOpenAdminEmailTest={onOpenAdminEmailTest} onOpenEventReview={onOpenEventReview} />
             </div>
           )}
         </motion.div>

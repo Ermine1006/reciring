@@ -153,7 +153,7 @@ export default function CreateEventForm({ onCreated, onClose }) {
     const clampedMax = Number(maxAttendees) || 10
     const clampedMin = Math.max(0, Math.min(Number(minAttendees) || 0, clampedMax))
 
-    const { data, error: err } = await createEvent({
+    const { data, error: err, pendingReview } = await createEvent({
       title:             title.trim(),
       description:       description.trim(),
       start_at:          combined.toISOString(),
@@ -174,7 +174,10 @@ export default function CreateEventForm({ onCreated, onClose }) {
       return
     }
     clearDraft()
-    onCreated?.(data)
+    // pendingReview → first event from this host; it's awaiting approval and
+    // not yet public. Let the caller tell the user rather than silently
+    // dropping them back to a feed where their event isn't visible.
+    onCreated?.(data, { pendingReview })
   }
 
   return (
