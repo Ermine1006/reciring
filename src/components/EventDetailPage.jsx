@@ -8,6 +8,7 @@ import {
   joinEvent,
   leaveEvent,
   cancelEvent,
+  setEventChatPublic,
 } from '../lib/events'
 import {
   fetchEventMessages,
@@ -110,6 +111,9 @@ export default function EventDetailPage({ eventId, onBack, onEdit }) {
   const isFull = event ? (spotsLeft === 0 && !joined) : false
   const isCancelled = event?.status === 'cancelled'
   const isCompleted = event?.status === 'completed'
+  // Who can read/post in the discussion: attendees, the host, or anyone once
+  // the host has opened the chat to the public.
+  const canChat = joined || isHost || Boolean(event?.chat_public)
   const sponsorBadge = event ? HOST_TYPE_LABEL[event.host_type] : ''
 
   // ── Initial load ──────────────────────────────────────────
@@ -229,6 +233,22 @@ export default function EventDetailPage({ eventId, onBack, onEdit }) {
   // firing navigator.share directly: sharing a generated image lets people
   // post the event to their Instagram story, which a bare link cannot (fb8).
   const [showShare, setShowShare] = useState(false)
+
+  // Host flips the discussion between attendees-only and open-to-anyone.
+  // Optimistic; reverts on error.
+  const [chatToggling, setChatToggling] = useState(false)
+  const handleToggleChatPublic = async () => {
+    if (!event || chatToggling) return
+    const next = !event.chat_public
+    setChatToggling(true)
+    setEvent(prev => ({ ...prev, chat_public: next }))
+    const { error } = await setEventChatPublic(event.id, next)
+    setChatToggling(false)
+    if (error) {
+      setEvent(prev => ({ ...prev, chat_public: !next }))
+      setToast({ type: 'err', msg: error.message || 'Could not update chat' })
+    }
+  }
 
   const handleLeave = async () => {
     if (!user || !event) return
@@ -897,17 +917,37 @@ export default function EventDetailPage({ eventId, onBack, onEdit }) {
           </div>
         )}
 
-        {/* Group thread */}
+        {/* Group thread. canChat = attendee, host, or the host opened it up. */}
         <section ref={chatSectionRef} style={{ ...cardStyle, padding: 0 }}>
           <div style={{ padding: '18px 18px 10px' }}>
-            <p style={sectionLabelStyle}>Discussion</p>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
+              <p style={sectionLabelStyle}>Discussion</p>
+              {isHost && !isCancelled && (
+                <button
+                  type="button"
+                  onClick={handleToggleChatPublic}
+                  disabled={chatToggling}
+                  style={{
+                    flexShrink: 0, padding: '5px 11px', borderRadius: 999,
+                    border: `1px solid ${C.goldLight}`, background: C.goldBg,
+                    color: C.goldDark, fontSize: 11, fontWeight: 700,
+                    letterSpacing: '0.02em', cursor: chatToggling ? 'default' : 'pointer',
+                    fontFamily: 'Inter, system-ui, sans-serif',
+                  }}
+                >
+                  {event.chat_public ? '🌐 Public · make private' : '🔒 Private · make public'}
+                </button>
+              )}
+            </div>
             <p style={{
               fontSize: 12, color: C.textMuted, lineHeight: 1.5,
               fontFamily: 'Inter, system-ui, sans-serif',
               margin: '4px 0 0',
             }}>
-              {joined || isHost
-                ? 'Ask the host about meeting point, parking, what to bring. Visible to all attendees.'
+              {canChat
+                ? (event.chat_public
+                    ? 'Open discussion — anyone can read and post, even before joining.'
+                    : 'Ask the host about meeting point, parking, what to bring. Visible to attendees only.')
                 : 'Join the event to participate in the discussion.'}
             </p>
           </div>
@@ -927,7 +967,7 @@ export default function EventDetailPage({ eventId, onBack, onEdit }) {
                 fontFamily: 'Inter, system-ui, sans-serif',
                 textAlign: 'center', padding: '24px 0',
               }}>
-                No messages yet. {joined || isHost ? 'Start the discussion.' : ''}
+                No messages yet. {canChat ? 'Start the discussion.' : ''}
               </p>
             ) : (
               <ul style={{ listStyle: 'none', padding: '14px 0', margin: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -983,7 +1023,7 @@ export default function EventDetailPage({ eventId, onBack, onEdit }) {
             )}
           </div>
 
-          {(joined || isHost) && !isCancelled && !isCompleted && (
+          {canChat && !isCancelled && !isCompleted && (
             <div style={{ display: 'flex', gap: 8, padding: '12px 14px' }}>
               <input
                 type="text"

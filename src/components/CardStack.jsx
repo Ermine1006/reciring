@@ -62,6 +62,17 @@ export default function CardStack({ requests, unmatchedPostIds, interactionMap, 
   // this list is purely for in-session visual order.
   const [recentlyActedOrder, setRecentlyActedOrder] = useState(() => [])
 
+  // Right-swipe confirmation. A connect with no immediate mutual match opens no
+  // modal, so the card just advances like a pass and the user can't tell their
+  // connect registered ("don't know I swiped right"). This flash always fires
+  // on a right-swipe; a match modal, when there is one, is the stronger signal
+  // on top of it.
+  const [connectFlash, setConnectFlash] = useState(false)
+  const flashConnect = useCallback(() => {
+    setConnectFlash(true)
+    setTimeout(() => setConnectFlash(false), 1400)
+  }, [])
+
   const markRecentlyActed = useCallback((id) => {
     setRecentlyActedOrder(prev => {
       // Remove any prior entry for this id and re-append at the end.
@@ -119,12 +130,13 @@ export default function CardStack({ requests, unmatchedPostIds, interactionMap, 
       // card if creation takes a tick. Once matchedPostIds refreshes,
       // the card disappears entirely.
       markRecentlyActed(request.id)
+      flashConnect()
       onSwipeRight?.(request)
       const result = (await onMatchConfirm?.(request)) || {}
       if (result.error || !result.matchId) return
       setMatch({ id: result.matchId, request, peer: 'Anonymous Peer' })
     },
-    [onSwipeRight, onMatchConfirm, markRecentlyActed]
+    [onSwipeRight, onMatchConfirm, markRecentlyActed, flashConnect]
   )
 
   const handleSwipeLeft = useCallback(
@@ -319,6 +331,32 @@ export default function CardStack({ requests, unmatchedPostIds, interactionMap, 
       <div className="flex flex-col flex-1" style={{ minHeight: 0 }}>
         {/* ── Card region ─────────────────────────────────────── */}
         <div className="relative flex-1" style={{ minHeight: 0 }}>
+          {/* Connect-sent confirmation — always fires on a right-swipe so the
+              user knows it registered even when no mutual match modal opens. */}
+          <AnimatePresence>
+            {connectFlash && (
+              <motion.div
+                initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -8 }}
+                className="absolute pointer-events-none"
+                style={{ top: 16, left: 0, right: 0, zIndex: 30, display: 'flex', justifyContent: 'center' }}
+              >
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '10px 18px', borderRadius: 999,
+                  background: 'rgba(200,169,106,0.96)', color: '#fff',
+                  fontSize: 13, fontWeight: 700, letterSpacing: '0.02em',
+                  fontFamily: 'Inter, system-ui, sans-serif',
+                  boxShadow: '0 8px 24px rgba(200,169,106,0.4)',
+                }}>
+                  <Handshake size={16} stroke="#fff" strokeWidth={2.4} />
+                  Connect sent — you’ll match if they’re in too
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {nextRequest && (
             <RequestCard key={nextRequest.id} request={nextRequest} isTop={false} matchReason={nextRequest._reason} />
           )}

@@ -132,6 +132,17 @@ export async function fetchPendingEvents() {
   return { data: data || [], error }
 }
 
+// Host toggles their event's chat between attendees-only (false) and open to
+// anyone (true). The existing "host can update own event" RLS gates this.
+export async function setEventChatPublic(eventId, isPublic) {
+  if (!isSupabaseConfigured) return { error: new Error('Supabase not configured') }
+  const { error } = await supabase
+    .from('events')
+    .update({ chat_public: Boolean(isPublic) })
+    .eq('id', eventId)
+  return { error }
+}
+
 export async function setEventModeration(eventId, status) {
   if (!isSupabaseConfigured) return { error: new Error('Supabase not configured') }
   if (!['approved', 'rejected'].includes(status)) return { error: new Error('Bad status') }
@@ -207,7 +218,7 @@ export async function fetchEventById(eventId) {
       max_attendees, min_attendees, host_user_id, host_display_name, host_type,
       image_url, is_sponsored, created_at,
       status, cancellation_reason, cancelled_at,
-      attendee_visibility,
+      attendee_visibility, chat_public,
       event_attendees ( count )
     `)
     .eq('id', eventId)

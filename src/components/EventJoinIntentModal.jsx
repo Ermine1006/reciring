@@ -25,14 +25,21 @@ export default function EventJoinIntentModal({ open, eventTitle, prefill, onConf
 
   const handleSubmit = async () => {
     if (busy) return
-    // Both optional — someone can join without stating intentions — but nudge:
-    // an empty need AND empty offer means the matcher has nothing to work with.
+    // Mandatory: both need and offer are required to join. The whole point of
+    // the event is the matching, and the matcher has nothing to work with if
+    // people join blank — so we gate registration on stating intentions.
+    if (!need.trim() || !offer.trim()) {
+      setError('Please fill in both — what you need and what you can offer.')
+      return
+    }
     setBusy(true); setError(null)
     const { error: err } = await onConfirm({ needText: need, offerText: offer })
     setBusy(false)
     if (err) { setError(err.message || 'Could not join'); return }
     // Parent closes on success.
   }
+
+  const canSubmit = need.trim() && offer.trim() && !busy
 
   const field = {
     width: '100%', minHeight: 74, resize: 'vertical',
@@ -90,14 +97,14 @@ export default function EventJoinIntentModal({ open, eventTitle, prefill, onConf
                   Tell us what you're after here. We'll use it to suggest who to meet — and other attendees see it too.
                 </p>
 
-                <p style={label}>What do you need at this event?</p>
+                <p style={label}>What do you need at this event? <span style={{ color: '#DC2626' }}>*</span></p>
                 <textarea
                   value={need} onChange={(e) => setNeed(e.target.value.slice(0, 600))}
                   placeholder="e.g. Intros to AI infra investors; feedback on my eval startup"
                   style={{ ...field, marginBottom: 16 }}
                 />
 
-                <p style={label}>What can you offer?</p>
+                <p style={label}>What can you offer? <span style={{ color: '#DC2626' }}>*</span></p>
                 <textarea
                   value={offer} onChange={(e) => setOffer(e.target.value.slice(0, 600))}
                   placeholder="e.g. Happy to share hiring playbooks; intros to a16z network"
@@ -109,12 +116,13 @@ export default function EventJoinIntentModal({ open, eventTitle, prefill, onConf
                 )}
 
                 <button
-                  type="button" onClick={handleSubmit} disabled={busy}
+                  type="button" onClick={handleSubmit} disabled={!canSubmit}
                   className="active:scale-[0.98]"
                   style={{
                     width: '100%', marginTop: 20, padding: '15px', borderRadius: 14, border: 'none',
-                    background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`, color: C.white,
-                    fontSize: 15, fontWeight: 700, cursor: busy ? 'default' : 'pointer', opacity: busy ? 0.6 : 1,
+                    background: canSubmit ? `linear-gradient(135deg, ${C.gold}, ${C.goldDark})` : '#E5E7EB',
+                    color: canSubmit ? C.white : '#9CA3AF',
+                    fontSize: 15, fontWeight: 700, cursor: canSubmit ? 'pointer' : 'not-allowed',
                     fontFamily: 'Inter, system-ui, sans-serif',
                   }}
                 >
