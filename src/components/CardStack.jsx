@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from 'react'
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { motion, AnimatePresence, useMotionValue } from 'framer-motion'
 import { Handshake } from 'lucide-react'
 import RequestCard from './RequestCard'
@@ -67,10 +67,18 @@ export default function CardStack({ requests, unmatchedPostIds, interactionMap, 
   // connect registered ("don't know I swiped right"). This flash always fires
   // on a right-swipe; a match modal, when there is one, is the stronger signal
   // on top of it.
+  //
+  // Held long enough to read the full sentence — beta feedback was that at
+  // 1.4s it vanished before it registered, feeling shorter than the PASS
+  // stamp. A ref lets rapid swipes reset the timer instead of stacking timers
+  // that cut a later flash short.
+  const CONNECT_FLASH_MS = 2800
   const [connectFlash, setConnectFlash] = useState(false)
+  const connectFlashTimer = useRef(null)
   const flashConnect = useCallback(() => {
+    if (connectFlashTimer.current) clearTimeout(connectFlashTimer.current)
     setConnectFlash(true)
-    setTimeout(() => setConnectFlash(false), 1400)
+    connectFlashTimer.current = setTimeout(() => setConnectFlash(false), CONNECT_FLASH_MS)
   }, [])
 
   const markRecentlyActed = useCallback((id) => {
