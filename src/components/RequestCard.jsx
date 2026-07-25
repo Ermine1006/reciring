@@ -5,7 +5,13 @@ import AnonymousAvatar from './AnonymousAvatar'
 import { posterDisplay } from '../lib/visibility'
 import { resolveAvatarSeed } from './SettingsPage'
 
-const SWIPE_THRESHOLD = 80
+// Distance (px) OR flick speed (px/s) needed to commit a swipe. Lowered from
+// 80 and paired with velocity so a short, quick right-swipe registers: a
+// right-handed thumb swiping RIGHT is a cramped inward motion that used to
+// under-travel and snap back ("connect feels broken"), while swiping LEFT is a
+// natural outward sweep that always cleared the bar.
+const SWIPE_THRESHOLD = 60
+const SWIPE_VELOCITY  = 500
 const ROTATION_RANGE  = 10
 
 const C = {
@@ -72,8 +78,13 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
     setDragging(false)
     setOffset(0)
     onDrag?.(0)
-    if (info.offset.x >  SWIPE_THRESHOLD) onSwipeRight()
-    else if (info.offset.x < -SWIPE_THRESHOLD) onSwipeLeft()
+    // Commit on distance OR a quick flick in that direction, so an under-
+    // travelled but deliberate right-swipe still connects instead of snapping
+    // back to center.
+    const dx = info.offset.x
+    const vx = info.velocity.x
+    if (dx > SWIPE_THRESHOLD || vx > SWIPE_VELOCITY)        onSwipeRight()
+    else if (dx < -SWIPE_THRESHOLD || vx < -SWIPE_VELOCITY) onSwipeLeft()
     // Reset after a tick so the pointerUp handler can read it
     setTimeout(() => setHasDragged(false), 0)
   }
