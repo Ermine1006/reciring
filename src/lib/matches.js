@@ -7,13 +7,21 @@ import { supabase, isSupabaseConfigured } from './supabase'
 export async function createMatch(helperUserId, post) {
   if (!isSupabaseConfigured) return { data: null, error: new Error('Supabase not configured.') }
 
+  // Upsert on the (post_id, helper_user_id) unique key. Picking up a post is
+  // a one-sided, immediate connect — there's no "both must swipe" step. A
+  // plain INSERT raised 23505 whenever the helper re-connected a post they had
+  // previously unmatched (the soft-deleted row lingers), which surfaced as a
+  // jarring "already picked up" alert and the connect silently doing nothing.
+  // Upserting status back to 'active' cleanly REACTIVATES an unmatched row and
+  // is a harmless no-op on an already-active one.
   const { data, error } = await supabase
     .from('matches')
-    .insert({
+    .upsert({
       post_id:           post.id,
       requester_user_id: post.created_by,
       helper_user_id:    helperUserId,
-    })
+      status:            'active',
+    }, { onConflict: 'post_id,helper_user_id' })
     .select()
     .single()
 

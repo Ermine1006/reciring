@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
-import { motion, AnimatePresence, useMotionValue } from 'framer-motion'
+import { useState, useCallback, useEffect, useMemo } from 'react'
+import { motion, useMotionValue } from 'framer-motion'
 import { Handshake } from 'lucide-react'
 import RequestCard from './RequestCard'
 import RequestDetailModal from './RequestDetailModal'
@@ -62,25 +62,6 @@ export default function CardStack({ requests, unmatchedPostIds, interactionMap, 
   // this list is purely for in-session visual order.
   const [recentlyActedOrder, setRecentlyActedOrder] = useState(() => [])
 
-  // Right-swipe confirmation. A connect with no immediate mutual match opens no
-  // modal, so the card just advances like a pass and the user can't tell their
-  // connect registered ("don't know I swiped right"). This flash always fires
-  // on a right-swipe; a match modal, when there is one, is the stronger signal
-  // on top of it.
-  //
-  // Held long enough to read the full sentence — beta feedback was that at
-  // 1.4s it vanished before it registered, feeling shorter than the PASS
-  // stamp. A ref lets rapid swipes reset the timer instead of stacking timers
-  // that cut a later flash short.
-  const CONNECT_FLASH_MS = 2800
-  const [connectFlash, setConnectFlash] = useState(false)
-  const connectFlashTimer = useRef(null)
-  const flashConnect = useCallback(() => {
-    if (connectFlashTimer.current) clearTimeout(connectFlashTimer.current)
-    setConnectFlash(true)
-    connectFlashTimer.current = setTimeout(() => setConnectFlash(false), CONNECT_FLASH_MS)
-  }, [])
-
   const markRecentlyActed = useCallback((id) => {
     setRecentlyActedOrder(prev => {
       // Remove any prior entry for this id and re-append at the end.
@@ -138,13 +119,15 @@ export default function CardStack({ requests, unmatchedPostIds, interactionMap, 
       // card if creation takes a tick. Once matchedPostIds refreshes,
       // the card disappears entirely.
       markRecentlyActed(request.id)
-      flashConnect()
       onSwipeRight?.(request)
+      // A successful connect (new OR reactivated) returns a matchId and opens
+      // the "It's a match!" modal — that IS the confirmation, mirroring how a
+      // left-swipe just advances. No separate flash pill.
       const result = (await onMatchConfirm?.(request)) || {}
       if (result.error || !result.matchId) return
       setMatch({ id: result.matchId, request, peer: 'Anonymous Peer' })
     },
-    [onSwipeRight, onMatchConfirm, markRecentlyActed, flashConnect]
+    [onSwipeRight, onMatchConfirm, markRecentlyActed]
   )
 
   const handleSwipeLeft = useCallback(
@@ -339,32 +322,6 @@ export default function CardStack({ requests, unmatchedPostIds, interactionMap, 
       <div className="flex flex-col flex-1" style={{ minHeight: 0 }}>
         {/* ── Card region ─────────────────────────────────────── */}
         <div className="relative flex-1" style={{ minHeight: 0 }}>
-          {/* Connect-sent confirmation — always fires on a right-swipe so the
-              user knows it registered even when no mutual match modal opens. */}
-          <AnimatePresence>
-            {connectFlash && (
-              <motion.div
-                initial={{ opacity: 0, y: -8, scale: 0.96 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -8 }}
-                className="absolute pointer-events-none"
-                style={{ top: 16, left: 0, right: 0, zIndex: 30, display: 'flex', justifyContent: 'center' }}
-              >
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: 8,
-                  padding: '10px 18px', borderRadius: 999,
-                  background: 'rgba(200,169,106,0.96)', color: '#fff',
-                  fontSize: 13, fontWeight: 700, letterSpacing: '0.02em',
-                  fontFamily: 'Inter, system-ui, sans-serif',
-                  boxShadow: '0 8px 24px rgba(200,169,106,0.4)',
-                }}>
-                  <Handshake size={16} stroke="#fff" strokeWidth={2.4} />
-                  Connect sent — you’ll match if they’re in too
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
           {nextRequest && (
             <RequestCard key={nextRequest.id} request={nextRequest} isTop={false} matchReason={nextRequest._reason} />
           )}

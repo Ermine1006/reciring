@@ -670,23 +670,13 @@ function AppShell() {
     if (!user || !isSupabaseConfigured) return { matchId: null, error: new Error('Not signed in.') }
     const { data, error } = await createMatch(user.id, request)
     if (error) {
-      if (error.code === '23505') {
-        // Unique violation — a match already exists. This is NOT an error from
-        // the user's point of view: they already connected with this post. It
-        // was firing a jarring native alert on every right-swipe of an
-        // already-acted card that had resurfaced in the feed ("right-swipe
-        // feels broken in the app"). Treat it as a benign no-op: refresh the
-        // matched set so the post drops out of Discover, and swallow it. The
-        // card has already advanced and the "Connect sent" flash showed.
-        console.warn('[ReciRing] Already matched with this post — no-op.')
-        loadMatchedPostIds()
-        return { matchId: null, error: null }
-      }
       console.error('[ReciRing] Match creation failed:', error)
       alert('Failed to create match: ' + (error.message || 'Unknown error'))
       return { matchId: null, error }
     }
-    await Promise.all([loadMatches(), loadMatchedPostIds()])
+    // Refresh both sets: the post joins the active-matched set (hidden from
+    // Discover) and leaves the unmatched set if it was a reconnect.
+    await Promise.all([loadMatches(), loadMatchedPostIds(), loadUnmatchedPostIds()])
     return { matchId: data.id, error: null }
   }
 
