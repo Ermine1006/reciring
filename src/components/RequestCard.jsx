@@ -5,13 +5,12 @@ import AnonymousAvatar from './AnonymousAvatar'
 import { posterDisplay } from '../lib/visibility'
 import { resolveAvatarSeed } from './SettingsPage'
 
-// Distance (px) OR flick speed (px/s) needed to commit a swipe. Lowered from
-// 80 and paired with velocity so a short, quick right-swipe registers: a
-// right-handed thumb swiping RIGHT is a cramped inward motion that used to
-// under-travel and snap back ("connect feels broken"), while swiping LEFT is a
-// natural outward sweep that always cleared the bar.
-const SWIPE_THRESHOLD = 60
-const SWIPE_VELOCITY  = 500
+// Distance (px) the card must travel to commit a swipe on release. Kept
+// deliberately high so you can drag right, HOLD to read the big CONNECT stamp,
+// and only connect on a full, intentional swipe — dragging back under the bar
+// cancels. (An earlier attempt lowered this + added a flick trigger, which
+// made the card fly off too eagerly and killed the lingering the user wanted.)
+const SWIPE_THRESHOLD = 90
 const ROTATION_RANGE  = 10
 
 const C = {
@@ -57,10 +56,11 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
   const passOpacity  = offset ? Math.min(-offset / (SWIPE_THRESHOLD * 0.45), 1) : 0
   // While the finger is down the stamp tracks it instantly; on release the
   // opacity transition below lets it linger and fade instead of vanishing
-  // the moment offset snaps back to 0.
+  // the moment offset snaps back to 0. The fade is slow so CONNECT/PASS stay
+  // readable for a beat after you let go.
   const stampTransition = dragging
     ? 'transform 0.05s'
-    : 'opacity 0.5s ease-out, transform 0.3s ease-out'
+    : 'opacity 0.9s ease-out, transform 0.4s ease-out'
 
   const handleDrag = (_, info) => {
     if (!isTop) return
@@ -78,13 +78,8 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
     setDragging(false)
     setOffset(0)
     onDrag?.(0)
-    // Commit on distance OR a quick flick in that direction, so an under-
-    // travelled but deliberate right-swipe still connects instead of snapping
-    // back to center.
-    const dx = info.offset.x
-    const vx = info.velocity.x
-    if (dx > SWIPE_THRESHOLD || vx > SWIPE_VELOCITY)        onSwipeRight()
-    else if (dx < -SWIPE_THRESHOLD || vx < -SWIPE_VELOCITY) onSwipeLeft()
+    if (info.offset.x >  SWIPE_THRESHOLD) onSwipeRight()
+    else if (info.offset.x < -SWIPE_THRESHOLD) onSwipeLeft()
     // Reset after a tick so the pointerUp handler can read it
     setTimeout(() => setHasDragged(false), 0)
   }
@@ -116,7 +111,11 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
       onPointerUp={handlePointerUp}
       drag={isTop ? 'x' : false}
       dragConstraints={{ left: 0, right: 0 }}
-      dragElastic={0.6}
+      // 1:1 with the finger — the card sticks to and moves WITH your thumb
+      // (was 0.6, a laggy rubber-band that pulled back and made CONNECT feel
+      // like it wouldn't stay under your finger). Springs back on release
+      // only if you didn't cross the swipe threshold.
+      dragElastic={1}
       onDrag={handleDrag}
       onDragEnd={handleDragEnd}
       animate={{
