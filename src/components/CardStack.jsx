@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useMemo } from 'react'
-import { motion, useMotionValue } from 'framer-motion'
+import { motion, AnimatePresence, useMotionValue } from 'framer-motion'
 import { Handshake } from 'lucide-react'
 import RequestCard from './RequestCard'
 import RequestDetailModal from './RequestDetailModal'
