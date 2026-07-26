@@ -107,6 +107,13 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
         maxHeight: 'calc(100% - 24px)',
         display: 'flex',
         flexDirection: 'column',
+        // Dragging on the card's TEXT was starting an iOS text selection /
+        // callout mid-swipe, which cancelled the drag so the CONNECT/PASS
+        // stamp stopped tracking the finger and the gesture felt inconsistent.
+        // Suppressing selection keeps the whole gesture with the drag handler.
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
+        WebkitTouchCallout: 'none',
       }}
       onPointerUp={handlePointerUp}
       drag={isTop ? 'x' : false}
