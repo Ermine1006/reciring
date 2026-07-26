@@ -27,6 +27,31 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func applicationDidBecomeActive(_ application: UIApplication) {
         // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
+        hardenWebViewGestures()
+    }
+
+    // The Discover cards are dragged horizontally (swipe left = pass, right =
+    // connect) via framer-motion pointer events. On device the WKWebView's own
+    // scroll view was competing for horizontal pans and its rubber-band bounce
+    // could swallow the continuous move events, so the right-swipe's CONNECT
+    // stamp didn't track the finger consistently. Turn off the web view's
+    // back/forward swipe and horizontal bounce so the card owns the gesture.
+    // Retries briefly because the bridge web view isn't attached on the very
+    // first didBecomeActive of a cold launch.
+    private func hardenWebViewGestures(retriesLeft: Int = 10) {
+        guard let bridgeVC = window?.rootViewController as? CAPBridgeViewController,
+              let webView = bridgeVC.webView else {
+            if retriesLeft > 0 {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+                    self?.hardenWebViewGestures(retriesLeft: retriesLeft - 1)
+                }
+            }
+            return
+        }
+        webView.allowsBackForwardNavigationGestures = false
+        webView.scrollView.bounces = false
+        webView.scrollView.alwaysBounceHorizontal = false
+        webView.scrollView.showsHorizontalScrollIndicator = false
     }
 
     func applicationWillTerminate(_ application: UIApplication) {
