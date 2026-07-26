@@ -52,6 +52,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         webView.scrollView.bounces = false
         webView.scrollView.alwaysBounceHorizontal = false
         webView.scrollView.showsHorizontalScrollIndicator = false
+        // The app scrolls through an inner .phone-scroll div (html/body are
+        // fixed height), so the WKWebView's OWN scroll view is unused — yet its
+        // pan gesture recognizer still competes with the Discover card's
+        // horizontal drag on real touches, so a right-swipe barely moved the
+        // card on device while it worked in a desktop browser. Turning the
+        // native scroll off entirely hands the horizontal gesture cleanly to
+        // the card without affecting the inner scrolling.
+        webView.scrollView.isScrollEnabled = false
     }
 
     func applicationWillTerminate(_ application: UIApplication) {
