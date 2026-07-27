@@ -424,10 +424,10 @@ export default function SubmitRequest({ onSubmitted }) {
                   className="inline-block animate-spin"
                   style={{ width: 12, height: 12, border: `1.5px solid ${C.goldLight}`, borderTopColor: C.goldDark, borderRadius: '50%' }}
                 />
-                Making it easier to help…
+                Improving your request…
               </>
             ) : (
-              <>✨ Make it Easier to Help</>
+              <>✨ Increase My Response Rate</>
             )}
           </button>
         </SectionCard>
