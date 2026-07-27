@@ -1,6 +1,8 @@
-import { useState } from 'react'
-import { motion } from 'framer-motion'
+import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import { HELP_TYPES, INDUSTRIES, TIME_OPTIONS } from '../data/requestOptions'
+import { rewriteText } from '../lib/aiRewrite'
 
 /* ── Design tokens ──────────────────────────────────────────────── */
 const C = {
@@ -216,6 +218,45 @@ export default function SubmitRequest({ onSubmitted }) {
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState(null)
 
+  /* ── "Make it Easier to Help" (AI rewrite of the ask) ── */
+  const [rewriting, setRewriting] = useState(false)
+  // { prevDetails } — holds the pre-rewrite text so Undo can restore it, and
+  // its presence drives the confirmation toast. Cleared on dismiss / undo.
+  const [rewriteUndo, setRewriteUndo] = useState(null)
+  const canRewrite = (details.trim() || title.trim()) && !rewriting
+
+  const handleMakeEasier = async () => {
+    if (!canRewrite) return
+    setRewriting(true)
+    setSubmitError(null)
+    // Rewrite the description; if it's empty, expand the title into one.
+    const source = details.trim() || title.trim()
+    const { text, error } = await rewriteText({
+      kind: 'post',
+      text: source,
+      context: { title: title.trim(), helpType, industry, time, offer: offers.trim() },
+    })
+    setRewriting(false)
+    if (error || !text) {
+      setSubmitError("Couldn't rewrite just now — your text is unchanged.")
+      return
+    }
+    setRewriteUndo({ prevDetails: details })
+    setDetails(text)
+  }
+
+  const undoRewrite = () => {
+    if (rewriteUndo) setDetails(rewriteUndo.prevDetails)
+    setRewriteUndo(null)
+  }
+
+  // Auto-dismiss the confirmation toast; re-arms on each new rewrite.
+  useEffect(() => {
+    if (!rewriteUndo) return
+    const t = setTimeout(() => setRewriteUndo(null), 6000)
+    return () => clearTimeout(t)
+  }, [rewriteUndo])
+
   /* ── Submit ── */
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -361,6 +402,33 @@ export default function SubmitRequest({ onSubmitted }) {
             onFocus={focusGold}
             onBlur={blurReset}
           />
+
+          {/* Subtle secondary action — rewrites the ask in place. */}
+          <button
+            type="button"
+            onClick={handleMakeEasier}
+            disabled={!canRewrite}
+            className="mt-1 inline-flex items-center gap-1.5 transition-all duration-150 active:scale-[0.98]"
+            style={{
+              padding: '6px 11px', borderRadius: 10, background: 'transparent',
+              border: 'none', cursor: canRewrite ? 'pointer' : 'default',
+              color: canRewrite ? C.goldDark : C.textMuted,
+              fontSize: 12, fontWeight: 600, fontFamily: 'Inter, system-ui, sans-serif',
+              opacity: (details.trim() || title.trim()) ? 1 : 0.5,
+            }}
+          >
+            {rewriting ? (
+              <>
+                <span
+                  className="inline-block animate-spin"
+                  style={{ width: 12, height: 12, border: `1.5px solid ${C.goldLight}`, borderTopColor: C.goldDark, borderRadius: '50%' }}
+                />
+                Making it easier to help…
+              </>
+            ) : (
+              <>✨ Make it Easier to Help</>
+            )}
+          </button>
         </SectionCard>
 
         {/* ── OFFERS ────────────────────────────────────── */}
@@ -592,6 +660,52 @@ export default function SubmitRequest({ onSubmitted }) {
             : (isAnonymous ? 'Post anonymously' : 'Post with my name')}
         </button>
       </form>
+
+      {/* Confirmation toast + Undo — rendered to body so it floats above the
+          transformed composer. No modal, no popup. */}
+      {createPortal(
+        <AnimatePresence>
+          {rewriteUndo && (
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 16 }}
+              transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+              style={{
+                position: 'fixed', left: 16, right: 16, bottom: 'calc(env(safe-area-inset-bottom, 0px) + 20px)',
+                zIndex: 90, display: 'flex', justifyContent: 'center', pointerEvents: 'none',
+              }}
+            >
+              <div
+                style={{
+                  pointerEvents: 'auto', display: 'flex', alignItems: 'center', gap: 12,
+                  maxWidth: 460, width: '100%', padding: '12px 14px 12px 16px',
+                  background: '#1A1712', color: '#fff', borderRadius: 14,
+                  boxShadow: '0 12px 32px rgba(0,0,0,0.28)',
+                  fontFamily: 'Inter, system-ui, sans-serif',
+                }}
+              >
+                <span style={{ color: C.goldLight, fontSize: 15, lineHeight: 1 }}>✓</span>
+                <span style={{ flex: 1, fontSize: 13, lineHeight: 1.4 }}>
+                  Your request is now clearer and easier to help with.
+                </span>
+                <button
+                  type="button"
+                  onClick={undoRewrite}
+                  style={{
+                    flexShrink: 0, background: 'transparent', border: 'none', cursor: 'pointer',
+                    color: C.goldLight, fontSize: 13, fontWeight: 700, padding: '4px 6px',
+                    fontFamily: 'Inter, system-ui, sans-serif',
+                  }}
+                >
+                  Undo
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </motion.div>
   )
 }
