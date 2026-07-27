@@ -104,10 +104,22 @@ export default async function handler(req, res) {
     if (!improved) return res.status(502).json({ error: 'Empty rewrite.' })
     return res.status(200).json({ text: improved })
   } catch (err) {
-    console.error('[ai-rewrite] failed:', err?.status, err?.message)
-    if (err instanceof Anthropic.RateLimitError) {
-      return res.status(429).json({ error: 'Busy right now — try again in a moment.' })
+    const status = err?.status
+    const detail = err?.error?.error?.message || err?.message || 'unknown'
+    console.error('[ai-rewrite] failed:', status, detail)
+
+    // Map the most common first-time causes to a clear message. `detail` echoes
+    // the raw Anthropic error so setup problems are diagnosable from the client.
+    let msg = 'Rewrite failed. Please try again.'
+    let code = 502
+    if (status === 401) { msg = 'The Anthropic API key is invalid.'; code = 401 }
+    else if (status === 403) { msg = 'This API key can\'t access the model.'; code = 403 }
+    else if (status === 404) { msg = 'Model not found for this API key.'; code = 404 }
+    else if (status === 429) { msg = 'Busy right now — try again in a moment.'; code = 429 }
+    else if (/credit balance|billing|too low/i.test(detail)) {
+      msg = 'The Anthropic account has no credit — add billing/credits in the Anthropic console.'
+      code = 402
     }
-    return res.status(502).json({ error: 'Rewrite failed. Please try again.' })
+    return res.status(code).json({ error: msg, detail })
   }
 }
