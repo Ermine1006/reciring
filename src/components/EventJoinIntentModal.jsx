@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
+import { rewriteText } from '../lib/aiRewrite'
 
 const C = {
   gold: '#C8A96A', goldDark: '#A88245', goldLight: '#E6D3A3', goldBg: '#FBF6EC',
@@ -40,6 +41,38 @@ export default function EventJoinIntentModal({ open, eventTitle, prefill, onConf
   }
 
   const canSubmit = need.trim() && offer.trim() && !busy
+
+  /* ── "Increase My Response Rate" — AI rewrite of the need ── */
+  const [improving, setImproving]   = useState(false)
+  const [needUndo, setNeedUndo]     = useState(null) // { prev } — drives Undo + confirmation
+  const canImprove = need.trim() && !improving && !busy
+
+  const improveNeed = async () => {
+    if (!canImprove) return
+    setImproving(true); setError(null)
+    const { text, error: err } = await rewriteText({
+      kind: 'event_need',
+      text: need.trim(),
+      maxChars: 600,
+      context: { title: eventTitle, offer: offer.trim() },
+    })
+    setImproving(false)
+    if (err || !text) { setError("Couldn't improve it just now — your text is unchanged."); return }
+    setNeedUndo({ prev: need })
+    setNeed(text)
+  }
+
+  const undoNeed = () => {
+    if (needUndo) setNeed(needUndo.prev)
+    setNeedUndo(null)
+  }
+
+  // Auto-dismiss the "improved" confirmation.
+  useEffect(() => {
+    if (!needUndo) return
+    const t = setTimeout(() => setNeedUndo(null), 6000)
+    return () => clearTimeout(t)
+  }, [needUndo])
 
   const field = {
     width: '100%', minHeight: 74, resize: 'vertical',
@@ -101,8 +134,41 @@ export default function EventJoinIntentModal({ open, eventTitle, prefill, onConf
                 <textarea
                   value={need} onChange={(e) => setNeed(e.target.value.slice(0, 600))}
                   placeholder="e.g. Intros to AI infra investors; feedback on my eval startup"
-                  style={{ ...field, marginBottom: 16 }}
+                  style={{ ...field, marginBottom: 6 }}
                 />
+
+                {/* Subtle AI rewrite of the need — same reusable service as the composer. */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, minHeight: 26, marginBottom: 14 }}>
+                  <button
+                    type="button"
+                    onClick={improveNeed}
+                    disabled={!canImprove}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 6,
+                      padding: '4px 2px', background: 'transparent', border: 'none',
+                      cursor: canImprove ? 'pointer' : 'default',
+                      color: canImprove ? C.goldDark : '#B8B0A2',
+                      fontSize: 12, fontWeight: 600, fontFamily: 'Inter, system-ui, sans-serif',
+                    }}
+                  >
+                    {improving ? (
+                      <>
+                        <span className="inline-block animate-spin" style={{ width: 11, height: 11, border: `1.5px solid ${C.goldLight}`, borderTopColor: C.goldDark, borderRadius: '50%' }} />
+                        Improving…
+                      </>
+                    ) : (
+                      <>✨ Increase My Response Rate</>
+                    )}
+                  </button>
+                  {needUndo && (
+                    <span style={{ fontSize: 11, color: C.textSub, fontFamily: 'Inter, system-ui, sans-serif' }}>
+                      ✓ Clearer now ·{' '}
+                      <button type="button" onClick={undoNeed} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: C.goldDark, fontWeight: 700, fontSize: 11 }}>
+                        Undo
+                      </button>
+                    </span>
+                  )}
+                </div>
 
                 <p style={label}>What can you offer? <span style={{ color: '#DC2626' }}>*</span></p>
                 <textarea

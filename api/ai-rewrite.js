@@ -45,6 +45,18 @@ Examples (original -> improved):
 "Need internship." -> "I'm looking for a summer internship in venture capital or startup investing. If you know of an opportunity or someone I should speak with, I'd really appreciate an introduction."
 "Need help with fundraising." -> "I'm looking for advice from founders or investors who have experience raising pre-seed funding. Even a short conversation or introduction would be incredibly helpful."`,
   },
+
+  // What a student says they NEED at a specific event — drives the in-event
+  // matcher that pairs attendees, so a clear ask means better matches.
+  event_need: {
+    instructions: `You are rewriting what a student says they NEED at a specific networking event. This is what the event's matcher uses to pair them with the right people to meet, so another attendee should instantly see whether they — or someone they know — can help.
+
+Keep it to 1-2 short sentences. Make the ask specific and genuine: name the kind of person, introduction, feedback, or help that would actually move them forward. Do not invent specifics that aren't in the input or context.
+
+Examples (original -> improved):
+"meet investors" -> "Hoping to meet early-stage investors — or anyone who can introduce me to one — for a consumer AI product I'm building."
+"want a job" -> "Looking for leads or referrals for a product role in fintech. If you know a team that's hiring, I'd love an intro."`,
+  },
 }
 
 // Guarantee the rewrite fits the editor's limit even if the model overshoots.
