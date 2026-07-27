@@ -38,13 +38,28 @@ const KINDS = {
   post: {
     instructions: `You are rewriting the description of a request a student is posting. It should read as a genuine, specific ask that a peer can immediately see how to help with.
 
-Aim for 1-2 sentences, well under 200 characters. Where natural, close with a light, low-pressure invitation to connect or make an introduction (e.g. "an intro would be a huge help").
+Keep it to 1-2 short sentences. Where natural, close with a light, low-pressure invitation to connect or make an introduction (e.g. "an intro would be a huge help").
 
 Examples (original -> improved):
 "Looking for a co-founder." -> "I'm looking for a technical co-founder to help build an AI networking platform for MBA communities. If you're interested or know someone who might be a good fit, I'd love to connect."
 "Need internship." -> "I'm looking for a summer internship in venture capital or startup investing. If you know of an opportunity or someone I should speak with, I'd really appreciate an introduction."
 "Need help with fundraising." -> "I'm looking for advice from founders or investors who have experience raising pre-seed funding. Even a short conversation or introduction would be incredibly helpful."`,
   },
+}
+
+// Guarantee the rewrite fits the editor's limit even if the model overshoots.
+// Trims to the last complete sentence within `limit`; falls back to a clean
+// word boundary so we never cut mid-word.
+function clampToLimit(text, limit) {
+  if (!limit || text.length <= limit) return text
+  const slice = text.slice(0, limit)
+  // Prefer ending on a complete sentence within the limit (drop an overflowing
+  // trailing sentence rather than cut it mid-thought). A small floor avoids a
+  // degenerate result if the first sentence is tiny.
+  const lastSentence = Math.max(slice.lastIndexOf('. '), slice.lastIndexOf('! '), slice.lastIndexOf('? '))
+  if (lastSentence >= 40) return slice.slice(0, lastSentence + 1).trim()
+  const lastSpace = slice.lastIndexOf(' ')
+  return (lastSpace > 0 ? slice.slice(0, lastSpace) : slice).replace(/[\s,;:]+$/, '').trim()
 }
 
 function buildContextLine(context = {}) {
@@ -75,8 +90,17 @@ export default async function handler(req, res) {
   const text = String(body.text || '').trim().slice(0, 2000)
   if (!text) return res.status(400).json({ error: 'Nothing to rewrite.' })
 
+  // Hard character ceiling from the caller (the composer passes its editor
+  // limit). Aim a little under it in the prompt so we rarely have to clamp.
+  const maxChars = Number.isFinite(body.maxChars)
+    ? Math.min(Math.max(Math.floor(body.maxChars), 40), 1000)
+    : null
+  const lengthLine = maxChars
+    ? `\n\nHARD LIMIT: your rewrite must be at most ${maxChars} characters — aim for about ${Math.round(maxChars * 0.9)}. Count characters, and cut detail to fit rather than going over.`
+    : ''
+
   const system = `${SHARED_RULES}\n\n${KINDS[kind].instructions}`
-  const userMessage = `Rewrite this so it's clearer and easier to help with:\n\n${text}${buildContextLine(body.context)}`
+  const userMessage = `Rewrite this so it's clearer and easier to help with:\n\n${text}${buildContextLine(body.context)}${lengthLine}`
 
   try {
     const client = new Anthropic() // reads ANTHROPIC_API_KEY from env
@@ -93,7 +117,7 @@ export default async function handler(req, res) {
       return res.status(422).json({ error: 'Could not rewrite this text.' })
     }
 
-    const improved = response.content
+    let improved = response.content
       .filter(b => b.type === 'text')
       .map(b => b.text)
       .join('')
@@ -102,6 +126,7 @@ export default async function handler(req, res) {
       .trim()
 
     if (!improved) return res.status(502).json({ error: 'Empty rewrite.' })
+    improved = clampToLimit(improved, maxChars) // never exceed the editor limit
     return res.status(200).json({ text: improved })
   } catch (err) {
     const status = err?.status

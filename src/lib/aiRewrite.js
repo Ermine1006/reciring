@@ -9,7 +9,7 @@ import { apiUrl } from './apiBase'
 //
 // Returns { text, error }. On any failure, `text` is null and the caller keeps
 // the user's original text untouched.
-export async function rewriteText({ kind = 'post', text, context } = {}) {
+export async function rewriteText({ kind = 'post', text, context, maxChars } = {}) {
   const source = String(text || '').trim()
   if (!source) return { text: null, error: new Error('Nothing to rewrite.') }
 
@@ -17,7 +17,7 @@ export async function rewriteText({ kind = 'post', text, context } = {}) {
     const res = await fetch(apiUrl('/api/ai-rewrite'), {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ kind, text: source, context }),
+      body: JSON.stringify({ kind, text: source, context, maxChars }),
     })
     const data = await res.json().catch(() => ({}))
     if (!res.ok) return { text: null, error: new Error(data.error || 'Rewrite failed.') }

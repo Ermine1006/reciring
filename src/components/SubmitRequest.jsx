@@ -234,6 +234,7 @@ export default function SubmitRequest({ onSubmitted }) {
     const { text, error } = await rewriteText({
       kind: 'post',
       text: source,
+      maxChars: DETAILS_MAX, // keep the rewrite within the Details editor limit
       context: { title: title.trim(), helpType, industry, time, offer: offers.trim() },
     })
     setRewriting(false)
