@@ -57,6 +57,18 @@ Examples (original -> improved):
 "meet investors" -> "Hoping to meet early-stage investors — or anyone who can introduce me to one — for a consumer AI product I'm building."
 "want a job" -> "Looking for leads or referrals for a product role in fintech. If you know a team that's hiring, I'd love an intro."`,
   },
+
+  // What a student says they can OFFER at an event — helps the matcher pair
+  // them with people whose needs they can meet, and makes their value clear.
+  event_offer: {
+    instructions: `You are rewriting what a student says they can OFFER at a specific networking event. This helps the event's matcher pair them with people whose needs they can meet, and makes their value clear to others.
+
+Keep it to 1-2 short sentences. Make the offer concrete and appealing without overselling: name the specific help, introduction, knowledge, or resource they can give. Do not invent expertise, connections, or credentials that aren't in the input or context.
+
+Examples (original -> improved):
+"can help with coding" -> "Happy to talk through technical questions — I build ML systems and can help with architecture, hiring, or getting an MVP shipped."
+"share my network" -> "Glad to make intros in the fintech space, and to share what actually worked (and didn't) when we raised our seed round."`,
+  },
 }
 
 // Guarantee the rewrite fits the editor's limit even if the model overshoots.
@@ -76,11 +88,12 @@ function clampToLimit(text, limit) {
 
 function buildContextLine(context = {}) {
   const parts = []
-  if (context.title)    parts.push(`Post title: ${context.title}`)
+  if (context.title)    parts.push(`Event / post title: ${context.title}`)
   if (context.helpType?.length)  parts.push(`Help type: ${context.helpType.join(', ')}`)
   if (context.industry?.length)  parts.push(`Industry: ${context.industry.join(', ')}`)
   if (context.time)     parts.push(`Time commitment: ${context.time}`)
-  if (context.offer)    parts.push(`What they offer in return: ${context.offer}`)
+  if (context.need)     parts.push(`What they need: ${context.need}`)
+  if (context.offer)    parts.push(`What they offer: ${context.offer}`)
   if (parts.length === 0) return ''
   return `\n\nContext (use only to stay accurate — do not repeat it verbatim or invent beyond it):\n${parts.join('\n')}`
 }

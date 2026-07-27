@@ -42,37 +42,81 @@ export default function EventJoinIntentModal({ open, eventTitle, prefill, onConf
 
   const canSubmit = need.trim() && offer.trim() && !busy
 
-  /* ── "Increase My Response Rate" — AI rewrite of the need ── */
-  const [improving, setImproving]   = useState(false)
-  const [needUndo, setNeedUndo]     = useState(null) // { prev } — drives Undo + confirmation
-  const canImprove = need.trim() && !improving && !busy
+  /* ── "Increase My Response Rate" — AI rewrite of either field ── */
+  const [improvingField, setImprovingField] = useState(null) // 'need' | 'offer' | null
+  const [undoState, setUndoState] = useState(null)           // { field, prev }
 
-  const improveNeed = async () => {
-    if (!canImprove) return
-    setImproving(true); setError(null)
+  const improveField = async (which) => {
+    const source = (which === 'need' ? need : offer).trim()
+    if (!source || improvingField || busy) return
+    setImprovingField(which); setError(null)
     const { text, error: err } = await rewriteText({
-      kind: 'event_need',
-      text: need.trim(),
+      kind: which === 'need' ? 'event_need' : 'event_offer',
+      text: source,
       maxChars: 600,
-      context: { title: eventTitle, offer: offer.trim() },
+      // Give each rewrite the sibling field so it stays coherent with it.
+      context: which === 'need'
+        ? { title: eventTitle, offer: offer.trim() }
+        : { title: eventTitle, need: need.trim() },
     })
-    setImproving(false)
+    setImprovingField(null)
     if (err || !text) { setError("Couldn't improve it just now — your text is unchanged."); return }
-    setNeedUndo({ prev: need })
-    setNeed(text)
+    setUndoState({ field: which, prev: which === 'need' ? need : offer })
+    ;(which === 'need' ? setNeed : setOffer)(text)
   }
 
-  const undoNeed = () => {
-    if (needUndo) setNeed(needUndo.prev)
-    setNeedUndo(null)
+  const undoImprove = () => {
+    if (undoState) (undoState.field === 'need' ? setNeed : setOffer)(undoState.prev)
+    setUndoState(null)
   }
 
   // Auto-dismiss the "improved" confirmation.
   useEffect(() => {
-    if (!needUndo) return
-    const t = setTimeout(() => setNeedUndo(null), 6000)
+    if (!undoState) return
+    const t = setTimeout(() => setUndoState(null), 6000)
     return () => clearTimeout(t)
-  }, [needUndo])
+  }, [undoState])
+
+  // Subtle rewrite button + inline Undo for a given field ('need' | 'offer').
+  const improveRow = (which) => {
+    const source = which === 'need' ? need : offer
+    const busyThis = improvingField === which
+    const canDo = source.trim() && !improvingField && !busy
+    const showUndo = undoState?.field === which
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, minHeight: 26, marginBottom: 14 }}>
+        <button
+          type="button"
+          onClick={() => improveField(which)}
+          disabled={!canDo}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            padding: '4px 2px', background: 'transparent', border: 'none',
+            cursor: canDo ? 'pointer' : 'default',
+            color: canDo ? C.goldDark : '#B8B0A2',
+            fontSize: 12, fontWeight: 600, fontFamily: 'Inter, system-ui, sans-serif',
+          }}
+        >
+          {busyThis ? (
+            <>
+              <span className="inline-block animate-spin" style={{ width: 11, height: 11, border: `1.5px solid ${C.goldLight}`, borderTopColor: C.goldDark, borderRadius: '50%' }} />
+              Improving…
+            </>
+          ) : (
+            <>✨ Increase My Response Rate</>
+          )}
+        </button>
+        {showUndo && (
+          <span style={{ fontSize: 11, color: C.textSub, fontFamily: 'Inter, system-ui, sans-serif' }}>
+            ✓ Clearer now ·{' '}
+            <button type="button" onClick={undoImprove} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: C.goldDark, fontWeight: 700, fontSize: 11 }}>
+              Undo
+            </button>
+          </span>
+        )}
+      </div>
+    )
+  }
 
   const field = {
     width: '100%', minHeight: 74, resize: 'vertical',
@@ -138,44 +182,17 @@ export default function EventJoinIntentModal({ open, eventTitle, prefill, onConf
                 />
 
                 {/* Subtle AI rewrite of the need — same reusable service as the composer. */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, minHeight: 26, marginBottom: 14 }}>
-                  <button
-                    type="button"
-                    onClick={improveNeed}
-                    disabled={!canImprove}
-                    style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 6,
-                      padding: '4px 2px', background: 'transparent', border: 'none',
-                      cursor: canImprove ? 'pointer' : 'default',
-                      color: canImprove ? C.goldDark : '#B8B0A2',
-                      fontSize: 12, fontWeight: 600, fontFamily: 'Inter, system-ui, sans-serif',
-                    }}
-                  >
-                    {improving ? (
-                      <>
-                        <span className="inline-block animate-spin" style={{ width: 11, height: 11, border: `1.5px solid ${C.goldLight}`, borderTopColor: C.goldDark, borderRadius: '50%' }} />
-                        Improving…
-                      </>
-                    ) : (
-                      <>✨ Increase My Response Rate</>
-                    )}
-                  </button>
-                  {needUndo && (
-                    <span style={{ fontSize: 11, color: C.textSub, fontFamily: 'Inter, system-ui, sans-serif' }}>
-                      ✓ Clearer now ·{' '}
-                      <button type="button" onClick={undoNeed} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: C.goldDark, fontWeight: 700, fontSize: 11 }}>
-                        Undo
-                      </button>
-                    </span>
-                  )}
-                </div>
+                {improveRow('need')}
 
                 <p style={label}>What can you offer? <span style={{ color: '#DC2626' }}>*</span></p>
                 <textarea
                   value={offer} onChange={(e) => setOffer(e.target.value.slice(0, 600))}
                   placeholder="e.g. Happy to share hiring playbooks; intros to a16z network"
-                  style={field}
+                  style={{ ...field, marginBottom: 6 }}
                 />
+
+                {/* Same rewrite for the offer — a clearer offer matches more needs. */}
+                {improveRow('offer')}
 
                 {error && (
                   <p style={{ color: '#DC2626', fontSize: 12, margin: '12px 0 0', textAlign: 'center' }}>{error}</p>
