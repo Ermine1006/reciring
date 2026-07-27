@@ -218,36 +218,43 @@ export default function SubmitRequest({ onSubmitted }) {
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState(null)
 
-  /* ── "Make it Easier to Help" (AI rewrite of the ask) ── */
-  const [rewriting, setRewriting] = useState(false)
-  // { prevDetails } — holds the pre-rewrite text so Undo can restore it, and
-  // its presence drives the confirmation toast. Cleared on dismiss / undo.
+  /* ── "Increase My Response Rate" — AI rewrite of the ask OR the offer ── */
+  const [improvingField, setImprovingField] = useState(null) // 'details' | 'offer' | null
+  // { field, prev } — pre-rewrite text for Undo; presence drives the toast.
   const [rewriteUndo, setRewriteUndo] = useState(null)
-  const canRewrite = (details.trim() || title.trim()) && !rewriting
 
-  const handleMakeEasier = async () => {
-    if (!canRewrite) return
-    setRewriting(true)
+  const canImprove = (field) =>
+    !improvingField &&
+    (field === 'details' ? Boolean(details.trim() || title.trim()) : Boolean(offers.trim()))
+
+  const handleImprove = async (field) => {
+    if (!canImprove(field)) return
+    setImprovingField(field)
     setSubmitError(null)
-    // Rewrite the description; if it's empty, expand the title into one.
-    const source = details.trim() || title.trim()
+    const isDetails = field === 'details'
+    // Details: rewrite the description (expand the title if it's empty).
+    // Offer: rewrite what they give in return.
+    const source = isDetails ? (details.trim() || title.trim()) : offers.trim()
     const { text, error } = await rewriteText({
-      kind: 'post',
+      kind: isDetails ? 'post' : 'post_offer',
       text: source,
-      maxChars: DETAILS_MAX, // keep the rewrite within the Details editor limit
-      context: { title: title.trim(), helpType, industry, time, offer: offers.trim() },
+      maxChars: isDetails ? DETAILS_MAX : OFFERS_MAX,
+      // Pass the sibling field so the two stay coherent.
+      context: isDetails
+        ? { title: title.trim(), helpType, industry, time, offer: offers.trim() }
+        : { title: title.trim(), helpType, industry, time, need: details.trim() },
     })
-    setRewriting(false)
+    setImprovingField(null)
     if (error || !text) {
       setSubmitError("Couldn't rewrite just now — your text is unchanged.")
       return
     }
-    setRewriteUndo({ prevDetails: details })
-    setDetails(text)
+    setRewriteUndo({ field, prev: isDetails ? details : offers })
+    ;(isDetails ? setDetails : setOffers)(text)
   }
 
   const undoRewrite = () => {
-    if (rewriteUndo) setDetails(rewriteUndo.prevDetails)
+    if (rewriteUndo) (rewriteUndo.field === 'details' ? setDetails : setOffers)(rewriteUndo.prev)
     setRewriteUndo(null)
   }
 
@@ -257,6 +264,38 @@ export default function SubmitRequest({ onSubmitted }) {
     const t = setTimeout(() => setRewriteUndo(null), 6000)
     return () => clearTimeout(t)
   }, [rewriteUndo])
+
+  // Subtle rewrite button for a field ('details' | 'offer').
+  const improveButton = (field) => {
+    const busyThis = improvingField === field
+    const can = canImprove(field)
+    return (
+      <button
+        type="button"
+        onClick={() => handleImprove(field)}
+        disabled={!can}
+        className="mt-1 inline-flex items-center gap-1.5 transition-all duration-150 active:scale-[0.98]"
+        style={{
+          padding: '6px 11px', borderRadius: 10, background: 'transparent',
+          border: 'none', cursor: can ? 'pointer' : 'default',
+          color: can ? C.goldDark : C.textMuted,
+          fontSize: 12, fontWeight: 600, fontFamily: 'Inter, system-ui, sans-serif',
+        }}
+      >
+        {busyThis ? (
+          <>
+            <span
+              className="inline-block animate-spin"
+              style={{ width: 12, height: 12, border: `1.5px solid ${C.goldLight}`, borderTopColor: C.goldDark, borderRadius: '50%' }}
+            />
+            Improving your {field === 'details' ? 'request' : 'offer'}…
+          </>
+        ) : (
+          <>✨ Increase My Response Rate</>
+        )}
+      </button>
+    )
+  }
 
   /* ── Submit ── */
   const handleSubmit = async (e) => {
@@ -405,31 +444,7 @@ export default function SubmitRequest({ onSubmitted }) {
           />
 
           {/* Subtle secondary action — rewrites the ask in place. */}
-          <button
-            type="button"
-            onClick={handleMakeEasier}
-            disabled={!canRewrite}
-            className="mt-1 inline-flex items-center gap-1.5 transition-all duration-150 active:scale-[0.98]"
-            style={{
-              padding: '6px 11px', borderRadius: 10, background: 'transparent',
-              border: 'none', cursor: canRewrite ? 'pointer' : 'default',
-              color: canRewrite ? C.goldDark : C.textMuted,
-              fontSize: 12, fontWeight: 600, fontFamily: 'Inter, system-ui, sans-serif',
-              opacity: (details.trim() || title.trim()) ? 1 : 0.5,
-            }}
-          >
-            {rewriting ? (
-              <>
-                <span
-                  className="inline-block animate-spin"
-                  style={{ width: 12, height: 12, border: `1.5px solid ${C.goldLight}`, borderTopColor: C.goldDark, borderRadius: '50%' }}
-                />
-                Improving your request…
-              </>
-            ) : (
-              <>✨ Increase My Response Rate</>
-            )}
-          </button>
+          {improveButton('details')}
         </SectionCard>
 
         {/* ── OFFERS ────────────────────────────────────── */}
@@ -478,6 +493,9 @@ export default function SubmitRequest({ onSubmitted }) {
             onFocus={focusWarm}
             onBlur={blurReset}
           />
+
+          {/* Same rewrite for the offer — a clearer offer is easier to say yes to. */}
+          {improveButton('offer')}
         </SectionCard>
 
         {/* ── Micro-feedback ─────────────────────────────── */}
@@ -688,7 +706,9 @@ export default function SubmitRequest({ onSubmitted }) {
               >
                 <span style={{ color: C.goldLight, fontSize: 15, lineHeight: 1 }}>✓</span>
                 <span style={{ flex: 1, fontSize: 13, lineHeight: 1.4 }}>
-                  Your request is now clearer and easier to help with.
+                  {rewriteUndo?.field === 'offer'
+                    ? 'Your offer is now clearer and easier to say yes to.'
+                    : 'Your request is now clearer and easier to help with.'}
                 </span>
                 <button
                   type="button"

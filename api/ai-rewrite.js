@@ -46,6 +46,18 @@ Examples (original -> improved):
 "Need help with fundraising." -> "I'm looking for advice from founders or investors who have experience raising pre-seed funding. Even a short conversation or introduction would be incredibly helpful."`,
   },
 
+  // What a student offers IN RETURN on a Discover request — the reciprocal
+  // exchange. A clear, appealing offer makes their ask easier to say yes to.
+  post_offer: {
+    instructions: `You are rewriting what a student can OFFER in return on a request they're posting. A clear, concrete offer makes the whole request easier to say yes to.
+
+Keep it to 1-2 short sentences. Name the specific help, time, introduction, or knowledge they'll give back — genuine and appealing, without overselling. Do not invent expertise, connections, or credentials that aren't in the input or context.
+
+Examples (original -> improved):
+"can grab coffee" -> "Happy to grab coffee and share what I've learned, and to return the favor however I can down the line."
+"help with resume" -> "In return, I'm glad to review your resume or give feedback on recruiting materials whenever it's useful."`,
+  },
+
   // What a student says they NEED at a specific event — drives the in-event
   // matcher that pairs attendees, so a clear ask means better matches.
   event_need: {
