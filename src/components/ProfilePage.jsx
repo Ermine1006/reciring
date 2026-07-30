@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import SettingsPage from './SettingsPage'
 import SettingsTab from './SettingsTab'
+import ImpactLedger from './ImpactLedger'
 import LeaderboardView from './LeaderboardView'
 import MyEventMemoryPage from './MyEventMemoryPage'
 
@@ -133,7 +134,12 @@ export default function ProfilePage({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.16 }}
         >
-          {active === 'profile' && <SettingsPage />}
+          {active === 'profile' && (
+            <>
+              <ImpactLedger />
+              <SettingsPage />
+            </>
+          )}
 
           {active === 'memory' && (
             <MyEventMemoryPage onOpenEvent={onOpenEvent} />
