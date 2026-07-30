@@ -13,3 +13,11 @@ export function isAdmin(email) {
   if (!email) return false
   return ADMIN_EMAILS.includes(String(email).toLowerCase().trim())
 }
+
+// Where operational notifications (e.g. "a new event needs review") are
+// delivered. This is a monitored inbox, NOT a login identity — the person
+// who actually moderates still signs in with an ADMIN_EMAILS account. Kept
+// separate so the notify address and the authz identity can differ.
+export const REVIEW_NOTIFY_EMAILS = [
+  'hello@muturing.com',
+]

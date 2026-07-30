@@ -28,7 +28,7 @@ import { welcomeTemplate } from './_templates/welcome.js'
 import { eventRegistrationTemplate } from './_templates/event-registration.js'
 import { eventCancellationTemplate } from './_templates/event-cancellation.js'
 import { eventReviewTemplate } from './_templates/event-review.js'
-import { isAdmin, ADMIN_EMAILS } from './_lib/admin.js'
+import { isAdmin, REVIEW_NOTIFY_EMAILS } from './_lib/admin.js'
 import { makeUnsubscribeToken } from './_lib/unsubscribe-token.js'
 import { EMAIL_FROM, APP_URL as APP_URL_FALLBACK } from '../src/lib/branding.js'
 
@@ -221,15 +221,15 @@ async function handleEventAction({ action, eventId, user, admin, APP_URL, RESEND
     let sent = 0, failed = 0
     const errors = []
     let isFirst = true
-    for (const adminEmail of ADMIN_EMAILS) {
+    for (const notifyEmail of REVIEW_NOTIFY_EMAILS) {
       if (!isFirst) await sleep(SEND_INTERVAL_MS)
       isFirst = false
-      const { resendId, sendError } = await sendOne(resend, adminEmail, subject, html)
-      if (sendError) { failed++; errors.push({ recipient: adminEmail, error: sendError.message || String(sendError) }) }
+      const { resendId, sendError } = await sendOne(resend, notifyEmail, subject, html)
+      if (sendError) { failed++; errors.push({ recipient: notifyEmail, error: sendError.message || String(sendError) }) }
       else           { sent++ }
       await admin.from('email_logs').insert({
         user_id:   event.host_user_id,
-        recipient: adminEmail,
+        recipient: notifyEmail,
         template:  'event_review',
         subject,
         status:    sendError ? 'failed' : 'sent',
