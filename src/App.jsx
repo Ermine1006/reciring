@@ -31,6 +31,7 @@ import { isSupabaseConfigured, supabase } from './lib/supabase'
 import { fetchPosts, createPost, updatePost } from './lib/posts'
 import { createMatch, fetchMyMatches, fetchMatchedPostIds, fetchUnmatchedPostIds, unmatchMatch, matchToUI, requestIdentityReveal, acceptIdentityReveal, declineIdentityReveal, fetchPeerProfile } from './lib/matches'
 import { fetchUserInteractions, recordPostInteraction } from './lib/interactions'
+import { fetchCompletedMatchIds } from './lib/recognition'
 import { fetchMessages, sendMessage, sendMeetingProposal, updateMeetingStatus, msgToUI } from './lib/messages'
 
 /* ─── Design tokens ─────────────────────────────────────────────── */
@@ -127,6 +128,7 @@ function AppShell() {
   const [eventDetailRefreshKey, setEventDetailRefreshKey] = useState(0)
   const [requests, setRequests]   = useState([])
   const [matches, setMatches]     = useState([])
+  const [completedMatchIds, setCompletedMatchIds] = useState(new Set())
   const [chatMatchId, setChatMatchId] = useState(null)
   const [chatMessages, setChatMessages] = useState([]) // messages for current chat
   const [peerProfile, setPeerProfile]   = useState(null) // peer's profile when reveal is accepted
@@ -183,6 +185,10 @@ function AppShell() {
     const { data, error } = await fetchMyMatches(user.id)
     if (error) { console.error('[ReciRing] Failed to load matches:', error); return }
     setMatches(data.map(m => matchToUI(m, user.id)))
+    // Refresh which of my matches are "completed" (both tapped "We met"), so the
+    // list can split active vs. past exchanges. Best-effort — ignore errors.
+    const { ids } = await fetchCompletedMatchIds()
+    setCompletedMatchIds(ids)
   }, [user?.id])
 
   useEffect(() => { loadMatches() }, [loadMatches])
@@ -882,6 +888,7 @@ function AppShell() {
             <AppScreen>
               <MatchesList
                 matches={matches}
+                completedMatchIds={completedMatchIds}
                 onOpenChat={(id) => setChatMatchId(id)}
                 revealedMatchIds={revealedMatchIds}
               />

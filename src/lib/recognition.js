@@ -47,6 +47,23 @@ export async function hasRecognized(matchId, userId) {
   return { recognized: Boolean(data), error: null }
 }
 
+// Match ids I'm in where BOTH participants tapped "We met" — i.e. the exchange
+// actually happened, so the match belongs in "Past exchanges". RLS returns only
+// rows for matches I participate in; a match id appearing >=2 times = both
+// confirmed. Returns a Set of match ids.
+export async function fetchCompletedMatchIds() {
+  if (!isSupabaseConfigured) return { ids: new Set(), error: null }
+  const { data, error } = await supabase
+    .from('exchange_confirmations')
+    .select('match_id')
+  if (error) return { ids: new Set(), error }
+  const counts = new Map()
+  for (const r of data || []) counts.set(r.match_id, (counts.get(r.match_id) || 0) + 1)
+  const ids = new Set()
+  for (const [id, n] of counts) if (n >= 2) ids.add(id)
+  return { ids, error: null }
+}
+
 // Coarse trust signal for a user (Slice 4). Returns only qualified +
 // recognizerCount — the view exposes nothing finer. A user with no
 // recognitions has no row → not qualified.
