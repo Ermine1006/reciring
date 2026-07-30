@@ -79,6 +79,15 @@ export async function notifyEventCancellation(eventId) {
   return postEventAction('event_cancel_notification', eventId)
 }
 
+/**
+ * Notify the admin that a first-time host's event is awaiting review.
+ * Server verifies the caller is the host and that the event is still
+ * pending, then emails the admin allowlist. Fire-and-forget.
+ */
+export async function notifyEventReview(eventId) {
+  return postEventAction('event_review_notification', eventId)
+}
+
 async function postEventAction(action, eventId) {
   if (!isSupabaseConfigured) return { data: null, error: new Error('Supabase not configured') }
   if (!eventId)              return { data: null, error: new Error('missing eventId') }

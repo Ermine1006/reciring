@@ -27,7 +27,8 @@ import { createClient } from '@supabase/supabase-js'
 import { welcomeTemplate } from './_templates/welcome.js'
 import { eventRegistrationTemplate } from './_templates/event-registration.js'
 import { eventCancellationTemplate } from './_templates/event-cancellation.js'
-import { isAdmin } from './_lib/admin.js'
+import { eventReviewTemplate } from './_templates/event-review.js'
+import { isAdmin, ADMIN_EMAILS } from './_lib/admin.js'
 import { makeUnsubscribeToken } from './_lib/unsubscribe-token.js'
 import { EMAIL_FROM, APP_URL as APP_URL_FALLBACK } from '../src/lib/branding.js'
 
@@ -52,6 +53,7 @@ const EVENT_ACTIONS = new Set([
   'event_join_confirmation',
   'event_leave_confirmation',
   'event_cancel_notification',
+  'event_review_notification',
 ])
 
 export default async function handler(req, res) {
@@ -117,7 +119,7 @@ async function handleEventAction({ action, eventId, user, admin, APP_URL, RESEND
   // the cancel-notification action for host verification.
   const { data: event, error: eventErr } = await admin
     .from('events')
-    .select('id, title, description, start_at, location, host_user_id, host_display_name, cancellation_reason')
+    .select('id, title, description, start_at, location, host_user_id, host_display_name, cancellation_reason, moderation_status')
     .eq('id', eventId)
     .maybeSingle()
   if (eventErr) return res.status(500).json({ error: 'failed to load event', detail: eventErr.message })
@@ -183,6 +185,59 @@ async function handleEventAction({ action, eventId, user, admin, APP_URL, RESEND
 
     if (sendError) return res.status(502).json({ error: sendError.message || 'send failed' })
     return res.status(200).json({ id: resendId, status: 'sent', action })
+  }
+
+  // ── Admin review notification ────────────────────────────
+  // Fired by the host right after creating a first event that landed in
+  // review. Only the host may trigger it (anti-spam), and only while the
+  // event is actually pending. Recipient is the admin allowlist.
+  if (action === 'event_review_notification') {
+    if (event.host_user_id !== user.id) {
+      return res.status(403).json({ error: 'only the host can request review of their own event' })
+    }
+    if (event.moderation_status !== 'pending') {
+      return res.status(200).json({ skipped: true, reason: 'not_pending', action })
+    }
+
+    // Host email, for the reviewer's context.
+    const { data: hostProfile } = await admin
+      .from('profiles')
+      .select('email')
+      .eq('id', event.host_user_id)
+      .maybeSingle()
+
+    const reviewUrl = APP_URL
+    const { subject, html } = eventReviewTemplate({
+      eventTitle:       event.title,
+      eventStartAt:     event.start_at,
+      eventLocation:    event.location,
+      hostName:         event.host_display_name,
+      hostEmail:        hostProfile?.email || user.email || '',
+      eventDescription: event.description,
+      reviewUrl,
+      appUrl:           APP_URL,
+    })
+
+    let sent = 0, failed = 0
+    const errors = []
+    let isFirst = true
+    for (const adminEmail of ADMIN_EMAILS) {
+      if (!isFirst) await sleep(SEND_INTERVAL_MS)
+      isFirst = false
+      const { resendId, sendError } = await sendOne(resend, adminEmail, subject, html)
+      if (sendError) { failed++; errors.push({ recipient: adminEmail, error: sendError.message || String(sendError) }) }
+      else           { sent++ }
+      await admin.from('email_logs').insert({
+        user_id:   event.host_user_id,
+        recipient: adminEmail,
+        template:  'event_review',
+        subject,
+        status:    sendError ? 'failed' : 'sent',
+        error:     sendError ? (sendError.message || JSON.stringify(sendError)) : null,
+        resend_id: resendId,
+      })
+    }
+    return res.status(sent > 0 ? 200 : 502).json({ sent, failed, errors, action })
   }
 
   // ── Host fan-out: event_cancel_notification ──────────────

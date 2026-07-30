@@ -41,6 +41,10 @@ export default function EventCard({ event, joined, joining, onJoin, onLeave, onC
   // back to local capacity math in case the trigger hasn't fired yet.
   const isFull = !isCancelled && !isCompleted && (event.status === 'full' || (spotsLeft === 0 && !joined))
   const sponsorBadge = HOST_TYPE_LABEL[event.host_type]
+  // A pending event is only ever visible to its own host (enforced by RLS),
+  // so this "under review" state is the author's persistent signal — it's
+  // read from DB state, so it survives re-login (unlike the one-time banner).
+  const isPending = event.moderation_status === 'pending'
 
   return (
     <motion.div
@@ -65,6 +69,27 @@ export default function EventCard({ event, joined, joining, onJoin, onLeave, onC
           height: 3,
           background: `linear-gradient(90deg, ${C.goldLight}, ${C.gold}, ${C.goldDark})`,
         }} />
+      )}
+
+      {/* Under-review notice — persistent (DB-derived), shown only to the
+          host of a pending event. Fixes the "I don't know it's in review"
+          + "the reminder disappears on re-login" gaps. */}
+      {isPending && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          background: C.goldBg,
+          borderBottom: `1px solid ${C.goldLight}`,
+          padding: '10px 18px',
+        }}>
+          <span style={{ fontSize: 15, lineHeight: 1 }}>⏳</span>
+          <p style={{
+            margin: 0, fontSize: 12, lineHeight: 1.4,
+            color: C.goldDark, fontWeight: 600,
+            fontFamily: 'Inter, system-ui, sans-serif',
+          }}>
+            Under review — only you can see this until it's approved.
+          </p>
+        </div>
       )}
 
       <div style={{ padding: '16px 18px' }}>
@@ -191,7 +216,7 @@ export default function EventCard({ event, joined, joining, onJoin, onLeave, onC
                 borderRadius: 10, padding: '8px 12px',
                 fontFamily: 'Inter, system-ui, sans-serif',
               }}>
-                Your event
+                {isPending ? 'In review' : 'Your event'}
               </span>
               <button
                 type="button"

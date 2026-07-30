@@ -32,6 +32,7 @@ import { fetchPosts, createPost, updatePost } from './lib/posts'
 import { createMatch, fetchMyMatches, fetchMatchedPostIds, fetchUnmatchedPostIds, unmatchMatch, matchToUI, requestIdentityReveal, acceptIdentityReveal, declineIdentityReveal, fetchPeerProfile } from './lib/matches'
 import { fetchUserInteractions, recordPostInteraction } from './lib/interactions'
 import { fetchCompletedMatchIds } from './lib/recognition'
+import { notifyEventReview } from './lib/email'
 import { fetchMessages, sendMessage, sendMeetingProposal, updateMeetingStatus, msgToUI } from './lib/messages'
 
 /* ─── Design tokens ─────────────────────────────────────────────── */
@@ -965,11 +966,13 @@ function AppShell() {
           )}
           {tab === 'events' && !editingEventId && !viewingEventId && showCreateEvent && (
             <CreateEventForm
-              onCreated={(_data, meta) => {
+              onCreated={(data, meta) => {
                 setShowCreateEvent(false)
                 setEventsRefreshKey(k => k + 1)
                 if (meta?.pendingReview) {
-                  setBanner("Your first event is in review — we'll publish it once it's approved. Others can't see it yet.")
+                  setBanner("Your first event is in review — we'll publish it once it's approved. Others can't see it yet. It stays marked “Under review” on your Events tab until then.")
+                  // Alert the admin there's something to review (fire-and-forget).
+                  if (data?.id) notifyEventReview(data.id)
                 }
               }}
               onClose={() => setShowCreateEvent(false)}
