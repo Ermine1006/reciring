@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import { fetchTrustSignal } from '../lib/recognition'
 import { Handshake, X } from 'lucide-react'
 import AnonymousAvatar from './AnonymousAvatar'
 import { posterDisplay } from '../lib/visibility'
@@ -48,6 +49,20 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
   const [offset, setOffset] = useState(0)
   const [hasDragged, setHasDragged] = useState(false)
   const [dragging, setDragging] = useState(false)
+
+  // Coarse trust signal for the poster (Slice 4) — shown only once ≥3 distinct
+  // people have recognized them. Floored to 3+/5+/10+, no identity revealed.
+  const posterId = request?.created_by || request?.poster_id
+  const [trust, setTrust] = useState(null)
+  useEffect(() => {
+    let alive = true
+    if (!posterId) { setTrust(null); return }
+    fetchTrustSignal(posterId).then(t => { if (alive) setTrust(t) })
+    return () => { alive = false }
+  }, [posterId])
+  const trustTier = !trust?.qualified ? null
+    : trust.recognizerCount >= 10 ? '10+'
+    : trust.recognizerCount >= 5  ? '5+' : '3+'
   const [showHint, setShowHint] = useState(() => !swipeHintSeen())
   const rotate       = offset ? Math.min(Math.max(offset / 16, -ROTATION_RANGE), ROTATION_RANGE) : 0
   // Stamps reach full strength at ~45% of the swipe distance instead of 100%,
@@ -481,6 +496,24 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
                 textOverflow: 'ellipsis',
               }}>
                 {matchReason}
+              </p>
+            )}
+            {/* Trust line (Slice 4) — quiet metadata row, below the reasoning.
+                No identity, no chip detail; only the floored recognizer count. */}
+            {trustTier && (
+              <p style={{
+                fontSize: 11,
+                color: C.textMuted,
+                fontWeight: 500,
+                fontFamily: 'Inter, system-ui, sans-serif',
+                marginTop: 4,
+                display: 'flex', alignItems: 'center', gap: 5,
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.goldDark} strokeWidth="2" style={{ flexShrink: 0 }}>
+                  <circle cx="12" cy="12" r="9" /><path d="M9 12l2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Consistently follows through · recognized by {trustTier} members
               </p>
             )}
           </div>

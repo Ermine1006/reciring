@@ -47,6 +47,20 @@ export async function hasRecognized(matchId, userId) {
   return { recognized: Boolean(data), error: null }
 }
 
+// Coarse trust signal for a user (Slice 4). Returns only qualified +
+// recognizerCount — the view exposes nothing finer. A user with no
+// recognitions has no row → not qualified.
+export async function fetchTrustSignal(userId) {
+  if (!isSupabaseConfigured || !userId) return { qualified: false, recognizerCount: 0, error: null }
+  const { data, error } = await supabase
+    .from('trust_signal')
+    .select('qualified, recognizer_count')
+    .eq('user_id', userId)
+    .maybeSingle()
+  if (error) return { qualified: false, recognizerCount: 0, error }
+  return { qualified: Boolean(data?.qualified), recognizerCount: data?.recognizer_count || 0, error: null }
+}
+
 // Submit my recognition of the peer. free_text is private (never returned to
 // the receiver — enforced by RLS + the recognition_received view).
 export async function submitRecognition({ matchId, giverId, receiverId, chips, freeText }) {
