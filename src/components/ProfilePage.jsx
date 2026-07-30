@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import SettingsPage from './SettingsPage'
 import SettingsTab from './SettingsTab'
-import PendingReviewsList from './PendingReviewsList'
-import RatingReview from './RatingReview'
 import LeaderboardView from './LeaderboardView'
 import MyEventMemoryPage from './MyEventMemoryPage'
 
@@ -25,7 +23,6 @@ const C = {
 const SUB_TABS = [
   { id: 'profile',     label: 'Profile'  },
   { id: 'memory',      label: 'Memory'   },
-  { id: 'reviews',     label: 'Reviews'  },
   { id: 'leaderboard', label: 'Rank'     },
   { id: 'settings',    label: 'Settings' },
 ]
@@ -35,26 +32,13 @@ const SUB_TABS = [
  *
  * Sub-tabs:
  *   My Profile  → SettingsPage (the editor)
- *   Reviews     → PendingReviewsList + RatingReview flow
  *   Leaderboard → LeaderboardView
  *   Settings    → SettingsTab (email prefs, admin, account)
- *
- * The "Reviews" sub-tab still cooperates with App.jsx's reviewMatchId
- * state so that ChatView can deep-link from "Review user" — App sets
- * tab='profile' and subTab='reviews' and reviewMatchId together.
  */
 export default function ProfilePage({
-  // Sub-tab routing (lifted to App so chat→review deep-links work)
   subTab,
   onSubTabChange,
-  // Reviews sub-tab
-  pendingReviewMatches,
-  pastReviews,
   allMatches,
-  reviewMatchId,
-  onSelectReviewMatch,
-  onClearReviewMatch,
-  onSubmitReview,
   // Settings sub-tab
   onOpenAdminEmailTest,
   onOpenEventReview,
@@ -68,12 +52,6 @@ export default function ProfilePage({
     if (onSubTabChange) onSubTabChange(id)
     else                setLocalSub(id)
   }
-
-  // Switching away from Reviews while a specific match was being
-  // rated should clear that selection so the next visit starts fresh.
-  useEffect(() => {
-    if (active !== 'reviews' && reviewMatchId) onClearReviewMatch?.()
-  }, [active]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div
@@ -159,26 +137,6 @@ export default function ProfilePage({
 
           {active === 'memory' && (
             <MyEventMemoryPage onOpenEvent={onOpenEvent} />
-          )}
-
-          {active === 'reviews' && (
-            <div className="px-2" style={{ padding: '0 0 16px' }}>
-              {reviewMatchId ? (
-                <RatingReview
-                  matchId={reviewMatchId}
-                  peerName={allMatches?.find(m => m.id === reviewMatchId)?.request?.needs?.slice(0, 30) || 'your match'}
-                  onSubmitted={onSubmitReview}
-                  onBack={onClearReviewMatch}
-                />
-              ) : (
-                <PendingReviewsList
-                  matches={pendingReviewMatches || []}
-                  pastReviews={pastReviews || []}
-                  allMatches={allMatches || []}
-                  onSelect={onSelectReviewMatch}
-                />
-              )}
-            </div>
           )}
 
           {active === 'leaderboard' && <LeaderboardView />}

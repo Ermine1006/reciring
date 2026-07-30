@@ -3,8 +3,6 @@ import CardStack from './components/CardStack'
 import PostHub from './components/PostHub'
 import AppScreen from './components/AppScreen'
 import MatchesList from './components/MatchesList'
-import RatingReview from './components/RatingReview'
-import PendingReviewsList from './components/PendingReviewsList'
 import ReciRingLogo from './components/ReciRingLogo'
 import { MOCK_REQUESTS } from './data/mockRequests'
 import LeaderboardView from './components/LeaderboardView'
@@ -16,7 +14,6 @@ import ResetPasswordPage from './components/ResetPasswordPage'
 import NewMatchModal from './components/NewMatchModal'
 import LinkAccountPrompt from './components/LinkAccountPrompt'
 import NotificationBell from './components/NotificationBell'
-import PostMatchFeedbackPrompt from './components/PostMatchFeedbackPrompt'
 import SettingsPage, { resolveAvatarSeed } from './components/SettingsPage'
 import OnboardingProfile from './components/OnboardingProfile'
 import AnonymousAvatar from './components/AnonymousAvatar'
@@ -133,9 +130,6 @@ function AppShell() {
   const [chatMatchId, setChatMatchId] = useState(null)
   const [chatMessages, setChatMessages] = useState([]) // messages for current chat
   const [peerProfile, setPeerProfile]   = useState(null) // peer's profile when reveal is accepted
-  const [reviewMatchId, setReviewMatchId] = useState(null) // which match is being reviewed
-  const [reviewedMatchIds, setReviewedMatchIds] = useState(new Set()) // matches already reviewed by current user
-  const [pastReviews, setPastReviews] = useState([]) // full review objects for display
   const [profileHovered, setProfileHovered] = useState(false)
   const [blockedIds, setBlockedIds] = useState(new Set())
   const [matchedPostIds, setMatchedPostIds] = useState(new Set())
@@ -407,29 +401,6 @@ function AppShell() {
     setNewMatchModalOpen(false)
   }, [latestNewMatch, persistAck])
 
-  // ── Post-match feedback prompt ───────────────────────────────
-  // Fires for matches >= 24h old that the viewer hasn't reviewed yet.
-  // Snooze persists in localStorage with a 48h TTL per match.
-  const [feedbackPromptOpen, setFeedbackPromptOpen]   = useState(false)
-  const [feedbackPromptMatch, setFeedbackPromptMatch] = useState(null)
-  const shownFeedbackRef = useRef(new Set()) // session-level dedupe
-  const snoozeKey = user ? `reciring:fbSnooze:${user.id}` : null
-
-  const loadSnoozeMap = useCallback(() => {
-    if (!snoozeKey) return {}
-    try { return JSON.parse(localStorage.getItem(snoozeKey) || '{}') }
-    catch { return {} }
-  }, [snoozeKey])
-
-  const persistSnooze = useCallback((matchId, hours = 48) => {
-    if (!snoozeKey) return
-    try {
-      const map = loadSnoozeMap()
-      map[matchId] = Date.now() + hours * 3600_000
-      localStorage.setItem(snoozeKey, JSON.stringify(map))
-    } catch {}
-  }, [snoozeKey, loadSnoozeMap])
-
   // Load blocked user ids on mount
   useEffect(() => {
     if (!user) return
@@ -437,80 +408,6 @@ function AppShell() {
       if (data) setBlockedIds(new Set(data))
     })
   }, [user?.id])
-
-  // Load reviewed match IDs + past reviews with post context
-  const loadReviewedMatchIds = useCallback(async () => {
-    if (!isSupabaseConfigured || !user) return
-    const { data, error } = await supabase
-      .from('reviews')
-      .select(`
-        id, match_id, rating, comment, created_at,
-        match:matches (
-          post:posts ( need_text, offer_text )
-        )
-      `)
-      .eq('reviewer_user_id', user.id)
-      .order('created_at', { ascending: false })
-    if (error) { console.error('[ReciRing] Failed to load reviews:', error); return }
-    setReviewedMatchIds(new Set((data || []).map(r => r.match_id)))
-    setPastReviews((data || []).map(r => ({
-      ...r,
-      postNeeds:  r.match?.post?.need_text || null,
-      postOffers: r.match?.post?.offer_text || null,
-    })))
-  }, [user?.id])
-
-  useEffect(() => { loadReviewedMatchIds() }, [loadReviewedMatchIds])
-
-  // Matches the current user has NOT yet reviewed
-  const pendingReviewMatches = useMemo(
-    () => matches.filter(m => !reviewedMatchIds.has(m.id)),
-    [matches, reviewedMatchIds]
-  )
-
-  // Fire the post-match feedback prompt for the oldest ripe candidate.
-  // Ripe = pending review AND >= 24h old AND not snoozed AND not shown this session.
-  // Suppressed when other modals are open (new-match popup, review form, chat).
-  useEffect(() => {
-    if (!user || feedbackPromptOpen || newMatchModalOpen || reviewMatchId || chatMatchId) return
-    if (pendingReviewMatches.length === 0) return
-
-    const snooze = loadSnoozeMap()
-    const now = Date.now()
-    const RIPE_AFTER_MS = 24 * 3600_000
-
-    // Sort oldest-first so we ask about the longest-pending match
-    const candidate = [...pendingReviewMatches]
-      .filter(m => {
-        if (shownFeedbackRef.current.has(m.id)) return false
-        const snoozedUntil = snooze[m.id]
-        if (snoozedUntil && snoozedUntil > now) return false
-        const ageMs = now - new Date(m.createdAt).getTime()
-        return ageMs >= RIPE_AFTER_MS
-      })
-      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))[0]
-
-    if (candidate) {
-      shownFeedbackRef.current.add(candidate.id)
-      setFeedbackPromptMatch(candidate)
-      setFeedbackPromptOpen(true)
-    }
-  }, [pendingReviewMatches, user?.id, feedbackPromptOpen, newMatchModalOpen, reviewMatchId, chatMatchId, loadSnoozeMap])
-
-  const handleFeedbackReview = useCallback((matchId) => {
-    setFeedbackPromptOpen(false)
-    setReviewMatchId(matchId)
-    // Reviews is a SUB-tab under Profile, not a top-level tab.
-    // Setting tab='reviews' falls through every render block and
-    // shows a blank screen.
-    setTab('profile')
-    setProfileSubTab('reviews')
-  }, [])
-
-  const handleFeedbackSnooze = useCallback(() => {
-    if (feedbackPromptMatch) persistSnooze(feedbackPromptMatch.id)
-    setFeedbackPromptOpen(false)
-  }, [feedbackPromptMatch, persistSnooze])
 
   // ── Notification routing — bell click → correct view ─────────
   const handleNotificationOpen = useCallback((n) => {
@@ -525,13 +422,13 @@ function AppShell() {
         }
         break
       case 'feedback_request':
-        if (matchId) setReviewMatchId(matchId)
-        setTab('profile')
-        setProfileSubTab('reviews')
+        // Recognition now happens inside the match thread — open it there.
+        if (matchId) { setTab('matches'); setChatMatchId(matchId) }
+        else { setTab('profile'); setProfileSubTab('profile') }
         break
       case 'review_received':
         setTab('profile')
-        setProfileSubTab('reviews')
+        setProfileSubTab('profile')
         break
       case 'event_cancelled':
       case 'event_joined':
@@ -818,50 +715,6 @@ function AppShell() {
     }
   }
 
-  // ── Submit a review ─────────────────────────────────────────
-  const handleSubmitReview = async ({ matchId, rating, review }) => {
-    if (!user || !isSupabaseConfigured) return { error: new Error('Not signed in.') }
-    const match = matches.find(m => m.id === matchId)
-    if (!match) return { error: new Error('Match not found.') }
-
-    const { error } = await supabase
-      .from('reviews')
-      .insert({
-        match_id:         matchId,
-        reviewer_user_id: user.id,
-        reviewed_user_id: match.peerId,
-        rating,
-        comment:          review || '',
-      })
-
-    if (error) {
-      if (error.code === '23505') return { error: new Error('You already reviewed this match.') }
-      return { error }
-    }
-    // Optimistic: immediately remove from pending list + add to past reviews
-    setReviewedMatchIds(prev => new Set([...prev, matchId]))
-    setPastReviews(prev => [{
-      id: `temp-${Date.now()}`,
-      match_id: matchId,
-      rating,
-      comment: review || '',
-      created_at: new Date().toISOString(),
-    }, ...prev])
-    setReviewMatchId(null)
-
-    // Clear any outstanding feedback_request notifications for this match
-    supabase
-      .from('notifications')
-      .update({ read_at: new Date().toISOString() })
-      .eq('user_id', user.id)
-      .eq('type', 'feedback_request')
-      .is('read_at', null)
-      .filter('payload->>match_id', 'eq', matchId)
-      .then(() => {})
-
-    return {}
-  }
-
   return (
     /*
      * Desktop: warm-cream canvas, phone centered.
@@ -1046,11 +899,11 @@ function AppShell() {
                 onProposeMeeting={(data) => handleProposeMeeting(chatMatchId, data)}
                 onMeetingResponse={(msgId, status) => handleMeetingResponse(chatMatchId, msgId, status)}
                 onBack={() => setChatMatchId(null)}
-                onNavigateReview={() => {
-                  setReviewMatchId(chatMatchId)
+                currentUserId={user?.id}
+                onSeeImpact={() => {
                   setChatMatchId(null)
                   setTab('profile')
-                  setProfileSubTab('reviews')
+                  setProfileSubTab('profile')
                 }}
                 onReport={handleReport}
                 onBlock={handleBlock}
@@ -1065,13 +918,7 @@ function AppShell() {
             <ProfilePage
               subTab={profileSubTab}
               onSubTabChange={setProfileSubTab}
-              pendingReviewMatches={pendingReviewMatches}
-              pastReviews={pastReviews}
               allMatches={matches}
-              reviewMatchId={reviewMatchId}
-              onSelectReviewMatch={(id) => setReviewMatchId(id)}
-              onClearReviewMatch={() => setReviewMatchId(null)}
-              onSubmitReview={handleSubmitReview}
               onOpenAdminEmailTest={() => setShowAdminEmailTest(true)}
               onOpenEventReview={() => setShowEventReview(true)}
               onOpenEvent={(id) => {
@@ -1179,16 +1026,6 @@ function AppShell() {
           match={latestNewMatch}
           onView={handleNewMatchView}
           onDismiss={handleNewMatchDismiss}
-        />
-
-        {/* ── Post-match feedback prompt (24h after match) ────── */}
-        <PostMatchFeedbackPrompt
-          open={feedbackPromptOpen}
-          match={feedbackPromptMatch}
-          onReview={handleFeedbackReview}
-          onSnooze={handleFeedbackSnooze}
-          onDismiss={() => setFeedbackPromptOpen(false)}
-          onUnmatch={(id) => { handleFeedbackSnooze(); handleUnmatch(id) }}
         />
 
         {/* ── Link Google account prompt (one-shot, institutional) ─ */}

@@ -5,6 +5,7 @@ import CoffeeChatModal from './CoffeeChatModal'
 import ReportModal from './ReportModal'
 import IdentityRevealRequestModal from './IdentityRevealRequestModal'
 import PeerProfileCard from './PeerProfileCard'
+import RecognitionCard from './RecognitionCard'
 
 const C = {
   gold:      '#C8A96A',
@@ -179,7 +180,7 @@ function shouldRevealIdentity(messages) {
   return false
 }
 
-export default function ChatView({ match, messages, onSend, onProposeMeeting, onMeetingResponse, onBack, autoOpenSchedule, onScheduleOpened, scheduleFeedback, onNavigateReview, peerProfile, onReport, onBlock, onUnmatch, onRequestReveal, onAcceptReveal, onDeclineReveal }) {
+export default function ChatView({ match, messages, onSend, onProposeMeeting, onMeetingResponse, onBack, autoOpenSchedule, onScheduleOpened, scheduleFeedback, currentUserId, onSeeImpact, peerProfile, onReport, onBlock, onUnmatch, onRequestReveal, onAcceptReveal, onDeclineReveal }) {
   const [input, setInput]               = useState('')
   const [showCoffee, setShowCoffee]     = useState(false)
   const [showFollowUp, setShowFollowUp] = useState(false)
@@ -391,23 +392,6 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
                   View peer profile
                 </button>
               )}
-              {onNavigateReview && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowSafetyMenu(false)
-                    onNavigateReview()
-                  }}
-                  style={{
-                    display: 'block', width: '100%', textAlign: 'left',
-                    padding: '11px 16px', fontSize: 13, fontWeight: 500,
-                    color: '#C8A96A', background: 'none', border: 'none', cursor: 'pointer',
-                    borderTop: '1px solid #F3F4F6',
-                  }}
-                >
-                  Review user
-                </button>
-              )}
               {onUnmatch && (
                 <button
                   type="button"
@@ -511,6 +495,17 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
             </div>
           </div>
         )}
+
+        {/* ── Recognition (replaces the old rating flow) ── */}
+        <div style={{ margin: '0 16px 16px' }}>
+          <RecognitionCard
+            matchId={match?.id}
+            peerId={match?.peerId}
+            peerName={peerProfile?.name || peerProfile?.first_name || null}
+            currentUserId={currentUserId}
+            onSeeImpact={onSeeImpact}
+          />
+        </div>
 
         {/* ── Identity reveal banners ───────────────────── */}
         {isPendingForMe && (
@@ -784,7 +779,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
               </p>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button
-                  onClick={() => { setShowFollowUp(false); onNavigateReview?.() }}
+                  onClick={() => setShowFollowUp(false)}
                   style={{
                     flex: 1, padding: '9px 0', borderRadius: 12,
                     background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
