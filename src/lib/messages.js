@@ -94,7 +94,8 @@ export function msgToUI(row, currentUserId) {
 
   return {
     id:        row.id,
-    senderId:  row.sender_user_id === currentUserId ? 'me' : 'peer',
+    // ChatView renders a centered system line when senderId === 'system'.
+    senderId:  type === 'system' ? 'system' : (row.sender_user_id === currentUserId ? 'me' : 'peer'),
     content:   row.body,
     type,
     timestamp: row.created_at,

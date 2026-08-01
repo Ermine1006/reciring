@@ -43,6 +43,12 @@ export async function fetchMyMatches(userId) {
       post:posts (
         id, need_text, offer_text, help_type, industry_tag,
         time_commitment, urgency, created_by
+      ),
+      marketplace:event_marketplace_posts (
+        id, type, title, description, event_id
+      ),
+      event:events (
+        id, title
       )
     `)
     .or(`requester_user_id.eq.${userId},helper_user_id.eq.${userId}`)
@@ -66,7 +72,8 @@ export async function fetchMatchedPostIds(userId) {
     .eq('status', 'active')
 
   if (error) return { data: [], error }
-  return { data: (data || []).map(r => r.post_id), error: null }
+  // Marketplace matches have a null post_id — drop them (nothing to hide in Discover).
+  return { data: (data || []).map(r => r.post_id).filter(Boolean), error: null }
 }
 
 /**
@@ -117,10 +124,37 @@ export async function unmatchMatch(matchId) {
 export function matchToUI(row, currentUserId) {
   const isHelper = row.helper_user_id === currentUserId
   const peerId = isHelper ? row.requester_user_id : row.helper_user_id
-  const post = row.post || {}
 
   const revealStatus = row.identity_reveal_status || 'none'
   const revealRequestedBy = row.identity_reveal_requested_by || null
+
+  // A marketplace match (born from an Event Marketplace connection) has no
+  // peer-networking post — its context is the marketplace need/offer. Flatten
+  // it into the same `request` shape ChatView expects.
+  const mkt = row.marketplace || null
+  const request = mkt
+    ? {
+        id:       mkt.id,
+        needs:    mkt.type === 'need'  ? mkt.title : null,
+        offers:   mkt.type === 'offer' ? mkt.title : null,
+        category: mkt.type === 'need' ? 'Looking for' : 'Offering',
+        tags:     [],
+        time:     '15 min',
+        urgency:  null,
+        description: mkt.description || '',
+      }
+    : (() => {
+        const post = row.post || {}
+        return {
+          id:       post.id,
+          needs:    post.need_text,
+          offers:   post.offer_text,
+          category: post.help_type?.[0] || 'Other',
+          tags:     [...(post.help_type || []), ...(post.industry_tag || [])],
+          time:     post.time_commitment || '15 min',
+          urgency:  post.urgency,
+        }
+      })()
 
   return {
     id:              row.id,
@@ -129,15 +163,11 @@ export function matchToUI(row, currentUserId) {
     isHelper,
     status:          row.status,
     createdAt:       row.created_at,
-    request: {
-      id:       post.id,
-      needs:    post.need_text,
-      offers:   post.offer_text,
-      category: post.help_type?.[0] || 'Other',
-      tags:     [...(post.help_type || []), ...(post.industry_tag || [])],
-      time:     post.time_commitment || '15 min',
-      urgency:  post.urgency,
-    },
+    // Marketplace-match context (null for ordinary peer-networking matches).
+    isMarketplace:   Boolean(mkt),
+    eventId:         row.event_id || null,
+    eventTitle:      row.event?.title || null,
+    request,
     reveal: {
       status:           revealStatus,                 // 'none' | 'pending' | 'accepted' | 'declined'
       requestedBy:      revealRequestedBy,            // user id of initiator

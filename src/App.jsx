@@ -440,7 +440,10 @@ function AppShell() {
       case 'event_cancelled':
       case 'event_joined':
       case 'event_message':
-      case 'event_below_min': {
+      case 'event_below_min':
+      case 'marketplace_interest': {
+        // marketplace_interest: open the event so the owner can review interest
+        // in the Marketplace tab.
         const eventId = n.payload?.event_id
         setTab('events')
         setEditingEventId(null)
@@ -955,6 +958,7 @@ function AppShell() {
               eventId={viewingEventId}
               onBack={() => { setViewingEventId(null); setEventsRefreshKey(k => k + 1) }}
               onEdit={(id) => setEditingEventId(id)}
+              onOpenMatch={(matchId) => { setViewingEventId(null); setTab('matches'); setChatMatchId(matchId) }}
             />
           )}
           {tab === 'events' && !editingEventId && !viewingEventId && !showCreateEvent && (

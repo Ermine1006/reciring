@@ -23,6 +23,7 @@ import EventMatchList from './EventMatchList'
 import { resolveAvatarSeed } from './SettingsPage'
 import { sendEventRegistrationEmail, sendEventUnregisterEmail, notifyEventCancellation } from '../lib/email'
 import EventModeSection from './EventModeSection'
+import EventMarketplace from './EventMarketplace'
 import EventRecapPage from './EventRecapPage'
 import PendingConfirmationsBanner from './PendingConfirmationsBanner'
 import { listEncountersForEvent } from '../lib/eventEncounters'
@@ -81,7 +82,7 @@ const HOST_TYPE_LABEL = {
  * is tapped. Self-contained: handles its own loads, realtime sub, join/
  * leave/cancel actions, group thread, and back navigation.
  */
-export default function EventDetailPage({ eventId, onBack, onEdit }) {
+export default function EventDetailPage({ eventId, onBack, onEdit, onOpenMatch }) {
   const { user } = useAuth()
 
   const [event, setEvent]       = useState(null)
@@ -413,9 +414,10 @@ export default function EventDetailPage({ eventId, onBack, onEdit }) {
             background: '#F2EEE5', padding: 3, borderRadius: 12,
           }}>
             {[
-              { id: 'overview',   label: 'Overview' },
-              { id: 'event_mode', label: 'Event Mode' },
-              { id: 'recap',      label: `Your Recap${myEncounters.length ? ` · ${myEncounters.length}` : ''}` },
+              { id: 'overview',    label: 'Overview' },
+              { id: 'marketplace', label: 'Marketplace' },
+              { id: 'event_mode',  label: 'Event Mode' },
+              { id: 'recap',       label: `Recap${myEncounters.length ? ` · ${myEncounters.length}` : ''}` },
             ].map(t => {
               const active = viewMode === t.id
               return (
@@ -467,9 +469,19 @@ export default function EventDetailPage({ eventId, onBack, onEdit }) {
           />
         )}
 
+        {/* Marketplace mode replaces the overview body (like recap). */}
+        {viewMode === 'marketplace' && (
+          <EventMarketplace
+            eventId={event.id}
+            userId={user?.id}
+            isHost={isHost}
+            onOpenChat={onOpenMatch}
+          />
+        )}
+
         {/* Header card + rest of the normal overview render only
-            when we're not in dedicated recap mode. */}
-        {viewMode !== 'recap' && (
+            when we're not in dedicated recap or marketplace mode. */}
+        {viewMode !== 'recap' && viewMode !== 'marketplace' && (
           <>
         {/* Poster hero — host's uploaded image */}
         {event.image_url && (
