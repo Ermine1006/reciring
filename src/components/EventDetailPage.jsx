@@ -471,6 +471,21 @@ export default function EventDetailPage({ eventId, onBack, onEdit }) {
             when we're not in dedicated recap mode. */}
         {viewMode !== 'recap' && (
           <>
+        {/* Poster hero — host's uploaded image */}
+        {event.image_url && (
+          <div style={{
+            borderRadius: 16, overflow: 'hidden', marginBottom: 14,
+            aspectRatio: '16 / 9', background: C.goldBg,
+            border: `1px solid ${C.border}`,
+          }}>
+            <img
+              src={event.image_url}
+              alt=""
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            />
+          </div>
+        )}
+
         {/* Header card */}
         <section style={cardStyle}>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, marginBottom: 14 }}>

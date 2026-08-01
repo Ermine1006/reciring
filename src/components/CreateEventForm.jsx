@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { createEvent } from '../lib/events'
 import { EVENT_CATEGORIES } from '../data/eventCategories'
 import Chip from './Chip'
+import PosterUpload from './PosterUpload'
 
 const C = {
   gold:      '#C8A96A',
@@ -389,15 +390,9 @@ export default function CreateEventForm({ onCreated, onClose }) {
             </div>
 
             <div style={{ marginBottom: 0 }}>
-              <label style={labelStyle}>Image URL</label>
-              <p style={helperStyle}>Optional — paste a link to a hero image.</p>
-              <input
-                type="url"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                placeholder="https://…"
-                style={inputStyle}
-              />
+              <label style={labelStyle}>Event poster</label>
+              <p style={helperStyle}>Optional — upload a poster. It shows on the event board and becomes the image people share.</p>
+              <PosterUpload value={imageUrl} onChange={setImageUrl} userId={user?.id} />
             </div>
           </section>
 

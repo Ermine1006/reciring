@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { fetchEventById, updateEvent } from '../lib/events'
 import { EVENT_CATEGORIES } from '../data/eventCategories'
 import Chip from './Chip'
+import PosterUpload from './PosterUpload'
 
 const C = {
   gold:      '#C8A96A',
@@ -369,14 +370,8 @@ export default function EditEventForm({ eventId, onSaved, onClose }) {
             </div>
 
             <div style={{ marginBottom: 0 }}>
-              <label style={labelStyle}>Image URL</label>
-              <input
-                type="url"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                placeholder="https://…"
-                style={inputStyle}
-              />
+              <label style={labelStyle}>Event poster</label>
+              <PosterUpload value={imageUrl} onChange={setImageUrl} userId={user?.id} />
             </div>
           </section>
 

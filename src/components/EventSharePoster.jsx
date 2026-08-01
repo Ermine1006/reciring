@@ -36,6 +36,7 @@ export default function EventSharePoster({ event, open, onClose }) {
   if (!open || !event) return null
 
   const link = `${WEB_ORIGIN}/?event=${event.id}`
+  const hasImage = Boolean(event.image_url)
 
   async function buildPng() {
     // 2x of the 540x960 DOM poster → 1080x1920, Instagram Story native size.
@@ -96,51 +97,114 @@ export default function EventSharePoster({ event, open, onClose }) {
       {/* Off-screen poster that gets rasterised. Kept in the DOM (not display:
           none) so html-to-image can measure it; parked far off-screen. */}
       <div style={{ position: 'fixed', left: -9999, top: 0, pointerEvents: 'none' }}>
-        <div
-          ref={posterRef}
-          style={{
-            width: 540, height: 960,
-            background: `linear-gradient(160deg, ${C.cream} 0%, #F3E7CE 100%)`,
-            padding: '56px 44px',
-            display: 'flex', flexDirection: 'column',
-            fontFamily: 'Inter, system-ui, sans-serif',
-            position: 'relative', overflow: 'hidden',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <ReciRingLogo size={34} />
+        {hasImage ? (
+          // Uploaded poster as the hero, with a dark scrim so the Mutu info
+          // bar stays legible over any image.
+          <div
+            ref={posterRef}
+            style={{
+              width: 540, height: 960, position: 'relative', overflow: 'hidden',
+              fontFamily: 'Inter, system-ui, sans-serif', background: C.ink,
+            }}
+          >
+            <img
+              src={event.image_url}
+              alt=""
+              crossOrigin="anonymous"
+              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+            {/* Legibility scrim: light at top, heavy at the bottom. */}
+            <div style={{
+              position: 'absolute', inset: 0,
+              background: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0) 30%, rgba(0,0,0,0.55) 66%, rgba(0,0,0,0.88) 100%)',
+            }} />
+
+            <div style={{
+              position: 'absolute', inset: 0, padding: '48px 44px',
+              display: 'flex', flexDirection: 'column',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <ReciRingLogo size={34} />
+              </div>
+
+              <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <p style={{
+                  margin: 0, fontSize: 15, fontWeight: 700, letterSpacing: '0.22em',
+                  textTransform: 'uppercase', color: C.goldLight,
+                }}>
+                  {event.category || 'Event'}
+                </p>
+                <h1 style={{
+                  margin: 0, fontSize: 46, lineHeight: 1.12, fontWeight: 800,
+                  color: C.white, fontFamily: 'Fraunces, Georgia, serif',
+                }}>
+                  {event.title}
+                </h1>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 6 }}>
+                  <Row label="WHEN" value={posterDate(event.start_at)} valueColor={C.white} />
+                  {event.location && <Row label="WHERE" value={event.location} valueColor={C.white} />}
+                  {event.host_display_name && <Row label="HOST" value={event.host_display_name} valueColor={C.white} />}
+                </div>
+
+                <div style={{
+                  marginTop: 20, paddingTop: 20, borderTop: '1.5px solid rgba(255,255,255,0.25)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                }}>
+                  <span style={{ fontSize: 18, fontWeight: 700, color: C.white }}>Join me on Mutu</span>
+                  <span style={{ fontSize: 15, fontWeight: 600, color: C.goldLight }}>reciring.com</span>
+                </div>
+              </div>
+            </div>
           </div>
+        ) : (
+          // No uploaded image → branded emoji poster (original design).
+          <div
+            ref={posterRef}
+            style={{
+              width: 540, height: 960,
+              background: `linear-gradient(160deg, ${C.cream} 0%, #F3E7CE 100%)`,
+              padding: '56px 44px',
+              display: 'flex', flexDirection: 'column',
+              fontFamily: 'Inter, system-ui, sans-serif',
+              position: 'relative', overflow: 'hidden',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <ReciRingLogo size={34} />
+            </div>
 
-          <div style={{ marginTop: 54, fontSize: 96, lineHeight: 1 }}>{emoji}</div>
+            <div style={{ marginTop: 54, fontSize: 96, lineHeight: 1 }}>{emoji}</div>
 
-          <p style={{
-            marginTop: 22, fontSize: 15, fontWeight: 700, letterSpacing: '0.22em',
-            textTransform: 'uppercase', color: C.goldDark,
-          }}>
-            {event.category || 'Event'}
-          </p>
+            <p style={{
+              marginTop: 22, fontSize: 15, fontWeight: 700, letterSpacing: '0.22em',
+              textTransform: 'uppercase', color: C.goldDark,
+            }}>
+              {event.category || 'Event'}
+            </p>
 
-          <h1 style={{
-            margin: '10px 0 0', fontSize: 46, lineHeight: 1.12, fontWeight: 800,
-            color: C.ink, fontFamily: 'Fraunces, Georgia, serif',
-          }}>
-            {event.title}
-          </h1>
+            <h1 style={{
+              margin: '10px 0 0', fontSize: 46, lineHeight: 1.12, fontWeight: 800,
+              color: C.ink, fontFamily: 'Fraunces, Georgia, serif',
+            }}>
+              {event.title}
+            </h1>
 
-          <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <Row label="WHEN" value={posterDate(event.start_at)} />
-            {event.location && <Row label="WHERE" value={event.location} />}
-            {event.host_display_name && <Row label="HOST" value={event.host_display_name} />}
+            <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <Row label="WHEN" value={posterDate(event.start_at)} />
+              {event.location && <Row label="WHERE" value={event.location} />}
+              {event.host_display_name && <Row label="HOST" value={event.host_display_name} />}
+            </div>
+
+            <div style={{
+              marginTop: 30, paddingTop: 22, borderTop: `1.5px solid ${C.goldLight}`,
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            }}>
+              <span style={{ fontSize: 18, fontWeight: 700, color: C.ink }}>Join me on Mutu</span>
+              <span style={{ fontSize: 15, fontWeight: 600, color: C.goldDark }}>reciring.com</span>
+            </div>
           </div>
-
-          <div style={{
-            marginTop: 30, paddingTop: 22, borderTop: `1.5px solid ${C.goldLight}`,
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          }}>
-            <span style={{ fontSize: 18, fontWeight: 700, color: C.ink }}>Join me on Mutu</span>
-            <span style={{ fontSize: 15, fontWeight: 600, color: C.goldDark }}>reciring.com</span>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* The actual sheet the user sees */}
@@ -206,13 +270,13 @@ export default function EventSharePoster({ event, open, onClose }) {
   )
 }
 
-function Row({ label, value }) {
+function Row({ label, value, labelColor = C.goldDark, valueColor = C.ink }) {
   return (
     <div>
-      <p style={{ margin: 0, fontSize: 12, fontWeight: 700, letterSpacing: '0.16em', color: C.goldDark }}>
+      <p style={{ margin: 0, fontSize: 12, fontWeight: 700, letterSpacing: '0.16em', color: labelColor }}>
         {label}
       </p>
-      <p style={{ margin: '3px 0 0', fontSize: 21, fontWeight: 600, color: C.ink, lineHeight: 1.25 }}>
+      <p style={{ margin: '3px 0 0', fontSize: 21, fontWeight: 600, color: valueColor, lineHeight: 1.25 }}>
         {value}
       </p>
     </div>
