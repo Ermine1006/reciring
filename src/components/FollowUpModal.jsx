@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { generateFollowUp } from '../lib/followUp'
-import { markEncounterFollowedUp } from '../lib/eventEncounters'
+import { saveMessageDraft, markMessageSent } from '../lib/eventMemory'
 
 const C = {
   gold:      '#C8A96A',
@@ -61,10 +61,11 @@ export default function FollowUpModal({
 
   useEffect(() => {
     if (open) {
-      setBody(draft.body)
+      // Prefer a previously saved draft; otherwise seed from the generator.
+      setBody(encounter?.message_draft || draft.body)
       setCopied(false)
     }
-  }, [open, draft.body])
+  }, [open, draft.body, encounter?.message_draft])
 
   const handleCopy = async () => {
     try {
@@ -83,12 +84,25 @@ export default function FollowUpModal({
     }
   }
 
-  const handleMarkFollowedUp = async () => {
+  // Save the draft WITHOUT marking anything sent.
+  const handleSaveDraft = async () => {
     if (!encounter?.id) return
     setMarking(true)
-    const { error } = await markEncounterFollowedUp(encounter.id)
+    const { error } = await saveMessageDraft(encounter.id, body)
     setMarking(false)
-    if (error) { alert('Could not mark: ' + (error.message || 'unknown')); return }
+    if (error) { alert('Could not save: ' + (error.message || 'unknown')); return }
+    onFollowedUp?.()
+    onClose?.()
+  }
+
+  // Mark the message as sent (saves the current text as the sent message).
+  const handleMarkSent = async () => {
+    if (!encounter?.id) return
+    setMarking(true)
+    await saveMessageDraft(encounter.id, body)
+    const { error } = await markMessageSent(encounter.id)
+    setMarking(false)
+    if (error) { alert('Could not mark sent: ' + (error.message || 'unknown')); return }
     onFollowedUp?.()
     onClose?.()
   }
@@ -133,7 +147,7 @@ export default function FollowUpModal({
                 fontWeight: 700, color: C.gold, margin: 0,
                 fontFamily: 'Inter, system-ui, sans-serif',
               }}>
-                Follow-up draft
+                Draft message
               </p>
               <h2 style={{
                 fontFamily: 'Fraunces, Georgia, serif',
@@ -212,24 +226,26 @@ export default function FollowUpModal({
               >
                 {copied ? '✓ Copied to clipboard' : 'Copy message'}
               </button>
-              <button
-                type="button"
-                onClick={handleMarkFollowedUp}
-                disabled={marking || encounter?.followed_up_at}
-                className="w-full py-2.5 rounded-xl text-sm font-medium"
-                style={{
-                  background: C.white,
-                  color: encounter?.followed_up_at ? C.textMuted : C.goldDark,
-                  border: `1.5px solid ${C.goldLight}`,
-                  cursor: marking ? 'default' : 'pointer',
-                  opacity: marking ? 0.6 : 1,
-                  fontFamily: 'Inter, system-ui, sans-serif',
-                }}
-              >
-                {encounter?.followed_up_at
-                  ? '✓ Marked as followed up'
-                  : (marking ? 'Saving…' : 'Mark as followed up')}
-              </button>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={handleSaveDraft}
+                  disabled={marking}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-medium"
+                  style={{ background: C.white, color: C.goldDark, border: `1.5px solid ${C.goldLight}`, cursor: marking ? 'default' : 'pointer', opacity: marking ? 0.6 : 1, fontFamily: 'Inter, system-ui, sans-serif' }}
+                >
+                  Save draft
+                </button>
+                <button
+                  type="button"
+                  onClick={handleMarkSent}
+                  disabled={marking || encounter?.message_status === 'sent'}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold"
+                  style={{ background: encounter?.message_status === 'sent' ? C.white : `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`, color: encounter?.message_status === 'sent' ? C.textMuted : '#fff', border: encounter?.message_status === 'sent' ? `1.5px solid ${C.goldLight}` : 'none', cursor: marking ? 'default' : 'pointer', opacity: marking ? 0.6 : 1, fontFamily: 'Inter, system-ui, sans-serif' }}
+                >
+                  {encounter?.message_status === 'sent' ? '✓ Sent' : (marking ? 'Saving…' : 'Mark as sent')}
+                </button>
+              </div>
             </div>
           </motion.div>
         </>

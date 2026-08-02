@@ -94,7 +94,7 @@ export async function listEncountersForEvent(eventId) {
 
   const { data, error } = await supabase
     .from('event_encounters')
-    .select('id, event_id, encountered_user_id, status, topics, private_note, next_action, due_at, created_at, confirmed_at, followed_up_at, followup_dismissed_at, source')
+    .select('id, event_id, encountered_user_id, status, topics, private_note, next_action, due_at, created_at, confirmed_at, followed_up_at, followup_dismissed_at, message_status, message_draft, message_drafted_at, message_sent_at, source')
     .eq('user_id', session.user.id)
     .eq('event_id', eventId)
     // The Event Recap is "who I met at this event" — real attendees only.
@@ -118,7 +118,7 @@ export async function listMyEventMemory() {
 
   const { data: encounters, error } = await supabase
     .from('event_encounters')
-    .select('id, event_id, encountered_user_id, status, topics, followed_up_at, created_at')
+    .select('id, event_id, encountered_user_id, status, topics, next_action, followed_up_at, followup_dismissed_at, message_status, created_at')
     .eq('user_id', session.user.id)
     .order('created_at', { ascending: false })
   if (error) return { data: [], error }

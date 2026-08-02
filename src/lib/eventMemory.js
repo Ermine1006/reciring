@@ -11,7 +11,7 @@ import { apiUrl } from './apiBase'
 // values here — a "follow-up" is next_action set + followed_up_at IS NULL, and
 // completing one stamps followed_up_at (the base table's existing field).
 
-const COLS = 'id, user_id, event_id, encountered_user_id, person_name, topics, private_note, commitment, next_action, due_at, followed_up_at, followup_dismissed_at, created_at'
+const COLS = 'id, user_id, event_id, encountered_user_id, person_name, topics, private_note, commitment, next_action, due_at, followed_up_at, followup_dismissed_at, message_status, message_draft, message_drafted_at, message_sent_at, created_at'
 
 // A stable key for "the same person" across encounters: their profile id when
 // linked, else the lowercased name. Used to dedupe contacts + gather history.
@@ -90,9 +90,24 @@ export async function fetchPersonHistory(userId, { encounteredUserId, personName
 export async function dismissFollowup(id) {
   return updateEncounter(id, { followup_dismissed_at: new Date().toISOString() })
 }
-// Undo a completed/dismissed follow-up → back to pending (if it has a next_action).
+// Undo a completed/dismissed next action → back to pending (if it has a next_action).
 export async function reopenFollowup(id) {
   return updateEncounter(id, { followed_up_at: null, followup_dismissed_at: null })
+}
+
+// ── Message (communication) lifecycle — separate from the next action ──
+export async function saveMessageDraft(id, text) {
+  return updateEncounter(id, {
+    message_status: 'draft',
+    message_draft: String(text || '').slice(0, 4000),
+    message_drafted_at: new Date().toISOString(),
+  })
+}
+export async function markMessageSent(id) {
+  return updateEncounter(id, { message_status: 'sent', message_sent_at: new Date().toISOString() })
+}
+export async function unmarkMessageSent(id) {
+  return updateEncounter(id, { message_status: 'draft', message_sent_at: null })
 }
 export async function addFollowup(id, { nextAction, dueAt }) {
   return updateEncounter(id, {
@@ -129,7 +144,7 @@ export async function createEncounter({ userId, eventId, encounteredUserId, pers
 export async function updateEncounter(id, patch) {
   if (!isSupabaseConfigured || !id) return { error: new Error('Missing encounter') }
   const clean = {}
-  for (const k of ['person_name', 'topics', 'private_note', 'commitment', 'next_action', 'due_at', 'event_id', 'followed_up_at', 'followup_dismissed_at']) {
+  for (const k of ['person_name', 'topics', 'private_note', 'commitment', 'next_action', 'due_at', 'event_id', 'followed_up_at', 'followup_dismissed_at', 'message_status', 'message_draft', 'message_drafted_at', 'message_sent_at']) {
     if (patch[k] !== undefined) clean[k] = patch[k]
   }
   const { error } = await supabase.from('event_encounters').update(clean).eq('id', id)
@@ -198,17 +213,34 @@ export async function clearAskHistory(userId) {
 // own encounters + events. Only fields the user already owns.
 export function buildAssistantContext({ encounters = [], events = [] }) {
   return {
-    people: encounters.map(e => ({
-      name:        e.display_name || e.person_name || 'Someone',
-      met_at:      e.event_title || null,
-      met_on:      e.event_start_at ? new Date(e.event_start_at).toISOString().slice(0, 10) : (e.created_at ? new Date(e.created_at).toISOString().slice(0, 10) : null),
-      topics:      e.topics || [],
-      note:        e.private_note || '',
-      commitment:  e.commitment || '',
-      next_action: e.next_action || '',
-      due:         e.due_at ? new Date(e.due_at).toISOString().slice(0, 10) : null,
-      followed_up: Boolean(e.followed_up_at),
-    })),
+    people: encounters.map(e => {
+      // Three INDEPENDENT states — never collapse them into one "followed up":
+      //  • message  = a communication (drafted / sent / none)
+      //  • action   = a commitment/task (pending / completed / dismissed / none)
+      const messageState = e.message_status === 'sent' ? 'sent'
+                         : e.message_status === 'draft' ? 'drafted'
+                         : 'none'
+      const hasAction = Boolean((e.next_action || '').trim())
+      const actionState = !hasAction ? 'none'
+                        : e.followed_up_at ? 'completed'
+                        : e.followup_dismissed_at ? 'dismissed'
+                        : 'pending'
+      return {
+        name:          e.display_name || e.person_name || 'Someone',
+        met_at:        e.event_title || null,
+        met_on:        e.event_start_at ? new Date(e.event_start_at).toISOString().slice(0, 10) : (e.created_at ? new Date(e.created_at).toISOString().slice(0, 10) : null),
+        topics:        e.topics || [],
+        note:          e.private_note || '',
+        commitment:    e.commitment || '',
+        // Message (communication) — a drafted message is NOT a sent message.
+        message_state: messageState,
+        message_sent_on: e.message_sent_at ? new Date(e.message_sent_at).toISOString().slice(0, 10) : null,
+        // Next action (commitment/task) — separate from the message.
+        next_action:   e.next_action || '',
+        action_state:  actionState,
+        due:           e.due_at ? new Date(e.due_at).toISOString().slice(0, 10) : null,
+      }
+    }),
     upcoming_events: events.map(e => e.title).filter(Boolean),
   }
 }

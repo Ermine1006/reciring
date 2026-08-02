@@ -125,11 +125,19 @@ export default function ContactHistorySheet({ open, person, userId, onOpenEventR
                   <p style={{ margin: '6px 0 0', fontSize: 13, color: C.sub, fontFamily: 'Inter, system-ui, sans-serif' }}><b style={{ color: C.ink }}>You promised:</b> {r.commitment}</p>
                 )}
 
-                {/* Follow-up lifecycle */}
+                {/* Message (communication) status — separate from next action */}
+                {r.message_status === 'sent' && (
+                  <p style={{ margin: '8px 0 0', fontSize: 12.5, fontWeight: 700, color: C.sage, fontFamily: 'Inter, system-ui, sans-serif' }}>✓ Message sent{r.message_sent_at ? ` · ${fmtDate(r.message_sent_at)}` : ''}</p>
+                )}
+                {r.message_status === 'draft' && (
+                  <p style={{ margin: '8px 0 0', fontSize: 12.5, fontWeight: 600, color: C.goldDeep, fontFamily: 'Inter, system-ui, sans-serif' }}>Message drafted{r.message_drafted_at ? ` · ${fmtDate(r.message_drafted_at)}` : ''}</p>
+                )}
+
+                {/* Next-action lifecycle */}
                 <div style={{ marginTop: 12 }}>
                   {(state === 'completed' || state === 'dismissed') && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <Chip label={state === 'completed' ? '✓ Follow-up completed' : 'Follow-up dismissed'} cls={state === 'completed' ? { color: C.sage, background: C.sageBg } : { color: C.slate, background: C.slateBg }} />
+                      <Chip label={state === 'completed' ? '✓ Next action done' : 'Next action dismissed'} cls={state === 'completed' ? { color: C.sage, background: C.sageBg } : { color: C.slate, background: C.slateBg }} />
                       <button type="button" disabled={busyId === r.id} onClick={() => act(reopenFollowup, r.id)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: C.goldDeep, fontSize: 12.5, fontWeight: 700, fontFamily: 'Inter, system-ui, sans-serif' }}>Undo</button>
                     </div>
                   )}
@@ -145,14 +153,14 @@ export default function ContactHistorySheet({ open, person, userId, onOpenEventR
                   {state === 'none' && (
                     adding === r.id ? (
                       <div>
-                        <input value={addText} onChange={e => setAddText(e.target.value)} placeholder="Follow-up — e.g. Send the intro" style={inp} />
+                        <input value={addText} onChange={e => setAddText(e.target.value)} placeholder="Next action — e.g. Send the intro" style={inp} />
                         <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                           <input type="date" value={addDue} min={new Date().toISOString().slice(0,10)} onChange={e => setAddDue(e.target.value)} style={{ ...inp, flex: 1 }} />
                           <button type="button" disabled={!addText.trim() || busyId === r.id} onClick={() => saveAdd(r.id)} style={btnPrimary}>Save</button>
                         </div>
                       </div>
                     ) : (
-                      <button type="button" onClick={() => { setAdding(r.id); setAddText(''); setAddDue('') }} style={btnGhost}>+ Add follow-up</button>
+                      <button type="button" onClick={() => { setAdding(r.id); setAddText(''); setAddDue('') }} style={btnGhost}>+ Add next action</button>
                     )
                   )}
                 </div>

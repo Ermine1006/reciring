@@ -90,9 +90,10 @@ export default function MyEventMemoryPage({ onOpenEvent }) {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {rows.map(({ event, encounters }) => {
-            const followed  = encounters.filter(e => e.followed_up_at).length
+            const messaged  = encounters.filter(e => e.message_status === 'sent').length
             const confirmed = encounters.filter(e => e.status === 'mutually_confirmed').length
-            const open      = encounters.length - followed
+            // Open next actions = a concrete next_action that's neither done nor dismissed.
+            const open      = encounters.filter(e => (e.next_action || '').trim() && !e.followed_up_at && !e.followup_dismissed_at).length
             const date = event.start_at ? new Date(event.start_at) : null
             return (
               <button
@@ -121,8 +122,8 @@ export default function MyEventMemoryPage({ onOpenEvent }) {
                 </div>
                 <div style={{ display: 'flex', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
                   <Stat label={`${encounters.length} met`}       tint="gold" />
-                  <Stat label={`${followed} followed up`}         tint="green" />
-                  <Stat label={`${open} to follow up`}            tint="neutral" muted={open === 0} />
+                  <Stat label={`${messaged} messaged`}            tint="green" muted={messaged === 0} />
+                  <Stat label={`${open} open next ${open === 1 ? 'action' : 'actions'}`} tint="neutral" muted={open === 0} />
                   {confirmed > 0 && <Stat label={`${confirmed} confirmed`} tint="green" />}
                 </div>
               </button>

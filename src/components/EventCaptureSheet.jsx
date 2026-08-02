@@ -145,7 +145,7 @@ export default function EventCaptureSheet({ open, mode = 'manual', initial = nul
             <input value={commitment} onChange={e => setCommitment(e.target.value)} placeholder="What you promised — e.g. Introduce her to David" style={input} />
 
             <label style={{ ...label, marginTop: 12 }}>Next action</label>
-            <input value={nextAction} onChange={e => setNextAction(e.target.value)} placeholder="Your follow-up step — e.g. Send the intro" style={input} />
+            <input value={nextAction} onChange={e => setNextAction(e.target.value)} placeholder="Your next action — e.g. Send the intro" style={input} />
 
             <label style={{ ...label, marginTop: 12 }}>Due</label>
             <input type="date" value={dueOn} min={new Date().toISOString().slice(0, 10)} onChange={e => setDueOn(e.target.value)} style={input} />

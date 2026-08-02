@@ -134,11 +134,11 @@ export default function MyNetworkingDashboard({ userId, events = [], joinedIds =
         </button>
       )}
 
-      {/* Follow-ups */}
-      <LabelRow left="Follow-ups" />
+      {/* Open next actions */}
+      <LabelRow left="Open next actions" />
       {followups.length === 0 ? (
         <div style={{ ...slim, marginBottom: 24, cursor: 'default' }}>
-          <span style={{ color: C.sub }}>No open follow-ups. Log a conversation to add one.</span>
+          <span style={{ color: C.sub }}>No open next actions. Add one from a person's card after you meet them.</span>
         </div>
       ) : (
         <div style={{ ...card, padding: '4px 14px', marginBottom: 24 }}>
