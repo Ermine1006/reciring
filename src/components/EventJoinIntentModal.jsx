@@ -26,21 +26,17 @@ export default function EventJoinIntentModal({ open, eventTitle, prefill, onConf
 
   const handleSubmit = async () => {
     if (busy) return
-    // Mandatory: both need and offer are required to join. The whole point of
-    // the event is the matching, and the matcher has nothing to work with if
-    // people join blank — so we gate registration on stating intentions.
-    if (!need.trim() || !offer.trim()) {
-      setError('Please fill in both — what you need and what you can offer.')
-      return
-    }
+    // Need/offer are optional — joining shouldn't be blocked. Attendees can add
+    // or edit them anytime on the event's Prepare page (the Opportunity Board).
     setBusy(true); setError(null)
-    const { error: err } = await onConfirm({ needText: need, offerText: offer })
+    const { error: err } = await onConfirm({ needText: need.trim(), offerText: offer.trim() })
     setBusy(false)
     if (err) { setError(err.message || 'Could not join'); return }
     // Parent closes on success.
   }
 
-  const canSubmit = need.trim() && offer.trim() && !busy
+  const filledBoth = need.trim() && offer.trim()
+  const canSubmit = !busy
 
   /* ── "Increase My Response Rate" — AI rewrite of either field ── */
   const [improvingField, setImprovingField] = useState(null) // 'need' | 'offer' | null
@@ -171,10 +167,10 @@ export default function EventJoinIntentModal({ open, eventTitle, prefill, onConf
                   {eventTitle || 'this event'}
                 </h2>
                 <p style={{ fontSize: 13, color: C.textSub, margin: '0 0 18px', lineHeight: 1.5 }}>
-                  Tell us what you're after here. We'll use it to suggest who to meet — and other attendees see it too.
+                  Optional — sharing what you're after helps us suggest who to meet, and other attendees can see it. You can add or edit it anytime on the event page.
                 </p>
 
-                <p style={label}>What do you need at this event? <span style={{ color: '#DC2626' }}>*</span></p>
+                <p style={label}>What do you need at this event? <span style={{ color: '#B8B0A2', fontWeight: 500 }}>· optional</span></p>
                 <textarea
                   value={need} onChange={(e) => setNeed(e.target.value.slice(0, 600))}
                   placeholder="e.g. Intros to AI infra investors; feedback on my eval startup"
@@ -184,7 +180,7 @@ export default function EventJoinIntentModal({ open, eventTitle, prefill, onConf
                 {/* Subtle AI rewrite of the need — same reusable service as the composer. */}
                 {improveRow('need')}
 
-                <p style={label}>What can you offer? <span style={{ color: '#DC2626' }}>*</span></p>
+                <p style={label}>What can you offer? <span style={{ color: '#B8B0A2', fontWeight: 500 }}>· optional</span></p>
                 <textarea
                   value={offer} onChange={(e) => setOffer(e.target.value.slice(0, 600))}
                   placeholder="e.g. Happy to share hiring playbooks; intros to a16z network"
@@ -209,7 +205,7 @@ export default function EventJoinIntentModal({ open, eventTitle, prefill, onConf
                     fontFamily: 'Inter, system-ui, sans-serif',
                   }}
                 >
-                  {busy ? 'Joining…' : 'Join event'}
+                  {busy ? 'Joining…' : filledBoth ? 'Join event' : 'Skip & join'}
                 </button>
                 <button
                   type="button" onClick={busy ? undefined : onClose}
