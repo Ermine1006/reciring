@@ -8,15 +8,16 @@ import AppScreen from './AppScreen'
 import MyNetworkingDashboard from './MyNetworkingDashboard'
 
 const C = {
-  gold:      '#C8A96A',
-  goldDark:  '#A88245',
-  goldLight: '#E6D3A3',
-  goldBg:    '#FBF6EC',
-  text:      '#111111',
-  textSub:   '#6B7280',
-  textMuted: '#9CA3AF',
+  bg:        '#F6F3EC',
+  gold:      '#B08D57',
+  goldDark:  '#977540',
+  goldLight: '#E7D9C2',
+  goldBg:    '#F4EEE3',
+  text:      '#25231E',
+  textSub:   '#6E675B',
+  textMuted: '#9C9284',
   white:     '#FFFFFF',
-  border:    '#F0ECE4',
+  border:    '#ECE6DB',
 }
 
 export default function EventsList({ onCreateEvent, onOpenEvent, onPrepare, onOpenMatch, onAskMutu }) {
@@ -160,95 +161,36 @@ export default function EventsList({ onCreateEvent, onOpenEvent, onPrepare, onOp
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         className="px-5 pt-6 pb-10"
+        style={{ background: C.bg, minHeight: '100%' }}
       >
-        {/* Header */}
-        <div style={{ marginBottom: 18 }}>
-          <p style={{
-            fontSize: 10, letterSpacing: '0.28em', textTransform: 'uppercase',
-            fontWeight: 600, color: C.gold, margin: 0,
-            fontFamily: 'Inter, system-ui, sans-serif',
-          }}>
-            Community
-          </p>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-            <h1 className="font-display" style={{
-              fontSize: 24, fontWeight: 600, color: C.text,
-              margin: '4px 0 0',
-              letterSpacing: '-0.02em',
-            }}>
-              Events
-            </h1>
-            {topView === 'discover' && (
+        {/* Segmented view switch */}
+        <div role="tablist" style={{ display: 'flex', background: '#EDE7DB', borderRadius: 13, padding: 4, gap: 3, marginBottom: 18 }}>
+          {[
+            { id: 'discover',   label: 'Discover' },
+            { id: 'networking', label: 'My Networking' },
+          ].map(t => {
+            const active = topView === t.id
+            return (
               <button
+                key={t.id}
                 type="button"
-                onClick={onCreateEvent}
+                role="tab"
+                aria-selected={active}
+                onClick={() => setTopView(t.id)}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  padding: '8px 14px',
-                  borderRadius: 99,
-                  background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
-                  color: '#fff',
-                  border: 'none', cursor: 'pointer',
-                  fontSize: 12, fontWeight: 700,
-                  letterSpacing: '0.06em', textTransform: 'uppercase',
-                  fontFamily: 'Inter, system-ui, sans-serif',
-                  boxShadow: '0 4px 14px rgba(200,169,106,0.32)',
+                  flex: 1, padding: '10px 6px', borderRadius: 10,
+                  background: active ? C.white : 'transparent',
+                  color: active ? C.text : C.textSub,
+                  border: 'none', fontSize: 13, fontWeight: active ? 700 : 600,
+                  fontFamily: 'Inter, system-ui, sans-serif', cursor: 'pointer',
+                  boxShadow: active ? '0 2px 6px rgba(30,22,10,0.12)' : 'none',
+                  transition: 'all 0.18s',
                 }}
               >
-                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24" strokeLinecap="round">
-                  <path d="M12 5v14M5 12h14" />
-                </svg>
-                Create
+                {t.label}
               </button>
-            )}
-          </div>
-
-          {/* Top-level view: Discover (find + register) vs My Networking (Event CRM) */}
-          <div
-            role="tablist"
-            style={{
-              display: 'flex', marginTop: 14,
-              background: '#F2EEE5', border: `1px solid ${C.border}`,
-              borderRadius: 12, padding: 3, gap: 2,
-            }}
-          >
-            {[
-              { id: 'discover',   label: 'Discover' },
-              { id: 'networking', label: 'My Networking' },
-            ].map(t => {
-              const active = topView === t.id
-              return (
-                <button
-                  key={t.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={active}
-                  onClick={() => setTopView(t.id)}
-                  style={{
-                    flex: 1, padding: '9px 6px', borderRadius: 9,
-                    background: active ? `linear-gradient(135deg, ${C.gold}, ${C.goldDark})` : 'transparent',
-                    color: active ? '#fff' : C.textSub,
-                    border: 'none', fontSize: 12.5, fontWeight: 600,
-                    fontFamily: 'Inter, system-ui, sans-serif', cursor: 'pointer',
-                    boxShadow: active ? '0 1px 4px rgba(200,169,106,0.35)' : 'none',
-                    transition: 'all 0.18s',
-                  }}
-                >
-                  {t.label}
-                </button>
-              )
-            })}
-          </div>
-
-          {topView === 'discover' && (
-            <p style={{
-              fontSize: 13, color: C.textSub, lineHeight: 1.5,
-              fontFamily: 'Inter, system-ui, sans-serif',
-              margin: '10px 0 0',
-            }}>
-              Real-life meetups for the Mutu community.
-            </p>
-          )}
+            )
+          })}
         </div>
 
         {topView === 'networking' && (
@@ -264,6 +206,20 @@ export default function EventsList({ onCreateEvent, onOpenEvent, onPrepare, onOp
         )}
 
         {topView === 'discover' && <>
+        {/* Events header */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 16 }}>
+          <div>
+            <h1 className="font-display" style={{ fontSize: 26, fontWeight: 600, color: C.text, margin: 0, letterSpacing: '-0.02em' }}>Events</h1>
+            <p style={{ fontSize: 13, color: C.textSub, margin: '4px 0 0', fontFamily: 'Inter, system-ui, sans-serif' }}>Meet people through shared experiences.</p>
+          </div>
+          <button type="button" onClick={onCreateEvent} aria-label="Create event"
+            style={{ flexShrink: 0, width: 40, height: 40, borderRadius: '50%', border: 'none', cursor: 'pointer',
+              background: `linear-gradient(180deg, ${C.gold}, ${C.goldDark})`, color: '#fff',
+              display: 'grid', placeItems: 'center', boxShadow: '0 6px 16px -6px rgba(151,117,64,0.6)' }}>
+            <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+          </button>
+        </div>
+
 
 
         {/* Filter chips */}
@@ -335,7 +291,7 @@ export default function EventsList({ onCreateEvent, onOpenEvent, onPrepare, onOp
         ) : visible.length === 0 ? (
           <EmptyState filter={filter} onCreateEvent={onCreateEvent} />
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {visible.map(ev => (
               <EventCard
                 key={ev.id}

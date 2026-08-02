@@ -1,298 +1,133 @@
 import { motion } from 'framer-motion'
-import { categoryEmoji } from '../data/eventCategories'
 import EventCover from './EventCover'
 
+// Palette — warm ivory / charcoal / muted gold / soft sage. High contrast text.
 const C = {
-  gold:      '#C8A96A',
-  goldDark:  '#A88245',
-  goldLight: '#E6D3A3',
-  goldBg:    '#FBF6EC',
-  text:      '#111111',
-  textSub:   '#6B7280',
-  textMuted: '#9CA3AF',
-  white:     '#FFFFFF',
-  border:    '#F0ECE4',
-  success:   '#16A34A',
-  danger:    '#DC2626',
+  bg:      '#F6F3EC',
+  card:    '#FFFFFF',
+  ink:     '#25231E',   // charcoal headings
+  sub:     '#6E675B',   // readable secondary (not low-contrast)
+  gold:    '#B08D57',
+  goldDeep:'#977540',
+  sage:    '#7F9376',
+  sageBg:  '#EAF0E4',
+  border:  '#ECE6DB',
+  danger:  '#C4553D',
 }
 
-const HOST_TYPE_LABEL = {
-  individual: '',
-  club:       'Club',
-  business:   'Sponsor',
+const MONTHS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']
+function initials(name) {
+  const p = String(name || '').trim().split(/\s+/).filter(Boolean)
+  return ((p[0]?.[0] || '') + (p[1]?.[0] || '')).toUpperCase() || '·'
 }
 
-function formatEventDate(iso) {
-  if (!iso) return ''
+function DateBadge({ iso }) {
+  if (!iso) return null
   const d = new Date(iso)
-  const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-  const timeStr = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-  return `${dateStr} · ${timeStr}`
+  return (
+    <div style={{
+      position: 'absolute', top: 12, right: 12, background: '#FFFFFF',
+      borderRadius: 12, padding: '5px 10px 6px', textAlign: 'center', minWidth: 44,
+      boxShadow: '0 4px 12px rgba(30,22,10,0.18)',
+    }}>
+      <div style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '0.1em', color: C.gold, fontFamily: 'Inter, system-ui, sans-serif' }}>{MONTHS[d.getMonth()]}</div>
+      <div style={{ fontSize: 17, fontWeight: 700, color: C.ink, lineHeight: 1, fontFamily: 'Fraunces, Georgia, serif' }}>{d.getDate()}</div>
+    </div>
+  )
 }
 
-export default function EventCard({ event, joined, joining, onJoin, onLeave, onCancel, onOpen, isHost }) {
-  // Stop propagation on action buttons so they don't trigger the
-  // card-level onOpen handler.
-  const stop = (handler) => (e) => { e?.stopPropagation?.(); handler?.() }
-  const emoji = categoryEmoji(event.category)
+function timeLoc(iso, location) {
+  const t = iso ? new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : ''
+  return [t, location].filter(Boolean).join('  ·  ')
+}
+
+/**
+ * Discover event card — large host cover, category chip + date badge, title,
+ * time · location, host + capacity row, and one primary action (View details).
+ * Join/leave/cancel now live on the detail page, so the card stays clean.
+ */
+export default function EventCard({ event, joined, isHost, onOpen }) {
   const spotsLeft = Math.max(0, (event.max_attendees || 0) - (event.attendee_count || 0))
   const isCancelled = event.status === 'cancelled'
-  const isCompleted = event.status === 'completed'
-  // DB triggers keep events.status='full' when at capacity, but fall
-  // back to local capacity math in case the trigger hasn't fired yet.
-  const isFull = !isCancelled && !isCompleted && (event.status === 'full' || (spotsLeft === 0 && !joined))
-  const sponsorBadge = HOST_TYPE_LABEL[event.host_type]
-  // A pending event is only ever visible to its own host (enforced by RLS),
-  // so this "under review" state is the author's persistent signal — it's
-  // read from DB state, so it survives re-login (unlike the one-time banner).
-  const isPending = event.moderation_status === 'pending'
+  const going = event.attendee_count || 0
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       onClick={() => onOpen?.(event.id)}
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen?.(event.id) } }}
+      onKeyDown={(e) => { if (e.key === 'Enter') onOpen?.(event.id) }}
       style={{
-        background: C.white,
-        border: `1px solid ${C.border}`,
-        borderRadius: 18,
-        overflow: 'hidden',
-        boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
-        cursor: onOpen ? 'pointer' : 'default',
+        background: C.card, border: `1px solid ${C.border}`, borderRadius: 20,
+        overflow: 'hidden', cursor: 'pointer',
+        boxShadow: '0 1px 2px rgba(30,22,10,0.04), 0 12px 28px -14px rgba(30,22,10,0.22)',
       }}
     >
-      {/* Cover — host's uploaded image, or a tasteful branded fallback */}
-      <EventCover event={event} aspectRatio="16 / 9" />
-
-      {/* Top gold accent for sponsored events */}
-      {event.is_sponsored && (
-        <div style={{
-          height: 3,
-          background: `linear-gradient(90deg, ${C.goldLight}, ${C.gold}, ${C.goldDark})`,
-        }} />
-      )}
-
-      {/* Under-review notice — persistent (DB-derived), shown only to the
-          host of a pending event. Fixes the "I don't know it's in review"
-          + "the reminder disappears on re-login" gaps. */}
-      {isPending && (
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 8,
-          background: C.goldBg,
-          borderBottom: `1px solid ${C.goldLight}`,
-          padding: '10px 18px',
+      {/* Cover with category chip + date badge */}
+      <div style={{ position: 'relative' }}>
+        <EventCover event={event} aspectRatio="16 / 10" />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0.18) 0%, transparent 32%)' }} />
+        <span style={{
+          position: 'absolute', top: 12, left: 12,
+          background: C.sageBg, color: '#4F6047',
+          fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase',
+          padding: '5px 11px', borderRadius: 8, fontFamily: 'Inter, system-ui, sans-serif',
         }}>
-          <span style={{ fontSize: 15, lineHeight: 1 }}>⏳</span>
-          <p style={{
-            margin: 0, fontSize: 12, lineHeight: 1.4,
-            color: C.goldDark, fontWeight: 600,
-            fontFamily: 'Inter, system-ui, sans-serif',
-          }}>
-            Under review — only you can see this until it's approved.
-          </p>
-        </div>
-      )}
-
-      <div style={{ padding: '16px 18px' }}>
-        {/* Header row: category emoji + title + sponsor badge */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 10 }}>
-          <span style={{
-            fontSize: 28, lineHeight: 1, flexShrink: 0,
-            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.06))',
-          }}>
-            {emoji}
+          {event.category || 'Event'}
+        </span>
+        <DateBadge iso={event.start_at} />
+        {isCancelled && (
+          <span style={{ position: 'absolute', bottom: 12, left: 12, background: C.danger, color: '#fff', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '5px 11px', borderRadius: 8 }}>
+            Cancelled
           </span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <h3 style={{
-              fontSize: 15, fontWeight: 700, color: C.text,
-              fontFamily: 'Inter, system-ui, sans-serif',
-              margin: '0 0 3px',
-              lineHeight: 1.35,
-              wordBreak: 'break-word',
-            }}>
-              {event.title}
-            </h3>
-            <p style={{
-              fontSize: 12, color: C.textSub,
-              fontFamily: 'Inter, system-ui, sans-serif',
-              margin: 0,
-            }}>
-              {formatEventDate(event.start_at)}
-              {event.location && <span> · {event.location}</span>}
-            </p>
-          </div>
-          {sponsorBadge && (
-            <span style={{
-              flexShrink: 0,
-              fontSize: 10, fontWeight: 700,
-              letterSpacing: '0.12em', textTransform: 'uppercase',
-              color: C.goldDark,
-              background: C.goldBg,
-              border: `1px solid ${C.goldLight}`,
-              borderRadius: 99,
-              padding: '3px 8px',
-              fontFamily: 'Inter, system-ui, sans-serif',
-            }}>
-              {sponsorBadge}
-            </span>
-          )}
-        </div>
-
-        {/* Description — clamped to 2 lines */}
-        {event.description && (
-          <p style={{
-            fontSize: 13, color: C.textSub, lineHeight: 1.5,
-            fontFamily: 'Inter, system-ui, sans-serif',
-            margin: '0 0 12px',
-            display: '-webkit-box', WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical', overflow: 'hidden',
-          }}>
-            {event.description}
-          </p>
         )}
+      </div>
 
-        {/* Footer row: host + capacity + Join */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          gap: 10, paddingTop: 10, borderTop: `1px solid ${C.border}`,
-        }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{
-              fontSize: 11, color: C.textMuted,
-              fontFamily: 'Inter, system-ui, sans-serif',
-              margin: 0, lineHeight: 1.4,
-              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-            }}>
-              Hosted by <span style={{ color: C.text, fontWeight: 600 }}>{event.host_display_name}</span>
-            </p>
-            <p style={{
-              fontSize: 11,
-              color: isCancelled ? C.danger : isFull ? C.danger : C.textMuted,
-              fontFamily: 'Inter, system-ui, sans-serif',
-              margin: '2px 0 0',
-              fontWeight: (isCancelled || isFull) ? 600 : 500,
-              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-            }}>
-              {isCancelled
-                ? `Cancelled${event.cancellation_reason ? ` · ${event.cancellation_reason}` : ''}`
-                : (
-                  <>
-                    {isFull
-                      ? 'Full'
-                      : `${spotsLeft} spot${spotsLeft === 1 ? '' : 's'} left`}
-                    {' '}· {event.attendee_count || 0}/{event.max_attendees}
-                  </>
-                )}
-            </p>
-          </div>
+      {/* Body */}
+      <div style={{ padding: '15px 17px 17px' }}>
+        <h3 style={{ margin: 0, fontSize: 19, fontWeight: 600, color: C.ink, fontFamily: 'Fraunces, Georgia, serif', lineHeight: 1.22, letterSpacing: '-0.01em' }}>
+          {event.title}
+        </h3>
+        <p style={{ margin: '6px 0 0', fontSize: 13, color: C.sub, fontFamily: 'Inter, system-ui, sans-serif' }}>
+          {timeLoc(event.start_at, event.location)}
+        </p>
 
-          {isCancelled ? (
-            <span style={{
-              fontSize: 11, fontWeight: 700,
-              letterSpacing: '0.12em', textTransform: 'uppercase',
-              color: '#fff', background: C.danger,
-              borderRadius: 10, padding: '8px 14px',
-              fontFamily: 'Inter, system-ui, sans-serif',
-            }}>
-              Cancelled
-            </span>
-          ) : isCompleted ? (
-            <span style={{
-              fontSize: 11, fontWeight: 700,
-              letterSpacing: '0.12em', textTransform: 'uppercase',
-              color: C.textSub, background: '#F3F4F6',
-              border: `1px solid ${C.border}`,
-              borderRadius: 10, padding: '8px 14px',
-              fontFamily: 'Inter, system-ui, sans-serif',
-            }}>
-              Completed
-            </span>
-          ) : isHost ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{
-                fontSize: 11, fontWeight: 600,
-                letterSpacing: '0.1em', textTransform: 'uppercase',
-                color: C.goldDark, background: C.goldBg,
-                border: `1px solid ${C.goldLight}`,
-                borderRadius: 10, padding: '8px 12px',
-                fontFamily: 'Inter, system-ui, sans-serif',
-              }}>
-                {isPending ? 'In review' : 'Your event'}
-              </span>
-              <button
-                type="button"
-                onClick={stop(() => onCancel?.(event.id))}
-                title="Cancel event"
-                aria-label="Cancel event"
-                style={{
-                  width: 32, height: 32, borderRadius: 10,
-                  background: C.white,
-                  border: `1px solid #FECACA`,
-                  color: C.danger,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s',
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = '#FEF2F2' }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = C.white }}
-              >
-                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth={2.2} viewBox="0 0 24 24" strokeLinecap="round">
-                  <path d="M6 6l12 12M18 6L6 18" />
-                </svg>
-              </button>
-            </div>
-          ) : joined ? (
-            <button
-              type="button"
-              onClick={stop(() => onLeave?.(event.id))}
-              title="Leave event"
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 5,
-                fontSize: 12, fontWeight: 700,
-                color: '#fff',
-                background: C.success,
-                border: 'none',
-                borderRadius: 10, padding: '8px 14px',
-                fontFamily: 'Inter, system-ui, sans-serif',
-                cursor: 'pointer',
-                boxShadow: '0 2px 6px rgba(22,163,74,0.25)',
-                transition: 'all 0.15s',
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = '#15803D' }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = C.success }}
-            >
-              ✓ Joined
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={stop(() => { if (!joining && !isFull) onJoin?.(event.id) })}
-              disabled={joining || isFull}
-              style={{
-                padding: '8px 16px',
-                borderRadius: 10,
-                border: 'none',
-                background: isFull
-                  ? '#F3F4F6'
-                  : `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
-                color: isFull ? C.textMuted : '#fff',
-                fontSize: 12, fontWeight: 700,
-                letterSpacing: '0.08em', textTransform: 'uppercase',
-                fontFamily: 'Inter, system-ui, sans-serif',
-                cursor: (joining || isFull) ? 'default' : 'pointer',
-                boxShadow: isFull ? 'none' : '0 4px 12px rgba(200,169,106,0.32)',
-                opacity: joining ? 0.6 : 1,
-                transition: 'all 0.15s',
-              }}
-            >
-              {joining ? '...' : isFull ? 'Full' : 'Join'}
-            </button>
-          )}
+        {/* Host + capacity */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginTop: 13 }}>
+          <span style={hostAvatar}>{initials(event.host_display_name)}</span>
+          <span style={{ fontSize: 12.5, color: C.sub, fontFamily: 'Inter, system-ui, sans-serif' }}>
+            Hosted by <strong style={{ color: C.ink, fontWeight: 600 }}>{event.host_display_name || 'a member'}</strong>
+          </span>
+          <span style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 600, color: spotsLeft <= 3 && spotsLeft > 0 ? C.goldDeep : C.sub, fontFamily: 'Inter, system-ui, sans-serif' }}>
+            {isCancelled ? '' : spotsLeft === 0 ? 'Full' : `${spotsLeft} spot${spotsLeft === 1 ? '' : 's'} left`}
+          </span>
         </div>
+
+        {/* Primary action */}
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onOpen?.(event.id) }}
+          style={{
+            width: '100%', marginTop: 15, padding: '13px', borderRadius: 13, border: 'none',
+            background: isCancelled ? '#EFEAE0' : `linear-gradient(180deg, ${C.gold}, ${C.goldDeep})`,
+            color: isCancelled ? C.sub : '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer',
+            fontFamily: 'Inter, system-ui, sans-serif', letterSpacing: '0.01em',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+            boxShadow: isCancelled ? 'none' : '0 6px 16px -6px rgba(151,117,64,0.55)',
+          }}
+        >
+          {joined ? 'View your event' : isHost ? 'Manage event' : 'View details'}
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6" /></svg>
+        </button>
       </div>
     </motion.div>
   )
+}
+
+const hostAvatar = {
+  width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
+  display: 'grid', placeItems: 'center', color: '#fff', fontSize: 10, fontWeight: 700,
+  background: 'linear-gradient(135deg, #B49A78, #8C7050)', fontFamily: 'Inter, system-ui, sans-serif',
 }
