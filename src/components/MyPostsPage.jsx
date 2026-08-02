@@ -71,6 +71,7 @@ function EditPostModal({ post, onSave, onClose }) {
   const [industry, setIndustry]     = useState(initIndustry)
   const [time, setTime]             = useState(post.time || '15 min')
   const [urgency, setUrgency]       = useState(post.urgency || null)
+  const [expiresOn, setExpiresOn]   = useState(post.expiresAt ? new Date(post.expiresAt).toISOString().slice(0, 10) : '')
   const [saving, setSaving]         = useState(false)
   const [error, setError]           = useState(null)
 
@@ -93,6 +94,7 @@ function EditPostModal({ post, onSave, onClose }) {
       industry_tag:    industry,
       time_commitment: time,
       urgency,
+      expiresAt:       expiresOn ? new Date(`${expiresOn}T23:59:59`).toISOString() : null,
       is_anonymous:    true,
     })
     setSaving(false)
@@ -188,6 +190,31 @@ function EditPostModal({ post, onSave, onClose }) {
               <p className="text-[11px] tracking-[0.14em] uppercase font-semibold mb-2" style={{ color: C.textSub }}>Urgency</p>
               <ChipGroup options={URGENCY_OPTIONS} selected={urgency} onToggle={setUrgency} />
             </div>
+          </div>
+
+          {/* Expiry */}
+          <div style={{ marginBottom: 14 }}>
+            <p className="text-[11px] tracking-[0.14em] uppercase font-semibold mb-2" style={{ color: C.textSub }}>
+              Good until <span className="normal-case tracking-normal font-normal">· optional</span>
+            </p>
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={expiresOn}
+                min={new Date().toISOString().slice(0, 10)}
+                onChange={e => setExpiresOn(e.target.value)}
+                className="flex-1 rounded-xl px-3 py-2.5 text-[14px]"
+                style={{ border: `1px solid ${C.border}`, background: '#fff', color: C.text, outline: 'none' }}
+              />
+              {expiresOn && (
+                <button type="button" onClick={() => setExpiresOn('')} className="text-[13px] font-semibold px-3 py-2" style={{ color: C.textSub }}>
+                  Clear
+                </button>
+              )}
+            </div>
+            <p className="text-[11px] mt-1.5" style={{ color: C.textMuted }}>
+              Hidden from Discover after this date. Saving also refreshes the post to the top.
+            </p>
           </div>
 
           {/* What you need */}
@@ -328,6 +355,7 @@ export default function MyPostsPage({
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {posts.map(post => {
             const urg = post.urgency ? URGENCY_MAP[post.urgency] : null
+            const isExpired = post.expiresAt && new Date(post.expiresAt).getTime() < Date.now()
             return (
               <div
                 key={post.id}
@@ -369,6 +397,15 @@ export default function MyPostsPage({
                         borderRadius: 99, padding: '3px 9px', fontSize: 10, fontWeight: 700,
                       }}>
                         {urg.label}
+                      </span>
+                    )}
+                    {isExpired && (
+                      <span style={{
+                        background: '#6B7280', color: '#fff',
+                        borderRadius: 99, padding: '3px 9px', fontSize: 10, fontWeight: 700,
+                        letterSpacing: '0.06em', textTransform: 'uppercase',
+                      }}>
+                        Expired · hidden
                       </span>
                     )}
                     <div style={{ flex: 1 }} />

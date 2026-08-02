@@ -54,3 +54,20 @@ export async function recordPostInteraction(userId, postId, type) {
 
   return { error }
 }
+
+/**
+ * Un-pass every post the user swiped left on — deletes their 'swiped_left'
+ * rows so those posts return to the Discover deck. Backs the "bring back
+ * passed posts" action. (Beta feedback: passing hides a post permanently, so
+ * users need a way to change their mind.)
+ */
+export async function clearSwipedLeft(userId) {
+  if (!isSupabaseConfigured) return { error: new Error('Supabase not configured.') }
+  if (!userId)               return { error: new Error('missing userId') }
+  const { error } = await supabase
+    .from('post_interactions')
+    .delete()
+    .eq('user_id', userId)
+    .eq('interaction_type', 'swiped_left')
+  return { error }
+}

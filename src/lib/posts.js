@@ -53,6 +53,8 @@ export async function createPost(userId, fields) {
       industry_tag:    fields.industry   || [],
       time_commitment: fields.time       || '15 min',
       urgency:         fields.urgency    || null,
+      // Optional expiry — hidden from Discover once past. null = never expires.
+      expires_at:      fields.expiresAt  || null,
       // Default true so callers that don't pass a flag keep the old
       // always-anonymous behaviour. SubmitRequest now always sends it.
       is_anonymous:    fields.is_anonymous ?? true,
@@ -82,6 +84,9 @@ export async function updatePost(postId, userId, fields) {
       time_commitment: fields.time_commitment || '15 min',
       urgency:         fields.urgency       || null,
       is_anonymous:    fields.is_anonymous ?? true,
+      // Only touch expiry when the caller provides it, so editing other fields
+      // doesn't silently clear an existing expiry.
+      ...(fields.expiresAt !== undefined ? { expires_at: fields.expiresAt || null } : {}),
       created_at:      new Date().toISOString(), // republish — move to top of feed
     })
     .eq('id', postId)
@@ -109,6 +114,7 @@ export function rowToCard(row) {
     urgency:      row.urgency,
     createdAt:    formatRelative(row.created_at),
     createdAtRaw: row.created_at,   // ISO string for freshness scoring
+    expiresAt:    row.expires_at || null,  // optional; null = never expires
     // Per-post override: true → force anonymous label regardless of
     // creator.visibility; false → force real-name label if creator
     // has a name on file. See src/lib/visibility.js::posterDisplay.

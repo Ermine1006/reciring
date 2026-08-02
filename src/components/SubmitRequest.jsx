@@ -196,6 +196,7 @@ export default function SubmitRequest({ onSubmitted }) {
   const [industry, setIndustry] = useState([])
   const [time,     setTime]     = useState('15 min')
   const [urgency,  setUrgency]  = useState(null)
+  const [expiresOn, setExpiresOn] = useState('')   // 'YYYY-MM-DD' or '' (never expires)
   // Default true — matches the previous always-anonymous behaviour so
   // existing users don't accidentally out themselves on first post
   // after the update ships.
@@ -312,6 +313,8 @@ export default function SubmitRequest({ onSubmitted }) {
         tags,
         time,
         urgency,
+        // End-of-day so the post stays visible through the chosen date.
+        expiresAt: expiresOn ? new Date(`${expiresOn}T23:59:59`).toISOString() : null,
         is_anonymous: isAnonymous,
       })
       if (result?.error) {
@@ -321,7 +324,7 @@ export default function SubmitRequest({ onSubmitted }) {
       }
       setTitle(''); setDetails(''); setOffers('')
       setHelpType([]); setIndustry([])
-      setTime('15 min'); setUrgency(null)
+      setTime('15 min'); setUrgency(null); setExpiresOn('')
     } catch (err) {
       setSubmitError(err.message || 'Unexpected error.')
     }
@@ -402,6 +405,36 @@ export default function SubmitRequest({ onSubmitted }) {
             <p className="text-[11px] tracking-[0.16em] uppercase font-semibold mb-2.5" style={{ color: C.textSub }}>Urgency</p>
             <ChipGroup options={URGENCY_OPTIONS} selected={urgency} onToggle={(v) => setUrgency(v)} />
           </div>
+        </div>
+
+        {/* ── Optional expiry ─────────────────────────── */}
+        <div>
+          <p className="text-[11px] tracking-[0.16em] uppercase font-semibold mb-2" style={{ color: C.textSub }}>
+            Good until <span className="normal-case tracking-normal font-normal">· optional</span>
+          </p>
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              value={expiresOn}
+              min={new Date().toISOString().slice(0, 10)}
+              onChange={(e) => setExpiresOn(e.target.value)}
+              className="flex-1 rounded-xl px-3 py-2.5 text-[14px]"
+              style={{ border: `1.5px solid ${C.border}`, background: '#fff', color: C.text, outline: 'none' }}
+            />
+            {expiresOn && (
+              <button
+                type="button"
+                onClick={() => setExpiresOn('')}
+                className="text-[13px] font-semibold px-3 py-2"
+                style={{ color: C.textSub }}
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          <p className="text-[11px] mt-1.5" style={{ color: C.textMuted }}>
+            The post disappears from Discover after this date. Leave empty to keep it up until you remove it.
+          </p>
         </div>
 
         {/* ── NEEDS: title + details ─────────────────── */}

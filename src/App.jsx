@@ -30,7 +30,7 @@ import { submitReport, blockUser, fetchBlockedIds } from './lib/safety'
 import { isSupabaseConfigured, supabase } from './lib/supabase'
 import { fetchPosts, createPost, updatePost } from './lib/posts'
 import { createMatch, fetchMyMatches, fetchMatchedPostIds, fetchUnmatchedPostIds, unmatchMatch, matchToUI, requestIdentityReveal, acceptIdentityReveal, declineIdentityReveal, fetchPeerProfile } from './lib/matches'
-import { fetchUserInteractions, recordPostInteraction } from './lib/interactions'
+import { fetchUserInteractions, recordPostInteraction, clearSwipedLeft } from './lib/interactions'
 import { fetchCompletedMatchIds } from './lib/recognition'
 import { notifyEventReview } from './lib/email'
 import { fetchMessages, sendMessage, sendMeetingProposal, updateMeetingStatus, msgToUI } from './lib/messages'
@@ -223,6 +223,19 @@ function AppShell() {
   }, [user?.id])
 
   useEffect(() => { loadInteractions() }, [loadInteractions])
+
+  // Bring back every post the user passed — clears 'swiped_left' so they
+  // return to the Discover deck. Optimistic, then reconcile from DB.
+  const restorePassedPosts = useCallback(async () => {
+    if (!user) return
+    setInteractionMap(prev => {
+      const next = new Map()
+      for (const [pid, t] of prev) if (t !== 'swiped_left') next.set(pid, t)
+      return next
+    })
+    const { error } = await clearSwipedLeft(user.id)
+    if (error) { console.warn('[ReciRing] clearSwipedLeft failed:', error.message || error); loadInteractions() }
+  }, [user?.id, loadInteractions])
 
   // Record a Discover interaction. Optimistic + non-blocking.
   // Priority: swiped_left > viewed > none. Refuses to downgrade an
@@ -458,13 +471,17 @@ function AppShell() {
 
   // Filter out blocked users' posts, own posts, and already-matched posts
   const visibleRequests = useMemo(
-    () => requests.filter(r => {
-      const creatorId = r.created_by || r.poster_id
-      // if (creatorId && user && creatorId === user.id) return false  // TEMP: show own posts in Discover for demo
-      if (creatorId && blockedIds.has(creatorId))     return false     // hide blocked
-      if (r.id && matchedPostIds.has(r.id))           return false     // hide already-matched
-      return true
-    }),
+    () => {
+      const now = Date.now()
+      return requests.filter(r => {
+        const creatorId = r.created_by || r.poster_id
+        // if (creatorId && user && creatorId === user.id) return false  // TEMP: show own posts in Discover for demo
+        if (creatorId && blockedIds.has(creatorId))     return false     // hide blocked
+        if (r.id && matchedPostIds.has(r.id))           return false     // hide already-matched
+        if (r.expiresAt && new Date(r.expiresAt).getTime() < now) return false  // hide expired
+        return true
+      })
+    },
     [requests, blockedIds, matchedPostIds, user?.id]
   )
 
@@ -877,6 +894,7 @@ function AppShell() {
               onScheduleChat={handleScheduleChat}
               onReport={handleReport}
               onBlock={handleBlock}
+              onRestorePassed={restorePassedPosts}
             />
           )}
           {tab === 'post' && (

@@ -39,7 +39,7 @@ function FilterChip({ label, active, onClick }) {
   )
 }
 
-export default function CardStack({ requests, unmatchedPostIds, interactionMap, onSwipeRight, onSwipeLeft, onCardViewed, onMatchConfirm, onOpenChat, onScheduleChat, onReport, onBlock }) {
+export default function CardStack({ requests, unmatchedPostIds, interactionMap, onSwipeRight, onSwipeLeft, onCardViewed, onMatchConfirm, onOpenChat, onScheduleChat, onReport, onBlock, onRestorePassed }) {
   const { viewerProfile } = useAuth()
   const viewer = viewerProfile || DEFAULT_VIEWER_PROFILE
 
@@ -73,13 +73,22 @@ export default function CardStack({ requests, unmatchedPostIds, interactionMap, 
     })
   }, [])
 
-  // Ranked + sorted by the 4-tier system. Swiped-left posts move to the
-  // bottom rather than being filtered out — they'll only resurface once
-  // the user exhausts every higher-tier post.
+  // Ranked + sorted by the 4-tier system, then passed posts removed. Beta
+  // feedback: a post the user swiped left ("pass") should NOT resurface — it
+  // stays hidden (persisted in post_interactions). Users can bring passed
+  // posts back from the empty state.
   const ranked = useMemo(() => {
     const filtered = filterRequests(requests, filters)
-    return rankRequests(filtered, viewer, unmatchedSet, interactions)
+    const rankedList = rankRequests(filtered, viewer, unmatchedSet, interactions)
+    return rankedList.filter(r => interactions.get(r.id) !== 'swiped_left')
   }, [requests, filters, viewer, unmatchedSet, interactions])
+
+  // How many currently-loaded posts the user has passed (for the "bring back"
+  // affordance). Counts only posts still present in the feed.
+  const passedCount = useMemo(
+    () => requests.reduce((n, r) => n + (interactions.get(r.id) === 'swiped_left' ? 1 : 0), 0),
+    [requests, interactions]
+  )
 
   // Final stack: tier-ranked fresh cards first, then acted cards in the
   // order they were acted on (oldest first, most recent last). This
@@ -309,6 +318,21 @@ export default function CardStack({ requests, unmatchedPostIds, interactionMap, 
               }}
             >
               Clear filters
+            </button>
+          )}
+          {/* Bring back posts the user passed (beta feedback: let me revisit). */}
+          {!hasFilters && passedCount > 0 && onRestorePassed && (
+            <button
+              type="button"
+              onClick={onRestorePassed}
+              style={{
+                marginTop: 18, padding: '10px 24px', borderRadius: 99,
+                background: C.goldBg, border: `1.5px solid ${C.goldLight}`,
+                color: C.goldDark, fontSize: 13, fontWeight: 600,
+                fontFamily: 'Inter, system-ui, sans-serif', cursor: 'pointer',
+              }}
+            >
+              ↩ Bring back {passedCount} passed {passedCount === 1 ? 'post' : 'posts'}
             </button>
           )}
         </motion.div>
