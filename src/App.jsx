@@ -227,6 +227,34 @@ function AppShell() {
 
   useEffect(() => { loadInteractions() }, [loadInteractions])
 
+  // Deep link: reciring.com/?event=<id> (e.g. from a shared poster's QR code).
+  // Stash the id so it survives the signup flow for brand-new members, and
+  // strip it from the URL so it doesn't re-trigger.
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search)
+      const ev = params.get('event')
+      if (ev) {
+        sessionStorage.setItem('mutu_pending_event', ev)
+        params.delete('event')
+        const qs = params.toString()
+        window.history.replaceState({}, '', window.location.pathname + (qs ? `?${qs}` : ''))
+      }
+    } catch { /* no-op */ }
+  }, [])
+
+  // Once signed in, open any pending deep-linked event (from the QR/link).
+  useEffect(() => {
+    if (!user) return
+    let ev = null
+    try { ev = sessionStorage.getItem('mutu_pending_event') } catch { /* no-op */ }
+    if (ev) {
+      try { sessionStorage.removeItem('mutu_pending_event') } catch { /* no-op */ }
+      setTab('events')
+      setViewingEventId(ev)
+    }
+  }, [user?.id])
+
   // Bring back every post the user passed — clears 'swiped_left' so they
   // return to the Discover deck. Optimistic, then reconcile from DB.
   const restorePassedPosts = useCallback(async () => {

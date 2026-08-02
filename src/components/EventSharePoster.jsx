@@ -1,6 +1,7 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { toPng } from 'html-to-image'
+import QRCode from 'qrcode'
 import { categoryEmoji } from '../data/eventCategories'
 import { WEB_ORIGIN } from '../lib/platform'
 import ReciRingLogo from './ReciRingLogo'
@@ -32,6 +33,21 @@ export default function EventSharePoster({ event, open, onClose }) {
   const posterRef = useRef(null)
   const [busy, setBusy] = useState(false)
   const [toast, setToast] = useState(null)
+  const [qrUrl, setQrUrl] = useState(null)
+
+  // Generate a QR of the event deep link so people can scan to join. New
+  // users land on the signup page; existing users open the event directly.
+  useEffect(() => {
+    if (!open || !event?.id) { setQrUrl(null); return }
+    let alive = true
+    QRCode.toDataURL(`${WEB_ORIGIN}/?event=${event.id}`, {
+      margin: 1, width: 300, errorCorrectionLevel: 'M',
+      color: { dark: '#1A1712', light: '#FFFFFF' },
+    })
+      .then(u => { if (alive) setQrUrl(u) })
+      .catch(() => { if (alive) setQrUrl(null) })
+    return () => { alive = false }
+  }, [open, event?.id])
 
   if (!open || !event) return null
 
@@ -149,10 +165,13 @@ export default function EventSharePoster({ event, open, onClose }) {
 
                 <div style={{
                   marginTop: 20, paddingTop: 20, borderTop: '1.5px solid rgba(255,255,255,0.25)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16,
                 }}>
-                  <span style={{ fontSize: 18, fontWeight: 700, color: C.white }}>Join me on Mutu</span>
-                  <span style={{ fontSize: 15, fontWeight: 600, color: C.goldLight }}>reciring.com</span>
+                  <div>
+                    <p style={{ margin: 0, fontSize: 20, fontWeight: 800, color: C.white, lineHeight: 1.2 }}>Scan to join</p>
+                    <p style={{ margin: '4px 0 0', fontSize: 14, fontWeight: 600, color: C.goldLight }}>Join me on Mutu · reciring.com</p>
+                  </div>
+                  {qrUrl && <img src={qrUrl} alt="" width={112} height={112} style={{ display: 'block', borderRadius: 12, background: '#fff', padding: 7 }} />}
                 </div>
               </div>
             </div>
@@ -198,10 +217,13 @@ export default function EventSharePoster({ event, open, onClose }) {
 
             <div style={{
               marginTop: 30, paddingTop: 22, borderTop: `1.5px solid ${C.goldLight}`,
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16,
             }}>
-              <span style={{ fontSize: 18, fontWeight: 700, color: C.ink }}>Join me on Mutu</span>
-              <span style={{ fontSize: 15, fontWeight: 600, color: C.goldDark }}>reciring.com</span>
+              <div>
+                <p style={{ margin: 0, fontSize: 20, fontWeight: 800, color: C.ink, lineHeight: 1.2 }}>Scan to join</p>
+                <p style={{ margin: '4px 0 0', fontSize: 14, fontWeight: 600, color: C.goldDark }}>Join me on Mutu · reciring.com</p>
+              </div>
+              {qrUrl && <img src={qrUrl} alt="" width={112} height={112} style={{ display: 'block', borderRadius: 12, border: `1.5px solid ${C.goldLight}` }} />}
             </div>
           </div>
         )}
@@ -225,9 +247,19 @@ export default function EventSharePoster({ event, open, onClose }) {
         }}>
           Share this event
         </h2>
-        <p style={{ textAlign: 'center', fontSize: 13, color: C.textSub, margin: '0 0 20px', lineHeight: 1.5 }}>
-          Share the poster to your Instagram story, or send the link to a friend.
+        <p style={{ textAlign: 'center', fontSize: 13, color: C.textSub, margin: '0 0 18px', lineHeight: 1.5 }}>
+          Share the poster, send the link, or let people scan the code to join.
         </p>
+
+        {/* Live QR — hold up your phone so anyone can scan to join in person. */}
+        {qrUrl && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, margin: '0 0 20px' }}>
+            <div style={{ background: '#fff', borderRadius: 16, padding: 12, border: `1.5px solid ${C.goldLight}`, boxShadow: '0 6px 18px -8px rgba(200,169,106,0.4)' }}>
+              <img src={qrUrl} alt="QR code to join the event" width={168} height={168} style={{ display: 'block' }} />
+            </div>
+            <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: C.textSub, fontFamily: 'Inter, system-ui, sans-serif' }}>Scan to join · new members sign up first</p>
+          </div>
+        )}
 
         <button
           type="button"
