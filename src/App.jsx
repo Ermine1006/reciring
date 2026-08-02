@@ -997,7 +997,7 @@ function AppShell() {
               eventId={preparingEventId}
               userId={user?.id}
               onBack={() => setPreparingEventId(null)}
-              onOpenMatch={(matchId) => { setPreparingEventId(null); setTab('matches'); setChatMatchId(matchId) }}
+              onOpenMatch={(matchId) => { setPreparingEventId(null); loadMatches(); setTab("matches"); setChatMatchId(matchId) }}
             />
           )}
           {tab === 'events' && !preparingEventId && editingEventId && (
@@ -1019,7 +1019,7 @@ function AppShell() {
               onBack={() => { setViewingEventId(null); setEventInitialView(null); setEventsRefreshKey(k => k + 1) }}
               onEdit={(id) => setEditingEventId(id)}
               onPrepare={(id) => { setViewingEventId(null); setPreparingEventId(id) }}
-              onOpenMatch={(matchId) => { setViewingEventId(null); setTab('matches'); setChatMatchId(matchId) }}
+              onOpenMatch={(matchId) => { setViewingEventId(null); loadMatches(); setTab("matches"); setChatMatchId(matchId) }}
             />
           )}
           {tab === 'events' && !preparingEventId && !editingEventId && !viewingEventId && !showCreateEvent && (
@@ -1029,7 +1029,7 @@ function AppShell() {
               onOpenEvent={(id) => { setEventInitialView(null); setViewingEventId(id) }}
               onOpenEventRecap={(id) => { setEventInitialView('recap'); setViewingEventId(id) }}
               onPrepare={(id) => { setViewingEventId(null); setPreparingEventId(id) }}
-              onOpenMatch={(matchId) => { setTab('matches'); setChatMatchId(matchId) }}
+              onOpenMatch={(matchId) => { loadMatches(); setTab("matches"); setChatMatchId(matchId) }}
               onAskMutu={() => setBanner('Ask Mutu — your networking assistant — is coming soon. For now, prepare for events and connect on the Opportunity Board inside each event.')}
             />
           )}

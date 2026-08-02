@@ -97,6 +97,10 @@ export async function listEncountersForEvent(eventId) {
     .select('id, event_id, encountered_user_id, status, topics, private_note, next_action, due_at, created_at, confirmed_at, followed_up_at, followup_dismissed_at, source')
     .eq('user_id', session.user.id)
     .eq('event_id', eventId)
+    // The Event Recap is "who I met at this event" — real attendees only.
+    // Free-text captures from My Networking (no linked profile) live there, not
+    // in the event's recap.
+    .not('encountered_user_id', 'is', null)
     .order('created_at', { ascending: true })
   return { data: data || [], error }
 }
