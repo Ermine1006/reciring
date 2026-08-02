@@ -170,6 +170,30 @@ export async function extractCapture(text, { eventTitle } = {}) {
   return { capture: body.capture || null, error: null }
 }
 
+// ── Ask Mutu chat history (persisted; storage only, no AI cost) ──────
+export async function fetchAskHistory(userId, limit = 60) {
+  if (!isSupabaseConfigured || !userId) return { data: [], error: null }
+  const { data, error } = await supabase
+    .from('ask_mutu_messages')
+    .select('id, role, text, created_at')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: true })
+    .limit(limit)
+  return { data: data || [], error }
+}
+export async function saveAskMessage(userId, role, text) {
+  if (!isSupabaseConfigured || !userId) return { error: null }
+  const { error } = await supabase
+    .from('ask_mutu_messages')
+    .insert({ user_id: userId, role, text: String(text || '').slice(0, 4000) })
+  return { error }
+}
+export async function clearAskHistory(userId) {
+  if (!isSupabaseConfigured || !userId) return { error: null }
+  const { error } = await supabase.from('ask_mutu_messages').delete().eq('user_id', userId)
+  return { error }
+}
+
 // Build the compact, private grounding context for Ask Mutu from the user's
 // own encounters + events. Only fields the user already owns.
 export function buildAssistantContext({ encounters = [], events = [] }) {

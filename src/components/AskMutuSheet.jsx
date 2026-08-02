@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { fetchEncounters, buildAssistantContext, askMutu } from '../lib/eventMemory'
+import { fetchEncounters, buildAssistantContext, askMutu, fetchAskHistory, saveAskMessage, clearAskHistory } from '../lib/eventMemory'
 
 const C = {
   gold: '#C8A96A', goldDark: '#A88245', goldLight: '#E6D3A3', goldBg: '#FBF6EC',
@@ -28,10 +28,14 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
 
   useEffect(() => {
     if (!open) return
-    setMsgs([]); setInput('')
+    setInput('')
     ;(async () => {
-      const { data } = await fetchEncounters(userId)
-      setCtx(buildAssistantContext({ encounters: data, events }))
+      const [{ data: enc }, { data: hist }] = await Promise.all([
+        fetchEncounters(userId),
+        fetchAskHistory(userId),
+      ])
+      setCtx(buildAssistantContext({ encounters: enc, events }))
+      setMsgs((hist || []).map(m => ({ role: m.role, text: m.text })))
     })()
   }, [open, userId]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -44,10 +48,13 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
     if (!question || busy) return
     setInput('')
     setMsgs(m => [...m, { role: 'user', text: question }])
+    saveAskMessage(userId, 'user', question)
     setBusy(true)
     const { answer, error } = await askMutu(question, ctx || {})
     setBusy(false)
-    setMsgs(m => [...m, { role: 'mutu', text: error ? (error.message || 'Sorry, try again.') : answer }])
+    const reply = error ? (error.message || 'Sorry, try again.') : answer
+    setMsgs(m => [...m, { role: 'mutu', text: reply }])
+    if (!error) saveAskMessage(userId, 'mutu', reply)
   }
 
   const empty = msgs.length === 0
@@ -66,6 +73,12 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
               <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: C.ink, fontFamily: 'Fraunces, Georgia, serif' }}>Ask Mutu</p>
               <p style={{ margin: 0, fontSize: 11.5, color: C.muted, fontFamily: 'Inter, system-ui, sans-serif' }}>About your own network · private to you</p>
             </div>
+            {msgs.length > 0 && (
+              <button type="button" onClick={async () => { await clearAskHistory(userId); setMsgs([]) }}
+                style={{ background: 'none', border: 'none', color: C.muted, fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif', padding: '4px 6px' }}>
+                Clear
+              </button>
+            )}
             <button type="button" onClick={onClose} style={{ background: 'none', border: 'none', color: C.muted, fontSize: 22, cursor: 'pointer', lineHeight: 1 }}>×</button>
           </div>
         </div>
