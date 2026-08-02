@@ -137,11 +137,13 @@ export async function openOrCreateDirectMatch({ myId, peerId, eventId }) {
     .limit(1)
   if (existing && existing.length) return { matchId: existing[0].id, error: null }
 
+  // The matches INSERT RLS requires auth.uid() = helper_user_id, so the person
+  // creating the chat must be the helper.
   const { data, error } = await supabase
     .from('matches')
     .insert({
-      requester_user_id: myId,
-      helper_user_id:    peerId,
+      requester_user_id: peerId,
+      helper_user_id:    myId,
       event_id:          eventId || null,
       status:            'active',
       identity_reveal_status:      'accepted',

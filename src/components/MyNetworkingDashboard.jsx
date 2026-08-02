@@ -5,6 +5,7 @@ import EventCover from './EventCover'
 import EventCaptureSheet from './EventCaptureSheet'
 import AskMutuSheet from './AskMutuSheet'
 import ContactHistorySheet from './ContactHistorySheet'
+import ContactsListSheet from './ContactsListSheet'
 import { fetchEncounters, fetchFollowups, completeFollowup, personKey } from '../lib/eventMemory'
 
 const C = {
@@ -60,6 +61,7 @@ export default function MyNetworkingDashboard({ userId, events = [], joinedIds =
   const [capture, setCapture]       = useState(null)
   const [askOpen, setAskOpen]       = useState(false)
   const [contact, setContact]       = useState(null)   // person whose history is open
+  const [listOpen, setListOpen]     = useState(false)  // full contacts list
 
   // Distinct people (dedupe encounters by person) for Recently Met + the count.
   const contacts = useMemo(() => {
@@ -133,7 +135,7 @@ export default function MyNetworkingDashboard({ userId, events = [], joinedIds =
       )}
 
       {/* Follow-ups */}
-      <LabelRow left="Follow-ups" right={followups.length > 2 ? 'View all' : null} />
+      <LabelRow left="Follow-ups" />
       {followups.length === 0 ? (
         <div style={{ ...slim, marginBottom: 24, cursor: 'default' }}>
           <span style={{ color: C.sub }}>No open follow-ups. Log a conversation to add one.</span>
@@ -160,25 +162,25 @@ export default function MyNetworkingDashboard({ userId, events = [], joinedIds =
       )}
 
       {/* Recently met */}
-      <LabelRow left="Recently met" right={contacts.length > 4 ? 'View all' : null} />
-      <div style={{ ...card, padding: '14px', marginBottom: 22, display: 'flex', alignItems: 'center', gap: 12 }}>
+      <LabelRow left="Recently met" right={contacts.length > 4 ? 'View all' : null} onRight={() => setListOpen(true)} />
+      <div style={{ ...card, padding: '14px', marginBottom: 12 }}>
         {contacts.length === 0 ? (
-          <span style={{ flex: 1, fontSize: 13, color: C.sub, fontFamily: 'Inter, system-ui, sans-serif' }}>People you meet will show up here.</span>
+          <span style={{ fontSize: 13, color: C.sub, fontFamily: 'Inter, system-ui, sans-serif' }}>People you meet will show up here.</span>
         ) : (
-          <div style={{ flex: 1, display: 'flex', gap: 14, overflow: 'hidden' }}>
-            {contacts.slice(0, 3).map(e => (
-              <button key={personKey(e)} type="button" onClick={() => setContact(e)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'center', width: 56 }}>
+          <div className="phone-scroll" style={{ display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 2 }}>
+            {contacts.map(e => (
+              <button key={personKey(e)} type="button" onClick={() => setContact(e)} style={{ flexShrink: 0, background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'center', width: 56 }}>
                 <Avatar name={e.display_name} url={e.avatar_url} size={48} />
                 <p style={{ margin: '5px 0 0', fontSize: 11, color: C.ink, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'Inter, system-ui, sans-serif' }}>{String(e.display_name || '').split(' ')[0]}</p>
               </button>
             ))}
           </div>
         )}
-        <button type="button" onClick={() => setCapture({ mode: 'ai', initial: null })} style={logBtn}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
-          Log a conversation
-        </button>
       </div>
+      <button type="button" onClick={() => setCapture({ mode: 'ai', initial: null })} style={{ ...logBtn, width: '100%', justifyContent: 'center', marginBottom: 22 }}>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        Log a conversation
+      </button>
 
       {/* Ask Mutu */}
       <button type="button" onClick={() => setAskOpen(true)} style={askCard}>
@@ -203,6 +205,13 @@ export default function MyNetworkingDashboard({ userId, events = [], joinedIds =
         onChanged={load}
         onClose={() => setContact(null)}
       />
+
+      <ContactsListSheet
+        open={listOpen}
+        contacts={contacts}
+        onOpenContact={(c) => { setListOpen(false); setContact(c) }}
+        onClose={() => setListOpen(false)}
+      />
     </motion.div>
   )
 }
@@ -210,11 +219,11 @@ export default function MyNetworkingDashboard({ userId, events = [], joinedIds =
 function Label({ children }) {
   return <p style={labelStyle}>{children}</p>
 }
-function LabelRow({ left, right }) {
+function LabelRow({ left, right, onRight }) {
   return (
     <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
       <p style={labelStyle}>{left}</p>
-      {right && <span style={{ fontSize: 12.5, fontWeight: 600, color: C.goldDeep, fontFamily: 'Inter, system-ui, sans-serif', cursor: 'pointer' }}>{right}</span>}
+      {right && <button type="button" onClick={onRight} style={{ background: 'none', border: 'none', padding: 0, fontSize: 12.5, fontWeight: 600, color: C.goldDeep, fontFamily: 'Inter, system-ui, sans-serif', cursor: 'pointer' }}>{right}</button>}
     </div>
   )
 }

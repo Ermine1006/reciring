@@ -27,6 +27,7 @@ export default function ContactHistorySheet({ open, person, userId, onOpenEventR
   const [addText, setAddText] = useState('')
   const [addDue, setAddDue] = useState('')
   const [messaging, setMessaging] = useState(false)
+  const [msgErr, setMsgErr] = useState(null)
 
   const load = useCallback(async () => {
     if (!open || !person || !userId) return
@@ -50,10 +51,11 @@ export default function ContactHistorySheet({ open, person, userId, onOpenEventR
   const canMessage = Boolean(person.encountered_user_id)
   const handleMessage = async () => {
     if (!canMessage || messaging) return
-    setMessaging(true)
-    const { matchId } = await openOrCreateDirectMatch({ myId: userId, peerId: person.encountered_user_id, eventId: rows[0]?.event_id || null })
+    setMessaging(true); setMsgErr(null)
+    const { matchId, error } = await openOrCreateDirectMatch({ myId: userId, peerId: person.encountered_user_id, eventId: rows[0]?.event_id || null })
     setMessaging(false)
     if (matchId) { onClose?.(); onOpenMatch?.(matchId) }
+    else setMsgErr(error?.message || "Couldn't open the chat — try again.")
   }
   const act = async (fn, id) => { setBusyId(id); await fn(id); setBusyId(null); await load(); onChanged?.() }
   const saveAdd = async (id) => {
@@ -89,6 +91,10 @@ export default function ContactHistorySheet({ open, person, userId, onOpenEventR
           )}
           <button type="button" onClick={onClose} style={{ background: 'none', border: 'none', color: C.muted, fontSize: 24, cursor: 'pointer', lineHeight: 1, marginLeft: 4 }}>×</button>
         </div>
+
+        {msgErr && (
+          <p style={{ margin: '0 22px 10px', fontSize: 12.5, color: C.danger, fontFamily: 'Inter, system-ui, sans-serif' }}>{msgErr}</p>
+        )}
 
         {/* Timeline */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '0 18px calc(20px + env(safe-area-inset-bottom))' }}>
