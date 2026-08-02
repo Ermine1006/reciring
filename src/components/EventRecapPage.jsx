@@ -8,8 +8,9 @@ import EventMemoryModal from './EventMemoryModal'
 import FollowUpModal from './FollowUpModal'
 import {
   listEncountersForEvent, updateEncounter, deleteEncounter,
-  reconcileMyConfirmations,
+  reconcileMyConfirmations, unmarkEncounterFollowedUp,
 } from '../lib/eventEncounters'
+import { openOrCreateDirectMatch } from '../lib/matches'
 import { whyThisConnectionMayMatter, rankByConnectionValue } from '../lib/opportunityMatch'
 
 const C = {
@@ -42,7 +43,7 @@ const C = {
  * All work stays client-side; no new API routes.
  */
 export default function EventRecapPage({
-  eventId, event, allAttendees = [], onBackToOverview,
+  eventId, event, allAttendees = [], onBackToOverview, onOpenMatch,
 }) {
   const { user, profile } = useAuth()
 
@@ -217,6 +218,12 @@ export default function EventRecapPage({
               theirNeed: themPosts[0]?.need_text || null,
               myOffer:   pickBestOffer(profile, themPosts[0]?.need_text),
             })}
+            onUndo={async () => { await unmarkEncounterFollowedUp(encounter.id); refresh() }}
+            onMessage={async () => {
+              if (!encounter.encountered_user_id || !user?.id) return
+              const { matchId } = await openOrCreateDirectMatch({ myId: user.id, peerId: encounter.encountered_user_id, eventId })
+              if (matchId) onOpenMatch?.(matchId)
+            }}
           />
         ))}
 
@@ -275,7 +282,8 @@ export default function EventRecapPage({
 // EncounterCard
 // ────────────────────────────────────────────────────────────────
 
-function EncounterCard({ encounter, them, themTopPost, rationale, onEdit, onFollowUp }) {
+function EncounterCard({ encounter, them, themTopPost, rationale, onEdit, onFollowUp, onUndo, onMessage }) {
+  const resolved = encounter.followed_up_at ? 'done' : encounter.followup_dismissed_at ? 'dismissed' : null
   const seed = resolveAvatarSeed(them.avatar_url) || them.id || encounter.encountered_user_id || encounter.id || 'anon'
   const roleLine = [them.program, them.headline, them.career_stage].filter(Boolean).join(' · ')
   const status = encounter.status
@@ -386,21 +394,42 @@ function EncounterCard({ encounter, them, themTopPost, rationale, onEdit, onFoll
       )}
 
       <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-        <button
-          type="button"
-          onClick={onFollowUp}
-          className="active:scale-[0.98]"
-          style={{
-            flex: 1, padding: '9px 12px', borderRadius: 10,
-            background: encounter.followed_up_at ? C.okBg : `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
-            color: encounter.followed_up_at ? C.ok : '#fff',
-            border: encounter.followed_up_at ? `1px solid ${C.okBorder}` : 'none',
-            fontSize: 12, fontWeight: 700, letterSpacing: '0.04em',
-            cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif',
-          }}
-        >
-          {encounter.followed_up_at ? '✓ Followed up' : 'Generate follow-up'}
-        </button>
+        {resolved ? (
+          // Resolved follow-up — tap to undo. Same state My Networking shows.
+          <button
+            type="button"
+            onClick={onUndo}
+            className="active:scale-[0.98]"
+            style={{
+              flex: 1, padding: '9px 12px', borderRadius: 10,
+              background: resolved === 'done' ? C.okBg : '#EEF1F4',
+              color: resolved === 'done' ? C.ok : '#5B6472',
+              border: `1px solid ${resolved === 'done' ? C.okBorder : '#DDE3EA'}`,
+              fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif',
+            }}
+          >
+            {resolved === 'done' ? '✓ Followed up · Undo' : 'Dismissed · Undo'}
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onFollowUp}
+            className="active:scale-[0.98]"
+            style={{
+              flex: 1, padding: '9px 12px', borderRadius: 10,
+              background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`, color: '#fff',
+              border: 'none', fontSize: 12, fontWeight: 700, letterSpacing: '0.04em',
+              cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif',
+            }}
+          >
+            Generate follow-up
+          </button>
+        )}
+        {them.id && (
+          <button type="button" onClick={onMessage} style={{ padding: '9px 12px', borderRadius: 10, background: C.white, color: C.goldDark, border: `1px solid ${C.goldLight || '#E6D3A3'}`, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
+            Message
+          </button>
+        )}
         <button
           type="button"
           onClick={onEdit}

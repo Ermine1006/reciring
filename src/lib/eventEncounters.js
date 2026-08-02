@@ -94,7 +94,7 @@ export async function listEncountersForEvent(eventId) {
 
   const { data, error } = await supabase
     .from('event_encounters')
-    .select('id, event_id, encountered_user_id, status, topics, private_note, created_at, confirmed_at, followed_up_at, source')
+    .select('id, event_id, encountered_user_id, status, topics, private_note, next_action, due_at, created_at, confirmed_at, followed_up_at, followup_dismissed_at, source')
     .eq('user_id', session.user.id)
     .eq('event_id', eventId)
     .order('created_at', { ascending: true })
@@ -147,7 +147,18 @@ export async function markEncounterFollowedUp(id) {
   if (!isSupabaseConfigured) return { error: new Error('Supabase not configured') }
   const { error } = await supabase
     .from('event_encounters')
-    .update({ followed_up_at: new Date().toISOString() })
+    .update({ followed_up_at: new Date().toISOString(), followup_dismissed_at: null })
+    .eq('id', id)
+  return { error }
+}
+
+// Undo "followed up" / "dismissed" — the same toggle My Networking uses, so
+// the two views stay consistent.
+export async function unmarkEncounterFollowedUp(id) {
+  if (!isSupabaseConfigured) return { error: new Error('Supabase not configured') }
+  const { error } = await supabase
+    .from('event_encounters')
+    .update({ followed_up_at: null, followup_dismissed_at: null })
     .eq('id', id)
   return { error }
 }

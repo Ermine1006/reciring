@@ -90,6 +90,10 @@ export async function fetchPersonHistory(userId, { encounteredUserId, personName
 export async function dismissFollowup(id) {
   return updateEncounter(id, { followup_dismissed_at: new Date().toISOString() })
 }
+// Undo a completed/dismissed follow-up → back to pending (if it has a next_action).
+export async function reopenFollowup(id) {
+  return updateEncounter(id, { followed_up_at: null, followup_dismissed_at: null })
+}
 export async function addFollowup(id, { nextAction, dueAt }) {
   return updateEncounter(id, {
     next_action: String(nextAction || '').trim().slice(0, 300),

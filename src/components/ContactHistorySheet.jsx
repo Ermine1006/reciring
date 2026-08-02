@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { fetchPersonHistory, completeFollowup, dismissFollowup, addFollowup } from '../lib/eventMemory'
+import { fetchPersonHistory, completeFollowup, dismissFollowup, addFollowup, reopenFollowup } from '../lib/eventMemory'
+import { openOrCreateDirectMatch } from '../lib/matches'
 
 const C = {
   bg: '#F9F7F4', card: '#FFFFFF', ink: '#25231E', sub: '#6E675B', muted: '#9C9284',
@@ -18,13 +19,14 @@ function fmtDate(iso){ return iso ? new Date(iso).toLocaleDateString('en-US',{mo
  * lifecycle (pending / completed / dismissed). Private notes are the user's
  * own (RLS). The event name opens that event's Recap.
  */
-export default function ContactHistorySheet({ open, person, userId, onOpenEventRecap, onChanged, onClose }) {
+export default function ContactHistorySheet({ open, person, userId, onOpenEventRecap, onOpenMatch, onChanged, onClose }) {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [busyId, setBusyId] = useState(null)
   const [adding, setAdding] = useState(null)   // encounter id being given a follow-up
   const [addText, setAddText] = useState('')
   const [addDue, setAddDue] = useState('')
+  const [messaging, setMessaging] = useState(false)
 
   const load = useCallback(async () => {
     if (!open || !person || !userId) return
@@ -45,6 +47,14 @@ export default function ContactHistorySheet({ open, person, userId, onOpenEventR
   const sub = [person.program, rows[0]?.event_title ? `met at ${rows[0].event_title}` : null].filter(Boolean).join(' · ')
   const [a, b] = gradFor(name)
 
+  const canMessage = Boolean(person.encountered_user_id)
+  const handleMessage = async () => {
+    if (!canMessage || messaging) return
+    setMessaging(true)
+    const { matchId } = await openOrCreateDirectMatch({ myId: userId, peerId: person.encountered_user_id, eventId: rows[0]?.event_id || null })
+    setMessaging(false)
+    if (matchId) { onClose?.(); onOpenMatch?.(matchId) }
+  }
   const act = async (fn, id) => { setBusyId(id); await fn(id); setBusyId(null); await load(); onChanged?.() }
   const saveAdd = async (id) => {
     if (!addText.trim()) return
@@ -70,7 +80,14 @@ export default function ContactHistorySheet({ open, person, userId, onOpenEventR
             <h2 style={{ margin: 0, fontSize: 21, fontWeight: 600, color: C.ink, fontFamily: 'Fraunces, Georgia, serif' }}>{name}</h2>
             {sub && <p style={{ margin: '2px 0 0', fontSize: 12.5, color: C.sub, fontFamily: 'Inter, system-ui, sans-serif' }}>{sub}</p>}
           </div>
-          <button type="button" onClick={onClose} style={{ background: 'none', border: 'none', color: C.muted, fontSize: 24, cursor: 'pointer', lineHeight: 1 }}>×</button>
+          {canMessage && (
+            <button type="button" onClick={handleMessage} disabled={messaging}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '9px 14px', borderRadius: 12, border: 'none', background: `linear-gradient(180deg, ${C.gold}, ${C.goldDeep})`, color: '#fff', fontSize: 13, fontWeight: 700, cursor: messaging ? 'default' : 'pointer', fontFamily: 'Inter, system-ui, sans-serif', boxShadow: '0 4px 12px -5px rgba(151,117,64,0.6)' }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+              {messaging ? '…' : 'Message'}
+            </button>
+          )}
+          <button type="button" onClick={onClose} style={{ background: 'none', border: 'none', color: C.muted, fontSize: 24, cursor: 'pointer', lineHeight: 1, marginLeft: 4 }}>×</button>
         </div>
 
         {/* Timeline */}
@@ -104,8 +121,12 @@ export default function ContactHistorySheet({ open, person, userId, onOpenEventR
 
                 {/* Follow-up lifecycle */}
                 <div style={{ marginTop: 12 }}>
-                  {state === 'completed' && <Chip label="✓ Follow-up completed" cls={{ color: C.sage, background: C.sageBg }} />}
-                  {state === 'dismissed' && <Chip label="Follow-up dismissed" cls={{ color: C.slate, background: C.slateBg }} />}
+                  {(state === 'completed' || state === 'dismissed') && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <Chip label={state === 'completed' ? '✓ Follow-up completed' : 'Follow-up dismissed'} cls={state === 'completed' ? { color: C.sage, background: C.sageBg } : { color: C.slate, background: C.slateBg }} />
+                      <button type="button" disabled={busyId === r.id} onClick={() => act(reopenFollowup, r.id)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: C.goldDeep, fontSize: 12.5, fontWeight: 700, fontFamily: 'Inter, system-ui, sans-serif' }}>Undo</button>
+                    </div>
+                  )}
                   {state === 'pending' && (
                     <div>
                       <p style={{ margin: '0 0 8px', fontSize: 13, color: C.ink, fontFamily: 'Inter, system-ui, sans-serif' }}><b>Next:</b> {r.next_action}{r.due_at ? ` · due ${fmtDate(r.due_at)}` : ''}</p>

@@ -52,7 +52,7 @@ const Icon = {
  * follow-ups with due pills, recently-met avatars, one primary action
  * (Log a conversation), and Ask Mutu. Data unchanged (event_encounters).
  */
-export default function MyNetworkingDashboard({ userId, events = [], joinedIds = new Set(), onOpenEvent, onPrepare, onGoDiscover, onOpenEventRecap }) {
+export default function MyNetworkingDashboard({ userId, events = [], joinedIds = new Set(), onOpenEvent, onPrepare, onGoDiscover, onOpenEventRecap, onOpenMatch }) {
   const { profile } = useAuth()
   const [encounters, setEncounters] = useState([])
   const [followups, setFollowups]   = useState([])
@@ -199,6 +199,7 @@ export default function MyNetworkingDashboard({ userId, events = [], joinedIds =
         person={contact}
         userId={userId}
         onOpenEventRecap={(id) => { setContact(null); onOpenEventRecap?.(id) }}
+        onOpenMatch={onOpenMatch}
         onChanged={load}
         onClose={() => setContact(null)}
       />

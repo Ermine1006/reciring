@@ -472,6 +472,7 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
             event={event}
             allAttendees={attendees}
             onBackToOverview={() => setViewMode('overview')}
+            onOpenMatch={onOpenMatch}
           />
         )}
 

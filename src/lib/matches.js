@@ -119,6 +119,41 @@ export async function unmatchMatch(matchId) {
 }
 
 /**
+ * Open (or create) a direct 1:1 chat with a person you met. Reuses an existing
+ * match with that peer if one exists; otherwise creates an event-anchored
+ * direct match, already identity-reveal-accepted (you met in person). Returns
+ * { matchId }.
+ */
+export async function openOrCreateDirectMatch({ myId, peerId, eventId }) {
+  if (!isSupabaseConfigured)   return { matchId: null, error: new Error('Supabase not configured') }
+  if (!myId || !peerId)        return { matchId: null, error: new Error('missing ids') }
+  if (myId === peerId)         return { matchId: null, error: new Error("can't message yourself") }
+
+  const { data: existing } = await supabase
+    .from('matches')
+    .select('id, status')
+    .or(`and(requester_user_id.eq.${myId},helper_user_id.eq.${peerId}),and(requester_user_id.eq.${peerId},helper_user_id.eq.${myId})`)
+    .neq('status', 'unmatched')
+    .limit(1)
+  if (existing && existing.length) return { matchId: existing[0].id, error: null }
+
+  const { data, error } = await supabase
+    .from('matches')
+    .insert({
+      requester_user_id: myId,
+      helper_user_id:    peerId,
+      event_id:          eventId || null,
+      status:            'active',
+      identity_reveal_status:      'accepted',
+      identity_reveal_accepted_at: new Date().toISOString(),
+    })
+    .select('id')
+    .single()
+  if (error) return { matchId: null, error }
+  return { matchId: data.id, error: null }
+}
+
+/**
  * Map a DB match row to the shape consumed by MatchesList / ChatView.
  */
 export function matchToUI(row, currentUserId) {
