@@ -4,7 +4,8 @@ import { useAuth } from '../context/AuthContext'
 import EventCover from './EventCover'
 import EventCaptureSheet from './EventCaptureSheet'
 import AskMutuSheet from './AskMutuSheet'
-import { fetchEncounters, fetchFollowups, completeFollowup } from '../lib/eventMemory'
+import ContactHistorySheet from './ContactHistorySheet'
+import { fetchEncounters, fetchFollowups, completeFollowup, personKey } from '../lib/eventMemory'
 
 const C = {
   bg: '#F6F3EC', card: '#FFFFFF', ink: '#25231E', sub: '#6E675B',
@@ -51,13 +52,21 @@ const Icon = {
  * follow-ups with due pills, recently-met avatars, one primary action
  * (Log a conversation), and Ask Mutu. Data unchanged (event_encounters).
  */
-export default function MyNetworkingDashboard({ userId, events = [], joinedIds = new Set(), onOpenEvent, onPrepare, onGoDiscover }) {
+export default function MyNetworkingDashboard({ userId, events = [], joinedIds = new Set(), onOpenEvent, onPrepare, onGoDiscover, onOpenEventRecap }) {
   const { profile } = useAuth()
   const [encounters, setEncounters] = useState([])
   const [followups, setFollowups]   = useState([])
   const [loading, setLoading]       = useState(true)
   const [capture, setCapture]       = useState(null)
   const [askOpen, setAskOpen]       = useState(false)
+  const [contact, setContact]       = useState(null)   // person whose history is open
+
+  // Distinct people (dedupe encounters by person) for Recently Met + the count.
+  const contacts = useMemo(() => {
+    const seen = new Map()
+    for (const e of encounters) { const k = personKey(e); if (!seen.has(k)) seen.set(k, e) }
+    return Array.from(seen.values())
+  }, [encounters])
 
   // My upcoming events = ones I joined OR host (hosting doesn't auto-join).
   const registered = useMemo(() => {
@@ -151,14 +160,14 @@ export default function MyNetworkingDashboard({ userId, events = [], joinedIds =
       )}
 
       {/* Recently met */}
-      <LabelRow left="Recently met" right={encounters.length > 4 ? 'View all' : null} />
+      <LabelRow left="Recently met" right={contacts.length > 4 ? 'View all' : null} />
       <div style={{ ...card, padding: '14px', marginBottom: 22, display: 'flex', alignItems: 'center', gap: 12 }}>
-        {encounters.length === 0 ? (
+        {contacts.length === 0 ? (
           <span style={{ flex: 1, fontSize: 13, color: C.sub, fontFamily: 'Inter, system-ui, sans-serif' }}>People you meet will show up here.</span>
         ) : (
           <div style={{ flex: 1, display: 'flex', gap: 14, overflow: 'hidden' }}>
-            {encounters.slice(0, 3).map(e => (
-              <button key={e.id} type="button" onClick={() => setCapture({ mode: 'manual', initial: e })} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'center', width: 56 }}>
+            {contacts.slice(0, 3).map(e => (
+              <button key={personKey(e)} type="button" onClick={() => setContact(e)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'center', width: 56 }}>
                 <Avatar name={e.display_name} url={e.avatar_url} size={48} />
                 <p style={{ margin: '5px 0 0', fontSize: 11, color: C.ink, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'Inter, system-ui, sans-serif' }}>{String(e.display_name || '').split(' ')[0]}</p>
               </button>
@@ -184,6 +193,15 @@ export default function MyNetworkingDashboard({ userId, events = [], joinedIds =
       <EventCaptureSheet open={Boolean(capture)} mode={capture?.mode || 'manual'} initial={capture?.initial || null}
         events={registered} defaultEventId={nextEvent?.id || null} userId={userId} onSaved={load} onClose={() => setCapture(null)} />
       <AskMutuSheet open={askOpen} userId={userId} events={registered} onClose={() => setAskOpen(false)} />
+
+      <ContactHistorySheet
+        open={Boolean(contact)}
+        person={contact}
+        userId={userId}
+        onOpenEventRecap={(id) => { setContact(null); onOpenEventRecap?.(id) }}
+        onChanged={load}
+        onClose={() => setContact(null)}
+      />
     </motion.div>
   )
 }

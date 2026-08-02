@@ -11,7 +11,15 @@ import { apiUrl } from './apiBase'
 // values here — a "follow-up" is next_action set + followed_up_at IS NULL, and
 // completing one stamps followed_up_at (the base table's existing field).
 
-const COLS = 'id, user_id, event_id, encountered_user_id, person_name, topics, private_note, commitment, next_action, due_at, followed_up_at, created_at'
+const COLS = 'id, user_id, event_id, encountered_user_id, person_name, topics, private_note, commitment, next_action, due_at, followed_up_at, followup_dismissed_at, created_at'
+
+// A stable key for "the same person" across encounters: their profile id when
+// linked, else the lowercased name. Used to dedupe contacts + gather history.
+export function personKey(enc) {
+  if (enc?.encountered_user_id) return `u:${enc.encountered_user_id}`
+  const name = (enc?.display_name || enc?.person_name || '').trim().toLowerCase()
+  return name ? `n:${name}` : `id:${enc?.id}`
+}
 
 // Resolve each encounter's identity + event so every reader (dashboard, Ask
 // Mutu, history) sees a consistent name — whether it was recorded via Event
@@ -61,8 +69,34 @@ export async function fetchFollowups(userId) {
     .eq('user_id', userId)
     .neq('next_action', '')
     .is('followed_up_at', null)
+    .is('followup_dismissed_at', null)
     .order('due_at', { ascending: true, nullsFirst: false })
   return { data: await resolveEncounters(data || []), error }
+}
+
+// All encounters with one person (across events), newest first — for the
+// unified contact history. Matches by profile link when present, else by name.
+export async function fetchPersonHistory(userId, { encounteredUserId, personName }) {
+  if (!isSupabaseConfigured || !userId) return { data: [], error: null }
+  let q = supabase.from('event_encounters').select(COLS).eq('user_id', userId)
+  if (encounteredUserId) q = q.eq('encountered_user_id', encounteredUserId)
+  else if (personName)   q = q.is('encountered_user_id', null).ilike('person_name', personName.trim())
+  else return { data: [], error: null }
+  const { data, error } = await q.order('created_at', { ascending: false })
+  return { data: await resolveEncounters(data || []), error }
+}
+
+// Follow-up lifecycle (reuses the encounter's timestamps — no separate table).
+export async function dismissFollowup(id) {
+  return updateEncounter(id, { followup_dismissed_at: new Date().toISOString() })
+}
+export async function addFollowup(id, { nextAction, dueAt }) {
+  return updateEncounter(id, {
+    next_action: String(nextAction || '').trim().slice(0, 300),
+    due_at: dueAt || null,
+    followed_up_at: null,
+    followup_dismissed_at: null,
+  })
 }
 
 export async function createEncounter({ userId, eventId, encounteredUserId, personName, topics, privateNote, commitment, nextAction, dueAt }) {
@@ -91,7 +125,7 @@ export async function createEncounter({ userId, eventId, encounteredUserId, pers
 export async function updateEncounter(id, patch) {
   if (!isSupabaseConfigured || !id) return { error: new Error('Missing encounter') }
   const clean = {}
-  for (const k of ['person_name', 'topics', 'private_note', 'commitment', 'next_action', 'due_at', 'event_id', 'followed_up_at']) {
+  for (const k of ['person_name', 'topics', 'private_note', 'commitment', 'next_action', 'due_at', 'event_id', 'followed_up_at', 'followup_dismissed_at']) {
     if (patch[k] !== undefined) clean[k] = patch[k]
   }
   const { error } = await supabase.from('event_encounters').update(clean).eq('id', id)

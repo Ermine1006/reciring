@@ -126,6 +126,8 @@ function AppShell() {
   const [editingEventId, setEditingEventId] = useState(null)
   // When set, Events tab renders the dedicated Prepare page for that event.
   const [preparingEventId, setPreparingEventId] = useState(null)
+  // Optional initial sub-view for the event detail (e.g. 'recap' from a contact).
+  const [eventInitialView, setEventInitialView] = useState(null)
   // Bump this to force EventsList to refetch after a new event is created.
   const [eventsRefreshKey, setEventsRefreshKey] = useState(0)
   // Bump this to force EventDetailPage to refetch after save.
@@ -1011,9 +1013,10 @@ function AppShell() {
           )}
           {tab === 'events' && !preparingEventId && !editingEventId && viewingEventId && (
             <EventDetailPage
-              key={`${viewingEventId}-${eventDetailRefreshKey}`}
+              key={`${viewingEventId}-${eventDetailRefreshKey}-${eventInitialView || ''}`}
               eventId={viewingEventId}
-              onBack={() => { setViewingEventId(null); setEventsRefreshKey(k => k + 1) }}
+              initialViewMode={eventInitialView}
+              onBack={() => { setViewingEventId(null); setEventInitialView(null); setEventsRefreshKey(k => k + 1) }}
               onEdit={(id) => setEditingEventId(id)}
               onPrepare={(id) => { setViewingEventId(null); setPreparingEventId(id) }}
               onOpenMatch={(matchId) => { setViewingEventId(null); setTab('matches'); setChatMatchId(matchId) }}
@@ -1023,7 +1026,8 @@ function AppShell() {
             <EventsList
               key={eventsRefreshKey}
               onCreateEvent={() => setShowCreateEvent(true)}
-              onOpenEvent={(id) => setViewingEventId(id)}
+              onOpenEvent={(id) => { setEventInitialView(null); setViewingEventId(id) }}
+              onOpenEventRecap={(id) => { setEventInitialView('recap'); setViewingEventId(id) }}
               onPrepare={(id) => { setViewingEventId(null); setPreparingEventId(id) }}
               onOpenMatch={(matchId) => { setTab('matches'); setChatMatchId(matchId) }}
               onAskMutu={() => setBanner('Ask Mutu — your networking assistant — is coming soon. For now, prepare for events and connect on the Opportunity Board inside each event.')}

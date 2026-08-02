@@ -83,7 +83,7 @@ const HOST_TYPE_LABEL = {
  * is tapped. Self-contained: handles its own loads, realtime sub, join/
  * leave/cancel actions, group thread, and back navigation.
  */
-export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, onOpenMatch }) {
+export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, onOpenMatch, initialViewMode }) {
   const { user } = useAuth()
 
   const [event, setEvent]       = useState(null)
@@ -98,7 +98,7 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
   //   • recap:      post-event summary + opportunity recall.
   // The toggle is only visible when useful — see canEnterEventMode
   // and canOpenRecap below.
-  const [viewMode, setViewMode] = useState('overview')
+  const [viewMode, setViewMode] = useState(initialViewMode || 'overview')
   const [myEncounters, setMyEncounters] = useState([])
 
   // Chat

@@ -20,7 +20,7 @@ const C = {
   border:    '#ECE6DB',
 }
 
-export default function EventsList({ onCreateEvent, onOpenEvent, onPrepare, onOpenMatch, onAskMutu }) {
+export default function EventsList({ onCreateEvent, onOpenEvent, onPrepare, onOpenMatch, onAskMutu, onOpenEventRecap }) {
   const { user } = useAuth()
 
   const [events, setEvents]         = useState([])
@@ -205,6 +205,7 @@ export default function EventsList({ onCreateEvent, onOpenEvent, onPrepare, onOp
             onOpenMatch={onOpenMatch}
             onAskMutu={onAskMutu}
             onGoDiscover={() => setTopView('discover')}
+            onOpenEventRecap={onOpenEventRecap}
           />
         )}
 
