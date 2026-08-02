@@ -5,6 +5,7 @@ import { fetchUpcomingEvents, fetchMyJoinedEventIds, joinEvent, leaveEvent, canc
 import EventCard from './EventCard'
 import EventJoinIntentModal from './EventJoinIntentModal'
 import AppScreen from './AppScreen'
+import MyNetworkingDashboard from './MyNetworkingDashboard'
 
 const C = {
   gold:      '#C8A96A',
@@ -18,12 +19,13 @@ const C = {
   border:    '#F0ECE4',
 }
 
-export default function EventsList({ onCreateEvent, onOpenEvent }) {
+export default function EventsList({ onCreateEvent, onOpenEvent, onOpenMatch, onAskMutu }) {
   const { user } = useAuth()
 
   const [events, setEvents]         = useState([])
   const [joinedIds, setJoinedIds]   = useState(new Set())
   const [loading, setLoading]       = useState(true)
+  const [topView, setTopView]       = useState('discover') // 'discover' | 'networking'
   const [filter, setFilter]         = useState('upcoming') // 'upcoming' | 'joined'
   const [joiningId, setJoiningId]   = useState(null)
   const [leaveTarget, setLeaveTarget]   = useState(null)  // event being left (pre-confirm)
@@ -176,36 +178,92 @@ export default function EventsList({ onCreateEvent, onOpenEvent }) {
             }}>
               Events
             </h1>
-            <button
-              type="button"
-              onClick={onCreateEvent}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                padding: '8px 14px',
-                borderRadius: 99,
-                background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
-                color: '#fff',
-                border: 'none', cursor: 'pointer',
-                fontSize: 12, fontWeight: 700,
-                letterSpacing: '0.06em', textTransform: 'uppercase',
-                fontFamily: 'Inter, system-ui, sans-serif',
-                boxShadow: '0 4px 14px rgba(200,169,106,0.32)',
-              }}
-            >
-              <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24" strokeLinecap="round">
-                <path d="M12 5v14M5 12h14" />
-              </svg>
-              Create
-            </button>
+            {topView === 'discover' && (
+              <button
+                type="button"
+                onClick={onCreateEvent}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '8px 14px',
+                  borderRadius: 99,
+                  background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
+                  color: '#fff',
+                  border: 'none', cursor: 'pointer',
+                  fontSize: 12, fontWeight: 700,
+                  letterSpacing: '0.06em', textTransform: 'uppercase',
+                  fontFamily: 'Inter, system-ui, sans-serif',
+                  boxShadow: '0 4px 14px rgba(200,169,106,0.32)',
+                }}
+              >
+                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24" strokeLinecap="round">
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+                Create
+              </button>
+            )}
           </div>
-          <p style={{
-            fontSize: 13, color: C.textSub, lineHeight: 1.5,
-            fontFamily: 'Inter, system-ui, sans-serif',
-            margin: '6px 0 0',
-          }}>
-            Real-life meetups for the Mutu community.
-          </p>
+
+          {/* Top-level view: Discover (find + register) vs My Networking (Event CRM) */}
+          <div
+            role="tablist"
+            style={{
+              display: 'flex', marginTop: 14,
+              background: '#F2EEE5', border: `1px solid ${C.border}`,
+              borderRadius: 12, padding: 3, gap: 2,
+            }}
+          >
+            {[
+              { id: 'discover',   label: 'Discover' },
+              { id: 'networking', label: 'My Networking' },
+            ].map(t => {
+              const active = topView === t.id
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setTopView(t.id)}
+                  style={{
+                    flex: 1, padding: '9px 6px', borderRadius: 9,
+                    background: active ? `linear-gradient(135deg, ${C.gold}, ${C.goldDark})` : 'transparent',
+                    color: active ? '#fff' : C.textSub,
+                    border: 'none', fontSize: 12.5, fontWeight: 600,
+                    fontFamily: 'Inter, system-ui, sans-serif', cursor: 'pointer',
+                    boxShadow: active ? '0 1px 4px rgba(200,169,106,0.35)' : 'none',
+                    transition: 'all 0.18s',
+                  }}
+                >
+                  {t.label}
+                </button>
+              )
+            })}
+          </div>
+
+          {topView === 'discover' && (
+            <p style={{
+              fontSize: 13, color: C.textSub, lineHeight: 1.5,
+              fontFamily: 'Inter, system-ui, sans-serif',
+              margin: '10px 0 0',
+            }}>
+              Real-life meetups for the Mutu community.
+            </p>
+          )}
         </div>
+
+        {topView === 'networking' && (
+          <MyNetworkingDashboard
+            userId={user?.id}
+            events={events}
+            joinedIds={joinedIds}
+            onOpenEvent={onOpenEvent}
+            onOpenMatch={onOpenMatch}
+            onAskMutu={onAskMutu}
+          />
+        )}
+
+        {topView === 'discover' && <>
+
 
         {/* Filter chips */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
@@ -292,6 +350,7 @@ export default function EventsList({ onCreateEvent, onOpenEvent }) {
             ))}
           </div>
         )}
+        </>}
       </motion.div>
 
       {/* Leave confirmation */}

@@ -984,6 +984,8 @@ function AppShell() {
               key={eventsRefreshKey}
               onCreateEvent={() => setShowCreateEvent(true)}
               onOpenEvent={(id) => setViewingEventId(id)}
+              onOpenMatch={(matchId) => { setTab('matches'); setChatMatchId(matchId) }}
+              onAskMutu={() => setBanner('Ask Mutu — your networking assistant — is coming soon. For now, prepare for events and connect on the Opportunity Board inside each event.')}
             />
           )}
           {tab === 'events' && !editingEventId && !viewingEventId && showCreateEvent && (
