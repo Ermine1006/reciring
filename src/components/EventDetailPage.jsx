@@ -24,6 +24,7 @@ import { resolveAvatarSeed } from './SettingsPage'
 import { sendEventRegistrationEmail, sendEventUnregisterEmail, notifyEventCancellation } from '../lib/email'
 import EventModeSection from './EventModeSection'
 import EventMarketplace from './EventMarketplace'
+import EventCover from './EventCover'
 import EventRecapPage from './EventRecapPage'
 import PendingConfirmationsBanner from './PendingConfirmationsBanner'
 import { listEncountersForEvent } from '../lib/eventEncounters'
@@ -82,7 +83,7 @@ const HOST_TYPE_LABEL = {
  * is tapped. Self-contained: handles its own loads, realtime sub, join/
  * leave/cancel actions, group thread, and back navigation.
  */
-export default function EventDetailPage({ eventId, onBack, onEdit, onOpenMatch }) {
+export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, onOpenMatch }) {
   const { user } = useAuth()
 
   const [event, setEvent]       = useState(null)
@@ -447,6 +448,23 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onOpenMatch }
           </div>
         )}
 
+        {/* Prepare CTA — the primary next step once you've joined. */}
+        {joined && !isCancelled && viewMode === 'overview' && onPrepare && (
+          <button
+            type="button"
+            onClick={() => onPrepare(event.id)}
+            style={{
+              width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              margin: '0 0 14px', padding: '13px', borderRadius: 14, border: 'none',
+              background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`, color: '#fff',
+              fontSize: 14, fontWeight: 700, cursor: 'pointer',
+              fontFamily: 'Inter, system-ui, sans-serif', boxShadow: '0 4px 14px rgba(200,169,106,0.32)',
+            }}
+          >
+            ✨ Prepare for this event
+          </button>
+        )}
+
         {/* Recap mode replaces the entire overview body. */}
         {viewMode === 'recap' && (
           <EventRecapPage
@@ -483,20 +501,9 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onOpenMatch }
             when we're not in dedicated recap or marketplace mode. */}
         {viewMode !== 'recap' && viewMode !== 'marketplace' && (
           <>
-        {/* Poster hero — host's uploaded image */}
-        {event.image_url && (
-          <div style={{
-            borderRadius: 16, overflow: 'hidden', marginBottom: 14,
-            aspectRatio: '16 / 9', background: C.goldBg,
-            border: `1px solid ${C.border}`,
-          }}>
-            <img
-              src={event.image_url}
-              alt=""
-              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-            />
-          </div>
-        )}
+        {/* Cover — host's uploaded image, or a tasteful branded fallback */}
+        <EventCover event={event} radius={16} aspectRatio="16 / 9" style={{ marginBottom: 14, border: `1px solid ${C.border}` }} />
+
 
         {/* Header card */}
         <section style={cardStyle}>

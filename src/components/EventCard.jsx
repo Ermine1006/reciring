@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
 import { categoryEmoji } from '../data/eventCategories'
+import EventCover from './EventCover'
 
 const C = {
   gold:      '#C8A96A',
@@ -63,17 +64,8 @@ export default function EventCard({ event, joined, joining, onJoin, onLeave, onC
         cursor: onOpen ? 'pointer' : 'default',
       }}
     >
-      {/* Poster hero — the host's uploaded image, if any */}
-      {event.image_url && (
-        <div style={{ width: '100%', aspectRatio: '16 / 9', overflow: 'hidden', background: C.goldBg }}>
-          <img
-            src={event.image_url}
-            alt=""
-            loading="lazy"
-            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-          />
-        </div>
-      )}
+      {/* Cover — host's uploaded image, or a tasteful branded fallback */}
+      <EventCover event={event} aspectRatio="16 / 9" />
 
       {/* Top gold accent for sponsored events */}
       {event.is_sponsored && (

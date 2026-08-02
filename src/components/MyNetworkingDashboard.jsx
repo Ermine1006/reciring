@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import AnonymousAvatar from './AnonymousAvatar'
-import { categoryEmoji } from '../data/eventCategories'
+import EventCover from './EventCover'
 import { fetchMyMatches, matchToUI, fetchPeerProfile } from '../lib/matches'
 
 const C = {
@@ -29,7 +29,7 @@ function firstName(name) {
  * matches (marketplace connections). Follow-ups get their own store in a later
  * phase; for now the section shows a calm empty state.
  */
-export default function MyNetworkingDashboard({ userId, events = [], joinedIds = new Set(), onOpenEvent, onOpenMatch, onAskMutu }) {
+export default function MyNetworkingDashboard({ userId, events = [], joinedIds = new Set(), onOpenEvent, onPrepare, onOpenMatch, onAskMutu }) {
   const [met, setMet] = useState([])          // [{ matchId, name, program, eventTitle, createdAt }]
   const [loadingMet, setLoadingMet] = useState(true)
 
@@ -91,17 +91,8 @@ export default function MyNetworkingDashboard({ userId, events = [], joinedIds =
       <p style={sectionLabel}>Next event</p>
       {nextEvent ? (
         <div style={{ ...card, padding: 0, overflow: 'hidden', marginBottom: 20 }}>
-          {nextEvent.image_url ? (
-            <div style={{ width: '100%', aspectRatio: '16 / 7', overflow: 'hidden', background: C.goldBg }}>
-              <img src={nextEvent.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-            </div>
-          ) : (
-            <div style={{ height: 6, background: `linear-gradient(90deg, ${C.gold}, ${C.goldLight} 60%, transparent)` }} />
-          )}
+          <EventCover event={nextEvent} aspectRatio="16 / 7" />
           <div style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 14 }}>
-            {!nextEvent.image_url && (
-              <div style={{ fontSize: 34, lineHeight: 1 }}>{categoryEmoji(nextEvent.category)}</div>
-            )}
             <div style={{ flex: 1, minWidth: 0 }}>
               <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: C.ink, fontFamily: 'Fraunces, Georgia, serif', lineHeight: 1.25 }}>
                 {nextEvent.title}
@@ -110,7 +101,7 @@ export default function MyNetworkingDashboard({ userId, events = [], joinedIds =
                 {fmtWhen(nextEvent.start_at)}{nextEvent.location ? ` · ${nextEvent.location}` : ''}
               </p>
             </div>
-            <button type="button" onClick={() => onOpenEvent?.(nextEvent.id)} style={prepareBtn}>
+            <button type="button" onClick={() => (onPrepare || onOpenEvent)?.(nextEvent.id)} style={prepareBtn}>
               Prepare
             </button>
           </div>

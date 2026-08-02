@@ -24,6 +24,7 @@ import EventsList from './components/EventsList'
 import CreateEventForm, { hasFreshEventDraft } from './components/CreateEventForm'
 import EditEventForm from './components/EditEventForm'
 import EventDetailPage from './components/EventDetailPage'
+import EventPreparePage from './components/EventPreparePage'
 import ProfilePage from './components/ProfilePage'
 import { isAdmin } from './data/adminEmails'
 import { submitReport, blockUser, fetchBlockedIds } from './lib/safety'
@@ -123,6 +124,8 @@ function AppShell() {
   // detail page. The detail page id stays in viewingEventId so closing
   // the editor returns there cleanly.
   const [editingEventId, setEditingEventId] = useState(null)
+  // When set, Events tab renders the dedicated Prepare page for that event.
+  const [preparingEventId, setPreparingEventId] = useState(null)
   // Bump this to force EventsList to refetch after a new event is created.
   const [eventsRefreshKey, setEventsRefreshKey] = useState(0)
   // Bump this to force EventDetailPage to refetch after save.
@@ -959,7 +962,15 @@ function AppShell() {
               }}
             />
           )}
-          {tab === 'events' && editingEventId && (
+          {tab === 'events' && preparingEventId && (
+            <EventPreparePage
+              eventId={preparingEventId}
+              userId={user?.id}
+              onBack={() => setPreparingEventId(null)}
+              onOpenMatch={(matchId) => { setPreparingEventId(null); setTab('matches'); setChatMatchId(matchId) }}
+            />
+          )}
+          {tab === 'events' && !preparingEventId && editingEventId && (
             <EditEventForm
               eventId={editingEventId}
               onSaved={() => {
@@ -970,25 +981,27 @@ function AppShell() {
               onClose={() => setEditingEventId(null)}
             />
           )}
-          {tab === 'events' && !editingEventId && viewingEventId && (
+          {tab === 'events' && !preparingEventId && !editingEventId && viewingEventId && (
             <EventDetailPage
               key={`${viewingEventId}-${eventDetailRefreshKey}`}
               eventId={viewingEventId}
               onBack={() => { setViewingEventId(null); setEventsRefreshKey(k => k + 1) }}
               onEdit={(id) => setEditingEventId(id)}
+              onPrepare={(id) => { setViewingEventId(null); setPreparingEventId(id) }}
               onOpenMatch={(matchId) => { setViewingEventId(null); setTab('matches'); setChatMatchId(matchId) }}
             />
           )}
-          {tab === 'events' && !editingEventId && !viewingEventId && !showCreateEvent && (
+          {tab === 'events' && !preparingEventId && !editingEventId && !viewingEventId && !showCreateEvent && (
             <EventsList
               key={eventsRefreshKey}
               onCreateEvent={() => setShowCreateEvent(true)}
               onOpenEvent={(id) => setViewingEventId(id)}
+              onPrepare={(id) => { setViewingEventId(null); setPreparingEventId(id) }}
               onOpenMatch={(matchId) => { setTab('matches'); setChatMatchId(matchId) }}
               onAskMutu={() => setBanner('Ask Mutu — your networking assistant — is coming soon. For now, prepare for events and connect on the Opportunity Board inside each event.')}
             />
           )}
-          {tab === 'events' && !editingEventId && !viewingEventId && showCreateEvent && (
+          {tab === 'events' && !preparingEventId && !editingEventId && !viewingEventId && showCreateEvent && (
             <CreateEventForm
               onCreated={(data, meta) => {
                 setShowCreateEvent(false)

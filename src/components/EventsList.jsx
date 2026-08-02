@@ -19,7 +19,7 @@ const C = {
   border:    '#F0ECE4',
 }
 
-export default function EventsList({ onCreateEvent, onOpenEvent, onOpenMatch, onAskMutu }) {
+export default function EventsList({ onCreateEvent, onOpenEvent, onPrepare, onOpenMatch, onAskMutu }) {
   const { user } = useAuth()
 
   const [events, setEvents]         = useState([])
@@ -257,6 +257,7 @@ export default function EventsList({ onCreateEvent, onOpenEvent, onOpenMatch, on
             events={events}
             joinedIds={joinedIds}
             onOpenEvent={onOpenEvent}
+            onPrepare={onPrepare}
             onOpenMatch={onOpenMatch}
             onAskMutu={onAskMutu}
           />
