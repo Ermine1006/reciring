@@ -49,7 +49,7 @@ export default function EventCaptureSheet({ open, mode = 'manual', initial = nul
     if (!open) return
     setAiErr(null); setSaveErr(null); setRaw('')
     setPhase(mode === 'ai' && !isEdit ? 'input' : 'form')
-    setPersonName(initial?.person_name || '')
+    setPersonName(initial?.person_name || initial?.display_name || '')
     setEventId(initial?.event_id || defaultEventId || '')
     setTopicsText((initial?.topics || []).join(', '))
     setNote(initial?.private_note || '')

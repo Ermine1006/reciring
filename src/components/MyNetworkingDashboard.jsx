@@ -135,9 +135,9 @@ export default function MyNetworkingDashboard({ userId, events = [], joinedIds =
             const due = fmtDue(f.due_at)
             return (
               <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', borderTop: i ? `1px solid ${C.border}` : 'none' }}>
-                <Avatar name={f.person_name} size={38} />
+                <Avatar name={f.display_name} url={f.avatar_url} size={38} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: C.ink, fontFamily: 'Inter, system-ui, sans-serif' }}>{f.person_name}</p>
+                  <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: C.ink, fontFamily: 'Inter, system-ui, sans-serif' }}>{f.display_name}</p>
                   <p style={{ margin: '1px 0 0', fontSize: 12.5, color: C.sub, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'Inter, system-ui, sans-serif' }}>{f.next_action}</p>
                 </div>
                 {due && <span style={{ fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 99, whiteSpace: 'nowrap', color: due.overdue ? C.danger : C.goldDeep, background: due.overdue ? '#F7E7E2' : C.goldSoft, fontFamily: 'Inter, system-ui, sans-serif' }}>{due.label}</span>}
@@ -159,8 +159,8 @@ export default function MyNetworkingDashboard({ userId, events = [], joinedIds =
           <div style={{ flex: 1, display: 'flex', gap: 14, overflow: 'hidden' }}>
             {encounters.slice(0, 3).map(e => (
               <button key={e.id} type="button" onClick={() => setCapture({ mode: 'manual', initial: e })} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'center', width: 56 }}>
-                <Avatar name={e.person_name} size={48} />
-                <p style={{ margin: '5px 0 0', fontSize: 11, color: C.ink, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'Inter, system-ui, sans-serif' }}>{String(e.person_name || '').split(' ')[0]}</p>
+                <Avatar name={e.display_name} url={e.avatar_url} size={48} />
+                <p style={{ margin: '5px 0 0', fontSize: 11, color: C.ink, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'Inter, system-ui, sans-serif' }}>{String(e.display_name || '').split(' ')[0]}</p>
               </button>
             ))}
           </div>

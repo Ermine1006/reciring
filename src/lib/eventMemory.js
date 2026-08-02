@@ -13,12 +13,42 @@ import { apiUrl } from './apiBase'
 
 const COLS = 'id, user_id, event_id, encountered_user_id, person_name, topics, private_note, commitment, next_action, due_at, followed_up_at, created_at'
 
+// Resolve each encounter's identity + event so every reader (dashboard, Ask
+// Mutu, history) sees a consistent name — whether it was recorded via Event
+// Mode/Recap (linked profile, person_name empty) or a manual/AI capture
+// (person_name set, no link). Single source of truth stays event_encounters.
+async function resolveEncounters(rows) {
+  if (!rows || rows.length === 0) return []
+  const userIds  = Array.from(new Set(rows.map(r => r.encountered_user_id).filter(Boolean)))
+  const eventIds = Array.from(new Set(rows.map(r => r.event_id).filter(Boolean)))
+  const [profs, evs] = await Promise.all([
+    userIds.length  ? supabase.from('profiles').select('id, name, avatar_url, program').in('id', userIds)      : Promise.resolve({ data: [] }),
+    eventIds.length ? supabase.from('events').select('id, title, start_at, location').in('id', eventIds)        : Promise.resolve({ data: [] }),
+  ])
+  const pById = Object.fromEntries((profs.data || []).map(p => [p.id, p]))
+  const eById = Object.fromEntries((evs.data  || []).map(e => [e.id, e]))
+  return rows.map(r => {
+    const p  = r.encountered_user_id ? pById[r.encountered_user_id] : null
+    const ev = r.event_id ? eById[r.event_id] : null
+    const httpAvatar = p?.avatar_url && /^https?:/.test(p.avatar_url) ? p.avatar_url : null
+    return {
+      ...r,
+      display_name:   (r.person_name && r.person_name.trim()) || p?.name || 'Someone',
+      avatar_url:     httpAvatar,
+      program:        p?.program || null,
+      event_title:    ev?.title || null,
+      event_location: ev?.location || null,
+      event_start_at: ev?.start_at || null,
+    }
+  })
+}
+
 export async function fetchEncounters(userId, { eventId } = {}) {
   if (!isSupabaseConfigured || !userId) return { data: [], error: null }
   let q = supabase.from('event_encounters').select(COLS).eq('user_id', userId).order('created_at', { ascending: false })
   if (eventId) q = q.eq('event_id', eventId)
   const { data, error } = await q
-  return { data: data || [], error }
+  return { data: await resolveEncounters(data || []), error }
 }
 
 // Open follow-ups for the dashboard: encounters with a next_action, not yet
@@ -32,7 +62,7 @@ export async function fetchFollowups(userId) {
     .neq('next_action', '')
     .is('followed_up_at', null)
     .order('due_at', { ascending: true, nullsFirst: false })
-  return { data: data || [], error }
+  return { data: await resolveEncounters(data || []), error }
 }
 
 export async function createEncounter({ userId, eventId, encounteredUserId, personName, topics, privateNote, commitment, nextAction, dueAt }) {
@@ -105,18 +135,17 @@ export async function extractCapture(text, { eventTitle } = {}) {
 // Build the compact, private grounding context for Ask Mutu from the user's
 // own encounters + events. Only fields the user already owns.
 export function buildAssistantContext({ encounters = [], events = [] }) {
-  const titleById = {}
-  for (const e of events) titleById[e.id] = e.title
   return {
     people: encounters.map(e => ({
-      name:        e.person_name,
-      event:       e.event_id ? (titleById[e.event_id] || 'an event') : null,
+      name:        e.display_name || e.person_name || 'Someone',
+      met_at:      e.event_title || null,
+      met_on:      e.event_start_at ? new Date(e.event_start_at).toISOString().slice(0, 10) : (e.created_at ? new Date(e.created_at).toISOString().slice(0, 10) : null),
       topics:      e.topics || [],
       note:        e.private_note || '',
       commitment:  e.commitment || '',
       next_action: e.next_action || '',
       due:         e.due_at ? new Date(e.due_at).toISOString().slice(0, 10) : null,
-      done:        Boolean(e.followed_up_at),
+      followed_up: Boolean(e.followed_up_at),
     })),
     upcoming_events: events.map(e => e.title).filter(Boolean),
   }
