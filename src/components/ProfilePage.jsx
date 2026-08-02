@@ -4,7 +4,6 @@ import SettingsPage from './SettingsPage'
 import SettingsTab from './SettingsTab'
 import ImpactLedger from './ImpactLedger'
 import LeaderboardView from './LeaderboardView'
-import MyEventMemoryPage from './MyEventMemoryPage'
 
 const C = {
   gold:      '#C8A96A',
@@ -23,7 +22,6 @@ const C = {
 // gives context (e.g. "Profile > Rank" reads naturally).
 const SUB_TABS = [
   { id: 'profile',     label: 'Profile'  },
-  { id: 'memory',      label: 'Memory'   },
   { id: 'leaderboard', label: 'Rank'     },
   { id: 'settings',    label: 'Settings' },
 ]
@@ -139,10 +137,6 @@ export default function ProfilePage({
               <ImpactLedger />
               <SettingsPage />
             </>
-          )}
-
-          {active === 'memory' && (
-            <MyEventMemoryPage onOpenEvent={onOpenEvent} />
           )}
 
           {active === 'leaderboard' && <LeaderboardView />}
