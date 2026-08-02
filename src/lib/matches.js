@@ -135,7 +135,12 @@ export async function openOrCreateDirectMatch({ myId, peerId, eventId }) {
     .or(`and(requester_user_id.eq.${myId},helper_user_id.eq.${peerId}),and(requester_user_id.eq.${peerId},helper_user_id.eq.${myId})`)
     .neq('status', 'unmatched')
     .limit(1)
-  if (existing && existing.length) return { matchId: existing[0].id, error: null }
+  if (existing && existing.length) {
+    // You met this person — de-anonymise the chat (RPC only reveals if you
+    // actually recorded meeting them).
+    await supabase.rpc('reveal_match_after_meeting', { p_match_id: existing[0].id })
+    return { matchId: existing[0].id, error: null }
+  }
 
   // The matches INSERT RLS requires auth.uid() = helper_user_id, so the person
   // creating the chat must be the helper.
