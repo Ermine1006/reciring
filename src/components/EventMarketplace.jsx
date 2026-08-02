@@ -104,7 +104,7 @@ export default function EventMarketplace({ eventId, userId, isHost = false, onOp
     // Optimistic: mark pending immediately.
     setMyInt(prev => [...prev, { id: `tmp-${post.id}`, post_id: post.id, status: 'pending', match_id: null }])
     const { error } = await expressInterest({ postId: post.id, eventId, ownerId: post.user_id, requesterId: userId })
-    if (error) { flash('Could not send interest'); loadAll(); return }
+    if (error) { flash(error.message ? `Couldn't send interest: ${error.message}` : 'Could not send interest'); loadAll(); return }
     flash("Interest sent — they'll be notified")
     loadAll()
   }
