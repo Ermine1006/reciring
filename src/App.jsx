@@ -190,7 +190,19 @@ function AppShell() {
     if (!isSupabaseConfigured || !user) return
     const { data, error } = await fetchMyMatches(user.id)
     if (error) { console.error('[ReciRing] Failed to load matches:', error); return }
-    setMatches(data.map(m => matchToUI(m, user.id)))
+    const ui = data.map(m => matchToUI(m, user.id))
+    // Resolve the peer's real name for identity-revealed matches so the
+    // Matches list shows it (instead of always "Anonymous Peer").
+    const revealedPeerIds = [...new Set(ui.filter(m => m.reveal?.status === 'accepted' && m.peerId).map(m => m.peerId))]
+    if (revealedPeerIds.length) {
+      const { data: profs } = await supabase.from('profiles').select('id, name, avatar_url').in('id', revealedPeerIds)
+      const byId = Object.fromEntries((profs || []).map(p => [p.id, p]))
+      for (const m of ui) {
+        const p = m.reveal?.status === 'accepted' ? byId[m.peerId] : null
+        if (p) { m.peerName = p.name || null; m.peerAvatarUrl = /^https?:/.test(p.avatar_url || '') ? p.avatar_url : null }
+      }
+    }
+    setMatches(ui)
     // Refresh which of my matches are "completed" (both tapped "We met"), so the
     // list can split active vs. past exchanges. Best-effort — ignore errors.
     const { ids } = await fetchCompletedMatchIds()

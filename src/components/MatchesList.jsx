@@ -50,12 +50,12 @@ export default function MatchesList({ matches = [], completedMatchIds = new Set(
       <div style={{ padding: '14px 18px' }}>
         {/* Peer row */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
-          <AnonymousAvatar seed={m.id} size={38} />
+          {m.peerAvatarUrl
+            ? <img src={m.peerAvatarUrl} alt="" style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover' }} />
+            : <AnonymousAvatar seed={m.id} size={38} />}
           <div style={{ flex: 1, minWidth: 0 }}>
             <p style={{ fontSize: 14, fontWeight: 600, color: C.text, fontFamily: 'Inter, system-ui, sans-serif', marginBottom: 2 }}>
-              {revealedMatchIds.has(m.id) && peerProfiles[m.id]?.first_name
-                ? peerProfiles[m.id].first_name
-                : 'Anonymous Peer'}
+              {m.peerName || (revealedMatchIds.has(m.id) && peerProfiles[m.id]?.first_name) || 'Anonymous Peer'}
             </p>
             <p style={{
               fontSize: 12, color: C.textSub,
