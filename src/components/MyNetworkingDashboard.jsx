@@ -51,7 +51,7 @@ const Icon = {
  * follow-ups with due pills, recently-met avatars, one primary action
  * (Log a conversation), and Ask Mutu. Data unchanged (event_encounters).
  */
-export default function MyNetworkingDashboard({ userId, events = [], joinedIds = new Set(), onOpenEvent, onPrepare }) {
+export default function MyNetworkingDashboard({ userId, events = [], joinedIds = new Set(), onOpenEvent, onPrepare, onGoDiscover }) {
   const { profile } = useAuth()
   const [encounters, setEncounters] = useState([])
   const [followups, setFollowups]   = useState([])
@@ -59,11 +59,12 @@ export default function MyNetworkingDashboard({ userId, events = [], joinedIds =
   const [capture, setCapture]       = useState(null)
   const [askOpen, setAskOpen]       = useState(false)
 
+  // My upcoming events = ones I joined OR host (hosting doesn't auto-join).
   const registered = useMemo(() => {
     const now = Date.now()
-    return events.filter(e => joinedIds.has(e.id) && e.start_at && new Date(e.start_at).getTime() > now && e.status !== 'cancelled')
+    return events.filter(e => (joinedIds.has(e.id) || e.host_user_id === userId) && e.start_at && new Date(e.start_at).getTime() > now && e.status !== 'cancelled')
       .sort((a, b) => new Date(a.start_at) - new Date(b.start_at))
-  }, [events, joinedIds])
+  }, [events, joinedIds, userId])
   const nextEvent = registered[0] || null
   const titleById = useMemo(() => Object.fromEntries(events.map(e => [e.id, e.title])), [events])
 
@@ -116,7 +117,7 @@ export default function MyNetworkingDashboard({ userId, events = [], joinedIds =
           </div>
         </button>
       ) : (
-        <button type="button" onClick={() => onOpenEvent?.(null)} style={{ ...slim, marginBottom: 24 }}>
+        <button type="button" onClick={() => onGoDiscover?.()} style={{ ...slim, marginBottom: 24 }}>
           <span style={{ color: C.sub }}>No upcoming events yet.</span>
           <span style={{ color: C.goldDeep, fontWeight: 700 }}>Discover →</span>
         </button>

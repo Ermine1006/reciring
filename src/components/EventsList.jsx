@@ -150,10 +150,12 @@ export default function EventsList({ onCreateEvent, onOpenEvent, onPrepare, onOp
     setToast({ type: 'ok', msg: 'Event cancelled — attendees notified' })
   }
 
+  // "My events" = events I joined OR events I host (hosting doesn't auto-join).
+  const isMine = (e) => joinedIds.has(e.id) || (user && e.host_user_id === user.id)
   const visible = useMemo(() => {
-    if (filter === 'joined') return events.filter(e => joinedIds.has(e.id))
+    if (filter === 'joined') return events.filter(isMine)
     return events
-  }, [events, joinedIds, filter])
+  }, [events, joinedIds, filter, user?.id])
 
   return (
     <AppScreen>
@@ -202,6 +204,7 @@ export default function EventsList({ onCreateEvent, onOpenEvent, onPrepare, onOp
             onPrepare={onPrepare}
             onOpenMatch={onOpenMatch}
             onAskMutu={onAskMutu}
+            onGoDiscover={() => setTopView('discover')}
           />
         )}
 
@@ -226,7 +229,7 @@ export default function EventsList({ onCreateEvent, onOpenEvent, onPrepare, onOp
         <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
           {[
             { id: 'upcoming', label: 'Upcoming',    count: events.length },
-            { id: 'joined',   label: 'My events',   count: events.filter(e => joinedIds.has(e.id)).length },
+            { id: 'joined',   label: 'My events',   count: events.filter(isMine).length },
           ].map(f => {
             const active = filter === f.id
             return (
