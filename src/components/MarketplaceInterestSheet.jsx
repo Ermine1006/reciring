@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import AnonymousAvatar from './AnonymousAvatar'
 
@@ -18,10 +19,14 @@ function anonName(program) {
  * and opens a private chat; Decline closes it; "Not now" defers (keeps pending).
  */
 export default function MarketplaceInterestSheet({ open, post, interests = [], busyId = null, onAccept, onDecline, onOpenChat, onClose }) {
+  // "Later" defers a request for this session without changing its status —
+  // it stays pending and reappears next time the owner opens the sheet.
+  const [laterIds, setLaterIds] = useState(() => new Set())
   if (!open || !post) return null
 
-  const pending  = interests.filter(i => i.status === 'pending')
+  const pending  = interests.filter(i => i.status === 'pending' && !laterIds.has(i.id))
   const accepted = interests.filter(i => i.status === 'accepted')
+  const later    = (id) => setLaterIds(prev => new Set(prev).add(id))
 
   return createPortal(
     <div
@@ -77,12 +82,16 @@ export default function MarketplaceInterestSheet({ open, post, interests = [], b
             <div style={{ display: 'flex', gap: 8 }}>
               <button type="button" disabled={busyId === it.id} onClick={() => onAccept?.(it)}
                 style={{ ...acceptBtn, opacity: busyId === it.id ? 0.6 : 1 }}>
-                {busyId === it.id ? 'Accepting…' : 'Accept'}
+                {busyId === it.id ? 'Connecting…' : 'Accept & Connect'}
               </button>
               <button type="button" disabled={busyId === it.id} onClick={() => onDecline?.(it)} style={declineBtn}>
                 Decline
               </button>
             </div>
+            <button type="button" disabled={busyId === it.id} onClick={() => later(it.id)}
+              style={{ width: '100%', marginTop: 8, padding: '8px', borderRadius: 10, background: 'transparent', border: 'none', color: C.textMuted, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
+              Later
+            </button>
           </div>
         ))}
 
@@ -110,7 +119,7 @@ export default function MarketplaceInterestSheet({ open, post, interests = [], b
 
         <button type="button" onClick={onClose}
           style={{ width: '100%', marginTop: 10, padding: '13px', borderRadius: 14, background: 'transparent', border: 'none', color: C.textSub, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
-          Not now
+          Close
         </button>
       </div>
     </div>,

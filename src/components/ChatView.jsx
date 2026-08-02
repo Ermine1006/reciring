@@ -463,8 +463,30 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
       {/* ── Messages ── */}
       <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '16px 0' }}>
 
-        {/* Exchange context card */}
-        {match?.request && (
+        {/* Context card. Marketplace connections show "Connected about: <the
+            opportunity>"; ordinary peer matches show the needs/offers exchange. */}
+        {match?.isMarketplace ? (
+          <div style={{
+            margin: '0 16px 16px', background: C.white, borderRadius: 16,
+            padding: '12px 16px', border: `1px solid ${C.goldLight}`,
+            boxShadow: '0 2px 8px rgba(200,169,106,0.08)',
+          }}>
+            <p style={{
+              fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase',
+              fontWeight: 600, color: C.gold, fontFamily: 'Inter, system-ui, sans-serif', marginBottom: 6,
+            }}>
+              Connected about
+            </p>
+            <p style={{ fontSize: 14, fontWeight: 600, color: C.text, fontFamily: 'Inter, system-ui, sans-serif', lineHeight: 1.35, margin: 0 }}>
+              {match.request?.needs || match.request?.offers || 'an opportunity'}
+            </p>
+            {match.eventTitle && (
+              <p style={{ fontSize: 12, color: C.textSub, fontFamily: 'Inter, system-ui, sans-serif', margin: '3px 0 0' }}>
+                You both expressed interest at {match.eventTitle}.
+              </p>
+            )}
+          </div>
+        ) : match?.request && (
           <div style={{
             margin: '0 16px 16px',
             background: C.white, borderRadius: 16,
