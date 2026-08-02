@@ -12,12 +12,12 @@
 // Required env var: OPENROUTER_API_KEY (set in the Vercel project settings).
 //
 // Backend: OpenRouter (OpenAI-compatible chat/completions). To switch the model
-// or provider, change MODEL below — nothing else. kimi-k3 is a reasoning model
-// (higher quality, slower); for a snappier/cheaper rewrite swap in
-// 'moonshotai/kimi-k2'.
+// or provider, change MODEL below — nothing else. kimi-k2 is fast and cheap,
+// which fits these latency-sensitive short tasks within Vercel's function
+// timeout; kimi-k3 (reasoning) is higher quality but too slow here.
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
-const MODEL = 'moonshotai/kimi-k3'
+const MODEL = 'moonshotai/kimi-k2'
 
 // Shared writing rules — every kind inherits these. The philosophy (SMART) is
 // applied internally and NEVER named in the output.
