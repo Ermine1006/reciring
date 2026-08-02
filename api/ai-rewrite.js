@@ -9,9 +9,15 @@
 // Request:  { kind?: string, text: string, context?: object }
 // Response: { text: string }   (the improved text, ready to publish)
 //
-// Required env var: ANTHROPIC_API_KEY (set in the Vercel project settings).
+// Required env var: OPENROUTER_API_KEY (set in the Vercel project settings).
+//
+// Backend: OpenRouter (OpenAI-compatible chat/completions). To switch the model
+// or provider, change MODEL below — nothing else. kimi-k3 is a reasoning model
+// (higher quality, slower); for a snappier/cheaper rewrite swap in
+// 'moonshotai/kimi-k2'.
 
-import Anthropic from '@anthropic-ai/sdk'
+const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
+const MODEL = 'moonshotai/kimi-k3'
 
 // Shared writing rules — every kind inherits these. The philosophy (SMART) is
 // applied internally and NEVER named in the output.
@@ -118,8 +124,8 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'POST')    return res.status(405).json({ error: 'method not allowed' })
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return res.status(500).json({ error: 'AI rewrite is not configured (missing ANTHROPIC_API_KEY).' })
+  if (!process.env.OPENROUTER_API_KEY) {
+    return res.status(500).json({ error: 'AI rewrite is not configured (missing OPENROUTER_API_KEY).' })
   }
 
   const body = req.body || {}
@@ -140,24 +146,57 @@ export default async function handler(req, res) {
   const userMessage = `Rewrite this so it's clearer and easier to help with:\n\n${text}${buildContextLine(body.context)}${lengthLine}`
 
   try {
-    const client = new Anthropic() // reads ANTHROPIC_API_KEY from env
-    const response = await client.messages.create({
-      model: 'claude-opus-5',
-      max_tokens: 400,
-      output_config: { effort: 'low' }, // simple, latency-sensitive rewrite
-      system,
-      messages: [{ role: 'user', content: userMessage }],
+    const resp = await fetch(OPENROUTER_URL, {
+      method: 'POST',
+      headers: {
+        Authorization:  `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        'Content-Type': 'application/json',
+        // Optional OpenRouter attribution (shows up in your OpenRouter dashboard).
+        'HTTP-Referer':  'https://muturing.com',
+        'X-Title':       'Mutu',
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        // Generous ceiling: kimi-k3 is a reasoning model, so leave room for
+        // its thinking budget on top of the short final rewrite.
+        max_tokens: 1500,
+        temperature: 0.4,
+        messages: [
+          { role: 'system', content: system },
+          { role: 'user',   content: userMessage },
+        ],
+      }),
     })
 
-    // Opus 5 can decline via safety classifiers — check before reading content.
-    if (response.stop_reason === 'refusal') {
+    const data = await resp.json().catch(() => ({}))
+
+    if (!resp.ok) {
+      const status = resp.status
+      const detail = data?.error?.message || data?.error || `HTTP ${status}`
+      console.error('[ai-rewrite] failed:', status, detail)
+
+      // Map the common first-time causes to a clear message. `detail` echoes
+      // the raw OpenRouter error so setup problems are diagnosable client-side.
+      let msg = 'Rewrite failed. Please try again.'
+      let code = 502
+      if (status === 401)      { msg = 'The OpenRouter API key is invalid.'; code = 401 }
+      else if (status === 403) { msg = "This API key can't access the model."; code = 403 }
+      else if (status === 404) { msg = 'Model not found — check the model slug.'; code = 404 }
+      else if (status === 429) { msg = 'Busy right now — try again in a moment.'; code = 429 }
+      else if (status === 402 || /credit|insufficient|billing|balance/i.test(String(detail))) {
+        msg = 'The OpenRouter account is out of credits — top up at openrouter.ai.'
+        code = 402
+      }
+      return res.status(code).json({ error: msg, detail: String(detail) })
+    }
+
+    const choice = data?.choices?.[0]
+    // Some models signal a safety block via finish_reason.
+    if (choice?.finish_reason === 'content_filter') {
       return res.status(422).json({ error: 'Could not rewrite this text.' })
     }
 
-    let improved = response.content
-      .filter(b => b.type === 'text')
-      .map(b => b.text)
-      .join('')
+    let improved = String(choice?.message?.content || '')
       .trim()
       .replace(/^["'“”]+|["'“”]+$/g, '') // strip stray wrapping quotes
       .trim()
@@ -166,22 +205,8 @@ export default async function handler(req, res) {
     improved = clampToLimit(improved, maxChars) // never exceed the editor limit
     return res.status(200).json({ text: improved })
   } catch (err) {
-    const status = err?.status
-    const detail = err?.error?.error?.message || err?.message || 'unknown'
-    console.error('[ai-rewrite] failed:', status, detail)
-
-    // Map the most common first-time causes to a clear message. `detail` echoes
-    // the raw Anthropic error so setup problems are diagnosable from the client.
-    let msg = 'Rewrite failed. Please try again.'
-    let code = 502
-    if (status === 401) { msg = 'The Anthropic API key is invalid.'; code = 401 }
-    else if (status === 403) { msg = 'This API key can\'t access the model.'; code = 403 }
-    else if (status === 404) { msg = 'Model not found for this API key.'; code = 404 }
-    else if (status === 429) { msg = 'Busy right now — try again in a moment.'; code = 429 }
-    else if (/credit balance|billing|too low/i.test(detail)) {
-      msg = 'The Anthropic account has no credit — add billing/credits in the Anthropic console.'
-      code = 402
-    }
-    return res.status(code).json({ error: msg, detail })
+    const detail = err?.message || 'unknown'
+    console.error('[ai-rewrite] network error:', detail)
+    return res.status(502).json({ error: 'Rewrite failed. Please try again.', detail })
   }
 }
