@@ -101,3 +101,45 @@ export async function extractCapture(text, { eventTitle } = {}) {
   if (!resp.ok) return { capture: null, error: new Error(body?.error || 'Could not read that') }
   return { capture: body.capture || null, error: null }
 }
+
+// Build the compact, private grounding context for Ask Mutu from the user's
+// own encounters + events. Only fields the user already owns.
+export function buildAssistantContext({ encounters = [], events = [] }) {
+  const titleById = {}
+  for (const e of events) titleById[e.id] = e.title
+  return {
+    people: encounters.map(e => ({
+      name:        e.person_name,
+      event:       e.event_id ? (titleById[e.event_id] || 'an event') : null,
+      topics:      e.topics || [],
+      note:        e.private_note || '',
+      commitment:  e.commitment || '',
+      next_action: e.next_action || '',
+      due:         e.due_at ? new Date(e.due_at).toISOString().slice(0, 10) : null,
+      done:        Boolean(e.followed_up_at),
+    })),
+    upcoming_events: events.map(e => e.title).filter(Boolean),
+  }
+}
+
+/**
+ * Ask Mutu a question, grounded on the user's own networking data.
+ * Returns { answer, error }.
+ */
+export async function askMutu(question, context) {
+  if (!isSupabaseConfigured) return { answer: null, error: new Error('Supabase not configured') }
+  if (!question?.trim())     return { answer: null, error: new Error('Ask a question') }
+  let resp
+  try {
+    resp = await fetch(apiUrl('/api/ai-rewrite'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'assistant', text: question.trim(), context: context || {} }),
+    })
+  } catch (err) {
+    return { answer: null, error: err }
+  }
+  const body = await resp.json().catch(() => ({}))
+  if (!resp.ok) return { answer: null, error: new Error(body?.error || 'Ask Mutu is unavailable') }
+  return { answer: body.answer || null, error: null }
+}

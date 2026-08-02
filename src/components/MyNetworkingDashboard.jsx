@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import EventCover from './EventCover'
 import EventCaptureSheet from './EventCaptureSheet'
+import AskMutuSheet from './AskMutuSheet'
 import { fetchEncounters, fetchFollowups, completeFollowup } from '../lib/eventMemory'
 
 const C = {
@@ -44,6 +45,7 @@ export default function MyNetworkingDashboard({ userId, events = [], joinedIds =
   const [followups, setFollowups]   = useState([])
   const [loading, setLoading]       = useState(true)
   const [capture, setCapture]       = useState(null)   // { mode, initial }
+  const [askOpen, setAskOpen]       = useState(false)
 
   const registered = useMemo(() => {
     const now = Date.now()
@@ -172,15 +174,23 @@ export default function MyNetworkingDashboard({ userId, events = [], joinedIds =
 
       {/* E. Capture */}
       <p style={sectionLabel}>Capture what happened</p>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
         <button type="button" onClick={() => openCapture('manual')} style={captureBtn}>
-          <span style={{ fontSize: 16 }}>➕</span> Add person I met
+          <span style={{ fontSize: 15 }}>➕</span> Add person I met
+        </button>
+        <button type="button" onClick={() => openCapture('ai')} style={captureBtn}>
+          <span style={{ fontSize: 15 }}>✨</span> Tell Mutu
         </button>
       </div>
-      <button type="button" onClick={() => openCapture('ai')} style={askMutu}>
+
+      {/* F. Ask Mutu assistant */}
+      <p style={sectionLabel}>Ask Mutu</p>
+      <button type="button" onClick={() => setAskOpen(true)} style={askMutu}>
         <span style={{ fontSize: 18 }}>✨</span>
-        <span style={{ flex: 1, textAlign: 'left' }}>Tell Mutu what happened at your event…</span>
+        <span style={{ flex: 1, textAlign: 'left' }}>Ask about your network — who did I meet, what did I promise…</span>
       </button>
+
+      <AskMutuSheet open={askOpen} userId={userId} events={registered} onClose={() => setAskOpen(false)} />
 
       <EventCaptureSheet
         open={Boolean(capture)}

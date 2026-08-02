@@ -136,6 +136,12 @@ export default async function handler(req, res) {
     return handleCapture(body, res)
   }
 
+  // "Ask Mutu" — networking assistant grounded ONLY on the user's own data,
+  // which the client passes in body.context (Phase 5). Returns { answer }.
+  if (body.mode === 'assistant') {
+    return handleAssistant(body, res)
+  }
+
   const kind = KINDS[body.kind] ? body.kind : 'post'
   const text = String(body.text || '').trim().slice(0, 2000)
   if (!text) return res.status(400).json({ error: 'Nothing to rewrite.' })
@@ -275,6 +281,65 @@ Rules: Use ONLY facts present in the note. Do not invent names, companies, needs
   const capture = parseCaptureJSON(raw)
   if (!capture) return res.status(502).json({ error: 'Could not structure that note — try rephrasing.' })
   return res.status(200).json({ capture })
+}
+
+// ── "Ask Mutu" — networking assistant over the user's own data ─────────
+// The client sends the question plus a compact JSON of the user's OWN
+// encounters / follow-ups / events (all RLS-scoped on the client). The model
+// answers only from that; it never has access to anyone else's data.
+async function handleAssistant(body, res) {
+  const question = String(body.text || '').trim().slice(0, 500)
+  if (!question) return res.status(400).json({ error: 'Ask a question.' })
+  // Cap the grounding payload so we stay within a sane token budget.
+  const context = JSON.stringify(body.context || {}).slice(0, 12000)
+
+  const system = `You are Mutu's networking assistant. You help a user remember and act on the people they met at events.
+
+You can ONLY use the JSON data provided in the user's message — it is that user's own private networking record (people they met, commitments, follow-ups, events). Never invent people, companies, needs, or commitments that aren't in the data. If the answer isn't in the data, say so plainly and suggest what to log.
+
+Do the task the user asks:
+- Answer questions about who they met, what they need, or what was promised.
+- Recommend the most useful next follow-up when asked.
+- When asked to draft or write a message, produce a short, warm, specific follow-up (2–4 sentences) they could send as-is.
+
+Style: concise, warm, plain. No preamble, no bullet-point dumps unless listing people. Refer to people by name. Keep answers under ~120 words unless drafting a message.`
+
+  const user = `Question: ${question}\n\nMy networking data (JSON):\n${context}`
+
+  let resp
+  try {
+    resp = await fetch(OPENROUTER_URL, {
+      method: 'POST',
+      headers: {
+        Authorization:  `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer':  'https://muturing.com',
+        'X-Title':       'Mutu',
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: 1400,
+        temperature: 0.35,
+        messages: [
+          { role: 'system', content: system },
+          { role: 'user',   content: user },
+        ],
+      }),
+    })
+  } catch (err) {
+    return res.status(502).json({ error: 'Ask Mutu is unavailable right now.', detail: err?.message })
+  }
+
+  const data = await resp.json().catch(() => ({}))
+  if (!resp.ok) {
+    const detail = data?.error?.message || data?.error || `HTTP ${resp.status}`
+    console.error('[ai-rewrite:assistant] failed:', resp.status, detail)
+    return res.status(resp.status === 402 ? 402 : 502).json({ error: 'Ask Mutu is unavailable right now.', detail: String(detail) })
+  }
+
+  const answer = String(data?.choices?.[0]?.message?.content || '').trim()
+  if (!answer) return res.status(502).json({ error: 'No answer — try rephrasing.' })
+  return res.status(200).json({ answer })
 }
 
 // Parse the model's JSON, tolerating code fences / surrounding prose.
