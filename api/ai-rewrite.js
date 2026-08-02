@@ -129,6 +129,13 @@ export default async function handler(req, res) {
   }
 
   const body = req.body || {}
+
+  // "Tell Mutu what happened" — structured capture extraction (Phase 4).
+  // Same backend/key; returns { capture: {...} } instead of { text }.
+  if (body.mode === 'capture') {
+    return handleCapture(body, res)
+  }
+
   const kind = KINDS[body.kind] ? body.kind : 'post'
   const text = String(body.text || '').trim().slice(0, 2000)
   if (!text) return res.status(400).json({ error: 'Nothing to rewrite.' })
@@ -208,5 +215,85 @@ export default async function handler(req, res) {
     const detail = err?.message || 'unknown'
     console.error('[ai-rewrite] network error:', detail)
     return res.status(502).json({ error: 'Rewrite failed. Please try again.', detail })
+  }
+}
+
+// ── "Tell Mutu what happened" — structured capture extraction ──────────
+// Turns a free-text note about someone met at an event into a structured draft
+// the user confirms before saving. Never invents facts; unknown fields = ''.
+async function handleCapture(body, res) {
+  const text = String(body.text || '').trim().slice(0, 2000)
+  if (!text) return res.status(400).json({ error: 'Nothing to capture.' })
+  const eventTitle = String(body.context?.eventTitle || '').slice(0, 160)
+
+  const system = `You extract structured networking follow-up details from a short note a user wrote about someone they met at an event.
+
+Return ONLY a compact JSON object — no prose, no markdown, no code fences — with exactly these string keys:
+- "person": the other person's name, or "" if not stated
+- "context": where/how they met in a short phrase (e.g. "Met at ${eventTitle || 'the event'}")
+- "need": what that person is looking for, or ""
+- "commitment": what the USER promised to do for them, or ""
+- "next_action": the user's concrete next step, or ""
+- "due": a short suggested deadline like "Tomorrow", "This week", "Next Monday", or "" if none implied
+
+Rules: Use ONLY facts present in the note. Do not invent names, companies, needs, or commitments. If a field is unknown, use an empty string. Output must be valid JSON parseable as-is.`
+
+  const user = `Note:\n${text}${eventTitle ? `\n\n(Event: ${eventTitle})` : ''}`
+
+  let resp
+  try {
+    resp = await fetch(OPENROUTER_URL, {
+      method: 'POST',
+      headers: {
+        Authorization:  `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer':  'https://muturing.com',
+        'X-Title':       'Mutu',
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: 1200,
+        temperature: 0.2,
+        messages: [
+          { role: 'system', content: system },
+          { role: 'user',   content: user },
+        ],
+      }),
+    })
+  } catch (err) {
+    return res.status(502).json({ error: 'Capture failed. Please try again.', detail: err?.message })
+  }
+
+  const data = await resp.json().catch(() => ({}))
+  if (!resp.ok) {
+    const detail = data?.error?.message || data?.error || `HTTP ${resp.status}`
+    console.error('[ai-rewrite:capture] failed:', resp.status, detail)
+    return res.status(resp.status === 402 ? 402 : 502).json({ error: 'Capture failed. Please try again.', detail: String(detail) })
+  }
+
+  const raw = String(data?.choices?.[0]?.message?.content || '')
+  const capture = parseCaptureJSON(raw)
+  if (!capture) return res.status(502).json({ error: 'Could not structure that note — try rephrasing.' })
+  return res.status(200).json({ capture })
+}
+
+// Parse the model's JSON, tolerating code fences / surrounding prose.
+function parseCaptureJSON(raw) {
+  if (!raw) return null
+  let s = raw.trim().replace(/^```(?:json)?/i, '').replace(/```$/, '').trim()
+  const start = s.indexOf('{')
+  const end = s.lastIndexOf('}')
+  if (start >= 0 && end > start) s = s.slice(start, end + 1)
+  let obj
+  try { obj = JSON.parse(s) } catch { return null }
+  if (!obj || typeof obj !== 'object') return null
+  const str = (v) => (typeof v === 'string' ? v.trim().slice(0, 400) : '')
+  return {
+    person:      str(obj.person),
+    context:     str(obj.context),
+    need:        str(obj.need),
+    commitment:  str(obj.commitment),
+    next_action: str(obj.next_action),
+    due:         str(obj.due),
   }
 }

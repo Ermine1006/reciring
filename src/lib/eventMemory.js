@@ -1,0 +1,103 @@
+import { supabase, isSupabaseConfigured } from './supabase'
+import { apiUrl } from './apiBase'
+
+// ── Event memory · encounters + derived follow-ups ───────────────────
+// event_encounters is the single store. A "follow-up" is an encounter with a
+// next_action that isn't completed. All rows are private to the author.
+
+// Reuses the shared public.event_encounters table (see
+// migration-event-encounters.sql + migration-event-memory.sql). Its `status`
+// column belongs to the Event-Mode confirmation flow, so we DON'T set custom
+// values here — a "follow-up" is next_action set + followed_up_at IS NULL, and
+// completing one stamps followed_up_at (the base table's existing field).
+
+const COLS = 'id, user_id, event_id, encountered_user_id, person_name, topics, private_note, commitment, next_action, due_at, followed_up_at, created_at'
+
+export async function fetchEncounters(userId, { eventId } = {}) {
+  if (!isSupabaseConfigured || !userId) return { data: [], error: null }
+  let q = supabase.from('event_encounters').select(COLS).eq('user_id', userId).order('created_at', { ascending: false })
+  if (eventId) q = q.eq('event_id', eventId)
+  const { data, error } = await q
+  return { data: data || [], error }
+}
+
+// Open follow-ups for the dashboard: encounters with a next_action, not yet
+// followed up.
+export async function fetchFollowups(userId) {
+  if (!isSupabaseConfigured || !userId) return { data: [], error: null }
+  const { data, error } = await supabase
+    .from('event_encounters')
+    .select(COLS)
+    .eq('user_id', userId)
+    .neq('next_action', '')
+    .is('followed_up_at', null)
+    .order('due_at', { ascending: true, nullsFirst: false })
+  return { data: data || [], error }
+}
+
+export async function createEncounter({ userId, eventId, encounteredUserId, personName, topics, privateNote, commitment, nextAction, dueAt }) {
+  if (!isSupabaseConfigured) return { data: null, error: new Error('Supabase not configured') }
+  if (!userId)            return { data: null, error: new Error('Not signed in') }
+  if (!personName?.trim()) return { data: null, error: new Error('Add a name') }
+  const { data, error } = await supabase
+    .from('event_encounters')
+    .insert({
+      user_id:             userId,
+      event_id:            eventId || null,
+      encountered_user_id: encounteredUserId || null,
+      person_name:         personName.trim().slice(0, 120),
+      topics:              (topics || []).slice(0, 12),
+      private_note:        String(privateNote || '').trim().slice(0, 1000),
+      commitment:          String(commitment || '').trim().slice(0, 300),
+      next_action:         String(nextAction || '').trim().slice(0, 300),
+      due_at:              dueAt || null,
+      source:              'manual',
+    })
+    .select(COLS)
+    .single()
+  return { data, error }
+}
+
+export async function updateEncounter(id, patch) {
+  if (!isSupabaseConfigured || !id) return { error: new Error('Missing encounter') }
+  const clean = {}
+  for (const k of ['person_name', 'topics', 'private_note', 'commitment', 'next_action', 'due_at', 'event_id', 'followed_up_at']) {
+    if (patch[k] !== undefined) clean[k] = patch[k]
+  }
+  const { error } = await supabase.from('event_encounters').update(clean).eq('id', id)
+  return { error }
+}
+
+export async function completeFollowup(id) {
+  return updateEncounter(id, { followed_up_at: new Date().toISOString() })
+}
+
+export async function deleteEncounter(id) {
+  if (!isSupabaseConfigured || !id) return { error: new Error('Missing encounter') }
+  const { error } = await supabase.from('event_encounters').delete().eq('id', id)
+  return { error }
+}
+
+/**
+ * "Tell Mutu what happened" — send free text, get a structured draft back.
+ * Reuses the consolidated /api/ai-rewrite endpoint (mode: 'capture'), so no new
+ * serverless function. Returns { capture: { person, context, need, commitment,
+ * next_action, due }, error }. The user confirms/edits before it's saved.
+ */
+export async function extractCapture(text, { eventTitle } = {}) {
+  if (!isSupabaseConfigured) return { capture: null, error: new Error('Supabase not configured') }
+  if (!text?.trim())         return { capture: null, error: new Error('Nothing to capture') }
+  let resp
+  try {
+    resp = await fetch(apiUrl('/api/ai-rewrite'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'capture', text: text.trim(), context: { eventTitle } }),
+    })
+  } catch (err) {
+    return { capture: null, error: err }
+  }
+  const body = await resp.json().catch(() => ({}))
+  if (!resp.ok) return { capture: null, error: new Error(body?.error || 'Could not read that') }
+  return { capture: body.capture || null, error: null }
+}
