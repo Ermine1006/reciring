@@ -10,9 +10,10 @@ import { useId } from 'react'
 
 /* ── deterministic hash ──────────────────────────────────────────── */
 function djb2(str) {
+  const s = String(str ?? 'anon')   // null/undefined-safe
   let h = 5381
-  for (let i = 0; i < str.length; i++) {
-    h = (((h << 5) + h) + str.charCodeAt(i)) & 0xffffffff
+  for (let i = 0; i < s.length; i++) {
+    h = (((h << 5) + h) + s.charCodeAt(i)) & 0xffffffff
   }
   return Math.abs(h)
 }

@@ -66,7 +66,8 @@ export default function EventRecapPage({
     if (list.length === 0) { setLoading(false); return }
 
     // Batch-load target profiles + active posts.
-    const ids = Array.from(new Set(list.map(e => e.encountered_user_id)))
+    const ids = Array.from(new Set(list.map(e => e.encountered_user_id).filter(Boolean)))
+    if (ids.length === 0) { setLoading(false); return }
     const [{ data: profiles }, { data: posts }] = await Promise.all([
       supabase.from('profiles')
         .select('id, name, avatar_url, program, headline, career_stage, industry_interests, can_help_with, skills_to_learn, visibility')
@@ -275,7 +276,7 @@ export default function EventRecapPage({
 // ────────────────────────────────────────────────────────────────
 
 function EncounterCard({ encounter, them, themTopPost, rationale, onEdit, onFollowUp }) {
-  const seed = resolveAvatarSeed(them.avatar_url) || them.id || encounter.encountered_user_id
+  const seed = resolveAvatarSeed(them.avatar_url) || them.id || encounter.encountered_user_id || encounter.id || 'anon'
   const roleLine = [them.program, them.headline, them.career_stage].filter(Boolean).join(' · ')
   const status = encounter.status
   return (
@@ -290,7 +291,7 @@ function EncounterCard({ encounter, them, themTopPost, rationale, onEdit, onFoll
             fontSize: 15, fontWeight: 600, color: C.text, margin: 0,
             fontFamily: 'Inter, system-ui, sans-serif',
           }}>
-            {them.name || 'Member'}
+            {them.name || encounter.person_name || 'Member'}
           </p>
           {roleLine && (
             <p style={{
