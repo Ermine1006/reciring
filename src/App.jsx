@@ -475,7 +475,7 @@ function AppShell() {
       const now = Date.now()
       return requests.filter(r => {
         const creatorId = r.created_by || r.poster_id
-        // if (creatorId && user && creatorId === user.id) return false  // TEMP: show own posts in Discover for demo
+        if (creatorId && user && creatorId === user.id) return false     // hide own posts
         if (creatorId && blockedIds.has(creatorId))     return false     // hide blocked
         if (r.id && matchedPostIds.has(r.id))           return false     // hide already-matched
         if (r.expiresAt && new Date(r.expiresAt).getTime() < now) return false  // hide expired
