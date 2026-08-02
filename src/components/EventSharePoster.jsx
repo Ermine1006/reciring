@@ -31,9 +31,33 @@ function posterDate(iso) {
  */
 export default function EventSharePoster({ event, open, onClose }) {
   const posterRef = useRef(null)
+  const coverRef = useRef(null)              // cover image as a data URI (cached)
   const [busy, setBusy] = useState(false)
   const [toast, setToast] = useState(null)
   const [qrUrl, setQrUrl] = useState(null)
+  const [coverDataUrl, setCoverDataUrl] = useState(null)
+
+  // Fetch the host's cover and inline it as a data URI. html-to-image can't
+  // reliably rasterise a cross-origin <img> inside the native WKWebView, so the
+  // shared poster lost its photo — a data URI always renders.
+  async function ensureCover() {
+    if (!event?.image_url) return null
+    if (coverRef.current) return coverRef.current
+    try {
+      const res = await fetch(event.image_url, { mode: 'cors' })
+      const blob = await res.blob()
+      const url = await new Promise((resolve, reject) => {
+        const r = new FileReader()
+        r.onload = () => resolve(r.result)
+        r.onerror = reject
+        r.readAsDataURL(blob)
+      })
+      coverRef.current = url
+      setCoverDataUrl(url)
+      return url
+    } catch { return null }
+  }
+  const nextFrame = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))
 
   // Generate a QR of the event deep link so people can scan to join. New
   // users land on the signup page; existing users open the event directly.
@@ -48,6 +72,14 @@ export default function EventSharePoster({ event, open, onClose }) {
       .catch(() => { if (alive) setQrUrl(null) })
     return () => { alive = false }
   }, [open, event?.id])
+
+  // Pre-warm the inlined cover when the sheet opens.
+  useEffect(() => {
+    coverRef.current = null
+    setCoverDataUrl(null)
+    if (open && event?.image_url) ensureCover()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, event?.image_url])
 
   if (!open || !event) return null
 
@@ -68,6 +100,8 @@ export default function EventSharePoster({ event, open, onClose }) {
     if (busy) return
     setBusy(true); setToast(null)
     try {
+      // Make sure the cover is inlined + committed to the DOM before capture.
+      if (hasImage) { await ensureCover(); await nextFrame() }
       const dataUrl = await buildPng()
       const file = await dataUrlToFile(dataUrl)
       // Web Share Level 2 (files) — supported in the iOS WKWebview and mobile
@@ -124,9 +158,8 @@ export default function EventSharePoster({ event, open, onClose }) {
             }}
           >
             <img
-              src={event.image_url}
+              src={coverDataUrl || event.image_url}
               alt=""
-              crossOrigin="anonymous"
               style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
             />
             {/* Legibility scrim: light at top, heavy at the bottom. */}
