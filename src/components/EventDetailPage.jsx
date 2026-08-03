@@ -450,29 +450,38 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
           </div>
         )}
 
-        {/* One contextual lifecycle action — before / during / after. */}
+        {/* Contextual lifecycle action(s). Before the event: Prepare. Once it
+            has started, both "Who did you meet?" and "Complete recap" are
+            available together — the more time-relevant one is primary. */}
         {(joined || isHost) && !isCancelled && viewMode === 'overview' && (() => {
+          const gold = { background: '#C6A25A', color: '#241B0C', border: 'none' }
+          const outline = { background: '#fff', color: '#A67C33', border: '1px solid #EBDBAE' }
+          const base = { flex: 1, padding: '13px', borderRadius: 12, fontSize: 13.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }
           const start = event.start_at ? new Date(event.start_at) : null
           const now = Date.now()
           const phase = !start ? 'before'
             : now < start.getTime() ? 'before'
             : now < new Date(start.getFullYear(), start.getMonth(), start.getDate() + 1).getTime() ? 'during'
             : 'after'
-          const action = phase === 'before'
-            ? (onPrepare ? { label: 'Prepare for event', run: () => onPrepare(event.id) } : null)
-            : phase === 'during'
-              ? { label: 'Who did you meet?', run: () => setViewMode('event_mode') }
-              : { label: 'Complete recap', run: () => setViewMode('recap') }
-          if (!action) return null
+
+          if (phase === 'before') {
+            if (!onPrepare) return null
+            return (
+              <button type="button" onClick={() => onPrepare(event.id)} style={{ width: '100%', margin: '0 0 14px', ...base, ...gold }}>
+                Prepare for event
+              </button>
+            )
+          }
+          const meetPrimary = phase === 'during'
           return (
-            <button type="button" onClick={action.run}
-              style={{
-                width: '100%', margin: '0 0 14px', padding: '13px', borderRadius: 12, border: 'none',
-                background: '#C6A25A', color: '#241B0C', fontSize: 14, fontWeight: 700,
-                cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif',
-              }}>
-              {action.label}
-            </button>
+            <div style={{ display: 'flex', gap: 8, margin: '0 0 14px' }}>
+              <button type="button" onClick={() => setViewMode('event_mode')} style={{ ...base, ...(meetPrimary ? gold : outline) }}>
+                Who did you meet?
+              </button>
+              <button type="button" onClick={() => setViewMode('recap')} style={{ ...base, ...(meetPrimary ? outline : gold) }}>
+                Complete recap
+              </button>
+            </div>
           )
         })()}
 

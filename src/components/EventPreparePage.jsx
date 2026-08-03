@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { fetchEventById } from '../lib/events'
 import { GOAL_OPTIONS, fetchEventGoals, saveEventGoals } from '../lib/eventPrep'
 import { fetchMyMarketplacePosts, createMarketplacePost, updateMarketplacePost, deleteMarketplacePost } from '../lib/marketplace'
+import { rewriteText } from '../lib/aiRewrite'
 
 const C = {
   ground:'#FFFFFF', ivory:'#FBF8F3', ink:'#1A1712', ink2:'#5F584D', ink3:'#9A958B',
@@ -29,6 +30,9 @@ export default function EventPreparePage({ eventId, userId, onBack, onSaved }) {
   const [look, setLook] = useState('')
   const [offer, setOffer] = useState('')
   const [existing, setExisting] = useState({ need: null, offer: null })
+  const [promoteHome, setPromoteHome] = useState(false)
+  const [improving, setImproving] = useState(null)   // 'look' | 'offer' | null
+  const [undo, setUndo] = useState(null)             // { field, prev }
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState(null)
 
@@ -47,6 +51,7 @@ export default function EventPreparePage({ eventId, userId, onBack, onSaved }) {
       setExisting({ need, offer: off })
       setLook(need?.description || need?.title || '')
       setOffer(off?.description || off?.title || '')
+      setPromoteHome(Boolean(need?.promote_to_discover || off?.promote_to_discover))
       setLoading(false)
     })()
     return () => { alive = false }
@@ -59,11 +64,23 @@ export default function EventPreparePage({ eventId, userId, onBack, onSaved }) {
   }
 
   const canSave = look.trim() || offer.trim()
+  const allowPromotion = Boolean(event?.allow_discover_promotion)
 
-  const saveField = async (type, text, ex) => {
+  const improve = async (field) => {
+    const source = (field === 'look' ? look : offer).trim()
+    if (!source || improving) return
+    setImproving(field)
+    const { text, error } = await rewriteText({ kind: field === 'look' ? 'event_need' : 'event_offer', text: source, maxChars: 600 })
+    setImproving(null)
+    if (error || !text) return
+    setUndo({ field, prev: field === 'look' ? look : offer })
+    ;(field === 'look' ? setLook : setOffer)(text)
+  }
+
+  const saveField = async (type, text, ex, promote) => {
     const t = text.trim()
     if (!t) { if (ex) await deleteMarketplacePost(ex.id); return }
-    const payload = { title: headline(t), description: t.slice(0, 600) }
+    const payload = { title: headline(t), description: t.slice(0, 600), promoteToDiscover: promote }
     if (ex) return updateMarketplacePost(ex.id, payload)
     return createMarketplacePost({ eventId, userId, type, ...payload })
   }
@@ -71,8 +88,9 @@ export default function EventPreparePage({ eventId, userId, onBack, onSaved }) {
   const save = async () => {
     if (!canSave || saving) return
     setSaving(true); setErr(null)
-    const r1 = await saveField('need',  look,  existing.need)
-    const r2 = await saveField('offer', offer, existing.offer)
+    const promote = allowPromotion && promoteHome
+    const r1 = await saveField('need',  look,  existing.need,  promote)
+    const r2 = await saveField('offer', offer, existing.offer, promote)
     setSaving(false)
     const e = r1?.error || r2?.error
     if (e) { setErr(e.message || 'Could not save your event post'); return }
@@ -120,11 +138,29 @@ export default function EventPreparePage({ eventId, userId, onBack, onSaved }) {
           <p style={{ ...fieldLabel, color: C.slate, marginTop: 12 }}>I'm looking for</p>
           <textarea value={look} onChange={e => setLook(e.target.value.slice(0, 600))} rows={3}
             placeholder="e.g. Introductions to AI infrastructure founders or operators." style={input} />
+          <AiRow field="look" value={look} improving={improving} undo={undo} onImprove={improve} onUndo={() => { setLook(undo.prev); setUndo(null) }} />
+
           <p style={{ ...fieldLabel, color: C.sage, marginTop: 12 }}>I can offer</p>
           <textarea value={offer} onChange={e => setOffer(e.target.value.slice(0, 600))} rows={3}
             placeholder="e.g. VC interview coaching and fundraising feedback." style={input} />
-          <p style={{ margin: '9px 0 0', fontSize: 11.5, color: C.ink3, fontFamily: 'Inter, system-ui, sans-serif' }}>Fill in one or both. Shown on the Event Board; names stay hidden until someone connects.</p>
+          <AiRow field="offer" value={offer} improving={improving} undo={undo} onImprove={improve} onUndo={() => { setOffer(undo.prev); setUndo(null) }} />
+
+          <p style={{ margin: '10px 0 0', fontSize: 11.5, color: C.ink3, fontFamily: 'Inter, system-ui, sans-serif' }}>Fill in one or both. Shown on the Event Board; names stay hidden until someone connects.</p>
         </div>
+
+        {/* Optionally surface this post on the Mutu home page (Discover) —
+            only when the host has turned on home-page promotion. */}
+        {allowPromotion && (
+          <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginTop: 14, cursor: 'pointer' }}>
+            <input type="checkbox" checked={promoteHome} onChange={e => setPromoteHome(e.target.checked)}
+              style={{ marginTop: 2, width: 18, height: 18, accentColor: C.gold, flexShrink: 0 }} />
+            <span style={{ fontSize: 13, color: C.ink, lineHeight: 1.5, fontFamily: 'Inter, system-ui, sans-serif' }}>
+              <b style={{ fontWeight: 600 }}>Show this post on the home page</b>
+              <br />
+              <span style={{ fontSize: 12, color: C.ink3 }}>Appears as an anonymous preview in Discover to bring more people to this event. Your name stays hidden until someone connects.</span>
+            </span>
+          </label>
+        )}
 
         {err && <p style={{ margin: '12px 2px 0', fontSize: 12.5, color: '#B4453A', fontFamily: 'Inter, system-ui, sans-serif' }}>{err}</p>}
 
@@ -136,6 +172,27 @@ export default function EventPreparePage({ eventId, userId, onBack, onSaved }) {
           Not now
         </button>
       </motion.div>
+    </div>
+  )
+}
+
+// "Increase response rate" — the same AI rewrite used in Discover / Marketplace.
+function AiRow({ field, value, improving, undo, onImprove, onUndo }) {
+  const busy = improving === field
+  const canDo = value.trim() && !improving
+  const showUndo = undo?.field === field
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 7, minHeight: 22 }}>
+      <button type="button" onClick={() => onImprove(field)} disabled={!canDo}
+        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', padding: '2px 1px', cursor: canDo ? 'pointer' : 'default', color: canDo ? C.gold : '#B8B0A2', fontSize: 12, fontWeight: 650, fontFamily: 'Inter, system-ui, sans-serif' }}>
+        {busy ? (<><span className="inline-block animate-spin" style={{ width: 11, height: 11, border: `1.5px solid ${C.goldLine}`, borderTopColor: C.goldInk, borderRadius: '50%' }} /> Improving…</>) : (<>✦ Increase response rate</>)}
+      </button>
+      {showUndo && (
+        <span style={{ fontSize: 11, color: C.ink2, fontFamily: 'Inter, system-ui, sans-serif' }}>
+          ✓ Clearer ·{' '}
+          <button type="button" onClick={onUndo} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: C.gold, fontWeight: 700, fontSize: 11 }}>Undo</button>
+        </span>
+      )}
     </div>
   )
 }
