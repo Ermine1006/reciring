@@ -83,7 +83,7 @@ const HOST_TYPE_LABEL = {
  * is tapped. Self-contained: handles its own loads, realtime sub, join/
  * leave/cancel actions, group thread, and back navigation.
  */
-export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, onOpenMatch, initialViewMode }) {
+export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, onOpenMatch, initialViewMode, cameFromPromo = false, onJoined }) {
   const { user } = useAuth()
 
   const [event, setEvent]       = useState(null)
@@ -216,6 +216,9 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
     }
     setShowJoinIntent(false)
     setToast({ type: 'ok', msg: "You're in. See you there." })
+    // Attribute the acquisition funnel when this event was opened from a
+    // Discover promo card (best-effort; parent decides whether to log).
+    onJoined?.()
     // Fire-and-forget registration confirmation email — server loads
     // the event, resolves the caller's email, and renders the template.
     sendEventRegistrationEmail({ eventId: event.id })
@@ -494,6 +497,7 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
             eventId={event.id}
             userId={user?.id}
             isHost={isHost}
+            allowPromotion={Boolean(event.allow_discover_promotion)}
             onOpenChat={onOpenMatch}
           />
         )}
@@ -946,7 +950,7 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
                   boxShadow: isFull ? 'none' : '0 8px 24px rgba(200,169,106,0.32)',
                 }}
               >
-                {isFull ? 'Event full' : joinPending ? 'Joining…' : 'Join event'}
+                {isFull ? 'Event full' : joinPending ? 'Joining…' : (cameFromPromo ? 'Join event to connect' : 'Join event')}
               </button>
             )}
           </div>

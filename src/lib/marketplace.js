@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from './supabase'
+import { logPromoConnectionIfAttributed } from './discoverPromos'
 
 // ── Event Marketplace · client data layer ────────────────────────────
 // Backed by scripts/migration-event-marketplace.sql. Browsing goes through
@@ -7,7 +8,7 @@ import { supabase, isSupabaseConfigured } from './supabase'
 // creates the match + system message + notifications; the client just flips
 // the interest status and refetches.
 
-const POST_COLS = 'id, event_id, user_id, type, title, description, tags, urgency, status, created_at, updated_at'
+const POST_COLS = 'id, event_id, user_id, type, title, description, tags, urgency, status, created_at, updated_at, promote_to_discover'
 
 // Anonymous feed for an event, newest first. Excludes my own posts (those come
 // from fetchMyMarketplacePosts) so the "Browse" list is only other people.
@@ -35,7 +36,7 @@ export async function fetchMyMarketplacePosts(eventId, userId) {
   return { data: data || [], error }
 }
 
-export async function createMarketplacePost({ eventId, userId, type, title, description, tags, urgency }) {
+export async function createMarketplacePost({ eventId, userId, type, title, description, tags, urgency, promoteToDiscover = false }) {
   if (!isSupabaseConfigured) return { data: null, error: new Error('Supabase not configured') }
   if (!eventId || !userId)   return { data: null, error: new Error('Missing event or user') }
   if (!['need', 'offer'].includes(type)) return { data: null, error: new Error('Bad post type') }
@@ -50,6 +51,7 @@ export async function createMarketplacePost({ eventId, userId, type, title, desc
       description: String(description || '').trim().slice(0, 600),
       tags:        (tags || []).slice(0, 8),
       urgency:     urgency?.trim() ? urgency.trim().slice(0, 40) : null,
+      promote_to_discover: Boolean(promoteToDiscover),
     })
     .select(POST_COLS)
     .single()
@@ -59,13 +61,14 @@ export async function createMarketplacePost({ eventId, userId, type, title, desc
   return { data, error }
 }
 
-export async function updateMarketplacePost(id, { title, description, tags, urgency }) {
+export async function updateMarketplacePost(id, { title, description, tags, urgency, promoteToDiscover }) {
   if (!isSupabaseConfigured || !id) return { error: new Error('Missing post') }
   const patch = { updated_at: new Date().toISOString() }
   if (title       !== undefined) patch.title       = String(title).trim().slice(0, 120)
   if (description !== undefined) patch.description = String(description || '').trim().slice(0, 600)
   if (tags        !== undefined) patch.tags        = (tags || []).slice(0, 8)
   if (urgency     !== undefined) patch.urgency     = urgency?.trim() ? urgency.trim().slice(0, 40) : null
+  if (promoteToDiscover !== undefined) patch.promote_to_discover = Boolean(promoteToDiscover)
   const { error } = await supabase.from('event_marketplace_posts').update(patch).eq('id', id)
   return { error }
 }
@@ -84,6 +87,9 @@ export async function expressInterest({ postId, eventId, ownerId, requesterId })
     .from('event_marketplace_interest')
     .insert({ post_id: postId, event_id: eventId, owner_id: ownerId, requester_id: requesterId })
   if (error && error.code === '23505') return { error: null, already: true } // already interested = fine
+  // Funnel tracking: a promo-originated user reaching out in the marketplace
+  // is the acquisition payoff. Best-effort, only counted when attributed.
+  if (!error) logPromoConnectionIfAttributed(requesterId, eventId, postId).catch(() => {})
   return { error }
 }
 

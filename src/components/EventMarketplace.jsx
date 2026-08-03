@@ -20,7 +20,7 @@ const C = {
  * browse others anonymously, and express interest. Owners accept → identity
  * reveal + private chat (handled by the DB trigger; onOpenChat navigates there).
  */
-export default function EventMarketplace({ eventId, userId, isHost = false, onOpenChat }) {
+export default function EventMarketplace({ eventId, userId, isHost = false, allowPromotion = false, onOpenChat }) {
   const [feed, setFeed]           = useState([])
   const [myPosts, setMyPosts]     = useState([])
   const [myInterests, setMyInt]   = useState([])       // interests I sent
@@ -79,12 +79,12 @@ export default function EventMarketplace({ eventId, userId, isHost = false, onOp
   const haveOffer = myPosts.some(p => p.type === 'offer')
 
   // ── Handlers ──────────────────────────────────────────────
-  const submitComposer = async ({ type, title, description, tags, urgency }) => {
+  const submitComposer = async ({ type, title, description, tags, urgency, promoteToDiscover }) => {
     setCBusy(true); setCErr(null)
     const isEdit = composer?.mode === 'edit'
     const res = isEdit
-      ? await updateMarketplacePost(composer.initial.id, { title, description, tags, urgency })
-      : await createMarketplacePost({ eventId, userId, type, title, description, tags, urgency })
+      ? await updateMarketplacePost(composer.initial.id, { title, description, tags, urgency, promoteToDiscover })
+      : await createMarketplacePost({ eventId, userId, type, title, description, tags, urgency, promoteToDiscover })
     setCBusy(false)
     if (res.error) { setCErr(res.error.message || 'Could not save'); return }
     setComposer(null)
@@ -233,6 +233,7 @@ export default function EventMarketplace({ eventId, userId, isHost = false, onOp
         initial={composer?.initial || null}
         busy={composerBusy}
         error={composerErr}
+        allowPromotion={allowPromotion}
         onSubmit={submitComposer}
         onClose={() => { setComposer(null); setCErr(null) }}
       />

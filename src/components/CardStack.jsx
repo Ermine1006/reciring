@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useMemo } from 'react'
 import { motion, useMotionValue } from 'framer-motion'
 import { Handshake } from 'lucide-react'
 import RequestCard from './RequestCard'
+import EventPreviewCard from './EventPreviewCard'
 import RequestDetailModal from './RequestDetailModal'
 import MatchModal from './MatchModal'
 import { rankRequests, filterRequests, DEFAULT_VIEWER_PROFILE } from '../data/matchRanking'
@@ -39,7 +40,7 @@ function FilterChip({ label, active, onClick }) {
   )
 }
 
-export default function CardStack({ requests, unmatchedPostIds, interactionMap, onSwipeRight, onSwipeLeft, onCardViewed, onMatchConfirm, onOpenChat, onScheduleChat, onReport, onBlock, onRestorePassed }) {
+export default function CardStack({ requests, eventPromos, unmatchedPostIds, interactionMap, onSwipeRight, onSwipeLeft, onCardViewed, onMatchConfirm, onOpenChat, onScheduleChat, onReport, onBlock, onRestorePassed, onOpenEventPromo, onPromoImpression }) {
   const { viewerProfile } = useAuth()
   const viewer = viewerProfile || DEFAULT_VIEWER_PROFILE
 
@@ -109,6 +110,40 @@ export default function CardStack({ requests, unmatchedPostIds, interactionMap, 
     return [...fresh, ...actedInOrder]
   }, [ranked, recentlyActedOrder])
 
+  // Event-promo cards dismissed this session (requirement: don't keep showing
+  // the same event once the user skips it).
+  const [dismissedPromos, setDismissedPromos] = useState(() => new Set())
+  const promoQueue = useMemo(
+    () => (eventPromos || []).filter(p => !dismissedPromos.has(p.id)),
+    [eventPromos, dismissedPromos]
+  )
+
+  // Final deck: interleave one event-promo card after every 5 regular cards,
+  // so promos support rather than overwhelm Discover. A short deck still
+  // surfaces one promo so acquisition isn't gated on having 5+ posts.
+  const deck = useMemo(() => {
+    if (promoQueue.length === 0) return stack
+    if (stack.length === 0) return promoQueue.slice(0, 3)
+    const out = []
+    let pi = 0
+    for (let i = 0; i < stack.length; i++) {
+      out.push(stack[i])
+      if ((i + 1) % 5 === 0 && pi < promoQueue.length) out.push(promoQueue[pi++])
+    }
+    if (pi === 0 && promoQueue.length > 0) out.push(promoQueue[0]) // short-deck fallback
+    return out
+  }, [stack, promoQueue])
+
+  const isPromo = (item) => item?.kind === 'event_promo'
+
+  const dismissPromo = useCallback((promo) => {
+    setDismissedPromos(prev => {
+      const next = new Set(prev)
+      next.add(promo.id)
+      return next
+    })
+  }, [])
+
   const [match, setMatch] = useState(null)
   const [detailRequest, setDetailRequest] = useState(null)
   const dragX   = useMotionValue(0)
@@ -124,6 +159,14 @@ export default function CardStack({ requests, unmatchedPostIds, interactionMap, 
 
   const handleSwipeRight = useCallback(
     async (request) => {
+      // Event-promo cards never create a match — a right swipe / CTA opens the
+      // event (the acquisition funnel), then the card is dismissed for the
+      // session so it doesn't reappear behind the detail page.
+      if (isPromo(request)) {
+        onOpenEventPromo?.(request)
+        dismissPromo(request)
+        return
+      }
       // Push to bottom immediately so the modal opens over a different
       // card if creation takes a tick. Once matchedPostIds refreshes,
       // the card disappears entirely.
@@ -136,11 +179,13 @@ export default function CardStack({ requests, unmatchedPostIds, interactionMap, 
       if (result.error || !result.matchId) return
       setMatch({ id: result.matchId, request, peer: 'Anonymous Peer' })
     },
-    [onSwipeRight, onMatchConfirm, markRecentlyActed]
+    [onSwipeRight, onMatchConfirm, markRecentlyActed, onOpenEventPromo, dismissPromo]
   )
 
   const handleSwipeLeft = useCallback(
     (request) => {
+      // Event-promo left swipe = dismiss for this session (no persistence).
+      if (isPromo(request)) { dismissPromo(request); return }
       // Persistent: records 'swiped_left' in App.jsx → updates
       // interactionMap → tier 3 (or stays tier 4 if also unmatched).
       // Session: also push to bottom so the user always sees the
@@ -148,22 +193,33 @@ export default function CardStack({ requests, unmatchedPostIds, interactionMap, 
       markRecentlyActed(request.id)
       onSwipeLeft?.(request)
     },
-    [onSwipeLeft, markRecentlyActed]
+    [onSwipeLeft, markRecentlyActed, dismissPromo]
   )
 
   const handleCardTap = useCallback(
     (request) => {
+      // Tapping an event-promo card opens the event (same as the CTA).
+      if (isPromo(request)) { onOpenEventPromo?.(request); dismissPromo(request); return }
       // Record 'viewed' before opening the detail modal. The recorder
       // refuses to downgrade an existing 'swiped_left' to 'viewed', so
       // re-viewing a previously-skipped post doesn't promote it back.
       onCardViewed?.(request)
       setDetailRequest(request)
     },
-    [onCardViewed]
+    [onCardViewed, onOpenEventPromo, dismissPromo]
   )
 
-  const topRequest  = stack[0]
-  const nextRequest = stack[1]
+  const topRequest  = deck[0]
+  const nextRequest = deck[1]
+
+  // Fire a preview-impression the first time each promo reaches the top slot.
+  const [impressed, setImpressed] = useState(() => new Set())
+  useEffect(() => {
+    if (!isPromo(topRequest)) return
+    if (impressed.has(topRequest.id)) return
+    setImpressed(prev => new Set(prev).add(topRequest.id))
+    onPromoImpression?.(topRequest)
+  }, [topRequest, impressed, onPromoImpression])
 
   /* ── Filter bar ───────────────────────────────────────────────── */
   const filterBar = (
@@ -271,7 +327,7 @@ export default function CardStack({ requests, unmatchedPostIds, interactionMap, 
   )
 
   /* ── Empty state ──────────────────────────────────────────────── */
-  if (stack.length === 0) {
+  if (deck.length === 0) {
     return (
       <div className="flex flex-col flex-1">
         {filterBar}
@@ -347,7 +403,9 @@ export default function CardStack({ requests, unmatchedPostIds, interactionMap, 
         {/* ── Card region ─────────────────────────────────────── */}
         <div className="relative flex-1" style={{ minHeight: 0 }}>
           {nextRequest && (
-            <RequestCard key={nextRequest.id} request={nextRequest} isTop={false} matchReason={nextRequest._reason} />
+            isPromo(nextRequest)
+              ? <EventPreviewCard key={nextRequest.id} promo={nextRequest} isTop={false} />
+              : <RequestCard key={nextRequest.id} request={nextRequest} isTop={false} matchReason={nextRequest._reason} />
           )}
 
           {/* Top card stays fully opaque while dragging. It used to fade to
@@ -356,16 +414,28 @@ export default function CardStack({ requests, unmatchedPostIds, interactionMap, 
               through the edges — beta feedback: "can't see PASS on left
               swipe". Rotation + translation + the stamp carry the gesture. */}
           <motion.div className="absolute inset-0">
-            <RequestCard
-              key={topRequest.id}
-              request={topRequest}
-              isTop
-              matchReason={topRequest._reason}
-              onDrag={(x) => dragX.set(x)}
-              onSwipeLeft={() => handleSwipeLeft(topRequest)}
-              onSwipeRight={() => handleSwipeRight(topRequest)}
-              onTap={handleCardTap}
-            />
+            {isPromo(topRequest) ? (
+              <EventPreviewCard
+                key={topRequest.id}
+                promo={topRequest}
+                isTop
+                onDrag={(x) => dragX.set(x)}
+                onSwipeLeft={() => handleSwipeLeft(topRequest)}
+                onSwipeRight={() => handleSwipeRight(topRequest)}
+                onTap={handleCardTap}
+              />
+            ) : (
+              <RequestCard
+                key={topRequest.id}
+                request={topRequest}
+                isTop
+                matchReason={topRequest._reason}
+                onDrag={(x) => dragX.set(x)}
+                onSwipeLeft={() => handleSwipeLeft(topRequest)}
+                onSwipeRight={() => handleSwipeRight(topRequest)}
+                onTap={handleCardTap}
+              />
+            )}
           </motion.div>
         </div>
 

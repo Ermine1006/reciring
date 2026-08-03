@@ -90,11 +90,12 @@ export default function CreateEventForm({ onCreated, onClose }) {
   const [hostType, setHostType]         = useState(draft?.hostType ?? 'individual')
   const [imageUrl, setImageUrl]         = useState(draft?.imageUrl ?? '')
   const [attendeeVisibility, setAttendeeVisibility] = useState(draft?.attendeeVisibility ?? 'public')
+  const [allowDiscoverPromotion, setAllowDiscoverPromotion] = useState(draft?.allowDiscoverPromotion ?? false)
 
   const snapshot = () => ({
     savedAt: Date.now(),
     title, description, date, time, location, category,
-    maxAttendees, minAttendees, hostType, imageUrl, attendeeVisibility,
+    maxAttendees, minAttendees, hostType, imageUrl, attendeeVisibility, allowDiscoverPromotion,
   })
 
   // Save on every change. No "did they type something" guard: being on the
@@ -104,7 +105,7 @@ export default function CreateEventForm({ onCreated, onClose }) {
   // clears on cancel and on submit, so an abandoned empty form is harmless.
   useEffect(() => {
     writeDraft(snapshot())
-  }, [title, description, date, time, location, category, maxAttendees, minAttendees, hostType, imageUrl, attendeeVisibility])
+  }, [title, description, date, time, location, category, maxAttendees, minAttendees, hostType, imageUrl, attendeeVisibility, allowDiscoverPromotion])
 
   // Belt-and-suspenders save the instant the app is backgrounded. iOS can
   // freeze/reclaim the webview the moment you switch apps — before the
@@ -167,6 +168,7 @@ export default function CreateEventForm({ onCreated, onClose }) {
       image_url:         imageUrl.trim() || null,
       is_sponsored:      hostType === 'business',
       attendee_visibility: attendeeVisibility,
+      allow_discover_promotion: allowDiscoverPromotion,
     })
 
     setSaving(false)
@@ -387,6 +389,43 @@ export default function CreateEventForm({ onCreated, onClose }) {
                   )
                 })}
               </div>
+            </div>
+
+            <div style={{ marginBottom: 18 }}>
+              <label style={labelStyle}>Promote in Discover</label>
+              <p style={helperStyle}>Let attendees choose to show their Opportunity Board posts as anonymous previews in the main Discover feed, to attract more people to this event. Names are never shown — only after someone joins and connects.</p>
+              <button
+                type="button"
+                onClick={() => setAllowDiscoverPromotion(v => !v)}
+                style={{
+                  width: '100%', textAlign: 'left', padding: '12px 14px', borderRadius: 12,
+                  border: allowDiscoverPromotion ? `1.5px solid ${C.gold}` : '1.5px solid rgba(0,0,0,0.12)',
+                  background: allowDiscoverPromotion ? 'rgba(200,169,106,0.10)' : '#fff',
+                  cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+                }}
+              >
+                <span>
+                  <span style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#1a1a1a' }}>
+                    Allow this event to be promoted
+                  </span>
+                  <span style={{ display: 'block', fontSize: 12, color: 'rgba(0,0,0,0.55)', marginTop: 3, lineHeight: 1.4 }}>
+                    {allowDiscoverPromotion ? 'On — attendees can opt their posts in.' : 'Off — posts stay inside this event.'}
+                  </span>
+                </span>
+                {/* Simple switch affordance */}
+                <span style={{
+                  flexShrink: 0, width: 42, height: 24, borderRadius: 99,
+                  background: allowDiscoverPromotion ? C.gold : '#D1D5DB',
+                  position: 'relative', transition: 'background 0.15s',
+                }}>
+                  <span style={{
+                    position: 'absolute', top: 2, left: allowDiscoverPromotion ? 20 : 2,
+                    width: 20, height: 20, borderRadius: '50%', background: '#fff',
+                    transition: 'left 0.15s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                  }} />
+                </span>
+              </button>
             </div>
 
             <div style={{ marginBottom: 0 }}>

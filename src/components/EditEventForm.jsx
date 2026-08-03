@@ -71,6 +71,7 @@ export default function EditEventForm({ eventId, onSaved, onClose }) {
   const [hostType, setHostType]         = useState('individual')
   const [imageUrl, setImageUrl]         = useState('')
   const [attendeeVisibility, setAttendeeVisibility] = useState('public')
+  const [allowDiscoverPromotion, setAllowDiscoverPromotion] = useState(false)
 
   const [saving, setSaving] = useState(false)
   const [error, setError]   = useState(null)
@@ -99,6 +100,7 @@ export default function EditEventForm({ eventId, onSaved, onClose }) {
       setHostType(ev.host_type || 'individual')
       setImageUrl(ev.image_url || '')
       setAttendeeVisibility(ev.attendee_visibility || 'public')
+      setAllowDiscoverPromotion(Boolean(ev.allow_discover_promotion))
       setLoading(false)
     })
     return () => { cancelled = true }
@@ -135,6 +137,7 @@ export default function EditEventForm({ eventId, onSaved, onClose }) {
       host_type:     hostType,
       image_url:     imageUrl.trim() || null,
       attendee_visibility: attendeeVisibility,
+      allow_discover_promotion: allowDiscoverPromotion,
     })
 
     setSaving(false)
@@ -367,6 +370,41 @@ export default function EditEventForm({ eventId, onSaved, onClose }) {
                   )
                 })}
               </div>
+            </div>
+
+            <div style={{ marginBottom: 18 }}>
+              <label style={labelStyle}>Promote in Discover</label>
+              <p style={helperStyle}>Let attendees show their Opportunity Board posts as anonymous previews in Discover, to attract more people. Names are never shown — only after someone joins and connects.</p>
+              <button
+                type="button"
+                onClick={() => setAllowDiscoverPromotion(v => !v)}
+                style={{
+                  width: '100%', textAlign: 'left', padding: '12px 14px', borderRadius: 12,
+                  border: allowDiscoverPromotion ? `1.5px solid ${C.gold}` : '1.5px solid rgba(0,0,0,0.12)',
+                  background: allowDiscoverPromotion ? 'rgba(200,169,106,0.10)' : '#fff',
+                  cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+                }}
+              >
+                <span>
+                  <span style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#1a1a1a' }}>
+                    Allow this event to be promoted
+                  </span>
+                  <span style={{ display: 'block', fontSize: 12, color: 'rgba(0,0,0,0.55)', marginTop: 3, lineHeight: 1.4 }}>
+                    {allowDiscoverPromotion ? 'On — attendees can opt their posts in.' : 'Off — posts stay inside this event.'}
+                  </span>
+                </span>
+                <span style={{
+                  flexShrink: 0, width: 42, height: 24, borderRadius: 99,
+                  background: allowDiscoverPromotion ? C.gold : '#D1D5DB', position: 'relative', transition: 'background 0.15s',
+                }}>
+                  <span style={{
+                    position: 'absolute', top: 2, left: allowDiscoverPromotion ? 20 : 2,
+                    width: 20, height: 20, borderRadius: '50%', background: '#fff',
+                    transition: 'left 0.15s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                  }} />
+                </span>
+              </button>
             </div>
 
             <div style={{ marginBottom: 0 }}>

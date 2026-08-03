@@ -16,11 +16,12 @@ const DESC_MAX = 600
  * Used for both create and edit. Type is fixed once chosen (a user has at most
  * one need + one offer per event).
  */
-export default function MarketplacePostComposer({ open, mode = 'create', type = 'need', initial = null, busy = false, error = null, onSubmit, onClose }) {
+export default function MarketplacePostComposer({ open, mode = 'create', type = 'need', initial = null, busy = false, error = null, allowPromotion = false, onSubmit, onClose }) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [tagsText, setTagsText] = useState('')
   const [urgency, setUrgency] = useState('')
+  const [promoteToDiscover, setPromoteToDiscover] = useState(false)
 
   useEffect(() => {
     if (open) {
@@ -28,6 +29,8 @@ export default function MarketplacePostComposer({ open, mode = 'create', type = 
       setDescription(initial?.description || '')
       setTagsText((initial?.tags || []).join(', '))
       setUrgency(initial?.urgency || '')
+      // Default OFF; if editing a post already opted in, reflect that.
+      setPromoteToDiscover(Boolean(initial?.promote_to_discover))
     }
   }, [open, initial])
 
@@ -38,7 +41,8 @@ export default function MarketplacePostComposer({ open, mode = 'create', type = 
   const submit = () => {
     if (!title.trim() || busy) return
     const tags = tagsText.split(',').map(s => s.trim()).filter(Boolean).slice(0, 8)
-    onSubmit?.({ type, title, description, tags, urgency })
+    // Only allow opting in when the host enabled promotion for this event.
+    onSubmit?.({ type, title, description, tags, urgency, promoteToDiscover: allowPromotion && promoteToDiscover })
   }
 
   return createPortal(
@@ -115,6 +119,26 @@ export default function MarketplacePostComposer({ open, mode = 'create', type = 
             )
           })}
         </div>
+
+        {/* Author consent to promote outside the event — only offered when the
+            host has enabled promotion for this event. Default OFF. */}
+        {allowPromotion && (
+          <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginTop: 16, cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={promoteToDiscover}
+              onChange={e => setPromoteToDiscover(e.target.checked)}
+              style={{ marginTop: 2, width: 18, height: 18, accentColor: C.goldDark, flexShrink: 0 }}
+            />
+            <span style={{ fontSize: 13, color: C.ink, lineHeight: 1.5, fontFamily: 'Inter, system-ui, sans-serif' }}>
+              <b>Help others discover this event</b>
+              <br />
+              <span style={{ fontSize: 12, color: C.textSub }}>
+                Show this post as an anonymous preview in Mutu Discover to attract more attendees. Your name stays hidden — it's revealed only after someone joins and you connect. Off by default.
+              </span>
+            </span>
+          </label>
+        )}
 
         {error && (
           <div style={{ marginTop: 14, background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 12, padding: '10px 14px', fontSize: 13, color: C.danger }}>

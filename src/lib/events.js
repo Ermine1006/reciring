@@ -106,6 +106,7 @@ export async function createEvent(fields) {
       image_url:         fields.image_url || null,
       is_sponsored:      Boolean(fields.is_sponsored),
       attendee_visibility: fields.attendee_visibility || 'public',
+      allow_discover_promotion: Boolean(fields.allow_discover_promotion),
       moderation_status,
     })
     .select()
@@ -218,7 +219,7 @@ export async function fetchEventById(eventId) {
       max_attendees, min_attendees, host_user_id, host_display_name, host_type,
       image_url, is_sponsored, created_at,
       status, cancellation_reason, cancelled_at,
-      attendee_visibility, chat_public,
+      attendee_visibility, chat_public, allow_discover_promotion,
       event_attendees ( count )
     `)
     .eq('id', eventId)
@@ -306,7 +307,7 @@ export async function updateEvent(eventId, fields) {
   if (!isSupabaseConfigured) return { data: null, error: new Error('Supabase not configured') }
   if (!eventId)              return { data: null, error: new Error('missing event id') }
 
-  const ALLOWED = ['title','description','start_at','location','category','max_attendees','min_attendees','host_type','image_url','attendee_visibility']
+  const ALLOWED = ['title','description','start_at','location','category','max_attendees','min_attendees','host_type','image_url','attendee_visibility','allow_discover_promotion']
   const patch = {}
   for (const key of ALLOWED) {
     if (key in (fields || {})) patch[key] = fields[key]

@@ -30,6 +30,8 @@ import { isAdmin } from './data/adminEmails'
 import { submitReport, blockUser, fetchBlockedIds } from './lib/safety'
 import { isSupabaseConfigured, supabase } from './lib/supabase'
 import { fetchPosts, createPost, updatePost } from './lib/posts'
+import { fetchDiscoverEventPromos, logPromoEvent } from './lib/discoverPromos'
+import { fetchMyJoinedEventIds } from './lib/events'
 import { createMatch, fetchMyMatches, fetchMatchedPostIds, fetchUnmatchedPostIds, unmatchMatch, matchToUI, requestIdentityReveal, acceptIdentityReveal, declineIdentityReveal, fetchPeerProfile } from './lib/matches'
 import { fetchUserInteractions, recordPostInteraction, clearSwipedLeft } from './lib/interactions'
 import { fetchCompletedMatchIds } from './lib/recognition'
@@ -128,11 +130,13 @@ function AppShell() {
   const [preparingEventId, setPreparingEventId] = useState(null)
   // Optional initial sub-view for the event detail (e.g. 'recap' from a contact).
   const [eventInitialView, setEventInitialView] = useState(null)
+  const [promoOriginEventId, setPromoOriginEventId] = useState(null) // event opened via a Discover promo card
   // Bump this to force EventsList to refetch after a new event is created.
   const [eventsRefreshKey, setEventsRefreshKey] = useState(0)
   // Bump this to force EventDetailPage to refetch after save.
   const [eventDetailRefreshKey, setEventDetailRefreshKey] = useState(0)
   const [requests, setRequests]   = useState([])
+  const [eventPromos, setEventPromos] = useState([]) // promotable event-marketplace previews for Discover
   const [matches, setMatches]     = useState([])
   const [completedMatchIds, setCompletedMatchIds] = useState(new Set())
   const [chatMatchId, setChatMatchId] = useState(null)
@@ -184,6 +188,24 @@ function AppShell() {
       setRequests(data && data.length > 0 ? data : MOCK_REQUESTS)
     })
   }, [])
+
+  // Load promotable event-marketplace previews for the Discover deck. Gated
+  // server-side by the discover_event_promos view (both consent flags, still
+  // upcoming + not full); we just tag each with whether the user already
+  // joined so the CTA can read "Open Event Marketplace".
+  useEffect(() => {
+    if (!isSupabaseConfigured || !user) { setEventPromos([]); return }
+    let alive = true
+    ;(async () => {
+      const { data: joinedIds } = await fetchMyJoinedEventIds(user.id)
+      const joinedSet = joinedIds instanceof Set ? joinedIds : new Set(joinedIds || [])
+      const { data, error } = await fetchDiscoverEventPromos({ joinedEventIds: joinedSet })
+      if (!alive) return
+      if (error) { console.error('[ReciRing] Failed to load event promos:', error); return }
+      setEventPromos(data || [])
+    })()
+    return () => { alive = false }
+  }, [user])
 
   // Load matches from Supabase
   const loadMatches = useCallback(async () => {
@@ -929,6 +951,7 @@ function AppShell() {
           {tab === 'discover' && (
             <CardStack
               requests={visibleRequests}
+              eventPromos={eventPromos}
               unmatchedPostIds={unmatchedPostIds}
               interactionMap={interactionMap}
               onSwipeRight={(r) => console.log('Helping:', r.id)}
@@ -940,6 +963,14 @@ function AppShell() {
               onReport={handleReport}
               onBlock={handleBlock}
               onRestorePassed={restorePassedPosts}
+              onPromoImpression={(p) => { if (user) logPromoEvent(user.id, { eventId: p.eventId, postId: p.postId, kind: 'preview_impression' }) }}
+              onOpenEventPromo={(p) => {
+                if (user) logPromoEvent(user.id, { eventId: p.eventId, postId: p.postId, kind: 'detail_open' })
+                setPromoOriginEventId(p.eventId)
+                setEventInitialView(null)
+                setViewingEventId(p.eventId)
+                setTab('events')
+              }}
             />
           )}
           {tab === 'post' && (
@@ -1028,7 +1059,13 @@ function AppShell() {
               key={`${viewingEventId}-${eventDetailRefreshKey}-${eventInitialView || ''}`}
               eventId={viewingEventId}
               initialViewMode={eventInitialView}
-              onBack={() => { setViewingEventId(null); setEventInitialView(null); setEventsRefreshKey(k => k + 1) }}
+              cameFromPromo={viewingEventId === promoOriginEventId}
+              onJoined={() => {
+                if (user && viewingEventId === promoOriginEventId) {
+                  logPromoEvent(user.id, { eventId: viewingEventId, kind: 'join_conversion' })
+                }
+              }}
+              onBack={() => { setViewingEventId(null); setEventInitialView(null); setPromoOriginEventId(null); setEventsRefreshKey(k => k + 1) }}
               onEdit={(id) => setEditingEventId(id)}
               onPrepare={(id) => { setViewingEventId(null); setPreparingEventId(id) }}
               onOpenMatch={(matchId) => { setViewingEventId(null); loadMatches(); setTab("matches"); setChatMatchId(matchId) }}
