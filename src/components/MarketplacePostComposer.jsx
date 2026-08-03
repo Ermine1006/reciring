@@ -120,25 +120,27 @@ export default function MarketplacePostComposer({ open, mode = 'create', type = 
           })}
         </div>
 
-        {/* Author consent to promote outside the event — only offered when the
-            host has enabled promotion for this event. Default OFF. */}
-        {allowPromotion && (
-          <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginTop: 16, cursor: 'pointer' }}>
-            <input
-              type="checkbox"
-              checked={promoteToDiscover}
-              onChange={e => setPromoteToDiscover(e.target.checked)}
-              style={{ marginTop: 2, width: 18, height: 18, accentColor: C.goldDark, flexShrink: 0 }}
-            />
-            <span style={{ fontSize: 13, color: C.ink, lineHeight: 1.5, fontFamily: 'Inter, system-ui, sans-serif' }}>
-              <b>Help others discover this event</b>
-              <br />
-              <span style={{ fontSize: 12, color: C.textSub }}>
-                Show this post as an anonymous preview in Mutu Discover to attract more attendees. Your name stays hidden — it's revealed only after someone joins and you connect. Off by default.
-              </span>
+        {/* Author consent to show this post on the home page (Discover).
+            Always visible so posters see the option; disabled (with a hint)
+            until the event host turns on home-page promotion. Default OFF. */}
+        <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginTop: 16, cursor: allowPromotion ? 'pointer' : 'default', opacity: allowPromotion ? 1 : 0.55 }}>
+          <input
+            type="checkbox"
+            checked={allowPromotion && promoteToDiscover}
+            disabled={!allowPromotion}
+            onChange={e => setPromoteToDiscover(e.target.checked)}
+            style={{ marginTop: 2, width: 18, height: 18, accentColor: C.goldDark, flexShrink: 0 }}
+          />
+          <span style={{ fontSize: 13, color: C.ink, lineHeight: 1.5, fontFamily: 'Inter, system-ui, sans-serif' }}>
+            <b>Show this post on the home page</b>
+            <br />
+            <span style={{ fontSize: 12, color: C.textSub }}>
+              {allowPromotion
+                ? "Your post appears as an anonymous preview on Mutu's home page (Discover) to bring more people to this event. Your name stays hidden until someone joins and you connect. Off by default."
+                : "The event host hasn't turned on home-page promotion for this event yet. Once they do, you can show this post on the home page."}
             </span>
-          </label>
-        )}
+          </span>
+        </label>
 
         {error && (
           <div style={{ marginTop: 14, background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 12, padding: '10px 14px', fontSize: 13, color: C.danger }}>

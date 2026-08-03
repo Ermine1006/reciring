@@ -1067,7 +1067,10 @@ function AppShell() {
               }}
               onBack={() => { setViewingEventId(null); setEventInitialView(null); setPromoOriginEventId(null); setEventsRefreshKey(k => k + 1) }}
               onEdit={(id) => setEditingEventId(id)}
-              onPrepare={(id) => { setViewingEventId(null); setPreparingEventId(id) }}
+              // Keep viewingEventId set so tapping Back on the Prepare page
+              // returns to THIS event's detail page (where they came from),
+              // not the events list.
+              onPrepare={(id) => { setPreparingEventId(id) }}
               onOpenMatch={(matchId) => { setViewingEventId(null); loadMatches(); setTab("matches"); setChatMatchId(matchId) }}
             />
           )}
