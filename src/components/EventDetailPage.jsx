@@ -484,6 +484,7 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
             allAttendees={attendees}
             onBackToOverview={() => setViewMode('overview')}
             onOpenMatch={onOpenMatch}
+            onAddPeople={() => setViewMode('event_mode')}
           />
         )}
 

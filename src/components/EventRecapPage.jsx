@@ -44,7 +44,7 @@ const C = {
  * All work stays client-side; no new API routes.
  */
 export default function EventRecapPage({
-  eventId, event, allAttendees = [], onBackToOverview, onOpenMatch,
+  eventId, event, allAttendees = [], onBackToOverview, onOpenMatch, onAddPeople,
 }) {
   const { user, profile } = useAuth()
 
@@ -170,14 +170,13 @@ export default function EventRecapPage({
           fontSize: 22, fontWeight: 600, color: C.text,
           margin: '4px 0 6px', letterSpacing: '-0.01em',
         }}>
-          You met {stats.total} {stats.total === 1 ? 'person' : 'people'}
-          {event?.title ? ` at ${event.title}` : ''}
+          Event recap
         </h1>
         <p style={{
-          fontSize: 12.5, color: C.textSub,
+          fontSize: 13, color: C.text, fontWeight: 600,
           fontFamily: 'Inter, system-ui, sans-serif', margin: 0,
         }}>
-          {stats.confirmed} confirmed · {stats.messagesSent} {stats.messagesSent === 1 ? 'message' : 'messages'} sent · {stats.openActions} open next {stats.openActions === 1 ? 'action' : 'actions'}
+          {stats.total} {stats.total === 1 ? 'person' : 'people'} met · {stats.openActions} follow-up{stats.openActions === 1 ? '' : 's'} due
         </p>
       </div>
 
@@ -193,13 +192,19 @@ export default function EventRecapPage({
         )}
 
         {!loading && entries.length === 0 && (
-          <div
-            className="rounded-2xl p-5 mb-4 text-center"
-            style={{ background: C.white, border: `1px dashed ${C.border}` }}
-          >
-            <p style={{ fontSize: 13, color: C.textSub, lineHeight: 1.55, fontFamily: 'Inter, system-ui, sans-serif', margin: 0 }}>
-              You haven't logged anyone yet. Open Event Mode from the event page and tap <strong style={{ color: C.text }}>I met this person</strong> next to attendees you spoke with.
+          <div className="rounded-2xl p-5 mb-4 text-center" style={{ background: C.white, border: `1px solid ${C.border}` }}>
+            <p style={{ fontSize: 15, fontWeight: 650, color: C.text, margin: 0, fontFamily: 'Inter, system-ui, sans-serif' }}>
+              Who did you meet at {event?.title || 'this event'}?
             </p>
+            <p style={{ fontSize: 12.5, color: C.textSub, margin: '5px 0 0', lineHeight: 1.5, fontFamily: 'Inter, system-ui, sans-serif' }}>
+              Pick the attendees you spoke with to remember the conversation.
+            </p>
+            {onAddPeople && (
+              <button type="button" onClick={onAddPeople}
+                style={{ marginTop: 14, padding: '11px 18px', borderRadius: 11, border: 'none', background: '#C6A25A', color: '#241B0C', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
+                Choose from attendees
+              </button>
+            )}
           </div>
         )}
 
@@ -231,8 +236,19 @@ export default function EventRecapPage({
               const { matchId } = await openOrCreateDirectMatch({ myId: user.id, peerId: encounter.encountered_user_id, eventId })
               if (matchId) onOpenMatch?.(matchId)
             }}
+            onRemove={async () => {
+              if (!window.confirm('Remove this person from your recap? Your note and topics for them will be deleted.')) return
+              await deleteEncounter(encounter.id); refresh()
+            }}
           />
         ))}
+
+        {entries.length > 0 && onAddPeople && (
+          <button type="button" onClick={onAddPeople}
+            style={{ display: 'block', width: '100%', textAlign: 'center', background: 'none', border: 'none', padding: '4px 0 6px', cursor: 'pointer', fontSize: 12.5, fontWeight: 600, color: C.goldDark, fontFamily: 'Inter, system-ui, sans-serif' }}>
+            + Add someone I met
+          </button>
+        )}
 
         {missed.length > 0 && (
           <div className="mt-4">
@@ -381,7 +397,8 @@ function NextActionModal({ open, onClose, person, encounter, onSave }) {
 // EncounterCard
 // ────────────────────────────────────────────────────────────────
 
-function EncounterCard({ encounter, them, themTopPost, rationale, onEdit, onFollowUp, onUndo, onMessage, onAddAction }) {
+function EncounterCard({ encounter, them, themTopPost, rationale, onEdit, onFollowUp, onUndo, onMessage, onAddAction, onRemove }) {
+  const [menuOpen, setMenuOpen] = useState(false)
   const msgState = encounter.message_status || 'none'  // none | draft | sent | dismissed
   const sentDate = encounter.message_sent_at ? new Date(encounter.message_sent_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''
   // Next action (task/commitment) is independent of the message above.
@@ -481,92 +498,52 @@ function EncounterCard({ encounter, them, themTopPost, rationale, onEdit, onFoll
         </p>
       )}
 
-      {rationale && (
-        <div style={{
-          marginTop: 10, padding: '10px 12px',
-          background: '#FAF7EE', border: `1px dashed ${C.goldLight}`, borderRadius: 10,
-        }}>
-          <p style={{
-            fontSize: 9.5, letterSpacing: '0.14em', textTransform: 'uppercase',
-            fontWeight: 700, color: C.goldDark, margin: 0,
-            fontFamily: 'Inter, system-ui, sans-serif',
-          }}>
-            Why this connection may matter
-          </p>
-          <p style={{ fontSize: 12.5, color: C.text, lineHeight: 1.5, margin: '4px 0 0', fontFamily: 'Inter, system-ui, sans-serif' }}>
-            {rationale}
-          </p>
-        </div>
-      )}
-
-      {/* Message (communication) status — a draft is NOT a sent message. */}
+      {/* Status lines (informational — one small line each, not buttons). */}
       {msgState === 'sent' && (
-        <p style={{ marginTop: 12, fontSize: 12, fontWeight: 700, color: C.ok, fontFamily: 'Inter, system-ui, sans-serif' }}>
+        <p style={{ marginTop: 10, fontSize: 12, fontWeight: 700, color: C.ok, fontFamily: 'Inter, system-ui, sans-serif' }}>
           ✓ Message sent{sentDate ? ` · ${sentDate}` : ''}
         </p>
       )}
-      {/* Next action (task) status — independent of the message. */}
       {actionState !== 'none' && (
-        <p style={{ marginTop: msgState === 'sent' ? 4 : 12, fontSize: 12, fontWeight: 600, color: actionState === 'completed' ? C.ok : actionState === 'dismissed' ? C.textMuted : C.goldDark, fontFamily: 'Inter, system-ui, sans-serif' }}>
+        <p style={{ marginTop: msgState === 'sent' ? 4 : 10, fontSize: 12, fontWeight: 600, color: actionState === 'completed' ? C.ok : actionState === 'dismissed' ? C.textMuted : C.goldDark, fontFamily: 'Inter, system-ui, sans-serif' }}>
           {actionState === 'completed' ? '✓ Next action done'
             : actionState === 'dismissed' ? 'Next action dismissed'
             : `→ Next action: ${encounter.next_action}`}
         </p>
       )}
 
-      {/* Row 1 — the message (primary) + open chat. */}
-      <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-        {/* Draft a message (AI). Drafting never marks anything done. */}
-        <button
-          type="button"
-          onClick={onFollowUp}
-          className="active:scale-[0.98]"
-          style={{
-            flex: 1, padding: '9px 12px', borderRadius: 10,
-            background: msgState === 'sent' ? C.white : `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
-            color: msgState === 'sent' ? C.goldDark : '#fff',
-            border: msgState === 'sent' ? `1px solid ${C.goldLight}` : 'none',
-            fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif',
-          }}
-        >
-          {msgState === 'sent' ? 'View message' : msgState === 'draft' ? 'View draft' : 'Draft message'}
+      {/* One primary action + a ••• overflow — not four equal buttons. */}
+      <div style={{ position: 'relative', display: 'flex', gap: 8, marginTop: 12, alignItems: 'stretch' }}>
+        <button type="button" onClick={onFollowUp} className="active:scale-[0.98]"
+          style={{ flex: 1, padding: '10px 12px', borderRadius: 10, background: '#C6A25A', color: '#241B0C', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
+          Follow up
         </button>
-        {them.id && (
-          <button type="button" onClick={onMessage} style={{ padding: '9px 12px', borderRadius: 10, background: C.white, color: C.goldDark, border: `1px solid ${C.goldLight || '#E6D3A3'}`, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
-            Open chat
-          </button>
+        <button type="button" onClick={() => setMenuOpen(o => !o)} aria-label="More options"
+          style={{ width: 42, borderRadius: 10, background: C.white, border: `1px solid ${C.border}`, color: C.textSub, fontSize: 16, fontWeight: 700, cursor: 'pointer', lineHeight: 1 }}>
+          ⋯
+        </button>
+        {menuOpen && (
+          <>
+            <div onClick={() => setMenuOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 20 }} />
+            <div style={{ position: 'absolute', right: 0, bottom: 'calc(100% + 6px)', zIndex: 21, minWidth: 190, background: C.white, border: `1px solid ${C.border}`, borderRadius: 12, boxShadow: '0 8px 26px rgba(0,0,0,0.14)', overflow: 'hidden' }}>
+              <MenuItem onClick={() => { setMenuOpen(false); onEdit() }}>Edit note</MenuItem>
+              <MenuItem onClick={() => { setMenuOpen(false); onAddAction() }}>{actionState === 'pending' ? 'Edit next action' : 'Add next action'}</MenuItem>
+              {them.id && <MenuItem onClick={() => { setMenuOpen(false); onMessage() }}>Open chat</MenuItem>}
+              <MenuItem danger onClick={() => { setMenuOpen(false); onRemove?.() }}>Remove from recap</MenuItem>
+            </div>
+          </>
         )}
       </div>
-
-      {/* Row 2 — the next action (task) + edit note. */}
-      <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-        <button
-          type="button"
-          onClick={onAddAction}
-          style={{
-            flex: 1, padding: '9px 12px', borderRadius: 10,
-            background: C.white, color: C.goldDark,
-            border: `1px solid ${C.goldLight || '#E6D3A3'}`,
-            fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif',
-          }}
-        >
-          {actionState === 'pending' ? 'Edit next action' : '+ Add next action'}
-        </button>
-        <button
-          type="button"
-          onClick={onEdit}
-          style={{
-            padding: '9px 14px', borderRadius: 10,
-            background: C.white, color: C.textSub,
-            border: `1px solid ${C.border}`,
-            fontSize: 12, fontWeight: 500,
-            cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif',
-          }}
-        >
-          Edit note
-        </button>
-      </div>
     </div>
+  )
+}
+
+function MenuItem({ children, onClick, danger }) {
+  return (
+    <button type="button" onClick={onClick}
+      style={{ display: 'block', width: '100%', textAlign: 'left', padding: '11px 14px', background: '#fff', border: 'none', borderBottom: '1px solid #F3EFE8', fontSize: 13, fontWeight: 500, color: danger ? '#B4453A' : '#1A1712', cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
+      {children}
+    </button>
   )
 }
 
