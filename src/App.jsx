@@ -53,6 +53,12 @@ const C = {
   white:       '#FFFFFF',
 }
 
+/* Initials for the fallback avatar — matches the Profile page's gold circle. */
+function profileInitials(name) {
+  const p = String(name || '').trim().split(/\s+/)
+  return ((p[0]?.[0] || '') + (p[1]?.[0] || '')).toUpperCase() || 'M'
+}
+
 /* ─── Tab definitions (5-tab nav: Home · Discover · Post · Matches · Events).
    Profile is NOT a bottom-nav tab — it opens from the top-right avatar. ── */
 const TABS = [
@@ -893,12 +899,8 @@ function AppShell() {
                 cursor: 'pointer',
                 overflow: 'hidden',
                 padding: 0, flexShrink: 0,
-                background: resolveAvatarSeed(profile?.avatar_url)
-                  ? 'none'
-                  : 'linear-gradient(#FAFAF8, #FAFAF8) padding-box, linear-gradient(135deg, #D4AF37 0%, #9A7520 100%) border-box',
-                border: resolveAvatarSeed(profile?.avatar_url)
-                  ? '1px solid #E6D3A3'
-                  : '1.5px solid transparent',
+                background: resolveAvatarSeed(profile?.avatar_url) ? 'none' : '#D9C084',
+                border: resolveAvatarSeed(profile?.avatar_url) ? '1px solid #E6D3A3' : 'none',
                 boxShadow: profileHovered ? '0 0 0 3px rgba(212,175,55,0.12)' : 'none',
                 transform: profileHovered ? 'scale(1.04)' : 'scale(1)',
                 transition: 'all 0.2s ease',
@@ -908,15 +910,9 @@ function AppShell() {
               {resolveAvatarSeed(profile?.avatar_url) ? (
                 <AnonymousAvatar seed={resolveAvatarSeed(profile.avatar_url)} size={34} />
               ) : (
-                <svg
-                  width="16" height="16"
-                  fill="none" stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  style={{ color: profileHovered ? '#B8962E' : '#C8A96A' }}
-                  strokeWidth={1.65}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
+                <span style={{ fontSize: 14, fontWeight: 700, color: '#463516', fontFamily: 'Inter, system-ui, sans-serif', lineHeight: 1 }}>
+                  {profileInitials(profile?.name)}
+                </span>
               )}
             </button>
             </div>
