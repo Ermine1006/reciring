@@ -47,15 +47,16 @@ export async function fetchDiscoverEventPromos({ joinedEventIds = new Set(), exc
     myPostIds = new Set((mine || []).map(r => r.id))
   }
 
-  // One representative preview per event (first wins — newest post of the
-  // soonest event, given the ordering above). Own posts are dropped first so
-  // an event still surfaces via someone else's promotable post.
+  // One representative preview per event AND per type — so an event can
+  // surface both a "Looking for" and an "Offering" card (never more), instead
+  // of one type hiding the other. Own posts are dropped first.
   const seen = new Set()
   const cards = []
   for (const r of data || []) {
     if (myPostIds.has(r.post_id)) continue
-    if (seen.has(r.event_id)) continue
-    seen.add(r.event_id)
+    const key = `${r.event_id}:${r.type}`
+    if (seen.has(key)) continue
+    seen.add(key)
     cards.push(shapePromoCard(r, joinedEventIds.has(r.event_id)))
   }
   return { data: cards, error: null }
@@ -68,7 +69,7 @@ function shapePromoCard(r, joined) {
     : null
   return {
     kind:        'event_promo',            // deck discriminator — NOT a normal post
-    id:          `promo:${r.event_id}`,    // stable per-event id for React keys / dedupe
+    id:          `promo:${r.event_id}:${r.type}`, // unique per event+type (need/offer both surface)
     postId:      r.post_id,
     eventId:     r.event_id,
     joined:      Boolean(joined),
