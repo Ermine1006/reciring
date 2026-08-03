@@ -417,42 +417,23 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
           />
         )}
 
-        {/* Event Mode / Recap toggle. Visible when the user is
-            joined (or the host) and the event isn't cancelled. In
-            the prototype we don't gate by event time — the operator
-            can flip into Event Mode manually to test the flow. */}
-        {(joined || isHost) && !isCancelled && (
-          <div style={{
-            display: 'flex', gap: 4, marginBottom: 14,
-            background: '#F2EEE5', padding: 3, borderRadius: 12,
-          }}>
-            {[
-              { id: 'overview',    label: 'Overview' },
-              { id: 'marketplace', label: 'Board' },
-              { id: 'event_mode',  label: 'Event Mode' },
-              { id: 'recap',       label: `Recap${myEncounters.length ? ` · ${myEncounters.length}` : ''}` },
-            ].map(t => {
+        {/* Two persistent destinations: Event · Board. Event Mode and Recap
+            are NOT tabs — they're reached from the contextual action below.
+            The tab bar hides while those lifecycle screens are open. */}
+        {(joined || isHost) && !isCancelled && (viewMode === 'overview' || viewMode === 'marketplace') && (
+          <div style={{ display: 'flex', gap: 4, marginBottom: 14, background: '#F2EEE5', padding: 3, borderRadius: 12 }}>
+            {[{ id: 'overview', label: 'Event' }, { id: 'marketplace', label: 'Board' }].map(t => {
               const active = viewMode === t.id
               return (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => setViewMode(t.id)}
+                <button key={t.id} type="button" onClick={() => setViewMode(t.id)}
                   style={{
-                    flex: 1,
-                    padding: '8px 6px',
-                    borderRadius: 9,
+                    flex: 1, padding: '8px 6px', borderRadius: 9,
                     background: active ? `linear-gradient(135deg, ${C.gold}, ${C.goldDark})` : 'transparent',
-                    color: active ? '#fff' : C.textSub,
-                    border: 'none',
-                    fontSize: 11, fontWeight: 600,
-                    letterSpacing: '0.02em',
-                    fontFamily: 'Inter, system-ui, sans-serif',
-                    cursor: 'pointer',
-                    boxShadow: active ? '0 1px 4px rgba(200,169,106,0.35)' : 'none',
-                    transition: 'all 0.18s',
-                  }}
-                >
+                    color: active ? '#fff' : C.textSub, border: 'none',
+                    fontSize: 12, fontWeight: 600, letterSpacing: '0.02em',
+                    fontFamily: 'Inter, system-ui, sans-serif', cursor: 'pointer',
+                    boxShadow: active ? '0 1px 4px rgba(200,169,106,0.35)' : 'none', transition: 'all 0.18s',
+                  }}>
                   {t.label}
                 </button>
               )
@@ -460,22 +441,31 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
           </div>
         )}
 
-        {/* Prepare CTA — the primary next step once you've joined. */}
-        {joined && !isCancelled && viewMode === 'overview' && onPrepare && (
-          <button
-            type="button"
-            onClick={() => onPrepare(event.id)}
-            style={{
-              width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              margin: '0 0 14px', padding: '13px', borderRadius: 14, border: 'none',
-              background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`, color: '#fff',
-              fontSize: 14, fontWeight: 700, cursor: 'pointer',
-              fontFamily: 'Inter, system-ui, sans-serif', boxShadow: '0 4px 14px rgba(200,169,106,0.32)',
-            }}
-          >
-            ✨ Prepare for this event
-          </button>
-        )}
+        {/* One contextual lifecycle action — before / during / after. */}
+        {(joined || isHost) && !isCancelled && viewMode === 'overview' && (() => {
+          const start = event.start_at ? new Date(event.start_at) : null
+          const now = Date.now()
+          const phase = !start ? 'before'
+            : now < start.getTime() ? 'before'
+            : now < new Date(start.getFullYear(), start.getMonth(), start.getDate() + 1).getTime() ? 'during'
+            : 'after'
+          const action = phase === 'before'
+            ? (onPrepare ? { label: 'Prepare for event', run: () => onPrepare(event.id) } : null)
+            : phase === 'during'
+              ? { label: 'Who did you meet?', run: () => setViewMode('event_mode') }
+              : { label: 'Complete recap', run: () => setViewMode('recap') }
+          if (!action) return null
+          return (
+            <button type="button" onClick={action.run}
+              style={{
+                width: '100%', margin: '0 0 14px', padding: '13px', borderRadius: 12, border: 'none',
+                background: '#C6A25A', color: '#241B0C', fontSize: 14, fontWeight: 700,
+                cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif',
+              }}>
+              {action.label}
+            </button>
+          )
+        })()}
 
         {/* Recap mode replaces the entire overview body. */}
         {viewMode === 'recap' && (
