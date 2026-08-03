@@ -144,6 +144,20 @@ export default function CardStack({ requests, eventPromos, unmatchedPostIds, int
     })
   }, [])
 
+  // How many event-promo cards were skipped this session (they live in local
+  // state, not post_interactions, so "bring back" must clear them too).
+  const dismissedPromoCount = useMemo(
+    () => (eventPromos || []).reduce((n, p) => n + (dismissedPromos.has(p.id) ? 1 : 0), 0),
+    [eventPromos, dismissedPromos]
+  )
+
+  // Restore everything the user skipped: passed posts (via the parent) AND
+  // dismissed event-promo cards (session-local here).
+  const restoreAllPassed = useCallback(() => {
+    if (dismissedPromos.size) setDismissedPromos(new Set())
+    onRestorePassed?.()
+  }, [dismissedPromos, onRestorePassed])
+
   const [match, setMatch] = useState(null)
   const [detailRequest, setDetailRequest] = useState(null)
   const dragX   = useMotionValue(0)
@@ -376,11 +390,12 @@ export default function CardStack({ requests, eventPromos, unmatchedPostIds, int
               Clear filters
             </button>
           )}
-          {/* Bring back posts the user passed (beta feedback: let me revisit). */}
-          {!hasFilters && passedCount > 0 && onRestorePassed && (
+          {/* Bring back posts the user passed (beta feedback: let me revisit).
+              Includes skipped event-promo cards so they can be recovered too. */}
+          {!hasFilters && (passedCount + dismissedPromoCount) > 0 && (onRestorePassed || dismissedPromoCount > 0) && (
             <button
               type="button"
-              onClick={onRestorePassed}
+              onClick={restoreAllPassed}
               style={{
                 marginTop: 18, padding: '10px 24px', borderRadius: 99,
                 background: C.goldBg, border: `1.5px solid ${C.goldLight}`,
@@ -388,7 +403,7 @@ export default function CardStack({ requests, eventPromos, unmatchedPostIds, int
                 fontFamily: 'Inter, system-ui, sans-serif', cursor: 'pointer',
               }}
             >
-              ↩ Bring back {passedCount} passed {passedCount === 1 ? 'post' : 'posts'}
+              ↩ Bring back {passedCount + dismissedPromoCount} passed {(passedCount + dismissedPromoCount) === 1 ? 'card' : 'cards'}
             </button>
           )}
         </motion.div>
