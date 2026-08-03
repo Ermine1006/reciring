@@ -1,153 +1,175 @@
-import { useState, useEffect } from 'react'
+import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import SettingsPage from './SettingsPage'
+import { ChevronLeft, ChevronRight, Sparkle, SlidersHorizontal, Lock, Settings, LogOut } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
+import SettingsPage, { resolveAvatarSeed } from './SettingsPage'
 import SettingsTab from './SettingsTab'
 import ImpactLedger from './ImpactLedger'
-import LeaderboardView from './LeaderboardView'
+import AnonymousAvatar from './AnonymousAvatar'
+
+// Profile — landing in the shared Home visual language: a header with the
+// completion ring, a need/offer summary, then rows into the existing editors.
+// The detailed editor (SettingsPage) and account settings (SettingsTab) are
+// preserved unchanged — only how they're reached has changed.
 
 const C = {
-  gold:      '#C8A96A',
-  goldDark:  '#A88245',
-  goldLight: '#E6D3A3',
-  goldBg:    '#FBF6EC',
-  text:      '#111111',
-  textSub:   '#6B7280',
-  textMuted: '#9CA3AF',
-  white:     '#FFFFFF',
-  border:    '#F0ECE4',
+  ground:   '#FFFFFF',
+  card:     '#FAFAF7',
+  cardLine: '#EFEBE2',
+  ink:      '#18160F',
+  ink2:     '#6E6A61',
+  ink3:     '#9A958B',
+  line2:    '#F1EEE7',
+  gold:     '#B4842E',
+  goldInk:  '#7A5A22',
+  goldSoft: '#FBF6E8',
+  goldLine: '#EBDBAE',
+  goldRing: '#C9A85A',
+  track:    '#ECE6D8',
+  avatarBg: '#D9C084',
+  avatarInk:'#463516',
+  slate:    '#4B5A8A',
+  sage:     '#2F7A55',
+  danger:   '#B4453A',
+  dangerBg: '#FBEEEC',
+  dangerLn: '#F0D6D2',
 }
 
-// Sub-tab labels are short on purpose so all 4 fit on one row inside the
-// segmented control without overflow. The parent "Profile" bottom-tab
-// gives context (e.g. "Profile > Rank" reads naturally).
-const SUB_TABS = [
-  { id: 'profile',     label: 'Profile'  },
-  { id: 'leaderboard', label: 'Rank'     },
-  { id: 'settings',    label: 'Settings' },
-]
+function initials(name) {
+  const p = String(name || '').trim().split(/\s+/)
+  return ((p[0]?.[0] || '') + (p[1]?.[0] || '')).toUpperCase() || 'M'
+}
 
-/**
- * ProfilePage — container for the bottom-nav "Profile" tab.
- *
- * Sub-tabs:
- *   My Profile  → SettingsPage (the editor)
- *   Leaderboard → LeaderboardView
- *   Settings    → SettingsTab (email prefs, admin, account)
- */
 export default function ProfilePage({
-  subTab,
-  onSubTabChange,
-  allMatches,
-  // Settings sub-tab
-  onOpenAdminEmailTest,
-  onOpenEventReview,
-  // Memory sub-tab — deep-link to an event's detail page
-  onOpenEvent,
+  subTab, onSubTabChange, allMatches,
+  onOpenAdminEmailTest, onOpenEventReview, onOpenEvent,
 }) {
-  // If parent didn't supply controlled state, fall back to local.
-  const [localSub, setLocalSub] = useState('profile')
-  const active = subTab ?? localSub
-  const setActive = (id) => {
-    if (onSubTabChange) onSubTabChange(id)
-    else                setLocalSub(id)
+  const { profile, signOut } = useAuth()
+  const me = profile || {}
+  // 'landing' | 'edit' | 'settings'
+  const [view, setView] = useState('landing')
+
+  const completeness = useMemo(() => {
+    const f = [me.name, me.headline || me.program, me.industry_interests?.length,
+              me.can_help_with?.length, me.skills_to_learn?.length, resolveAvatarSeed(me.avatar_url)]
+    return Math.round((f.filter(Boolean).length / f.length) * 100)
+  }, [me])
+
+  const canHelp = (me.can_help_with || []).slice(0, 4).join(', ')
+  const wants   = (me.skills_to_learn || []).slice(0, 4).join(', ')
+  const seed = resolveAvatarSeed(me.avatar_url)
+
+  // ── Pushed sub-screens keep the existing editors intact ──
+  if (view === 'edit') {
+    return (
+      <SubScreen title="Edit profile" onBack={() => setView('landing')}>
+        <ImpactLedger />
+        <SettingsPage />
+      </SubScreen>
+    )
+  }
+  if (view === 'settings') {
+    return (
+      <SubScreen title="Account settings" onBack={() => setView('landing')}>
+        <div className="px-5 pt-3 pb-10">
+          <SettingsTab onOpenAdminEmailTest={onOpenAdminEmailTest} onOpenEventReview={onOpenEventReview} />
+        </div>
+      </SubScreen>
+    )
   }
 
   return (
-    <div
-      className="flex-1 flex flex-col min-h-0"
-      style={{ background: '#F9F7F4' }}
-    >
-      {/* Page header — non-scrolling */}
-      <div style={{
-        flexShrink: 0,
-        padding: '20px 20px 14px',
-        background: '#F9F7F4',
-      }}>
-        <h1 className="font-display" style={{
-          fontSize: 22, fontWeight: 600, color: C.text,
-          margin: 0, letterSpacing: '-0.01em',
-        }}>
-          Profile
-        </h1>
+    <div className="flex-1 phone-scroll" style={{ background: C.ground }}>
+      <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.16 }}
+        style={{ padding: '14px 16px 28px', maxWidth: 560, margin: '0 auto' }}>
 
-        {/* Segmented control — all 4 sub-tabs in one rounded container,
-              each takes equal width so the row never overflows. */}
-        <div
-          role="tablist"
-          style={{
-            display: 'flex',
-            marginTop: 14,
-            background: '#F2EEE5',
-            border: `1px solid ${C.border}`,
-            borderRadius: 12,
-            padding: 3,
-            gap: 2,
-          }}
-        >
-          {SUB_TABS.map(t => {
-            const isActive = active === t.id
-            return (
-              <button
-                key={t.id}
-                type="button"
-                role="tab"
-                aria-selected={isActive}
-                onClick={() => setActive(t.id)}
-                style={{
-                  flex: 1,
-                  minWidth: 0,
-                  padding: '8px 6px',
-                  borderRadius: 9,
-                  background: isActive ? `linear-gradient(135deg, ${C.gold}, ${C.goldDark})` : 'transparent',
-                  color: isActive ? '#fff' : C.textSub,
-                  border: 'none',
-                  fontSize: 12, fontWeight: 600,
-                  letterSpacing: '0.02em',
-                  fontFamily: 'Inter, system-ui, sans-serif',
-                  cursor: 'pointer',
-                  boxShadow: isActive ? '0 1px 4px rgba(200,169,106,0.35)' : 'none',
-                  transition: 'all 0.18s',
-                  textAlign: 'center',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
-                {t.label}
-              </button>
-            )
-          })}
+        <h1 style={{ fontSize: 19, fontWeight: 700, color: C.ink, margin: '0 0 14px', letterSpacing: '-0.01em', fontFamily: 'Inter, system-ui, sans-serif' }}>Profile</h1>
+
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          {seed
+            ? <AnonymousAvatar seed={seed} size={60} />
+            : <div style={{ width: 60, height: 60, borderRadius: '50%', background: C.avatarBg, color: C.avatarInk, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 700, flexShrink: 0, fontFamily: 'Inter, system-ui, sans-serif' }}>{initials(me.name)}</div>}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ margin: 0, fontSize: 18, fontWeight: 700, color: C.ink, letterSpacing: '-0.01em', fontFamily: 'Inter, system-ui, sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{me.name || 'Your name'}</p>
+            <p style={{ margin: '2px 0 0', fontSize: 12.5, color: C.ink3, fontFamily: 'Inter, system-ui, sans-serif' }}>{[me.headline, me.program].filter(Boolean).join(' · ') || 'Add your role'}</p>
+          </div>
+          <div style={{ textAlign: 'center', flexShrink: 0 }}>
+            <Ring pct={completeness} />
+            <div style={{ fontSize: 10, color: C.ink3, marginTop: 2, fontFamily: 'Inter, system-ui, sans-serif' }}>Complete</div>
+          </div>
         </div>
+
+        {/* Need / offer summary */}
+        <div style={{ background: C.card, border: `1px solid ${C.cardLine}`, borderRadius: 16, padding: '13px 14px', marginTop: 14 }}>
+          <SummaryRow color={C.slate} label="Can help with" value={canHelp} empty="Add what you can offer" />
+          <div style={{ height: 1, background: C.line2, margin: '10px 0' }} />
+          <SummaryRow color={C.sage} label="Wants to learn" value={wants} empty="Add what you want to learn" />
+        </div>
+
+        {/* Rows */}
+        <div style={{ marginTop: 14, border: `1px solid ${C.cardLine}`, borderRadius: 16, overflow: 'hidden' }}>
+          <Row icon={<Sparkle size={16} strokeWidth={1.8} />} label="Edit profile & interests" onClick={() => setView('edit')} />
+          <Row icon={<SlidersHorizontal size={16} strokeWidth={1.8} />} label="Skills & matching" onClick={() => setView('edit')} />
+          <Row icon={<Lock size={16} strokeWidth={1.8} />} label="Privacy" onClick={() => setView('edit')} />
+          <Row icon={<Settings size={16} strokeWidth={1.8} />} label="Account settings" onClick={() => setView('settings')} />
+          <Row icon={<LogOut size={16} strokeWidth={1.8} />} label="Sign out" danger onClick={() => signOut?.()} last />
+        </div>
+      </motion.div>
+    </div>
+  )
+}
+
+function SubScreen({ title, onBack, children }) {
+  return (
+    <div className="flex-1 flex flex-col min-h-0" style={{ background: '#F9F7F4' }}>
+      <div style={{ flexShrink: 0, background: '#F9F7F4', padding: '14px 16px 10px', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <button type="button" onClick={onBack} aria-label="Back" style={{ background: 'none', border: 'none', padding: 4, cursor: 'pointer', color: C.ink, display: 'flex' }}>
+          <ChevronLeft size={22} strokeWidth={2.1} />
+        </button>
+        <b style={{ fontSize: 15, fontWeight: 650, color: C.ink, fontFamily: 'Inter, system-ui, sans-serif' }}>{title}</b>
       </div>
-
-      {/* Active sub-tab body — this is the SINGLE scroll container for
-          the Profile tab. Sub-tab content (SettingsPage, etc.) renders
-          inside as plain blocks; do NOT nest another phone-scroll here
-          or the inner content stops being scrollable (flex computes the
-          inner child as flex:1 and ignores its overflowing content). */}
       <div className="flex-1 phone-scroll min-h-0">
-        <motion.div
-          key={active}
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.16 }}
-        >
-          {active === 'profile' && (
-            <>
-              <ImpactLedger />
-              <SettingsPage />
-            </>
-          )}
-
-          {active === 'leaderboard' && <LeaderboardView />}
-
-          {active === 'settings' && (
-            <div className="px-5 pt-3 pb-10">
-              <SettingsTab onOpenAdminEmailTest={onOpenAdminEmailTest} onOpenEventReview={onOpenEventReview} />
-            </div>
-          )}
+        <motion.div key={title} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.16 }}>
+          {children}
         </motion.div>
       </div>
     </div>
+  )
+}
+
+function SummaryRow({ color, label, value, empty }) {
+  return (
+    <div style={{ display: 'flex', gap: 10 }}>
+      <span style={{ flexShrink: 0, width: 74, fontSize: 9.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color, marginTop: 1, fontFamily: 'Inter, system-ui, sans-serif' }}>{label}</span>
+      <p style={{ margin: 0, fontSize: 13, color: value ? C.ink : C.ink3, lineHeight: 1.4, fontFamily: 'Inter, system-ui, sans-serif' }}>{value || empty}</p>
+    </div>
+  )
+}
+
+function Row({ icon, label, onClick, danger, last }) {
+  return (
+    <button type="button" onClick={onClick}
+      style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '13px 14px', background: C.ground, border: 'none', borderBottom: last ? 'none' : `1px solid ${C.line2}`, cursor: 'pointer', textAlign: 'left', fontFamily: 'Inter, system-ui, sans-serif' }}>
+      <span style={{ width: 30, height: 30, borderRadius: 9, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                     background: danger ? C.dangerBg : C.goldSoft, border: `1px solid ${danger ? C.dangerLn : C.goldLine}`, color: danger ? C.danger : C.goldInk }}>
+        {icon}
+      </span>
+      <span style={{ flex: 1, fontSize: 13.5, fontWeight: 600, color: danger ? C.danger : C.ink }}>{label}</span>
+      {!danger && <ChevronRight size={16} strokeWidth={2} color={C.ink3} />}
+    </button>
+  )
+}
+
+function Ring({ pct }) {
+  const r = 15, circ = 2 * Math.PI * r
+  const off = circ * (1 - Math.max(0, Math.min(100, pct)) / 100)
+  return (
+    <svg width="44" height="44" viewBox="0 0 40 40" aria-hidden="true">
+      <circle cx="20" cy="20" r={r} fill="none" stroke={C.track} strokeWidth="4" />
+      <circle cx="20" cy="20" r={r} fill="none" stroke={C.goldRing} strokeWidth="4" strokeLinecap="round"
+              strokeDasharray={circ} strokeDashoffset={off} transform="rotate(-90 20 20)" />
+      <text x="20" y="20" dominantBaseline="central" textAnchor="middle" fontSize="10" fontWeight="700" fill={C.goldInk} fontFamily="Inter, system-ui, sans-serif">{pct}%</text>
+    </svg>
   )
 }

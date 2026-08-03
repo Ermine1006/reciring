@@ -1,161 +1,120 @@
 import { motion } from 'framer-motion'
+import { useState } from 'react'
 import AnonymousAvatar from './AnonymousAvatar'
 
+// Matches — messages list in the shared Home visual language: warm-white
+// ground, charcoal text, restrained gold, compact rows. Active vs Past
+// (both people tapped "We met"). Behaviour/data unchanged.
+
 const C = {
-  gold:      '#C8A96A',
-  goldDark:  '#A88245',
-  goldLight: '#E6D3A3',
-  goldBg:    '#FBF6EC',
-  text:      '#111111',
-  textSub:   '#6B7280',
-  textMuted: '#9CA3AF',
-  white:     '#FFFFFF',
-  border:    '#F0ECE4',
+  ground:   '#FFFFFF',
+  card:     '#FAFAF7',
+  cardLine: '#EFEBE2',
+  ink:      '#18160F',
+  ink2:     '#6E6A61',
+  ink3:     '#9A958B',
+  line:     '#E9E5DD',
+  line2:    '#F1EEE7',
+  gold:     '#B4842E',
+  goldRing: '#C9A85A',
+  sage:     '#2F7A55',
+  sageBg:   '#EEF5F0',
 }
 
 function timeAgo(isoString) {
+  if (!isoString) return ''
   const diff = Date.now() - new Date(isoString).getTime()
   const m = Math.floor(diff / 60000)
-  if (m < 1)  return 'Just now'
-  if (m < 60) return `${m}m ago`
+  if (m < 1)  return 'now'
+  if (m < 60) return `${m}m`
   const h = Math.floor(m / 60)
-  if (h < 24) return `${h}h ago`
-  return `${Math.floor(h / 24)}d ago`
+  if (h < 24) return `${h}h`
+  return `${Math.floor(h / 24)}d`
 }
 
 export default function MatchesList({ matches = [], completedMatchIds = new Set(), onOpenChat, revealedMatchIds = new Set(), peerProfiles = {} }) {
-  // Split into in-progress vs. past exchanges. A match is "past" once both
-  // people tapped "We met" — the exchange happened, so it's history.
   const active = matches.filter(m => !completedMatchIds.has(m.id))
   const past   = matches.filter(m =>  completedMatchIds.has(m.id))
+  const [view, setView] = useState('active')
+  const list = view === 'active' ? active : past
 
-  const renderCard = (m, i) => (
-    <motion.li
-      key={m.id}
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: i * 0.06 }}
-      onClick={() => onOpenChat?.(m.id)}
-      style={{
-        borderRadius: 20, overflow: 'hidden',
-        background: C.white,
-        border: `1px solid ${C.border}`,
-        boxShadow: '0 2px 12px rgba(0,0,0,0.05)',
-        cursor: 'pointer',
-      }}
-    >
-      {/* Gold top stripe */}
-      <div style={{ height: 3, background: `linear-gradient(90deg, ${C.gold}, ${C.goldLight} 60%, transparent)` }} />
+  const peerName = (m) =>
+    m.peerName || (revealedMatchIds.has(m.id) && peerProfiles[m.id]?.first_name) || 'Anonymous peer'
 
-      <div style={{ padding: '14px 18px' }}>
-        {/* Peer row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
-          {m.peerAvatarUrl
-            ? <img src={m.peerAvatarUrl} alt="" style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover' }} />
-            : <AnonymousAvatar seed={m.id} size={38} />}
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ fontSize: 14, fontWeight: 600, color: C.text, fontFamily: 'Inter, system-ui, sans-serif', marginBottom: 2 }}>
-              {m.peerName || (revealedMatchIds.has(m.id) && peerProfiles[m.id]?.first_name) || 'Anonymous Peer'}
-            </p>
-            <p style={{
-              fontSize: 12, color: C.textSub,
-              fontFamily: 'Inter, system-ui, sans-serif',
-              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-            }}>
-              {m.lastMessage || 'New match'}
-            </p>
-          </div>
-          <div style={{ textAlign: 'right', flexShrink: 0 }}>
-            <p style={{ fontSize: 10, color: C.textMuted, fontFamily: 'Inter, system-ui, sans-serif' }}>
-              {m.lastMessageTime || timeAgo(m.createdAt)}
-            </p>
-            {/* Unread dot */}
-            <div style={{
-              width: 8, height: 8, borderRadius: '50%',
-              background: C.gold, margin: '4px 0 0 auto',
-            }} />
-          </div>
+  const renderRow = (m, i) => {
+    const isNew = !m.lastMessage
+    return (
+      <motion.li
+        key={m.id}
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: Math.min(i * 0.04, 0.3) }}
+        onClick={() => onOpenChat?.(m.id)}
+        className="active:scale-[0.997]"
+        style={{
+          display: 'flex', alignItems: 'center', gap: 12,
+          padding: '12px 4px', borderBottom: `1px solid ${C.line2}`,
+          cursor: 'pointer', listStyle: 'none',
+        }}
+      >
+        {m.peerAvatarUrl
+          ? <img src={m.peerAvatarUrl} alt="" style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+          : <AnonymousAvatar seed={m.id} size={44} />}
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ margin: 0, fontSize: 14, fontWeight: 650, color: C.ink, fontFamily: 'Inter, system-ui, sans-serif', display: 'flex', alignItems: 'center', gap: 7 }}>
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{peerName(m)}</span>
+            {isNew && <span style={{ flexShrink: 0, fontSize: 9, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: C.sage, background: C.sageBg, borderRadius: 5, padding: '2px 6px' }}>New</span>}
+          </p>
+          <p style={{ margin: '2px 0 0', fontSize: 12.5, color: C.ink3, fontFamily: 'Inter, system-ui, sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {m.lastMessage || (m.request?.needs ? `Needs: ${m.request.needs}` : 'Say hello to start the conversation.')}
+          </p>
         </div>
 
-        {/* Request snippet */}
-        {m.request?.needs && (
-          <div style={{
-            background: C.goldBg, borderRadius: 10,
-            padding: '8px 12px',
-            border: `1px solid ${C.goldLight}`,
-          }}>
-            <p style={{
-              fontSize: 11, color: C.textSub,
-              fontFamily: 'Inter, system-ui, sans-serif',
-              lineHeight: 1.4,
-              display: '-webkit-box', WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical', overflow: 'hidden',
-            }}>
-              <strong style={{ color: C.goldDark }}>Needs: </strong>
-              {m.request.needs}
-            </p>
-          </div>
-        )}
-      </div>
-    </motion.li>
-  )
+        <span style={{ flexShrink: 0, fontSize: 11, color: C.ink3, fontFamily: 'Inter, system-ui, sans-serif' }}>
+          {m.lastMessageTime || timeAgo(m.createdAt)}
+        </span>
+      </motion.li>
+    )
+  }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="px-5 py-7"
-    >
-      {/* Section header */}
-      <div className="mb-7">
-        <p className="text-[10px] tracking-[0.28em] font-semibold uppercase mb-1" style={{ color: C.gold }}>
-          Your network
-        </p>
-        <h2 className="font-display text-[24px] font-semibold" style={{ color: C.text }}>
-          Matches
-        </h2>
-        <p className="text-sm mt-1 leading-relaxed" style={{ color: C.textSub }}>
-          People you've connected with. Tap to chat or schedule a coffee.
-        </p>
-      </div>
+    <div className="flex-1 phone-scroll" style={{ background: C.ground }}>
+      <div style={{ padding: '12px 16px 26px', maxWidth: 560, margin: '0 auto' }}>
+        <h1 style={{ fontSize: 19, fontWeight: 700, color: C.ink, margin: '2px 0 12px', letterSpacing: '-0.01em', fontFamily: 'Inter, system-ui, sans-serif' }}>
+          Messages
+        </h1>
 
-      {matches.length === 0 ? (
-        <div style={{ textAlign: 'center', paddingTop: 48 }}>
-          <div style={{
-            width: 64, height: 64, borderRadius: '50%',
-            background: C.goldBg, border: `1.5px solid ${C.goldLight}`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            margin: '0 auto 20px', fontSize: 28,
-          }}>
-            🤝
-          </div>
-          <p style={{ fontSize: 16, fontWeight: 600, color: C.text, marginBottom: 8, fontFamily: 'Fraunces, Georgia, serif' }}>
-            No matches yet
-          </p>
-          <p style={{ fontSize: 13, color: C.textMuted, lineHeight: 1.6, fontFamily: 'Inter, system-ui, sans-serif' }}>
-            Swipe right on a request to create<br />your first match.
-          </p>
+        {/* Active / Past */}
+        <div role="tablist" style={{ display: 'flex', background: '#F0ECE3', borderRadius: 11, padding: 3, gap: 3, marginBottom: 6 }}>
+          {[{ id: 'active', label: `Active${active.length ? ` · ${active.length}` : ''}` }, { id: 'past', label: 'Past' }].map(t => {
+            const on = view === t.id
+            return (
+              <button key={t.id} type="button" role="tab" aria-selected={on} onClick={() => setView(t.id)}
+                style={{ flex: 1, border: 'none', background: on ? C.ground : 'transparent', borderRadius: 8, padding: '7px 0', fontSize: 12.5, fontWeight: 600, color: on ? C.ink : C.ink2, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif', boxShadow: on ? '0 1px 3px rgba(0,0,0,0.06)' : 'none' }}>
+                {t.label}
+              </button>
+            )
+          })}
         </div>
-      ) : (
-        <>
-          {/* In-progress exchanges */}
-          <ul style={{ display: 'flex', flexDirection: 'column', gap: 12, listStyle: 'none', padding: 0, margin: 0 }}>
-            {active.map((m, i) => renderCard(m, i))}
-          </ul>
 
-          {/* Past exchanges — both people confirmed they met */}
-          {past.length > 0 && (
-            <div style={{ marginTop: active.length > 0 ? 30 : 0 }}>
-              <p className="text-[10px] tracking-[0.28em] font-semibold uppercase mb-3" style={{ color: C.textMuted }}>
-                Past exchanges
-              </p>
-              <ul style={{ display: 'flex', flexDirection: 'column', gap: 12, listStyle: 'none', padding: 0, margin: 0 }}>
-                {past.map((m, i) => renderCard(m, i))}
-              </ul>
-            </div>
-          )}
-        </>
-      )}
-    </motion.div>
+        {list.length === 0 ? (
+          <div style={{ padding: '40px 8px', textAlign: 'center' }}>
+            <p style={{ fontSize: 14.5, fontWeight: 650, color: C.ink, margin: 0, fontFamily: 'Inter, system-ui, sans-serif' }}>
+              {view === 'active' ? 'No conversations yet' : 'No past exchanges yet'}
+            </p>
+            <p style={{ fontSize: 13, color: C.ink3, margin: '5px 0 0', lineHeight: 1.5, fontFamily: 'Inter, system-ui, sans-serif' }}>
+              {view === 'active'
+                ? 'Connect with someone on Discover or in an event to start a conversation.'
+                : 'Exchanges move here once you and the other person both mark “We met”.'}
+            </p>
+          </div>
+        ) : (
+          <ul style={{ margin: 0, padding: 0 }}>
+            {list.map(renderRow)}
+          </ul>
+        )}
+      </div>
+    </div>
   )
 }
