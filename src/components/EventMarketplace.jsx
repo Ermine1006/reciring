@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import MarketplacePostCard from './MarketplacePostCard'
 import MarketplacePostComposer from './MarketplacePostComposer'
+import EventPostCard from './EventPostCard'
 import MarketplaceInterestSheet from './MarketplaceInterestSheet'
 import {
   fetchMarketplaceFeed, fetchMyMarketplacePosts, fetchMyInterests,
@@ -62,6 +63,23 @@ export default function EventMarketplace({ eventId, userId, isHost = false, allo
     for (const it of myInterests) m[it.post_id] = it
     return m
   }, [myInterests])
+
+  // One combined Event Post per attendee — group the need/offer rows by
+  // author (grouping only; no data change). Never two cards for one person.
+  const groupedFeed = useMemo(() => {
+    const by = new Map()
+    for (const p of feed) {
+      const g = by.get(p.user_id) || {
+        userId: p.user_id, program: p.poster_program, headline: p.poster_headline,
+        industry: p.poster_industry, need: null, offer: null, _order: p.created_at,
+      }
+      if (p.type === 'need') g.need = p
+      else if (p.type === 'offer') g.offer = p
+      if (p.created_at < g._order) g._order = p.created_at
+      by.set(p.user_id, g)
+    }
+    return [...by.values()]
+  }, [feed])
 
   // Interest counts per one of MY posts.
   const ownerByPost = useMemo(() => {
@@ -145,7 +163,7 @@ export default function EventMarketplace({ eventId, userId, isHost = false, allo
   }, [isHost, feed, myPosts])
 
   if (loading) {
-    return <p style={{ textAlign: 'center', color: C.textMuted, fontSize: 14, padding: '40px 0' }}>Loading marketplace…</p>
+    return <p style={{ textAlign: 'center', color: C.textMuted, fontSize: 14, padding: '40px 0' }}>Loading Event Board…</p>
   }
 
   const managePost = myPosts.find(p => p.id === managePostId) || null
@@ -154,7 +172,7 @@ export default function EventMarketplace({ eventId, userId, isHost = false, allo
     <div>
       {/* Intro */}
       <p style={{ margin: '4px 0 16px', fontSize: 13.5, color: C.textSub, lineHeight: 1.55, fontFamily: 'Inter, system-ui, sans-serif' }}>
-        Post what you're looking for and what you can offer. Browse other attendees and connect
+        Share what you're looking for and what you can offer, then browse other attendees and connect
         before the event — names stay hidden until someone accepts.
       </p>
 
@@ -174,8 +192,8 @@ export default function EventMarketplace({ eventId, userId, isHost = false, allo
         </div>
       )}
 
-      {/* Your posts */}
-      <p style={sectionLabel}>Your posts</p>
+      {/* Your event post */}
+      <p style={sectionLabel}>Your event post</p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 8 }}>
         {myPosts.map(p => (
           <MarketplacePostCard
@@ -203,21 +221,21 @@ export default function EventMarketplace({ eventId, userId, isHost = false, allo
         </div>
       </div>
 
-      {/* Browse */}
-      <p style={{ ...sectionLabel, marginTop: 22 }}>Browse attendees</p>
-      {feed.length === 0 ? (
+      {/* Attendee posts — one combined card per person */}
+      <p style={{ ...sectionLabel, marginTop: 22 }}>Attendee posts</p>
+      {groupedFeed.length === 0 ? (
         <div style={{ ...cardStyle, textAlign: 'center' }}>
           <p style={{ margin: 0, fontSize: 14, color: C.textMuted, fontFamily: 'Inter, system-ui, sans-serif' }}>
-            No one else has posted yet. Be the first — others will see it when they open the marketplace.
+            No one else has shared a post yet. Be the first — others will see it when they open the Event Board.
           </p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {feed.map(p => (
-            <MarketplacePostCard
-              key={p.id}
-              post={p}
-              myInterest={interestByPost[p.id] || null}
+          {groupedFeed.map(g => (
+            <EventPostCard
+              key={g.userId}
+              entry={g}
+              myInterest={interestByPost[g.need?.id] || interestByPost[g.offer?.id] || null}
               onInterested={sendInterest}
               onOpenChat={onOpenChat}
             />

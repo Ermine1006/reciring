@@ -432,7 +432,7 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
           }}>
             {[
               { id: 'overview',    label: 'Overview' },
-              { id: 'marketplace', label: 'Marketplace' },
+              { id: 'marketplace', label: 'Board' },
               { id: 'event_mode',  label: 'Event Mode' },
               { id: 'recap',       label: `Recap${myEncounters.length ? ` · ${myEncounters.length}` : ''}` },
             ].map(t => {
