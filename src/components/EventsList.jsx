@@ -20,13 +20,18 @@ const C = {
   border:    '#ECE6DB',
 }
 
-export default function EventsList({ onCreateEvent, onOpenEvent, onPrepare, onOpenMatch, onAskMutu, onOpenEventRecap }) {
+export default function EventsList({ onCreateEvent, onOpenEvent, onPrepare, onOpenMatch, onAskMutu, onOpenEventRecap, topView: topViewProp, onTopViewChange }) {
   const { user } = useAuth()
 
   const [events, setEvents]         = useState([])
   const [joinedIds, setJoinedIds]   = useState(new Set())
   const [loading, setLoading]       = useState(true)
-  const [topView, setTopView]       = useState('discover') // 'discover' | 'networking'
+  // Events-vs-My-Networking toggle. Lifted to the parent (when props are
+  // provided) so it survives this list being remounted on Back — otherwise
+  // returning from an event always snapped back to 'discover'.
+  const [topViewLocal, setTopViewLocal] = useState('discover') // 'discover' | 'networking'
+  const topView    = topViewProp ?? topViewLocal
+  const setTopView = onTopViewChange ?? setTopViewLocal
   const [filter, setFilter]         = useState('upcoming') // 'upcoming' | 'joined'
   const [joiningId, setJoiningId]   = useState(null)
   const [leaveTarget, setLeaveTarget]   = useState(null)  // event being left (pre-confirm)

@@ -128,6 +128,9 @@ function AppShell() {
   const [editingEventId, setEditingEventId] = useState(null)
   // When set, Events tab renders the dedicated Prepare page for that event.
   const [preparingEventId, setPreparingEventId] = useState(null)
+  // Events tab's Events-vs-My-Networking toggle. Held here so it survives
+  // EventsList being remounted (key bump) when returning from an event.
+  const [eventsTopView, setEventsTopView] = useState('discover')
   // Optional initial sub-view for the event detail (e.g. 'recap' from a contact).
   const [eventInitialView, setEventInitialView] = useState(null)
   const [promoOriginEventId, setPromoOriginEventId] = useState(null) // event opened via a Discover promo card
@@ -1077,6 +1080,8 @@ function AppShell() {
           {tab === 'events' && !preparingEventId && !editingEventId && !viewingEventId && !showCreateEvent && (
             <EventsList
               key={eventsRefreshKey}
+              topView={eventsTopView}
+              onTopViewChange={setEventsTopView}
               onCreateEvent={() => setShowCreateEvent(true)}
               onOpenEvent={(id) => { setEventInitialView(null); setViewingEventId(id) }}
               onOpenEventRecap={(id) => { setEventInitialView('recap'); setViewingEventId(id) }}

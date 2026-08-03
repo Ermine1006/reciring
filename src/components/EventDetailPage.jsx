@@ -101,6 +101,18 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
   const [viewMode, setViewMode] = useState(initialViewMode || 'overview')
   const [myEncounters, setMyEncounters] = useState([])
 
+  // The view this page opened on (captured once). If you deep-linked straight
+  // into Recap from My Networking, "entryView" is 'recap'.
+  const [entryView] = useState(initialViewMode || 'overview')
+
+  // Back peels one layer. From Overview — or from the view you deep-linked
+  // straight into — it exits to the previous page. From any OTHER sub-view you
+  // navigated to via the tabs, it returns to Overview first.
+  const handleBack = () => {
+    if (viewMode === 'overview' || viewMode === entryView) onBack?.()
+    else setViewMode('overview')
+  }
+
   // Chat
   const [messages, setMessages] = useState([])
   const [chatInput, setChatInput] = useState('')
@@ -368,7 +380,7 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
       >
         {/* Back row */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-          <button onClick={onBack} style={backButtonStyle}>
+          <button onClick={handleBack} style={backButtonStyle}>
             <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
               <path d="M15 19l-7-7 7-7" />
             </svg>
