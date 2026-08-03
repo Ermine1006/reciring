@@ -29,6 +29,7 @@ import EventCover from './EventCover'
 import EventRecapPage from './EventRecapPage'
 import PendingConfirmationsBanner from './PendingConfirmationsBanner'
 import { listEncountersForEvent } from '../lib/eventEncounters'
+import { fetchConnections } from '../lib/relationships'
 
 const C = {
   gold:      '#C8A96A',
@@ -101,6 +102,9 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
   // and canOpenRecap below.
   const [viewMode, setViewMode] = useState(initialViewMode || 'overview')
   const [myEncounters, setMyEncounters] = useState([])
+  // People I already know (connections), for "who you know is attending" and
+  // ordering the Who-did-you-meet picker. peerId → context label.
+  const [knownContext, setKnownContext] = useState(new Map())
 
   // The view this page opened on (captured once). If you deep-linked straight
   // into Recap from My Networking, "entryView" is 'recap'.
@@ -159,8 +163,13 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
     if (user) {
       const { data: encs } = await listEncountersForEvent(eventId)
       setMyEncounters(encs || [])
+      // Connections (matched / revealed / chatted, not yet met) — used to
+      // surface "people you know are attending" and to order the picker.
+      const { data: conns } = await fetchConnections(user.id)
+      setKnownContext(new Map((conns || []).map(c => [c.peerId, c.context])))
     } else {
       setMyEncounters([])
+      setKnownContext(new Map())
     }
 
     setLoading(false)
@@ -505,6 +514,7 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
             attendees={attendees}
             encounters={myEncounters}
             currentUserId={user?.id}
+            knownContext={knownContext}
             onEncountersChanged={reloadEncounters}
           />
         )}
@@ -676,6 +686,33 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
             <EventMatchList eventId={event.id} userId={user.id} />
           </section>
         )}
+
+        {/* "People you know are attending" — connections (matched / revealed /
+            chatted) who are on the guest list. Count only, never named, so no
+            identity leaks. Hidden entirely when zero, and suppressed on private
+            guest lists for non-hosts (attendance isn't visible to them). */}
+        {(() => {
+          const canSeeAttendance = event.attendee_visibility !== 'private' || isHost
+          if (!canSeeAttendance) return null
+          const known = attendees.filter(a => a.user_id !== user?.id && knownContext.has(a.user_id))
+          if (known.length === 0) return null
+          return (
+            <button type="button" onClick={() => setViewMode('event_mode')}
+              style={{ ...cardStyle, display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', cursor: 'pointer', background: '#FBF6EC', border: '1px solid #EBDBAE' }}>
+              <div style={{ display: 'flex', flexShrink: 0 }}>
+                {known.slice(0, 3).map((a, i) => (
+                  <span key={a.user_id} style={{ marginLeft: i ? -10 : 0, border: '2px solid #FBF6EC', borderRadius: '50%', display: 'flex' }}>
+                    <AnonymousAvatar seed={resolveAvatarSeed(a.avatar_url) || a.user_id} size={30} />
+                  </span>
+                ))}
+              </div>
+              <span style={{ flex: 1, fontSize: 13.5, fontWeight: 600, color: '#7A5A22', fontFamily: 'Inter, system-ui, sans-serif' }}>
+                {known.length} {known.length === 1 ? 'person' : 'people'} you know {known.length === 1 ? 'is' : 'are'} attending
+              </span>
+              <span style={{ fontSize: 12.5, fontWeight: 700, color: '#A88245', fontFamily: 'Inter, system-ui, sans-serif', whiteSpace: 'nowrap' }}>See who</span>
+            </button>
+          )
+        })()}
 
         {/* Participants — three cases:
               1. Host view → "Manage participants" with contact details
