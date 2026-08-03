@@ -21,7 +21,7 @@ const C = {
  * browse others anonymously, and express interest. Owners accept → identity
  * reveal + private chat (handled by the DB trigger; onOpenChat navigates there).
  */
-export default function EventMarketplace({ eventId, userId, isHost = false, allowPromotion = false, onOpenChat }) {
+export default function EventMarketplace({ eventId, userId, isHost = false, allowPromotion = false, onOpenChat, onPrepare }) {
   const [feed, setFeed]           = useState([])
   const [myPosts, setMyPosts]     = useState([])
   const [myInterests, setMyInt]   = useState([])       // interests I sent
@@ -80,6 +80,11 @@ export default function EventMarketplace({ eventId, userId, isHost = false, allo
     }
     return [...by.values()]
   }, [feed])
+
+  // My own need + offer grouped into one Event Post.
+  const myNeed  = myPosts.find(p => p.type === 'need')  || null
+  const myOffer = myPosts.find(p => p.type === 'offer') || null
+  const hasMyPost = Boolean(myNeed || myOffer)
 
   // Interest counts per one of MY posts.
   const ownerByPost = useMemo(() => {
@@ -192,34 +197,31 @@ export default function EventMarketplace({ eventId, userId, isHost = false, allo
         </div>
       )}
 
-      {/* Your event post */}
+      {/* Your event post — one combined card; Edit opens Prepare */}
       <p style={sectionLabel}>Your event post</p>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 8 }}>
-        {myPosts.map(p => (
-          <MarketplacePostCard
-            key={p.id}
-            post={p}
-            mine
-            interestCount={ownerByPost[p.id]?.total || 0}
-            pendingCount={ownerByPost[p.id]?.pending || 0}
-            onManage={() => setManage(p.id)}
-            onEdit={() => setComposer({ mode: 'edit', type: p.type, initial: p })}
-            onDelete={() => removePost(p)}
-          />
-        ))}
-        <div style={{ display: 'flex', gap: 8 }}>
-          {!haveNeed && (
-            <button type="button" onClick={() => setComposer({ mode: 'create', type: 'need' })} style={addBtn}>
-              + Looking for
-            </button>
-          )}
-          {!haveOffer && (
-            <button type="button" onClick={() => setComposer({ mode: 'create', type: 'offer' })} style={addBtn}>
-              + Offering
-            </button>
-          )}
+      {hasMyPost ? (
+        <EventPostCard
+          entry={{ userId, need: myNeed, offer: myOffer }}
+          mine
+          interestCount={(ownerByPost[myNeed?.id]?.total || 0) + (ownerByPost[myOffer?.id]?.total || 0)}
+          pendingCount={(ownerByPost[myNeed?.id]?.pending || 0) + (ownerByPost[myOffer?.id]?.pending || 0)}
+          onEdit={() => (onPrepare ? onPrepare() : setComposer({ mode: 'edit', type: myNeed ? 'need' : 'offer', initial: myNeed || myOffer }))}
+          onManage={() => {
+            const target = [myNeed, myOffer].find(p => p && ownerByPost[p.id]?.pending) || myNeed || myOffer
+            setManage(target?.id)
+          }}
+        />
+      ) : (
+        <div style={{ ...cardStyle, marginBottom: 0 }}>
+          <p style={{ margin: 0, fontSize: 13.5, color: C.textSub, lineHeight: 1.5, fontFamily: 'Inter, system-ui, sans-serif' }}>
+            Let attendees know what you're looking for or can offer.
+          </p>
+          <button type="button" onClick={() => (onPrepare ? onPrepare() : setComposer({ mode: 'create', type: 'need' }))}
+            style={{ width: '100%', marginTop: 12, padding: '12px', borderRadius: 11, border: 'none', background: 'linear-gradient(135deg,#C6A25A,#A88245)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
+            Create event post
+          </button>
         </div>
-      </div>
+      )}
 
       {/* Attendee posts — one combined card per person */}
       <p style={{ ...sectionLabel, marginTop: 22 }}>Attendee posts</p>

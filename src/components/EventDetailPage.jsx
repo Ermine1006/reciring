@@ -84,7 +84,7 @@ const HOST_TYPE_LABEL = {
  * leave/cancel actions, group thread, and back navigation.
  */
 export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, onOpenMatch, initialViewMode, cameFromPromo = false, onJoined }) {
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
 
   const [event, setEvent]       = useState(null)
   const [attendees, setAttendees] = useState([])
@@ -211,24 +211,20 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
   // event); the sheet's confirm runs the real join below.
   const [showJoinIntent, setShowJoinIntent] = useState(false)
 
-  const handleJoin = async (intentions = {}) => {
+  const handleJoin = async () => {
     if (!user || !event) return { error: null }
     setJoinPending(true); setToast(null)
     // Optimistic
     setJoined(true)
     setEvent(prev => ({ ...prev, attendee_count: (prev.attendee_count || 0) + 1 }))
-    // Pass the whole intentions payload (needTitle/needText/offerTitle/offerText).
-    const { error } = await joinEvent(event.id, user.id, intentions)
+    const { error } = await joinEvent(event.id, user.id)
     setJoinPending(false)
     if (error) {
       setJoined(false)
       setEvent(prev => ({ ...prev, attendee_count: Math.max(0, (prev.attendee_count || 0) - 1) }))
-      // Surface in the sheet when it's driving the join; keep the toast too.
-      setToast({ type: 'err', msg: error.message || 'Could not join' })
       return { error }
     }
-    setShowJoinIntent(false)
-    setToast({ type: 'ok', msg: "You're in. See you there." })
+    // The sheet shows the "You're going." confirmation itself; no toast here.
     // Attribute the acquisition funnel when this event was opened from a
     // Discover promo card (best-effort; parent decides whether to log).
     onJoined?.()
@@ -512,6 +508,7 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
             isHost={isHost}
             allowPromotion={Boolean(event.allow_discover_promotion)}
             onOpenChat={onOpenMatch}
+            onPrepare={onPrepare ? () => onPrepare(event.id) : undefined}
           />
         )}
 
@@ -1125,7 +1122,10 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
       <EventJoinIntentModal
         open={showJoinIntent}
         eventTitle={event?.title}
+        eventWhen={[formatLongDate(event?.start_at), event?.location].filter(Boolean).join(' · ')}
+        identityLabel={profile?.name ? [profile.name, profile.program].filter(Boolean).join(' · ') : null}
         onConfirm={handleJoin}
+        onPrepare={() => onPrepare?.(event.id)}
         onClose={() => setShowJoinIntent(false)}
       />
     </div>

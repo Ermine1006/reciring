@@ -1,44 +1,52 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import EventCover from './EventCover'
-import EventMarketplace from './EventMarketplace'
 import { fetchEventById } from '../lib/events'
 import { GOAL_OPTIONS, fetchEventGoals, saveEventGoals } from '../lib/eventPrep'
+import { fetchMyMarketplacePosts, createMarketplacePost, updateMarketplacePost, deleteMarketplacePost } from '../lib/marketplace'
 
 const C = {
-  gold: '#C8A96A', goldDark: '#A88245', goldLight: '#E6D3A3', goldBg: '#FBF6EC',
-  ink: '#14110C', sub: '#6B6152', muted: '#9C9789', white: '#FFFFFF', border: '#EFEAE0',
+  ground:'#FFFFFF', ivory:'#FBF8F3', ink:'#1A1712', ink2:'#5F584D', ink3:'#9A958B',
+  line:'#ECE7DE', gold:'#A67C33', goldInk:'#7A5A22', goldBtn:'#C6A25A', goldBtnInk:'#241B0C',
+  goldSoft:'#FBF6EC', goldLine:'#EBDBAE', slate:'#4B5A8A', sage:'#2F7A55',
 }
 
 function fmtWhen(iso) {
   if (!iso) return ''
-  return new Date(iso).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
+const headline = (t) => String(t || '').trim().split('\n')[0].slice(0, 120)
 
 /**
- * Event Preparation page (Phase 2). Helps an attendee prepare intentionally:
- * set a goal, post what they're looking for / can offer, and browse the
- * Opportunity Board — all before the event.
- *
- * Looking-for / can-offer + the Opportunity Board are the existing Event
- * Marketplace (reused). Only "My goal" is new (event_goals).
+ * Prepare for event — a focused page: set a private goal, then write ONE
+ * combined Event Post (looking-for + can-offer). It no longer shows other
+ * attendees / the Board / host stats. Saving writes the two marketplace
+ * rows (need/offer) that the Board groups into one card.
  */
-export default function EventPreparePage({ eventId, userId, onBack, onOpenMatch }) {
+export default function EventPreparePage({ eventId, userId, onBack, onSaved }) {
   const [event, setEvent] = useState(null)
   const [loading, setLoading] = useState(true)
   const [goals, setGoals] = useState([])
-  const [savedFlash, setSavedFlash] = useState(false)
+  const [look, setLook] = useState('')
+  const [offer, setOffer] = useState('')
+  const [existing, setExisting] = useState({ need: null, offer: null })
+  const [saving, setSaving] = useState(false)
+  const [err, setErr] = useState(null)
 
   useEffect(() => {
     let alive = true
     ;(async () => {
-      const [{ data: ev }, { goals: g }] = await Promise.all([
+      const [{ data: ev }, { goals: g }, { data: posts }] = await Promise.all([
         fetchEventById(eventId),
         fetchEventGoals(eventId, userId),
+        fetchMyMarketplacePosts(eventId, userId),
       ])
       if (!alive) return
-      setEvent(ev)
-      setGoals(g)
+      setEvent(ev); setGoals(g)
+      const need = (posts || []).find(p => p.type === 'need') || null
+      const off  = (posts || []).find(p => p.type === 'offer') || null
+      setExisting({ need, offer: off })
+      setLook(need?.description || need?.title || '')
+      setOffer(off?.description || off?.title || '')
       setLoading(false)
     })()
     return () => { alive = false }
@@ -46,88 +54,92 @@ export default function EventPreparePage({ eventId, userId, onBack, onOpenMatch 
 
   const toggleGoal = async (id) => {
     const next = goals.includes(id) ? goals.filter(g => g !== id) : [...goals, id]
-    setGoals(next)                                  // optimistic
-    const { error } = await saveEventGoals(eventId, userId, next)
-    if (!error) { setSavedFlash(true); setTimeout(() => setSavedFlash(false), 1400) }
+    setGoals(next)
+    saveEventGoals(eventId, userId, next)
+  }
+
+  const canSave = look.trim() || offer.trim()
+
+  const saveField = async (type, text, ex) => {
+    const t = text.trim()
+    if (!t) { if (ex) await deleteMarketplacePost(ex.id); return }
+    const payload = { title: headline(t), description: t.slice(0, 600) }
+    if (ex) return updateMarketplacePost(ex.id, payload)
+    return createMarketplacePost({ eventId, userId, type, ...payload })
+  }
+
+  const save = async () => {
+    if (!canSave || saving) return
+    setSaving(true); setErr(null)
+    const r1 = await saveField('need',  look,  existing.need)
+    const r2 = await saveField('offer', offer, existing.offer)
+    setSaving(false)
+    const e = r1?.error || r2?.error
+    if (e) { setErr(e.message || 'Could not save your event post'); return }
+    if (onSaved) onSaved(); else onBack?.()
   }
 
   if (loading) {
-    return <div className="flex-1 phone-scroll" style={{ background: '#F9F7F4', padding: 24, textAlign: 'center' }}>
-      <p style={{ color: C.muted, fontSize: 14, marginTop: 40 }}>Loading…</p>
+    return <div className="flex-1 phone-scroll" style={{ background: C.ground, padding: 24, textAlign: 'center' }}>
+      <p style={{ color: C.ink3, fontSize: 14, marginTop: 40 }}>Loading…</p>
     </div>
   }
 
   return (
-    <div className="flex-1 phone-scroll" style={{ background: '#F9F7F4' }}>
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18 }} style={{ padding: '14px 18px 34px' }}>
-        {/* Back */}
-        <button onClick={onBack} style={backBtn}>
-          <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round"><path d="M15 19l-7-7 7-7" /></svg>
-          Back
-        </button>
-
-        {/* Cover + title */}
-        <EventCover event={event} radius={16} style={{ marginBottom: 14, border: `1px solid ${C.border}` }} />
-        <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase', color: C.gold, fontFamily: 'Inter, system-ui, sans-serif' }}>
-          Prepare for this event
-        </p>
-        <h1 style={{ margin: '4px 0 3px', fontSize: 22, fontWeight: 600, color: C.ink, fontFamily: 'Fraunces, Georgia, serif', lineHeight: 1.2, letterSpacing: '-0.01em' }}>
-          {event?.title}
-        </h1>
-        <p style={{ margin: 0, fontSize: 12.5, color: C.sub, fontFamily: 'Inter, system-ui, sans-serif' }}>
-          {fmtWhen(event?.start_at)}{event?.location ? ` · ${event.location}` : ''}
-        </p>
-        <p style={{ margin: '10px 0 0', fontSize: 13.5, color: C.sub, lineHeight: 1.5, fontFamily: 'Inter, system-ui, sans-serif' }}>
-          Make the most of your conversations — set a goal, share what you're looking for, and see who else is coming.
-        </p>
-
-        {/* ── 1. My goal ─────────────────────────────── */}
-        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', margin: '22px 0 10px' }}>
-          <p style={sectionLabel}>My goal for this event</p>
-          {savedFlash && <span style={{ fontSize: 11, color: C.goldDark, fontWeight: 600 }}>✓ Saved</span>}
+    <div className="flex-1 phone-scroll" style={{ background: C.ground }}>
+      <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.16 }} style={{ padding: '12px 18px 34px', maxWidth: 560, margin: '0 auto' }}>
+        {/* Compact header — no full event cover repeated here */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+          <button onClick={onBack} aria-label="Back" style={{ background: 'none', border: 'none', padding: 4, cursor: 'pointer', color: C.ink, display: 'flex' }}>
+            <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth={2.1} viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round"><path d="M15 19l-7-7 7-7" /></svg>
+          </button>
+          <div style={{ flex: 1, textAlign: 'center' }}>
+            <p style={{ margin: 0, fontSize: 15, fontWeight: 650, color: C.ink, fontFamily: 'Inter, system-ui, sans-serif' }}>Prepare for event</p>
+            <p style={{ margin: '1px 0 0', fontSize: 11, color: C.ink3, fontFamily: 'Inter, system-ui, sans-serif' }}>{event?.title} · {fmtWhen(event?.start_at)}</p>
+          </div>
+          <span style={{ width: 20 }} />
         </div>
+
+        {/* My goal */}
+        <p style={label}>My goal</p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {GOAL_OPTIONS.map(g => {
             const on = goals.includes(g.id)
             return (
               <button key={g.id} type="button" onClick={() => toggleGoal(g.id)}
-                style={{
-                  padding: '9px 15px', borderRadius: 999,
-                  border: `1.5px solid ${on ? C.gold : C.border}`,
-                  background: on ? C.goldBg : C.white,
-                  color: on ? C.goldDark : C.sub,
-                  fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                  fontFamily: 'Inter, system-ui, sans-serif', transition: 'all .15s',
-                }}>
+                style={{ padding: '8px 14px', borderRadius: 999, border: `1px solid ${on ? C.goldLine : C.line}`, background: on ? C.goldSoft : C.ground, color: on ? C.goldInk : C.ink2, fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
                 {on ? '✓ ' : ''}{g.label}
               </button>
             )
           })}
         </div>
-        <p style={{ margin: '8px 0 0', fontSize: 11.5, color: C.muted, fontFamily: 'Inter, system-ui, sans-serif' }}>
-          Private to you — helps Mutu tailor who you meet.
-        </p>
 
-        {/* ── 2–4. Looking for / Can offer / Opportunity Board ── */}
-        {/* Reuses the Event Marketplace: "Your posts" = looking-for + offering,
-            "Browse attendees" = the Opportunity Board, with "I'm Interested". */}
-        <div style={{ marginTop: 24 }}>
-          <EventMarketplace
-            eventId={eventId}
-            userId={userId}
-            isHost={event?.host_user_id === userId}
-            onOpenChat={onOpenMatch}
-          />
+        {/* My event post — one combined contribution */}
+        <div style={{ background: C.ivory, border: `1px solid ${C.line}`, borderRadius: 14, padding: 14, marginTop: 20 }}>
+          <p style={{ margin: 0, fontSize: 13.5, fontWeight: 700, color: C.ink, fontFamily: 'Inter, system-ui, sans-serif' }}>My event post</p>
+          <p style={{ ...fieldLabel, color: C.slate, marginTop: 12 }}>I'm looking for</p>
+          <textarea value={look} onChange={e => setLook(e.target.value.slice(0, 600))} rows={3}
+            placeholder="e.g. Introductions to AI infrastructure founders or operators." style={input} />
+          <p style={{ ...fieldLabel, color: C.sage, marginTop: 12 }}>I can offer</p>
+          <textarea value={offer} onChange={e => setOffer(e.target.value.slice(0, 600))} rows={3}
+            placeholder="e.g. VC interview coaching and fundraising feedback." style={input} />
+          <p style={{ margin: '9px 0 0', fontSize: 11.5, color: C.ink3, fontFamily: 'Inter, system-ui, sans-serif' }}>Fill in one or both. Shown on the Event Board; names stay hidden until someone connects.</p>
         </div>
+
+        {err && <p style={{ margin: '12px 2px 0', fontSize: 12.5, color: '#B4453A', fontFamily: 'Inter, system-ui, sans-serif' }}>{err}</p>}
+
+        <button type="button" onClick={save} disabled={!canSave || saving}
+          style={{ width: '100%', marginTop: 18, padding: '13px', borderRadius: 12, border: 'none', cursor: canSave && !saving ? 'pointer' : 'default', background: canSave ? C.goldBtn : '#E5E1D8', color: canSave ? C.goldBtnInk : '#9B9384', fontSize: 14, fontWeight: 700, fontFamily: 'Inter, system-ui, sans-serif' }}>
+          {saving ? 'Saving…' : 'Save event post'}
+        </button>
+        <button type="button" onClick={onBack} style={{ width: '100%', marginTop: 8, padding: '11px', borderRadius: 12, background: 'transparent', border: 'none', color: C.ink2, fontSize: 13.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
+          Not now
+        </button>
       </motion.div>
     </div>
   )
 }
 
-const backBtn = {
-  display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 12,
-  background: C.white, border: `1px solid ${C.border}`, borderRadius: 99,
-  padding: '7px 14px', fontSize: 13, fontWeight: 600, color: C.ink,
-  fontFamily: 'Inter, system-ui, sans-serif', cursor: 'pointer',
-}
-const sectionLabel = { fontSize: 10, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: C.gold, fontFamily: 'Inter, system-ui, sans-serif', margin: 0 }
+const label = { fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: C.ink3, fontFamily: 'Inter, system-ui, sans-serif', margin: '0 1px 8px' }
+const fieldLabel = { fontSize: 9.5, fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', margin: '0 0 6px', fontFamily: 'Inter, system-ui, sans-serif' }
+const input = { width: '100%', background: C.ground, border: `1px solid ${C.line}`, borderRadius: 11, padding: '11px 12px', fontSize: 13.5, color: C.ink, fontFamily: 'Inter, system-ui, sans-serif', outline: 'none', resize: 'vertical', lineHeight: 1.45 }

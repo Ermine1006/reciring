@@ -1064,7 +1064,7 @@ function AppShell() {
               eventId={preparingEventId}
               userId={user?.id}
               onBack={() => setPreparingEventId(null)}
-              onOpenMatch={(matchId) => { setPreparingEventId(null); loadMatches(); setTab("matches"); setChatMatchId(matchId) }}
+              onSaved={() => { const id = preparingEventId; setPreparingEventId(null); setEventInitialView('marketplace'); setViewingEventId(id); setTab('events') }}
             />
           )}
           {tab === 'events' && !preparingEventId && editingEventId && (

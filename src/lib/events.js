@@ -164,33 +164,18 @@ export async function joinEvent(eventId, userId, intentions = {}) {
   if (!isSupabaseConfigured) return { error: new Error('Supabase not configured') }
   if (!eventId || !userId)   return { error: new Error('missing event or user') }
 
-  // need/offer captured at join time drive the in-event matcher. Trimmed to a
-  // sane length; empty strings store as null so "didn't fill it in" is
-  // distinguishable from "".
-  const clip = (s) => {
-    const t = String(s || '').trim().slice(0, 600)
-    return t || null
-  }
-
-  // Unified "title + description" format (matches Discover / Marketplace).
-  const needTitle  = clip(intentions.needTitle)
-  const needDesc   = clip(intentions.needText)
-  const offerTitle = clip(intentions.offerTitle)
-  const offerDesc  = clip(intentions.offerText)
-  // Fall back to the description's first line if a title wasn't given.
-  const firstLine = (s) => (s ? s.split('\n')[0].trim().slice(0, 120) : null)
-  const needHead  = needTitle  || firstLine(needDesc)
-  const offerHead = offerTitle || firstLine(offerDesc)
-  // What the in-event matcher reads: keep the full "headline — detail" context.
-  const combine = (t, d) => [t, d].filter(Boolean).join(' — ') || null
+  // Joining is attendance only. Need/Offer are captured later in Prepare and
+  // live in event_marketplace_posts — joining no longer creates any post.
+  // (intentions kept for backward-compat; optional legacy need/offer text.)
+  const clip = (s) => { const t = String(s || '').trim().slice(0, 600); return t || null }
 
   const { error } = await supabase
     .from('event_attendees')
     .insert({
       event_id:   eventId,
       user_id:    userId,
-      need_text:  combine(needHead, needDesc),
-      offer_text: combine(offerHead, offerDesc),
+      need_text:  clip(intentions.needText),
+      offer_text: clip(intentions.offerText),
     })
 
   if (error) {
@@ -198,22 +183,6 @@ export async function joinEvent(eventId, userId, intentions = {}) {
     if (/capacity/i.test(error.message || '')) return { error: new Error('This event is full') }
     return { error }
   }
-
-  // Bridge the join intentions into the event's Marketplace so what the user
-  // typed actually shows up there (attendees expect one place, not two). The
-  // attendee row above satisfies the marketplace INSERT RLS. Best-effort:
-  // a failure here must not fail the join. ON CONFLICT DO NOTHING
-  // (ignoreDuplicates) so we never clobber a richer post they edited later.
-  const seedPosts = []
-  if (needHead)  seedPosts.push({ event_id: eventId, user_id: userId, type: 'need',  title: needHead,  description: needDesc  || '' })
-  if (offerHead) seedPosts.push({ event_id: eventId, user_id: userId, type: 'offer', title: offerHead, description: offerDesc || '' })
-  if (seedPosts.length) {
-    const { error: mpErr } = await supabase
-      .from('event_marketplace_posts')
-      .upsert(seedPosts, { onConflict: 'event_id,user_id,type', ignoreDuplicates: true })
-    if (mpErr) console.warn('[events] marketplace seed from join failed:', mpErr.message)
-  }
-
   return { error: null }
 }
 

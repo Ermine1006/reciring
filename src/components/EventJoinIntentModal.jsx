@@ -1,268 +1,95 @@
-import { useState, useEffect } from 'react'
-import { createPortal } from 'react-dom'
+import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { rewriteText } from '../lib/aiRewrite'
+
+// Join Event sheet — attendance only. Need/Offer are captured later in
+// Prepare, so joining is a single clear decision (no auto-created posts).
+// After joining, a compact "You're going." confirmation nudges Prepare.
 
 const C = {
-  gold: '#C8A96A', goldDark: '#A88245', goldLight: '#E6D3A3', goldBg: '#FBF6EC',
-  ink: '#1A1712', textSub: '#6B6152', white: '#FFFFFF', border: '#E5E7EB',
+  ground:'#FFFFFF', ivory:'#FBF8F3', ink:'#1A1712', ink2:'#5F584D', ink3:'#9A958B',
+  line:'#ECE7DE', gold:'#A67C33', goldBtn:'#C6A25A', goldBtnInk:'#241B0C',
+  sage:'#2F7A55', sageBg:'#EEF5F0', sageLine:'#CFE4D6',
 }
 
 /**
- * Shown when someone taps "Join event" — before they're registered they say
- * what they need and what they can offer AT THIS EVENT. These per-event
- * intentions are what the in-event matcher ranks attendees against each other
- * on, and they're deliberately separate from the global profile because people
- * want different things at different events.
- *
- * onConfirm({ needText, offerText }) performs the actual join; the parent keeps
- * the optimistic-update + error handling it already had.
+ * @param {string} eventTitle
+ * @param {string} eventWhen        e.g. "Sun, Aug 9 · 9:00 AM · Trinity Bellwoods"
+ * @param {string} identityLabel    how the user appears on the attendee list
+ * @param {() => Promise<{error}>} onConfirm   performs the join
+ * @param {() => void} onPrepare    open Prepare (after joining)
+ * @param {() => void} onClose
  */
-export default function EventJoinIntentModal({ open, eventTitle, prefill, onConfirm, onClose }) {
-  const [needTitle, setNeedTitle]   = useState(prefill?.needTitle || '')
-  const [need, setNeed]   = useState(prefill?.needText || '')
-  const [offerTitle, setOfferTitle] = useState(prefill?.offerTitle || '')
-  const [offer, setOffer] = useState(prefill?.offerText || '')
-  const [busy, setBusy]   = useState(false)
+export default function EventJoinIntentModal({ open, eventTitle, eventWhen, identityLabel, onConfirm, onPrepare, onClose }) {
+  const [view, setView] = useState('confirm')   // 'confirm' | 'joined'
+  const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
 
-  const join = async (payload) => {
+  useEffect(() => { if (open) { setView('confirm'); setBusy(false); setError(null) } }, [open])
+
+  const join = async () => {
     if (busy) return
-    // Need/offer are optional — joining shouldn't be blocked. Attendees can add
-    // or edit them anytime on the event's Prepare page (the Opportunity Board).
     setBusy(true); setError(null)
-    const { error: err } = await onConfirm(payload)
+    const { error: err } = await onConfirm()
     setBusy(false)
     if (err) { setError(err.message || 'Could not join'); return }
-    // Parent closes on success.
+    setView('joined')
   }
 
-  const handleSubmit = () => join({
-    needTitle: needTitle.trim(),   needText: need.trim(),
-    offerTitle: offerTitle.trim(), offerText: offer.trim(),
-  })
-  // Join right away without sharing need/offer — the user can add them later
-  // on the event page. Distinct from Cancel, which aborts joining entirely.
-  const handleSkip = () => join({ needTitle: '', needText: '', offerTitle: '', offerText: '' })
-
-  const filledBoth = needTitle.trim() && offerTitle.trim()
-  const canSubmit = !busy
-
-  /* ── "Increase My Response Rate" — AI rewrite of either field ── */
-  const [improvingField, setImprovingField] = useState(null) // 'need' | 'offer' | null
-  const [undoState, setUndoState] = useState(null)           // { field, prev }
-
-  const improveField = async (which) => {
-    const source = (which === 'need' ? need : offer).trim()
-    if (!source || improvingField || busy) return
-    setImprovingField(which); setError(null)
-    const { text, error: err } = await rewriteText({
-      kind: which === 'need' ? 'event_need' : 'event_offer',
-      text: source,
-      maxChars: 600,
-      // Give each rewrite the sibling field so it stays coherent with it.
-      context: which === 'need'
-        ? { title: eventTitle, offer: offer.trim() }
-        : { title: eventTitle, need: need.trim() },
-    })
-    setImprovingField(null)
-    if (err || !text) { setError("Couldn't improve it just now — your text is unchanged."); return }
-    setUndoState({ field: which, prev: which === 'need' ? need : offer })
-    ;(which === 'need' ? setNeed : setOffer)(text)
-  }
-
-  const undoImprove = () => {
-    if (undoState) (undoState.field === 'need' ? setNeed : setOffer)(undoState.prev)
-    setUndoState(null)
-  }
-
-  // Auto-dismiss the "improved" confirmation.
-  useEffect(() => {
-    if (!undoState) return
-    const t = setTimeout(() => setUndoState(null), 6000)
-    return () => clearTimeout(t)
-  }, [undoState])
-
-  // Subtle rewrite button + inline Undo for a given field ('need' | 'offer').
-  const improveRow = (which) => {
-    const source = which === 'need' ? need : offer
-    const busyThis = improvingField === which
-    const canDo = source.trim() && !improvingField && !busy
-    const showUndo = undoState?.field === which
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, minHeight: 26, marginBottom: 14 }}>
-        <button
-          type="button"
-          onClick={() => improveField(which)}
-          disabled={!canDo}
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '4px 2px', background: 'transparent', border: 'none',
-            cursor: canDo ? 'pointer' : 'default',
-            color: canDo ? C.goldDark : '#B8B0A2',
-            fontSize: 12, fontWeight: 600, fontFamily: 'Inter, system-ui, sans-serif',
-          }}
-        >
-          {busyThis ? (
-            <>
-              <span className="inline-block animate-spin" style={{ width: 11, height: 11, border: `1.5px solid ${C.goldLight}`, borderTopColor: C.goldDark, borderRadius: '50%' }} />
-              Improving…
-            </>
-          ) : (
-            <>✨ Increase My Response Rate</>
-          )}
-        </button>
-        {showUndo && (
-          <span style={{ fontSize: 11, color: C.textSub, fontFamily: 'Inter, system-ui, sans-serif' }}>
-            ✓ Clearer now ·{' '}
-            <button type="button" onClick={undoImprove} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: C.goldDark, fontWeight: 700, fontSize: 11 }}>
-              Undo
-            </button>
-          </span>
-        )}
-      </div>
-    )
-  }
-
-  const field = {
-    width: '100%', minHeight: 74, resize: 'vertical',
-    background: '#FAFAFA', border: `1.5px solid ${C.border}`, borderRadius: 12,
-    padding: '11px 13px', fontSize: 14, color: C.ink, lineHeight: 1.4,
-    fontFamily: 'Inter, system-ui, sans-serif', outline: 'none',
-  }
-  const titleInput = {
-    width: '100%', background: '#FAFAFA', border: `1.5px solid ${C.border}`, borderRadius: 12,
-    padding: '11px 13px', fontSize: 14, color: C.ink,
-    fontFamily: 'Inter, system-ui, sans-serif', outline: 'none', marginBottom: 8,
-  }
-  const label = {
-    fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', color: C.goldDark,
-    margin: '0 0 6px', fontFamily: 'Inter, system-ui, sans-serif',
-  }
-
-  return createPortal(
+  return (
     <AnimatePresence>
       {open && (
         <>
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            onClick={busy ? undefined : onClose}
-            style={{
-              position: 'fixed', inset: 0, zIndex: 80,
-              background: 'rgba(17,17,17,0.5)', backdropFilter: 'blur(4px)',
-            }}
-          />
-          <div
-            style={{
-              position: 'fixed', inset: 0, zIndex: 81,
-              display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-              padding: 0, pointerEvents: 'none',
-            }}
-          >
-            <motion.div
-              initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
-              transition={{ type: 'spring', stiffness: 340, damping: 34 }}
-              role="dialog" aria-modal="true"
-              style={{
-                width: '100%', maxWidth: 460, pointerEvents: 'auto',
-                background: C.white, borderRadius: '24px 24px 0 0',
-                maxHeight: '90dvh', display: 'flex', flexDirection: 'column',
-                boxShadow: '0 -8px 40px rgba(0,0,0,0.14)',
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 4px', flexShrink: 0 }}>
-                <div style={{ width: 36, height: 4, borderRadius: 99, background: '#D1D5DB' }} />
-              </div>
+          <motion.div key="bd" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            onClick={view === 'confirm' ? onClose : undefined}
+            style={{ position: 'absolute', inset: 0, zIndex: 80, background: 'rgba(17,17,17,0.45)', backdropFilter: 'blur(4px)' }} />
+          <motion.div key="sh" initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: 'spring', stiffness: 340, damping: 34 }}
+            style={{ position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 81, background: C.ground, borderRadius: '22px 22px 0 0', boxShadow: '0 -8px 40px rgba(0,0,0,0.14)', padding: '10px 20px calc(20px + env(safe-area-inset-bottom))' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '2px 0 12px' }}>
+              <div style={{ width: 36, height: 4, borderRadius: 99, background: '#D9D3C7' }} />
+            </div>
 
-              <div style={{ padding: '8px 24px 24px', overflowY: 'auto' }}>
-                <p style={{ fontSize: 10, letterSpacing: '0.22em', textTransform: 'uppercase', fontWeight: 700, color: C.gold, margin: 0 }}>
-                  Joining
-                </p>
-                <h2 style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 20, fontWeight: 600, color: C.ink, margin: '4px 0 4px' }}>
-                  {eventTitle || 'this event'}
-                </h2>
-                <p style={{ fontSize: 13, color: C.textSub, margin: '0 0 18px', lineHeight: 1.5 }}>
-                  Optional — what you share becomes your posts on the event's Marketplace, so other attendees can find and reach you. You can add or edit them anytime on the event page.
-                </p>
-
-                <p style={label}>What do you need at this event? <span style={{ color: '#B8B0A2', fontWeight: 500 }}>· optional</span></p>
-                <input
-                  value={needTitle} onChange={(e) => setNeedTitle(e.target.value.slice(0, 120))}
-                  placeholder="Short headline — e.g. Technical co-founder"
-                  style={titleInput}
-                />
-                <textarea
-                  value={need} onChange={(e) => setNeed(e.target.value.slice(0, 600))}
-                  placeholder="Add detail — e.g. Intros to AI infra investors; feedback on my eval startup"
-                  style={{ ...field, marginBottom: 6 }}
-                />
-
-                {/* Subtle AI rewrite of the need — same reusable service as the composer. */}
-                {improveRow('need')}
-
-                <p style={label}>What can you offer? <span style={{ color: '#B8B0A2', fontWeight: 500 }}>· optional</span></p>
-                <input
-                  value={offerTitle} onChange={(e) => setOfferTitle(e.target.value.slice(0, 120))}
-                  placeholder="Short headline — e.g. VC interview coaching"
-                  style={titleInput}
-                />
-                <textarea
-                  value={offer} onChange={(e) => setOffer(e.target.value.slice(0, 600))}
-                  placeholder="Add detail — e.g. Happy to share hiring playbooks; intros to a16z network"
-                  style={{ ...field, marginBottom: 6 }}
-                />
-
-                {/* Same rewrite for the offer — a clearer offer matches more needs. */}
-                {improveRow('offer')}
-
-                {error && (
-                  <p style={{ color: '#DC2626', fontSize: 12, margin: '12px 0 0', textAlign: 'center' }}>{error}</p>
-                )}
-
-                <button
-                  type="button" onClick={handleSubmit} disabled={!canSubmit}
-                  className="active:scale-[0.98]"
-                  style={{
-                    width: '100%', marginTop: 20, padding: '15px', borderRadius: 14, border: 'none',
-                    background: canSubmit ? `linear-gradient(135deg, ${C.gold}, ${C.goldDark})` : '#E5E7EB',
-                    color: canSubmit ? C.white : '#9CA3AF',
-                    fontSize: 15, fontWeight: 700, cursor: canSubmit ? 'pointer' : 'not-allowed',
-                    fontFamily: 'Inter, system-ui, sans-serif',
-                  }}
-                >
+            {view === 'confirm' ? (
+              <>
+                <p style={{ fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 700, color: C.gold, margin: 0, fontFamily: 'Inter, system-ui, sans-serif' }}>Joining</p>
+                <h2 style={{ fontSize: 20, fontWeight: 700, color: C.ink, margin: '5px 0 3px', fontFamily: 'Inter, system-ui, sans-serif', letterSpacing: '-0.01em' }}>{eventTitle || 'this event'}</h2>
+                {eventWhen && <p style={{ fontSize: 12.5, color: C.ink2, margin: 0, fontFamily: 'Inter, system-ui, sans-serif' }}>{eventWhen}</p>}
+                <div style={{ background: C.ivory, border: `1px solid ${C.line}`, borderRadius: 12, padding: '11px 13px', marginTop: 14 }}>
+                  <p style={{ margin: 0, fontSize: 12.5, color: C.ink2, lineHeight: 1.5, fontFamily: 'Inter, system-ui, sans-serif' }}>
+                    You'll appear on the attendee list as <b style={{ color: C.ink }}>{identityLabel || 'yourself'}</b>. Your event post stays hidden until you choose to share it.
+                  </p>
+                </div>
+                {error && <p style={{ color: '#B4453A', fontSize: 12.5, margin: '12px 0 0', textAlign: 'center', fontFamily: 'Inter, system-ui, sans-serif' }}>{error}</p>}
+                <button type="button" onClick={join} disabled={busy}
+                  style={{ width: '100%', marginTop: 16, padding: '13px', borderRadius: 12, border: 'none', background: C.goldBtn, color: C.goldBtnInk, fontSize: 14, fontWeight: 700, cursor: busy ? 'default' : 'pointer', opacity: busy ? 0.7 : 1, fontFamily: 'Inter, system-ui, sans-serif' }}>
                   {busy ? 'Joining…' : 'Join event'}
                 </button>
-                {/* Join now, add need/offer later. Only worth showing when they
-                    haven't filled both — otherwise "Join event" is the move. */}
-                {!filledBoth && (
-                  <button
-                    type="button" onClick={busy ? undefined : handleSkip} disabled={busy}
-                    style={{
-                      width: '100%', marginTop: 8, padding: '12px', background: 'transparent',
-                      border: `1.5px solid ${C.border || '#E5E7EB'}`, borderRadius: 14,
-                      color: C.textSub, fontSize: 14, fontWeight: 600, cursor: busy ? 'default' : 'pointer',
-                      fontFamily: 'Inter, system-ui, sans-serif',
-                    }}
-                  >
-                    Skip for now
-                  </button>
-                )}
-                <button
-                  type="button" onClick={busy ? undefined : onClose}
-                  style={{
-                    width: '100%', marginTop: 8, padding: '12px', background: 'transparent',
-                    border: 'none', color: C.textSub, fontSize: 14, fontWeight: 500, cursor: 'pointer',
-                    fontFamily: 'Inter, system-ui, sans-serif',
-                  }}
-                >
+                <button type="button" onClick={busy ? undefined : onClose}
+                  style={{ width: '100%', marginTop: 8, padding: '11px', background: 'transparent', border: 'none', color: C.ink2, fontSize: 13.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
                   Cancel
                 </button>
+              </>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '4px 0 6px' }}>
+                <div style={{ width: 48, height: 48, borderRadius: '50%', background: C.sageBg, border: `1px solid ${C.sageLine}`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={C.sage} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+                </div>
+                <p style={{ fontSize: 18, fontWeight: 700, color: C.ink, margin: '12px 0 0', fontFamily: 'Inter, system-ui, sans-serif' }}>You're going.</p>
+                <p style={{ fontSize: 12.5, color: C.ink2, margin: '6px 18px 0', lineHeight: 1.5, fontFamily: 'Inter, system-ui, sans-serif' }}>
+                  Add what you're looking for and what you can offer so relevant attendees can find you.
+                </p>
+                <button type="button" onClick={() => { onClose?.(); onPrepare?.() }}
+                  style={{ width: '100%', marginTop: 16, padding: '13px', borderRadius: 12, border: 'none', background: C.goldBtn, color: C.goldBtnInk, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
+                  Prepare for event
+                </button>
+                <button type="button" onClick={onClose}
+                  style={{ width: '100%', marginTop: 8, padding: '11px', background: 'transparent', border: 'none', color: C.ink2, fontSize: 13.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
+                  Maybe later
+                </button>
               </div>
-            </motion.div>
-          </div>
+            )}
+          </motion.div>
         </>
       )}
-    </AnimatePresence>,
-    document.body
+    </AnimatePresence>
   )
 }

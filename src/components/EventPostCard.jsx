@@ -16,17 +16,15 @@ function anonName(program) {
   return program ? `Anonymous ${program} member` : 'Anonymous attendee'
 }
 
-function Section({ kind, title, description }) {
+function Section({ kind, post }) {
   const isNeed = kind === 'need'
+  const text = post.description || post.title   // one clean text per section
   return (
     <div style={{ marginTop: 10 }}>
       <p style={{ margin: 0, fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: isNeed ? C.slate : C.sage, fontFamily: 'Inter, system-ui, sans-serif' }}>
         {isNeed ? 'Looking for' : 'Can offer'}
       </p>
-      <p style={{ margin: '3px 0 0', fontSize: 13.5, fontWeight: 600, color: C.ink, lineHeight: 1.3, fontFamily: 'Inter, system-ui, sans-serif' }}>{title}</p>
-      {description && description !== title && (
-        <p style={{ margin: '2px 0 0', fontSize: 12.5, color: C.ink2, lineHeight: 1.4, fontFamily: 'Inter, system-ui, sans-serif' }}>{description}</p>
-      )}
+      <p style={{ margin: '3px 0 0', fontSize: 13, color: C.ink, lineHeight: 1.4, fontFamily: 'Inter, system-ui, sans-serif' }}>{text}</p>
     </div>
   )
 }
@@ -67,8 +65,8 @@ export default function EventPostCard({
       </div>
 
       {/* One card, both sections — only render a section that exists */}
-      {need  && <Section kind="need"  title={need.title}  description={need.description} />}
-      {offer && <Section kind="offer" title={offer.title} description={offer.description} />}
+      {need  && <Section kind="need"  post={need} />}
+      {offer && <Section kind="offer" post={offer} />}
 
       {/* One action */}
       <div style={{ marginTop: 12 }}>

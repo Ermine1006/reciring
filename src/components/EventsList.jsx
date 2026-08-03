@@ -65,7 +65,7 @@ export default function EventsList({ onCreateEvent, onOpenEvent, onPrepare, onOp
     setIntentEvent(ev || { id: eventId })
   }
 
-  const confirmJoin = async (intentions = {}) => {
+  const confirmJoin = async () => {
     if (!user || !intentEvent) return { error: null }
     const eventId = intentEvent.id
     setJoiningId(eventId)
@@ -78,7 +78,7 @@ export default function EventsList({ onCreateEvent, onOpenEvent, onPrepare, onOp
       e.id === eventId ? { ...e, attendee_count: (e.attendee_count || 0) + 1 } : e,
     ))
 
-    const { error } = await joinEvent(eventId, user.id, intentions)
+    const { error } = await joinEvent(eventId, user.id)
     setJoiningId(null)
     if (error) {
       // Rollback
@@ -92,8 +92,7 @@ export default function EventsList({ onCreateEvent, onOpenEvent, onPrepare, onOp
       setToast({ type: 'err', msg: error.message || 'Could not join event' })
       return { error }
     }
-    setIntentEvent(null)
-    setToast({ type: 'ok', msg: 'Joined — see you there!' })
+    // Keep the sheet open — it shows the "You're going." confirmation.
     return { error: null }
   }
 
@@ -342,7 +341,9 @@ export default function EventsList({ onCreateEvent, onOpenEvent, onPrepare, onOp
       <EventJoinIntentModal
         open={Boolean(intentEvent)}
         eventTitle={intentEvent?.title}
+        eventWhen={intentEvent?.start_at ? new Date(intentEvent.start_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : ''}
         onConfirm={confirmJoin}
+        onPrepare={() => { const id = intentEvent?.id; setIntentEvent(null); if (id) onPrepare?.(id) }}
         onClose={() => setIntentEvent(null)}
       />
     </AppScreen>
