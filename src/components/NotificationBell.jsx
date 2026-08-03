@@ -122,18 +122,17 @@ export default function NotificationBell({ userId, onOpenNotification }) {
         </svg>
         {unreadCount > 0 && (
           <span style={{
-            position: 'absolute', top: 4, right: 4,
-            minWidth: 18, height: 18,
-            padding: '0 5px',
-            borderRadius: 9,
+            position: 'absolute', top: 3, right: 2,
+            minWidth: 15, height: 15,
+            padding: '0 4px',
+            borderRadius: 8,
             background: C.red,
             color: '#fff',
-            fontSize: 10, fontWeight: 700,
+            fontSize: 9, fontWeight: 700,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 2px 6px rgba(239,68,68,0.4)',
             border: '1.5px solid #fff',
           }}>
-            {unreadCount > 99 ? '99+' : unreadCount}
+            {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </button>

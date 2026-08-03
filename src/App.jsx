@@ -28,6 +28,7 @@ import EventPreparePage from './components/EventPreparePage'
 import ProfilePage from './components/ProfilePage'
 import HomePage from './components/HomePage'
 import RequestDetailModal from './components/RequestDetailModal'
+import AskMutuSheet from './components/AskMutuSheet'
 import { isAdmin } from './data/adminEmails'
 import { submitReport, blockUser, fetchBlockedIds } from './lib/safety'
 import { isSupabaseConfigured, supabase } from './lib/supabase'
@@ -138,6 +139,7 @@ function AppShell() {
   const [eventInitialView, setEventInitialView] = useState(null)
   const [promoOriginEventId, setPromoOriginEventId] = useState(null) // event opened via a Discover promo card
   const [homePostDetail, setHomePostDetail] = useState(null) // community post opened from a Home "People" card
+  const [askMutuOpen, setAskMutuOpen] = useState(false) // Home → Ask Mutu (grounded networking assistant)
   // Bump this to force EventsList to refetch after a new event is created.
   const [eventsRefreshKey, setEventsRefreshKey] = useState(0)
   // Bump this to force EventDetailPage to refetch after save.
@@ -885,7 +887,7 @@ function AppShell() {
               title="Profile"
               className="active:scale-95"
               style={{
-                width: 42, height: 42,
+                width: 34, height: 34,
                 borderRadius: '50%',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 cursor: 'pointer',
@@ -893,22 +895,18 @@ function AppShell() {
                 padding: 0, flexShrink: 0,
                 background: resolveAvatarSeed(profile?.avatar_url)
                   ? 'none'
-                  : profileHovered
-                    ? 'linear-gradient(#F5F0E8, #F5F0E8) padding-box, linear-gradient(135deg, #FFD700 0%, #B8962E 100%) border-box'
-                    : 'linear-gradient(#FAFAF8, #FAFAF8) padding-box, linear-gradient(135deg, #D4AF37 0%, #9A7520 100%) border-box',
+                  : 'linear-gradient(#FAFAF8, #FAFAF8) padding-box, linear-gradient(135deg, #D4AF37 0%, #9A7520 100%) border-box',
                 border: resolveAvatarSeed(profile?.avatar_url)
-                  ? '2px solid #E6D3A3'
+                  ? '1px solid #E6D3A3'
                   : '1.5px solid transparent',
-                boxShadow: profileHovered
-                  ? '0 0 0 3px rgba(212,175,55,0.14), 0 4px 14px rgba(140,100,0,0.16)'
-                  : '0 2px 8px rgba(100,70,0,0.08)',
-                transform: profileHovered ? 'scale(1.05)' : 'scale(1)',
-                transition: 'all 0.24s ease',
+                boxShadow: profileHovered ? '0 0 0 3px rgba(212,175,55,0.12)' : 'none',
+                transform: profileHovered ? 'scale(1.04)' : 'scale(1)',
+                transition: 'all 0.2s ease',
               }}
               aria-label="Open profile"
             >
               {resolveAvatarSeed(profile?.avatar_url) ? (
-                <AnonymousAvatar seed={resolveAvatarSeed(profile.avatar_url)} size={42} />
+                <AnonymousAvatar seed={resolveAvatarSeed(profile.avatar_url)} size={34} />
               ) : (
                 <svg
                   width="16" height="16"
@@ -969,6 +967,9 @@ function AppShell() {
               onOpenEvent={(id) => { setEventInitialView(null); setViewingEventId(id); setTab('events') }}
               onOpenProfile={() => { setProfileSubTab('profile'); setTab('profile') }}
               onOpenPost={(post) => setHomePostDetail(post)}
+              onOpenNetworking={() => { setEventsTopView('networking'); setViewingEventId(null); setTab('events') }}
+              onOpenEvents={() => { setEventsTopView('discover'); setViewingEventId(null); setTab('events') }}
+              onAskMutu={() => setAskMutuOpen(true)}
             />
           )}
           {tab === 'discover' && (
@@ -1183,6 +1184,11 @@ function AppShell() {
           onView={handleNewMatchView}
           onDismiss={handleNewMatchDismiss}
         />
+
+        {/* Home → Ask Mutu — grounded on the user's own networking data. */}
+        {user && (
+          <AskMutuSheet open={askMutuOpen} userId={user.id} events={[]} onClose={() => setAskMutuOpen(false)} />
+        )}
 
         {/* Community post opened from a Home "People" card. */}
         {homePostDetail && (
