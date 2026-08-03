@@ -47,6 +47,41 @@ function anonIdentity(promo) {
   return { primary, sub }
 }
 
+// One need/offer block inside the combined preview card.
+function PreviewSection({ kind, post, spaced }) {
+  const isOffer = kind === 'offer'
+  const label = isOffer ? 'Offering' : 'Looking for'
+  return (
+    <div style={{ marginTop: spaced ? 14 : 0 }}>
+      <span style={{
+        display: 'inline-block', fontSize: 10, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase',
+        padding: '3px 10px', borderRadius: 99, marginBottom: 8,
+        color: isOffer ? '#047857' : C.indigo,
+        background: isOffer ? '#ECFDF5' : C.indigoBg,
+        border: `1px solid ${isOffer ? '#A7F3D0' : '#C7D2FE'}`,
+        fontFamily: 'Inter, system-ui, sans-serif',
+      }}>
+        {label}
+      </span>
+      <p style={{ fontSize: 15, fontWeight: 600, color: C.ink, margin: '0 0 4px', lineHeight: 1.35, fontFamily: 'Inter, system-ui, sans-serif' }}>
+        {post.title}
+      </p>
+      {post.preview && post.preview !== post.title && (
+        <p style={{ fontSize: 13, color: C.sub, margin: 0, lineHeight: 1.5, fontFamily: 'Inter, system-ui, sans-serif' }}>
+          {post.preview}{post.preview.length >= 240 ? '…' : ''}
+        </p>
+      )}
+      {post.tags?.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
+          {post.tags.slice(0, 4).map(t => (
+            <span key={t} style={{ fontSize: 11, color: C.sub, background: '#F3F4F6', borderRadius: 99, padding: '3px 9px', fontFamily: 'Inter, system-ui, sans-serif' }}>{t}</span>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function EventPreviewCard({ promo, isTop, onDrag, onSwipeLeft, onSwipeRight, onTap }) {
   const [offset, setOffset] = useState(0)
   const [hasDragged, setHasDragged] = useState(false)
@@ -75,8 +110,6 @@ export default function EventPreviewCard({ promo, isTop, onDrag, onSwipeLeft, on
     onTap?.(promo)
   }
 
-  const isOffer = promo.type === 'offer'
-  const typeLabel = isOffer ? 'Offering' : 'Looking for'
   const identity  = anonIdentity(promo)
   const ctaLabel  = promo.joined ? 'Open Event Marketplace' : 'View Event'
 
@@ -172,32 +205,10 @@ export default function EventPreviewCard({ promo, isTop, onDrag, onSwipeLeft, on
         {/* Divider */}
         <div style={{ height: 1, background: C.line, margin: '14px 0' }} />
 
-        {/* The ask/offer preview */}
-        <span style={{
-          display: 'inline-block', fontSize: 10, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase',
-          padding: '3px 10px', borderRadius: 99, marginBottom: 8,
-          color: isOffer ? '#047857' : C.indigo,
-          background: isOffer ? '#ECFDF5' : C.indigoBg,
-          border: `1px solid ${isOffer ? '#A7F3D0' : '#C7D2FE'}`,
-          fontFamily: 'Inter, system-ui, sans-serif',
-        }}>
-          {typeLabel}
-        </span>
-        <p style={{ fontSize: 15, fontWeight: 600, color: C.ink, margin: '0 0 4px', lineHeight: 1.35, fontFamily: 'Inter, system-ui, sans-serif' }}>
-          {promo.title}
-        </p>
-        {promo.preview && promo.preview !== promo.title && (
-          <p style={{ fontSize: 13, color: C.sub, margin: 0, lineHeight: 1.5, fontFamily: 'Inter, system-ui, sans-serif' }}>
-            {promo.preview}{promo.preview.length >= 240 ? '…' : ''}
-          </p>
-        )}
-        {promo.tags?.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
-            {promo.tags.slice(0, 4).map(t => (
-              <span key={t} style={{ fontSize: 11, color: C.sub, background: '#F3F4F6', borderRadius: 99, padding: '3px 9px', fontFamily: 'Inter, system-ui, sans-serif' }}>{t}</span>
-            ))}
-          </div>
-        )}
+        {/* Combined ask + offer preview — the same attendee's "Looking for"
+            and "Offering" on one card, never split across two. */}
+        {promo.need  && <PreviewSection kind="need"  post={promo.need} />}
+        {promo.offer && <PreviewSection kind="offer" post={promo.offer} spaced={Boolean(promo.need)} />}
 
         {/* Anonymised attendee identity */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 14 }}>

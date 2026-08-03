@@ -47,38 +47,56 @@ export async function fetchDiscoverEventPromos({ joinedEventIds = new Set(), exc
     myPostIds = new Set((mine || []).map(r => r.id))
   }
 
-  // One representative preview per event AND per type — so an event can
-  // surface both a "Looking for" and an "Offering" card (never more), instead
-  // of one type hiding the other. Own posts are dropped first.
-  const seen = new Set()
-  const cards = []
+  // One card per PERSON per event — the same attendee's "Looking for" and
+  // "Offering" belong on a single combined card, never split into two. The
+  // promo view is anonymised (no user_id), so we group by event + the
+  // anonymised identity fields; promotion is opt-in and rare, so this reliably
+  // pairs one person's two posts. Rows arrive newest-first, so the first row
+  // seen per type is the one we keep. Own posts are dropped first.
+  const groups = new Map()
   for (const r of data || []) {
     if (myPostIds.has(r.post_id)) continue
-    const key = `${r.event_id}:${r.type}`
-    if (seen.has(key)) continue
-    seen.add(key)
-    cards.push(shapePromoCard(r, joinedEventIds.has(r.event_id)))
+    const indStr = Array.isArray(r.poster_industry) ? r.poster_industry.join(',') : (r.poster_industry || '')
+    const key = `${r.event_id}::${r.poster_program || ''}::${r.poster_headline || ''}::${indStr}`
+    let g = groups.get(key)
+    if (!g) { g = {}; groups.set(key, g) }
+    if (!g[r.type]) g[r.type] = r          // keep newest per type
+  }
+
+  const cards = []
+  for (const g of groups.values()) {
+    cards.push(shapePromoCard(g, joinedEventIds))
   }
   return { data: cards, error: null }
 }
 
-// Map a view row → the shape the Discover deck + EventPreviewCard consume.
-function shapePromoCard(r, joined) {
+// Map a person's grouped rows ({ need?, offer? }) → the combined card shape the
+// Discover deck + EventPreviewCard consume. Event facts + anonymised identity
+// come from whichever row exists; need/offer previews are carried side by side.
+function shapePromoCard(group, joinedEventIds) {
+  const need = group.need || null
+  const offer = group.offer || null
+  const r = need || offer                  // representative row (shared fields)
   const remaining = r.max_attendees != null
     ? Math.max(0, r.max_attendees - (r.attendee_count || 0))
     : null
+  const previewOf = (p) => p && ({
+    postId:  p.post_id,
+    title:   p.title,
+    preview: p.description_preview || '',
+    tags:    p.tags || [],
+    urgency: p.urgency || null,
+  })
+  const idPart = [need?.post_id, offer?.post_id].filter(Boolean).sort().join('-')
   return {
     kind:        'event_promo',            // deck discriminator — NOT a normal post
-    id:          `promo:${r.event_id}:${r.type}`, // unique per event+type (need/offer both surface)
-    postId:      r.post_id,
+    id:          `promo:${r.event_id}:${idPart}`,
+    postId:      r.post_id,                // representative — for funnel logging + avatar seed
     eventId:     r.event_id,
-    joined:      Boolean(joined),
-    // Ask / Offer preview
-    type:        r.type,                   // 'need' | 'offer'
-    title:       r.title,
-    preview:     r.description_preview || '',
-    tags:        r.tags || [],
-    urgency:     r.urgency || null,
+    joined:      Boolean(joinedEventIds.has(r.event_id)),
+    // Combined ask + offer preview (either may be null)
+    need:        previewOf(need),
+    offer:       previewOf(offer),
     // Anonymised attendee identity (mirrors the in-event marketplace)
     posterProgram:  r.poster_program || null,
     posterHeadline: r.poster_headline || null,
