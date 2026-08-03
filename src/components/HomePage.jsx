@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Clock, Users, CalendarDays, ArrowRight, MessageSquareText } from 'lucide-react'
+import { Clock, Users, UserPlus, CalendarDays, ArrowRight, MessageSquareText } from 'lucide-react'
 import AnonymousAvatar from './AnonymousAvatar'
 import { resolveAvatarSeed } from './SettingsPage'
 import { getMatchScore, DEFAULT_VIEWER_PROFILE } from '../data/matchRanking'
 import { fetchUpcomingEvents, fetchMyJoinedEventIds } from '../lib/events'
 import { fetchFollowups, fetchEncounters, personKey } from '../lib/eventMemory'
+import { fetchConnections } from '../lib/relationships'
 
 // ── Home ──────────────────────────────────────────────────────────────
 // Default landing screen: "Suggested for you" + a real "Your network"
@@ -66,14 +67,15 @@ export default function HomePage({
 }) {
   const me = profile || {}
 
-  const [data, setData] = useState({ events: [], followUpsDue: 0, recentlyMet: 0, upcoming: 0, loading: true })
+  const [data, setData] = useState({ events: [], followUpsDue: 0, recentlyMet: 0, connections: 0, upcoming: 0, loading: true })
   useEffect(() => {
     let alive = true
     ;(async () => {
-      const [ev, fu, enc, joined] = await Promise.all([
+      const [ev, fu, enc, conn, joined] = await Promise.all([
         fetchUpcomingEvents(),
         userId ? fetchFollowups(userId)        : Promise.resolve({ data: [] }),
         userId ? fetchEncounters(userId)       : Promise.resolve({ data: [] }),
+        userId ? fetchConnections(userId)      : Promise.resolve({ data: [] }),
         userId ? fetchMyJoinedEventIds(userId) : Promise.resolve({ data: new Set() }),
       ])
       if (!alive) return
@@ -83,6 +85,7 @@ export default function HomePage({
         events,
         followUpsDue: (fu.data || []).length,
         recentlyMet:  new Set((enc.data || []).map(personKey)).size,
+        connections:  (conn.data || []).length,
         upcoming:     events.filter(e => joinedSet.has(e.id)).length,
         loading: false,
       })
@@ -107,11 +110,15 @@ export default function HomePage({
   // Show a single-line nudge only when key matching fields are thin.
   const needInterests = (me.industry_interests?.length || 0) < 2
 
+  // Up to three cells, relationship signals first. "Recently met" (real
+  // encounters) and "Connections" (matched / chatted, not yet met) stay
+  // distinct — the same split as My Network.
   const net = [
     data.followUpsDue > 0 && { icon: <Clock size={15} strokeWidth={1.9} color={C.gold} />, n: data.followUpsDue, label: 'Follow-ups due', onClick: onOpenNetworking },
     data.recentlyMet  > 0 && { icon: <Users size={15} strokeWidth={1.9} color={C.gold} />, n: data.recentlyMet,  label: 'Recently met',  onClick: onOpenNetworking },
+    data.connections  > 0 && { icon: <UserPlus size={15} strokeWidth={1.9} color={C.gold} />, n: data.connections, label: 'Connections', onClick: onOpenNetworking },
     data.upcoming     > 0 && { icon: <CalendarDays size={15} strokeWidth={1.9} color={C.gold} />, n: data.upcoming, label: 'Upcoming', onClick: onOpenEvents },
-  ].filter(Boolean)
+  ].filter(Boolean).slice(0, 3)
 
   return (
     <div className="flex-1 phone-scroll" style={{ background: C.ground }}>

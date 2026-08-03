@@ -7,6 +7,7 @@ import AskMutuSheet from './AskMutuSheet'
 import ContactHistorySheet from './ContactHistorySheet'
 import ContactsListSheet from './ContactsListSheet'
 import { fetchEncounters, fetchFollowups, completeFollowup, personKey } from '../lib/eventMemory'
+import { fetchConnections } from '../lib/relationships'
 
 const C = {
   bg: '#F6F3EC', card: '#FFFFFF', ink: '#25231E', sub: '#6E675B',
@@ -24,6 +25,12 @@ function gradFor(seed) {
   const s = String(seed || ''); let h = 0
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0
   return GRADS[h % GRADS.length]
+}
+// Semantic status colours (shared with the spec's taxonomy).
+function connColor(status) {
+  return status === 'chatted' ? '#2C7A6B'      // teal
+       : status === 'revealed' ? '#7C5CBF'     // violet
+       : '#4B5A8A'                              // slate — matched
 }
 function fmtDue(iso) {
   if (!iso) return null
@@ -57,6 +64,7 @@ export default function MyNetworkingDashboard({ userId, events = [], joinedIds =
   const { profile } = useAuth()
   const [encounters, setEncounters] = useState([])
   const [followups, setFollowups]   = useState([])
+  const [connections, setConnections] = useState([])
   const [loading, setLoading]       = useState(true)
   const [capture, setCapture]       = useState(null)
   const [askOpen, setAskOpen]       = useState(false)
@@ -81,8 +89,10 @@ export default function MyNetworkingDashboard({ userId, events = [], joinedIds =
 
   const load = useCallback(async () => {
     if (!userId) { setLoading(false); return }
-    const [{ data: enc }, { data: fu }] = await Promise.all([fetchEncounters(userId), fetchFollowups(userId)])
-    setEncounters(enc); setFollowups(fu); setLoading(false)
+    const [{ data: enc }, { data: fu }, { data: conn }] = await Promise.all([
+      fetchEncounters(userId), fetchFollowups(userId), fetchConnections(userId),
+    ])
+    setEncounters(enc); setFollowups(fu); setConnections(conn || []); setLoading(false)
   }, [userId])
   useEffect(() => { setLoading(true); load() }, [load])
 
@@ -177,6 +187,28 @@ export default function MyNetworkingDashboard({ userId, events = [], joinedIds =
           </div>
         )}
       </div>
+      {/* Connections — people you KNOW (matched / revealed / chatted) but have
+          not met in person yet. Kept strictly separate from Recently met. */}
+      {connections.length > 0 && (
+        <>
+          <LabelRow left="Connections" right={connections.length > 4 ? `${connections.length}` : null} />
+          <div style={{ ...card, padding: '4px 14px', marginBottom: 22 }}>
+            {connections.slice(0, 5).map((c, i) => (
+              <button key={c.peerId} type="button"
+                onClick={() => c.matchId && onOpenMatch?.(c.matchId)}
+                style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 0', width: '100%', background: 'none', border: 'none', borderTop: i ? `1px solid ${C.border}` : 'none', cursor: c.matchId ? 'pointer' : 'default', textAlign: 'left' }}>
+                <Avatar name={c.name || 'Private connection'} url={/^https?:/.test(c.avatarUrl || '') ? c.avatarUrl : null} size={38} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: C.ink, fontFamily: 'Inter, system-ui, sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name || 'Private connection'}</p>
+                  <p style={{ margin: '1px 0 0', fontSize: 12, color: connColor(c.status), fontWeight: 600, fontFamily: 'Inter, system-ui, sans-serif' }}>{c.context}</p>
+                </div>
+                {c.matchId && <span style={{ color: C.goldDeep, flexShrink: 0 }}>{Icon.chev}</span>}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
       <button type="button" onClick={() => setCapture({ mode: 'ai', initial: null })} style={{ ...logBtn, width: '100%', justifyContent: 'center', marginBottom: 22 }}>
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
         Log a conversation
