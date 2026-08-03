@@ -145,6 +145,43 @@ export async function fetchKnownPeopleIds(userId) {
   return { data: known, error: null }
 }
 
+/**
+ * Cross-source milestones for one person — the Community/chat/reveal history
+ * that the encounter store alone can't show. Returned oldest-first so a
+ * relationship detail can render them as one chronological timeline above the
+ * event encounters. Only the current user's own matches are read.
+ *
+ * Returns { data: [{ kind, label, date, color }], error }.
+ */
+export async function fetchRelationshipTimeline(userId, peerId) {
+  if (!isSupabaseConfigured || !userId || !peerId) return { data: [], error: null }
+  const { data: matches } = await supabase
+    .from('matches')
+    .select('id, status, created_at, identity_reveal_status, identity_reveal_accepted_at')
+    .or(`and(requester_user_id.eq.${userId},helper_user_id.eq.${peerId}),and(requester_user_id.eq.${peerId},helper_user_id.eq.${userId})`)
+    .neq('status', 'unmatched')
+    .order('created_at', { ascending: true })
+
+  const items = []
+  const matchIds = (matches || []).map(m => m.id)
+  if (matches && matches.length) {
+    items.push({ kind: 'matched', label: 'Matched in Community', date: matches[0].created_at, color: '#4B5A8A' })
+    const revealed = matches.find(m => m.identity_reveal_status === 'accepted' && m.identity_reveal_accepted_at)
+    if (revealed) items.push({ kind: 'revealed', label: 'Identity revealed', date: revealed.identity_reveal_accepted_at, color: '#7C5CBF' })
+  }
+  if (nonEmpty(matchIds)) {
+    const { data: msgs } = await supabase
+      .from('messages')
+      .select('created_at')
+      .in('match_id', matchIds)
+      .order('created_at', { ascending: true })
+      .limit(1)
+    if (msgs && msgs.length) items.push({ kind: 'chatted', label: 'Started a conversation', date: msgs[0].created_at, color: '#2C7A6B' })
+  }
+  items.sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')))
+  return { data: items, error: null }
+}
+
 // ── Internal helpers (each a single, cheap query) ────────────────────────
 
 async function fetchMetUserIds(userId) {

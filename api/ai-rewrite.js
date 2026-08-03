@@ -297,6 +297,10 @@ async function handleAssistant(body, res) {
 
 You can ONLY use the JSON data provided in the user's message — it is that user's own private networking record (people they met, commitments, follow-ups, events). Never invent people, companies, needs, or commitments that aren't in the data. Never reveal information about anyone the user has no record of — you only know what's in this JSON.
 
+The JSON has TWO separate groups of people — never merge them:
+- "people" = people the user has actually MET in person or logged a real conversation with. Only these have topics, notes, commitments, and next actions.
+- "connections" = people the user KNOWS from Community (matched, identity revealed, or chatted) but has NOT met in person yet. Each has a "relationship" label. Never say the user "met" a connection — say they matched, are connected, or have chatted. You may suggest meeting or following up with a connection when relevant.
+
 If the answer isn't in the data, say so plainly. In particular, if the user asks what they discussed with someone and that person has no "topics" or "note" recorded, reply exactly: "I don't have a record of what you discussed. Would you like to add a note?"
 
 Each person has THREE independent states — never collapse them into a single "followed up":

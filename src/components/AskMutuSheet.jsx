@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { fetchEncounters, buildAssistantContext, askMutu, fetchAskHistory, saveAskMessage, clearAskHistory } from '../lib/eventMemory'
+import { fetchConnections } from '../lib/relationships'
 
 const C = {
   gold: '#C8A96A', goldDark: '#A88245', goldLight: '#E6D3A3', goldBg: '#FBF6EC',
@@ -30,11 +31,12 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
     if (!open) return
     setInput('')
     ;(async () => {
-      const [{ data: enc }, { data: hist }] = await Promise.all([
+      const [{ data: enc }, { data: hist }, { data: conns }] = await Promise.all([
         fetchEncounters(userId),
         fetchAskHistory(userId),
+        fetchConnections(userId),
       ])
-      setCtx(buildAssistantContext({ encounters: enc, events }))
+      setCtx(buildAssistantContext({ encounters: enc, events, connections: conns }))
       setMsgs((hist || []).map(m => ({ role: m.role, text: m.text })))
     })()
   }, [open, userId]) // eslint-disable-line react-hooks/exhaustive-deps

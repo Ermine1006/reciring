@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { fetchPersonHistory, completeFollowup, dismissFollowup, addFollowup, reopenFollowup } from '../lib/eventMemory'
 import { openOrCreateDirectMatch } from '../lib/matches'
+import { fetchRelationshipTimeline } from '../lib/relationships'
 
 const C = {
   bg: '#F9F7F4', card: '#FFFFFF', ink: '#25231E', sub: '#6E675B', muted: '#9C9284',
@@ -21,6 +22,7 @@ function fmtDate(iso){ return iso ? new Date(iso).toLocaleDateString('en-US',{mo
  */
 export default function ContactHistorySheet({ open, person, userId, onOpenEventRecap, onOpenMatch, onChanged, onClose }) {
   const [rows, setRows] = useState([])
+  const [milestones, setMilestones] = useState([])   // cross-source: matched / chatted / revealed
   const [loading, setLoading] = useState(true)
   const [busyId, setBusyId] = useState(null)
   const [adding, setAdding] = useState(null)   // encounter id being given a follow-up
@@ -32,11 +34,17 @@ export default function ContactHistorySheet({ open, person, userId, onOpenEventR
   const load = useCallback(async () => {
     if (!open || !person || !userId) return
     setLoading(true)
-    const { data } = await fetchPersonHistory(userId, {
-      encounteredUserId: person.encountered_user_id || null,
-      personName: person.encountered_user_id ? null : (person.person_name || person.display_name),
-    })
+    const [{ data }, { data: ms }] = await Promise.all([
+      fetchPersonHistory(userId, {
+        encounteredUserId: person.encountered_user_id || null,
+        personName: person.encountered_user_id ? null : (person.person_name || person.display_name),
+      }),
+      person.encountered_user_id
+        ? fetchRelationshipTimeline(userId, person.encountered_user_id)
+        : Promise.resolve({ data: [] }),
+    ])
     setRows(data || [])
+    setMilestones(ms || [])
     setLoading(false)
   }, [open, person, userId])
 
@@ -98,9 +106,28 @@ export default function ContactHistorySheet({ open, person, userId, onOpenEventR
 
         {/* Timeline */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '0 18px calc(20px + env(safe-area-inset-bottom))' }}>
+          {/* Cross-source relationship history — one chronological line drawn
+              from Community match / chat / identity reveal, above the event
+              encounters below. Shown only when there's a linked Mutu person. */}
+          {!loading && milestones.length > 0 && (
+            <div style={{ padding: '4px 4px 6px' }}>
+              <p style={{ margin: '0 0 10px', fontSize: 11, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: C.muted, fontFamily: 'Inter, system-ui, sans-serif' }}>Relationship</p>
+              <div style={{ position: 'relative', paddingLeft: 18 }}>
+                <div style={{ position: 'absolute', left: 4, top: 4, bottom: 4, width: 2, background: C.border }} />
+                {milestones.map((m, i) => (
+                  <div key={i} style={{ position: 'relative', paddingBottom: i === milestones.length - 1 ? 0 : 12 }}>
+                    <span style={{ position: 'absolute', left: -17, top: 2, width: 10, height: 10, borderRadius: '50%', background: m.color, border: `2px solid ${C.bg}` }} />
+                    <p style={{ margin: 0, fontSize: 10.5, color: C.muted, fontFamily: 'Inter, system-ui, sans-serif', letterSpacing: '0.03em' }}>{fmtDate(m.date)}</p>
+                    <p style={{ margin: '1px 0 0', fontSize: 13, fontWeight: 600, color: C.ink, fontFamily: 'Inter, system-ui, sans-serif' }}>{m.label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {loading ? (
             <p style={{ textAlign: 'center', color: C.muted, fontSize: 14, padding: '30px 0' }}>Loading…</p>
-          ) : rows.length === 0 ? (
+          ) : rows.length === 0 && milestones.length === 0 ? (
             <p style={{ textAlign: 'center', color: C.muted, fontSize: 14, padding: '30px 0' }}>No history yet.</p>
           ) : rows.map(r => {
             const state = r.followed_up_at ? 'completed' : r.followup_dismissed_at ? 'dismissed' : r.next_action ? 'pending' : 'none'

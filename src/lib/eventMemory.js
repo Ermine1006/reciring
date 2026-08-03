@@ -211,8 +211,14 @@ export async function clearAskHistory(userId) {
 
 // Build the compact, private grounding context for Ask Mutu from the user's
 // own encounters + events. Only fields the user already owns.
-export function buildAssistantContext({ encounters = [], events = [] }) {
+export function buildAssistantContext({ encounters = [], events = [], connections = [] }) {
   return {
+    // People you know but have NOT met in person yet (Community match /
+    // identity reveal / chat). Kept separate from `people` (met) so Mutu never
+    // conflates a connection with someone you met. Identity-hidden ones omitted.
+    connections: connections
+      .filter(c => c.name)
+      .map(c => ({ name: c.name, relationship: c.context || 'Connection', program: c.program || null })),
     people: encounters.map(e => {
       // Three INDEPENDENT states — never collapse them into one "followed up":
       //  • message  = a communication (drafted / sent / none)
