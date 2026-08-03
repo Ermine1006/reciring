@@ -198,19 +198,23 @@ function AppShell() {
   // server-side by the discover_event_promos view (both consent flags, still
   // upcoming + not full); we just tag each with whether the user already
   // joined so the CTA can read "Open Event Marketplace".
+  // Refetch each time the user lands on Discover so edits/deletes made in the
+  // marketplace are reflected (the promo cards are otherwise cached). Also
+  // excludes the viewer's own posts — you're never recommended your own post.
   useEffect(() => {
     if (!isSupabaseConfigured || !user) { setEventPromos([]); return }
+    if (tab !== 'discover') return
     let alive = true
     ;(async () => {
       const { data: joinedIds } = await fetchMyJoinedEventIds(user.id)
       const joinedSet = joinedIds instanceof Set ? joinedIds : new Set(joinedIds || [])
-      const { data, error } = await fetchDiscoverEventPromos({ joinedEventIds: joinedSet })
+      const { data, error } = await fetchDiscoverEventPromos({ joinedEventIds: joinedSet, excludeUserId: user.id })
       if (!alive) return
       if (error) { console.error('[ReciRing] Failed to load event promos:', error); return }
       setEventPromos(data || [])
     })()
     return () => { alive = false }
-  }, [user])
+  }, [user, tab])
 
   // Load matches from Supabase
   const loadMatches = useCallback(async () => {

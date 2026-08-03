@@ -26,7 +26,7 @@ const VIEW_COLS = [
  *
  * @returns {Promise<{ data: Array, error: Error|null }>}
  */
-export async function fetchDiscoverEventPromos({ joinedEventIds = new Set() } = {}) {
+export async function fetchDiscoverEventPromos({ joinedEventIds = new Set(), excludeUserId = null } = {}) {
   if (!isSupabaseConfigured) return { data: [], error: null }
   const { data, error } = await supabase
     .from('discover_event_promos')
@@ -35,11 +35,25 @@ export async function fetchDiscoverEventPromos({ joinedEventIds = new Set() } = 
     .order('post_created_at', { ascending: false })
   if (error) return { data: [], error }
 
+  // Never recommend the viewer their OWN post. The promo view doesn't expose
+  // author identity (by design), so we resolve the viewer's own post ids
+  // separately (RLS lets them read their own) and filter those out.
+  let myPostIds = new Set()
+  if (excludeUserId) {
+    const { data: mine } = await supabase
+      .from('event_marketplace_posts')
+      .select('id')
+      .eq('user_id', excludeUserId)
+    myPostIds = new Set((mine || []).map(r => r.id))
+  }
+
   // One representative preview per event (first wins — newest post of the
-  // soonest event, given the ordering above).
+  // soonest event, given the ordering above). Own posts are dropped first so
+  // an event still surfaces via someone else's promotable post.
   const seen = new Set()
   const cards = []
   for (const r of data || []) {
+    if (myPostIds.has(r.post_id)) continue
     if (seen.has(r.event_id)) continue
     seen.add(r.event_id)
     cards.push(shapePromoCard(r, joinedEventIds.has(r.event_id)))
