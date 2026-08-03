@@ -87,6 +87,12 @@ export function AuthProvider({ children }) {
   const [accessDenied, setAccessDenied] = useState(null)
   // Guard against double-subscribe in StrictMode / HMR
   const initialized = useRef(false)
+  // The user id we've already gated + loaded a profile for. Supabase re-emits
+  // SIGNED_IN whenever the app regains focus (e.g. resuming from background);
+  // re-running the gate for the SAME user would flip `loading` back on, unmount
+  // AppShell, and bounce the user off whatever sub-page they were on. We use
+  // this to treat a same-user re-emit as a no-op.
+  const gatedUserId = useRef(null)
 
   // ── Bootstrap ────────────────────────────────────────────────
   useEffect(() => {
@@ -105,8 +111,9 @@ export function AuthProvider({ children }) {
         if (error) console.warn('[ReciRing] getSession error (non-fatal):', error.message)
         console.log('[ReciRing] bootstrap session:', !!s, s?.user?.email)
         setSession(s)
-        if (s) gateAndEnsureProfile(s.user)
-        else setLoading(false)
+        if (s) {
+          if (s.user?.id !== gatedUserId.current) gateAndEnsureProfile(s.user)
+        } else setLoading(false)
       })
       .catch((err) => {
         console.warn('[ReciRing] getSession threw (non-fatal):', err?.message)
@@ -134,8 +141,13 @@ export function AuthProvider({ children }) {
           return
         }
         setSession(s)
-        if (s) gateAndEnsureProfile(s.user)
-        else { setProfile(null); setLoading(false) }
+        if (s) {
+          // Same already-loaded user (SIGNED_IN re-emitted on app resume /
+          // focus) → just refresh the session reference. Do NOT re-gate: that
+          // flips loading on, unmounts AppShell, and drops the user's screen.
+          if (s.user?.id === gatedUserId.current) return
+          gateAndEnsureProfile(s.user)
+        } else { gatedUserId.current = null; setProfile(null); setLoading(false) }
       },
     )
 
@@ -173,6 +185,9 @@ export function AuthProvider({ children }) {
   // DB-level guarantee that only allowed values ever land on a row.
   async function gateAndEnsureProfile(user) {
     if (!user) { setLoading(false); return }
+    // Mark this user as gated up-front so a re-emitted SIGNED_IN for the same
+    // user (app resume) is treated as a no-op rather than a fresh load.
+    gatedUserId.current = user.id
     // Hold on the spinner while the async gate runs. Without this,
     // AppRoot sees session=truthy + profile=null and briefly renders
     // AppShell before the gate finishes.
@@ -248,6 +263,7 @@ export function AuthProvider({ children }) {
     // AppRoot, so the very next render already shows LoginScreen with
     // the error rather than a flash of AppShell.
     setAccessDenied(message)
+    gatedUserId.current = null    // let a later valid sign-in re-run the gate
     setProfile(null)
     setSession(null)
     setLoading(false)
