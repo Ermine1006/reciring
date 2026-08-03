@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Sparkles, Users, CalendarDays, Send, TrendingUp, ChevronRight, Copy, Check } from 'lucide-react'
+import { Sparkles, Users, CalendarDays, ChevronRight } from 'lucide-react'
 import AnonymousAvatar from './AnonymousAvatar'
 import { resolveAvatarSeed } from './SettingsPage'
 import { whyThisConnectionMayMatter } from '../lib/opportunityMatch'
@@ -65,22 +65,9 @@ function eventReason(ev, me) {
   return 'An upcoming event relevant to your goals.'
 }
 
-// Template opener from the match's real shared interest. No API call.
-function conversationStarter(post, me) {
-  if (!post) return null
-  const name = firstName(post.creator?.name)
-  const shared = (me.industry_interests || []).find(i =>
-    (post.creator?.industry_interests || []).some(x => eq(x, i)))
-  const topic = shared
-    || (post.creator?.industry_interests || [])[0]
-    || (post.needs || post.offers || '').slice(0, 40)
-  if (!topic) return null
-  return `Hi ${name}, I saw you’re exploring ${topic}. I’m building in this space too and would love to exchange notes.`
-}
-
 export default function HomePage({
   profile, viewerProfile, userId, requests = [],
-  onOpenDiscover, onOpenEvent, onOpenProfile,
+  onOpenDiscover, onOpenEvent, onOpenProfile, onOpenPost,
 }) {
   const me = profile || {}
 
@@ -108,7 +95,6 @@ export default function HomePage({
 
   const personRec = rankedPosts.find(r => r.post.creator?.name && !r.post.isAnonymous)?.post || null
   const eventRec = events[0] || null
-  const starter = conversationStarter(personRec, me)
 
   return (
     <div className="flex-1 phone-scroll" style={{ background: C.ground }}>
@@ -130,7 +116,7 @@ export default function HomePage({
         ) : (
           <>
             {personRec && (
-              <Card>
+              <Card onClick={onOpenPost ? () => onOpenPost(personRec) : undefined}>
                 <EyebrowRow label="People" right={<Users size={15} strokeWidth={1.8} color={C.ink3} />} />
                 <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                   <PersonAvatar post={personRec} />
@@ -157,15 +143,13 @@ export default function HomePage({
               </Card>
             )}
 
-            {starter && (
-              <ConversationStarter name={firstName(personRec.creator?.name)} text={starter} />
-            )}
-
-            {!personRec && !eventRec && (
-              <div style={{ background: C.card, border: `1px solid ${C.cardLine}`, borderRadius: 16, padding: 14 }}>
-                <p style={{ margin: 0, fontSize: 14, fontWeight: 650, color: C.ink, fontFamily: 'Inter, system-ui, sans-serif' }}>No picks yet</p>
+            {/* Nudge to complete the profile (replaces the conversation
+                starter) — shown whenever there's room to improve matches. */}
+            {completeness < 100 && (
+              <div style={{ background: C.card, border: `1px solid ${C.cardLine}`, borderRadius: 16, padding: 14, marginBottom: 10 }}>
+                <p style={{ margin: 0, fontSize: 14.5, fontWeight: 650, color: C.ink, fontFamily: 'Inter, system-ui, sans-serif' }}>Improve your recommendations</p>
                 <p style={{ margin: '4px 0 12px', fontSize: 12.5, color: C.ink2, lineHeight: 1.45, fontFamily: 'Inter, system-ui, sans-serif' }}>
-                  Add your interests and what you can offer so we can match you.
+                  Add two more interests or update what you can offer.
                 </p>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button type="button" onClick={onOpenProfile} style={{ ...btn, background: C.goldRing, color: C.avatarInk, border: 'none' }}>Update profile</button>
@@ -270,29 +254,6 @@ function EventCover({ ev }) {
   return (
     <div style={{ width: 48, height: 48, borderRadius: 12, flexShrink: 0, background: C.eventBg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <CalendarDays size={20} strokeWidth={1.7} color={C.goldRing} />
-    </div>
-  )
-}
-
-function ConversationStarter({ name, text }) {
-  const [copied, setCopied] = useState(false)
-  const copy = async (e) => {
-    e?.stopPropagation?.()
-    try { await navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 1800) } catch {}
-  }
-  return (
-    <div style={{ background: C.goldSoft, border: `1px solid ${C.goldLine}`, borderRadius: 16, padding: '13px 14px', marginBottom: 10 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 9.5, fontWeight: 700, letterSpacing: '0.11em', textTransform: 'uppercase', color: C.goldInk, fontFamily: 'Inter, system-ui, sans-serif' }}>
-          <Send size={13} strokeWidth={1.9} /> Conversation starter
-        </span>
-        <button type="button" onClick={copy} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 11.5, fontWeight: 650, color: C.gold, fontFamily: 'Inter, system-ui, sans-serif' }}>
-          {copied ? <><Check size={13} strokeWidth={2.2} /> Copied</> : <><Copy size={13} strokeWidth={1.9} /> Copy</>}
-        </button>
-      </div>
-      <p style={{ margin: 0, fontSize: 13.5, color: C.ink, lineHeight: 1.5, fontFamily: 'Inter, system-ui, sans-serif' }}>
-        “{text}”
-      </p>
     </div>
   )
 }

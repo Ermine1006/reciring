@@ -27,6 +27,7 @@ import EventDetailPage from './components/EventDetailPage'
 import EventPreparePage from './components/EventPreparePage'
 import ProfilePage from './components/ProfilePage'
 import HomePage from './components/HomePage'
+import RequestDetailModal from './components/RequestDetailModal'
 import { isAdmin } from './data/adminEmails'
 import { submitReport, blockUser, fetchBlockedIds } from './lib/safety'
 import { isSupabaseConfigured, supabase } from './lib/supabase'
@@ -136,6 +137,7 @@ function AppShell() {
   // Optional initial sub-view for the event detail (e.g. 'recap' from a contact).
   const [eventInitialView, setEventInitialView] = useState(null)
   const [promoOriginEventId, setPromoOriginEventId] = useState(null) // event opened via a Discover promo card
+  const [homePostDetail, setHomePostDetail] = useState(null) // community post opened from a Home "People" card
   // Bump this to force EventsList to refetch after a new event is created.
   const [eventsRefreshKey, setEventsRefreshKey] = useState(0)
   // Bump this to force EventDetailPage to refetch after save.
@@ -966,6 +968,7 @@ function AppShell() {
               onOpenDiscover={() => setTab('discover')}
               onOpenEvent={(id) => { setEventInitialView(null); setViewingEventId(id); setTab('events') }}
               onOpenProfile={() => { setProfileSubTab('profile'); setTab('profile') }}
+              onOpenPost={(post) => setHomePostDetail(post)}
             />
           )}
           {tab === 'discover' && (
@@ -1180,6 +1183,21 @@ function AppShell() {
           onView={handleNewMatchView}
           onDismiss={handleNewMatchDismiss}
         />
+
+        {/* Community post opened from a Home "People" card. */}
+        {homePostDetail && (
+          <RequestDetailModal
+            request={homePostDetail}
+            onClose={() => setHomePostDetail(null)}
+            onMatch={async (r) => {
+              const { matchId } = await handleMatchConfirm(r)
+              setHomePostDetail(null)
+              if (matchId) { loadMatches(); setChatMatchId(matchId); setTab('matches') }
+            }}
+            onReport={handleReport}
+            onBlock={handleBlock}
+          />
+        )}
 
         {/* ── Link Google account prompt (one-shot, institutional) ─ */}
         <LinkAccountPrompt />
