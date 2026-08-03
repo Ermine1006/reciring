@@ -88,7 +88,15 @@ export default function EventSharePoster({ event, open, onClose }) {
 
   async function buildPng() {
     // 2x of the 540x960 DOM poster → 1080x1920, Instagram Story native size.
-    return toPng(posterRef.current, { pixelRatio: 2, cacheBust: true, backgroundColor: C.cream })
+    // Pass explicit width/height so the canvas is sized from the node, not its
+    // (fixed, opacity:0) on-screen box.
+    const node = posterRef.current
+    const opts = { pixelRatio: 2, cacheBust: true, backgroundColor: C.cream, width: 540, height: 960 }
+    // WebKit's first rasterisation of a node with embedded images (cover, QR)
+    // is often blank — warm up once, then capture for real.
+    await toPng(node, opts)
+    await nextFrame()
+    return toPng(node, opts)
   }
 
   async function dataUrlToFile(dataUrl) {
@@ -101,7 +109,10 @@ export default function EventSharePoster({ event, open, onClose }) {
     setBusy(true); setToast(null)
     try {
       // Make sure the cover is inlined + committed to the DOM before capture.
-      if (hasImage) { await ensureCover(); await nextFrame() }
+      if (hasImage) await ensureCover()
+      // Fonts must be ready or html-to-image embeds a blank glyph run.
+      if (document.fonts?.ready) { try { await document.fonts.ready } catch { /* ignore */ } }
+      await nextFrame()
       const dataUrl = await buildPng()
       const file = await dataUrlToFile(dataUrl)
       // Web Share Level 2 (files) — supported in the iOS WKWebview and mobile
@@ -144,9 +155,12 @@ export default function EventSharePoster({ event, open, onClose }) {
         display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
       }}
     >
-      {/* Off-screen poster that gets rasterised. Kept in the DOM (not display:
-          none) so html-to-image can measure it; parked far off-screen. */}
-      <div style={{ position: 'fixed', left: -9999, top: 0, pointerEvents: 'none' }}>
+      {/* Poster that gets rasterised. It must stay ON-SCREEN (WebKit — Safari
+          and the native WKWebView — rasterises a node parked at left:-9999 as a
+          blank/transparent image), so we hide it with an opacity:0 wrapper.
+          Opacity lives on the WRAPPER, so the captured poster keeps opacity:1
+          and renders fully. pointer-events:none + zIndex keep it out of the way. */}
+      <div style={{ position: 'fixed', left: 0, top: 0, opacity: 0, zIndex: 0, pointerEvents: 'none', overflow: 'hidden' }} aria-hidden="true">
         {hasImage ? (
           // Uploaded poster as the hero, with a dark scrim so the Mutu info
           // bar stays legible over any image.
