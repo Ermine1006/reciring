@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
+import { rewriteText } from '../lib/aiRewrite'
 
 const C = {
   gold: '#C8A96A', goldDark: '#A88245', goldLight: '#E6D3A3', goldBg: '#FBF6EC',
@@ -8,7 +9,6 @@ const C = {
 }
 
 const URGENCY_CHIPS = ['This week', 'This month', 'No rush']
-const TITLE_MAX = 120
 const DESC_MAX = 600
 
 /**
@@ -17,32 +17,59 @@ const DESC_MAX = 600
  * one need + one offer per event).
  */
 export default function MarketplacePostComposer({ open, mode = 'create', type = 'need', initial = null, busy = false, error = null, allowPromotion = false, onSubmit, onClose }) {
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
+  // Unified format: ONE free-text field (like the Join and Discover flows) —
+  // no separate title. A short title is derived from this text for storage.
+  const [text, setText] = useState('')
   const [tagsText, setTagsText] = useState('')
   const [urgency, setUrgency] = useState('')
   const [promoteToDiscover, setPromoteToDiscover] = useState(false)
 
   useEffect(() => {
     if (open) {
-      setTitle(initial?.title || '')
-      setDescription(initial?.description || '')
+      // Seed from the post body; fall back to the old title for legacy posts.
+      setText(initial?.description || initial?.title || '')
       setTagsText((initial?.tags || []).join(', '))
       setUrgency(initial?.urgency || '')
-      // Default OFF; if editing a post already opted in, reflect that.
       setPromoteToDiscover(Boolean(initial?.promote_to_discover))
+      setImproving(false); setUndo(null)
     }
   }, [open, initial])
 
-  if (!open) return null
   const need = type === 'need'
   const accent = need ? C.goldDark : C.green
 
+  // ── "Increase My Response Rate" — same AI rewrite as Join / Discover ──
+  const [improving, setImproving] = useState(false)
+  const [undo, setUndo] = useState(null) // { prev }
+
+  const improve = async () => {
+    const source = text.trim()
+    if (!source || improving || busy) return
+    setImproving(true)
+    const { text: out, error: err } = await rewriteText({
+      kind: need ? 'event_need' : 'event_offer',
+      text: source,
+      maxChars: DESC_MAX,
+    })
+    setImproving(false)
+    if (err || !out) return
+    setUndo({ prev: text })
+    setText(out)
+  }
+
+  useEffect(() => {
+    if (!undo) return
+    const t = setTimeout(() => setUndo(null), 6000)
+    return () => clearTimeout(t)
+  }, [undo])
+
+  if (!open) return null
+
   const submit = () => {
-    if (!title.trim() || busy) return
+    if (!text.trim() || busy) return
     const tags = tagsText.split(',').map(s => s.trim()).filter(Boolean).slice(0, 8)
     // Only allow opting in when the host enabled promotion for this event.
-    onSubmit?.({ type, title, description, tags, urgency, promoteToDiscover: allowPromotion && promoteToDiscover })
+    onSubmit?.({ type, text: text.trim(), tags, urgency, promoteToDiscover: allowPromotion && promoteToDiscover })
   }
 
   return createPortal(
@@ -74,24 +101,47 @@ export default function MarketplacePostComposer({ open, mode = 'create', type = 
           {mode === 'edit' ? 'Edit your post' : need ? 'What are you looking for?' : 'What can you offer?'}
         </h2>
 
-        <label style={labelStyle}>{need ? 'Looking for' : 'Offering'} <span style={{ color: C.danger }}>*</span></label>
-        <input
-          value={title}
-          onChange={e => setTitle(e.target.value.slice(0, TITLE_MAX))}
-          placeholder={need ? 'e.g. Technical co-founder' : 'e.g. VC interview coaching'}
-          style={inputStyle}
+        <label style={labelStyle}>{need ? 'What are you looking for?' : 'What can you offer?'} <span style={{ color: C.danger }}>*</span></label>
+        <textarea
+          value={text}
+          onChange={e => setText(e.target.value.slice(0, DESC_MAX))}
+          placeholder={need
+            ? 'e.g. Looking for a technical co-founder — building an AI networking platform, want a full-stack engineer into startups.'
+            : 'e.g. Happy to run VC-style mock interviews and review resumes for anyone recruiting.'}
+          rows={4}
+          style={{ ...inputStyle, resize: 'vertical', minHeight: 100 }}
         />
 
-        <label style={{ ...labelStyle, marginTop: 14 }}>Description</label>
-        <textarea
-          value={description}
-          onChange={e => setDescription(e.target.value.slice(0, DESC_MAX))}
-          placeholder={need
-            ? 'Building an AI networking platform, looking for a full-stack engineer interested in startups.'
-            : 'Happy to review resumes or run mock interviews for VC recruiting.'}
-          rows={4}
-          style={{ ...inputStyle, resize: 'vertical', minHeight: 92 }}
-        />
+        {/* Same AI helper as Join / Discover */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minHeight: 26, marginTop: 8 }}>
+          <button
+            type="button"
+            onClick={improve}
+            disabled={!text.trim() || improving || busy}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '4px 2px', background: 'transparent', border: 'none',
+              cursor: (text.trim() && !improving && !busy) ? 'pointer' : 'default',
+              color: (text.trim() && !improving && !busy) ? C.goldDark : '#B8B0A2',
+              fontSize: 12, fontWeight: 600, fontFamily: 'Inter, system-ui, sans-serif',
+            }}
+          >
+            {improving ? (
+              <>
+                <span className="inline-block animate-spin" style={{ width: 11, height: 11, border: `1.5px solid ${C.goldLight}`, borderTopColor: C.goldDark, borderRadius: '50%' }} />
+                Improving…
+              </>
+            ) : (<>✨ Increase My Response Rate</>)}
+          </button>
+          {undo && (
+            <span style={{ fontSize: 11, color: C.textSub, fontFamily: 'Inter, system-ui, sans-serif' }}>
+              ✓ Clearer now ·{' '}
+              <button type="button" onClick={() => { setText(undo.prev); setUndo(null) }} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: C.goldDark, fontWeight: 700, fontSize: 11 }}>
+                Undo
+              </button>
+            </span>
+          )}
+        </div>
 
         <label style={{ ...labelStyle, marginTop: 14 }}>Skills / tags <span style={{ color: C.textSub, fontWeight: 400 }}>· optional, comma-separated</span></label>
         <input
@@ -151,12 +201,12 @@ export default function MarketplacePostComposer({ open, mode = 'create', type = 
         <button
           type="button"
           onClick={submit}
-          disabled={!title.trim() || busy}
+          disabled={!text.trim() || busy}
           style={{
             width: '100%', marginTop: 18, padding: '15px', borderRadius: 14, border: 'none',
-            background: !title.trim() || busy ? '#E5E1D8' : `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
-            color: !title.trim() || busy ? '#9B9384' : C.white,
-            fontSize: 15, fontWeight: 700, cursor: !title.trim() || busy ? 'default' : 'pointer',
+            background: !text.trim() || busy ? '#E5E1D8' : `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
+            color: !text.trim() || busy ? '#9B9384' : C.white,
+            fontSize: 15, fontWeight: 700, cursor: !text.trim() || busy ? 'default' : 'pointer',
             fontFamily: 'Inter, system-ui, sans-serif',
           }}
         >

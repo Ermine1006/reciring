@@ -79,12 +79,12 @@ export default function EventMarketplace({ eventId, userId, isHost = false, allo
   const haveOffer = myPosts.some(p => p.type === 'offer')
 
   // ── Handlers ──────────────────────────────────────────────
-  const submitComposer = async ({ type, title, description, tags, urgency, promoteToDiscover }) => {
+  const submitComposer = async ({ type, text, tags, urgency, promoteToDiscover }) => {
     setCBusy(true); setCErr(null)
     const isEdit = composer?.mode === 'edit'
     const res = isEdit
-      ? await updateMarketplacePost(composer.initial.id, { title, description, tags, urgency, promoteToDiscover })
-      : await createMarketplacePost({ eventId, userId, type, title, description, tags, urgency, promoteToDiscover })
+      ? await updateMarketplacePost(composer.initial.id, { type, text, tags, urgency, promoteToDiscover })
+      : await createMarketplacePost({ eventId, userId, type, text, tags, urgency, promoteToDiscover })
     setCBusy(false)
     if (res.error) { setCErr(res.error.message || 'Could not save'); return }
     setComposer(null)

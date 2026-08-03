@@ -183,14 +183,9 @@ export default function EventPreviewCard({ promo, isTop, onDrag, onSwipeLeft, on
         }}>
           {typeLabel}
         </span>
-        <p style={{ fontSize: 15, fontWeight: 600, color: C.ink, margin: '0 0 4px', lineHeight: 1.35, fontFamily: 'Inter, system-ui, sans-serif' }}>
-          {promo.title}
+        <p style={{ fontSize: 14, color: C.ink, margin: 0, lineHeight: 1.5, fontFamily: 'Inter, system-ui, sans-serif' }}>
+          {(promo.preview || promo.title)}{(promo.preview && promo.preview.length >= 240) ? '…' : ''}
         </p>
-        {promo.preview && (
-          <p style={{ fontSize: 13, color: C.sub, margin: 0, lineHeight: 1.5, fontFamily: 'Inter, system-ui, sans-serif' }}>
-            {promo.preview}{promo.preview.length >= 240 ? '…' : ''}
-          </p>
-        )}
         {promo.tags?.length > 0 && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
             {promo.tags.slice(0, 4).map(t => (
