@@ -26,6 +26,7 @@ import EditEventForm from './components/EditEventForm'
 import EventDetailPage from './components/EventDetailPage'
 import EventPreparePage from './components/EventPreparePage'
 import ProfilePage from './components/ProfilePage'
+import HomePage from './components/HomePage'
 import { isAdmin } from './data/adminEmails'
 import { submitReport, blockUser, fetchBlockedIds } from './lib/safety'
 import { isSupabaseConfigured, supabase } from './lib/supabase'
@@ -50,8 +51,18 @@ const C = {
   white:       '#FFFFFF',
 }
 
-/* ─── Tab definitions (5-tab nav: Discover · Matches · Community · Events · Profile) ── */
+/* ─── Tab definitions (5-tab nav: Home · Discover · Post · Matches · Events).
+   Profile is NOT a bottom-nav tab — it opens from the top-right avatar. ── */
 const TABS = [
+  {
+    id: 'home',
+    label: 'Home',
+    icon: (active) => (
+      <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={active ? 2 : 1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 10.5L12 3l9 7.5M5 9.5V20a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V9.5" />
+      </svg>
+    ),
+  },
   {
     id: 'discover',
     label: 'Discover',
@@ -90,27 +101,18 @@ const TABS = [
       </svg>
     ),
   },
-  {
-    id: 'profile',
-    label: 'Profile',
-    icon: (active) => (
-      <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={active ? 2 : 1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-      </svg>
-    ),
-  },
 ]
 
 /* ─── App shell (authenticated) ─────────────────────────────────── */
 function AppShell() {
-  const { session, user, profile, signOut } = useAuth()
+  const { session, user, profile, viewerProfile, signOut } = useAuth()
   // Boot straight back into the event-create form if an unexpired draft is
   // waiting — an iOS webview reload mid-form otherwise dumps the user on the
   // Discover tab, so the restored draft (fb7) would sit unseen behind a tab
   // they'd have to navigate to. If a draft exists, start on Events with the
   // form open so CreateEventForm mounts and repopulates from it immediately.
   const resumingEventDraft = hasFreshEventDraft()
-  const [tab, setTab]             = useState(resumingEventDraft ? 'events' : 'discover')
+  const [tab, setTab]             = useState(resumingEventDraft ? 'events' : 'home')
   // Transient banner, currently just the "first event is pending review" notice.
   const [banner, setBanner] = useState(null)
   // Profile sub-tab is lifted to App so that chat→review deep-links can
@@ -951,6 +953,17 @@ function AppShell() {
           ) : showEventReview && session && isAdmin(user?.email) ? (
             <AdminEventReview onClose={() => setShowEventReview(false)} />
           ) : <>
+          {tab === 'home' && (
+            <HomePage
+              profile={profile}
+              viewerProfile={viewerProfile}
+              userId={user?.id}
+              requests={requests}
+              onOpenDiscover={() => setTab('discover')}
+              onOpenEvent={(id) => { setEventInitialView(null); setViewingEventId(id); setTab('events') }}
+              onOpenProfile={() => { setProfileSubTab('profile'); setTab('profile') }}
+            />
+          )}
           {tab === 'discover' && (
             <CardStack
               requests={visibleRequests}
