@@ -124,6 +124,7 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
   const [chatSending, setChatSending] = useState(false)
   const chatBottomRef = useRef(null)
   const chatSectionRef = useRef(null)
+  const eventModeRef = useRef(null)
 
   const isHost = user && event && event.host_user_id === user.id
   const spotsLeft = event ? Math.max(0, (event.max_attendees || 0) - (event.attendee_count || 0)) : 0
@@ -210,6 +211,16 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
     })
     return () => { if (channel) channel.unsubscribe() }
   }, [eventId, user?.id])
+
+  // When Event Mode opens (e.g. tapping "See who" on the people-you-know line),
+  // scroll the attendee list into view — it renders above the current scroll
+  // position, so without this the page looks unchanged.
+  useEffect(() => {
+    if (viewMode !== 'event_mode') return
+    const id = requestAnimationFrame(() =>
+      eventModeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+    return () => cancelAnimationFrame(id)
+  }, [viewMode])
 
   // Auto-scroll to bottom of chat when messages change
   useEffect(() => {
@@ -509,14 +520,16 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
         {/* Event Mode appears as a top card, keeps the rest below
             so people can still see event details while logging. */}
         {viewMode === 'event_mode' && (
-          <EventModeSection
-            eventId={event.id}
-            attendees={attendees}
-            encounters={myEncounters}
-            currentUserId={user?.id}
-            knownContext={knownContext}
-            onEncountersChanged={reloadEncounters}
-          />
+          <div ref={eventModeRef} style={{ scrollMarginTop: 12 }}>
+            <EventModeSection
+              eventId={event.id}
+              attendees={attendees}
+              encounters={myEncounters}
+              currentUserId={user?.id}
+              knownContext={knownContext}
+              onEncountersChanged={reloadEncounters}
+            />
+          </div>
         )}
 
         {/* Marketplace mode replaces the overview body (like recap). */}

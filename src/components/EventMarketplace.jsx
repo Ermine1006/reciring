@@ -115,14 +115,6 @@ export default function EventMarketplace({ eventId, userId, isHost = false, allo
     loadAll()
   }
 
-  const removePost = async (post) => {
-    if (!window.confirm(`Delete your “${post.title}” post?`)) return
-    const { error } = await deleteMarketplacePost(post.id)
-    if (error) { flash('Could not delete'); return }
-    flash('Post deleted')
-    loadAll()
-  }
-
   const sendInterest = async (post) => {
     // Optimistic: mark pending immediately.
     setMyInt(prev => [...prev, { id: `tmp-${post.id}`, post_id: post.id, status: 'pending', match_id: null }])
@@ -192,6 +184,17 @@ export default function EventMarketplace({ eventId, userId, isHost = false, allo
           interestCount={(ownerByPost[myNeed?.id]?.total || 0) + (ownerByPost[myOffer?.id]?.total || 0)}
           pendingCount={(ownerByPost[myNeed?.id]?.pending || 0) + (ownerByPost[myOffer?.id]?.pending || 0)}
           onEdit={() => (onPrepare ? onPrepare() : setComposer({ mode: 'edit', type: myNeed ? 'need' : 'offer', initial: myNeed || myOffer }))}
+          onDelete={async () => {
+            const targets = [myNeed, myOffer].filter(Boolean)
+            if (targets.length === 0) return
+            if (!window.confirm('Delete your event post? This removes it from the board.')) return
+            for (const p of targets) {
+              const { error } = await deleteMarketplacePost(p.id)
+              if (error) { flash('Could not delete'); return }
+            }
+            flash('Post deleted')
+            loadAll()
+          }}
           onManage={() => {
             const target = [myNeed, myOffer].find(p => p && ownerByPost[p.id]?.pending) || myNeed || myOffer
             setManage(target?.id)
