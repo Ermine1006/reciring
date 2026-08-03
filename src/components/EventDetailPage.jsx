@@ -199,13 +199,14 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
   // event); the sheet's confirm runs the real join below.
   const [showJoinIntent, setShowJoinIntent] = useState(false)
 
-  const handleJoin = async ({ needText, offerText } = {}) => {
+  const handleJoin = async (intentions = {}) => {
     if (!user || !event) return { error: null }
     setJoinPending(true); setToast(null)
     // Optimistic
     setJoined(true)
     setEvent(prev => ({ ...prev, attendee_count: (prev.attendee_count || 0) + 1 }))
-    const { error } = await joinEvent(event.id, user.id, { needText, offerText })
+    // Pass the whole intentions payload (needTitle/needText/offerTitle/offerText).
+    const { error } = await joinEvent(event.id, user.id, intentions)
     setJoinPending(false)
     if (error) {
       setJoined(false)

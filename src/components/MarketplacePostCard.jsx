@@ -92,11 +92,15 @@ export default function MarketplacePostCard({
         <TypeTag type={post.type} />
       </div>
 
-      {/* Single free-text body (unified format — no separate headline). Falls
-          back to the derived title only for legacy posts with no description. */}
-      <p style={{ margin: '12px 0 0', fontSize: 14.5, color: C.ink, lineHeight: 1.5, fontFamily: 'Inter, system-ui, sans-serif', whiteSpace: 'pre-wrap' }}>
-        {post.description || post.title}
-      </p>
+      {/* Title (headline) + description — consistent with Discover cards. */}
+      <h3 style={{ margin: '12px 0 0', fontSize: 16, fontWeight: 700, color: C.ink, lineHeight: 1.3, fontFamily: 'Fraunces, Georgia, serif' }}>
+        {post.title}
+      </h3>
+      {post.description && post.description !== post.title && (
+        <p style={{ margin: '6px 0 0', fontSize: 13.5, color: C.textSub, lineHeight: 1.5, fontFamily: 'Inter, system-ui, sans-serif', whiteSpace: 'pre-wrap' }}>
+          {post.description}
+        </p>
+      )}
 
       <Chips items={post.tags} />
 

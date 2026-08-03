@@ -10,16 +10,6 @@ import { logPromoConnectionIfAttributed } from './discoverPromos'
 
 const POST_COLS = 'id, event_id, user_id, type, title, description, tags, urgency, status, created_at, updated_at, promote_to_discover'
 
-// The Marketplace uses a single free-text field (unified with Join / Discover),
-// but the DB keeps a NOT NULL `title`. Derive a short title from the body's
-// first line so users never type one. Falls back to a type label.
-function deriveTitle(text, type) {
-  const t = String(text || '').trim()
-  if (!t) return type === 'need' ? 'Looking for help' : 'Offering help'
-  const firstLine = t.split('\n')[0].trim()
-  return (firstLine.length <= 90 ? firstLine : firstLine.slice(0, 89) + '…').slice(0, 120)
-}
-
 // Anonymous feed for an event, newest first. Excludes my own posts (those come
 // from fetchMyMarketplacePosts) so the "Browse" list is only other people.
 export async function fetchMarketplaceFeed(eventId, myUserId) {
@@ -46,22 +36,19 @@ export async function fetchMyMarketplacePosts(eventId, userId) {
   return { data: data || [], error }
 }
 
-export async function createMarketplacePost({ eventId, userId, type, text, title, description, tags, urgency, promoteToDiscover = false }) {
+export async function createMarketplacePost({ eventId, userId, type, title, description, tags, urgency, promoteToDiscover = false }) {
   if (!isSupabaseConfigured) return { data: null, error: new Error('Supabase not configured') }
   if (!eventId || !userId)   return { data: null, error: new Error('Missing event or user') }
   if (!['need', 'offer'].includes(type)) return { data: null, error: new Error('Bad post type') }
-  // Unified single field; `text` is the body. (title/description kept for
-  // backward-compatible callers.)
-  const body = String(text ?? description ?? title ?? '').trim()
-  if (!body) return { data: null, error: new Error(type === 'need' ? 'Say what you need' : 'Say what you can offer') }
+  if (!title?.trim())        return { data: null, error: new Error('Add a short title') }
   const { data, error } = await supabase
     .from('event_marketplace_posts')
     .insert({
       event_id:    eventId,
       user_id:     userId,
       type,
-      title:       deriveTitle(body, type),
-      description: body.slice(0, 600),
+      title:       title.trim().slice(0, 120),
+      description: String(description || '').trim().slice(0, 600),
       tags:        (tags || []).slice(0, 8),
       urgency:     urgency?.trim() ? urgency.trim().slice(0, 40) : null,
       promote_to_discover: Boolean(promoteToDiscover),
@@ -74,19 +61,11 @@ export async function createMarketplacePost({ eventId, userId, type, text, title
   return { data, error }
 }
 
-export async function updateMarketplacePost(id, { type, text, title, description, tags, urgency, promoteToDiscover }) {
+export async function updateMarketplacePost(id, { title, description, tags, urgency, promoteToDiscover }) {
   if (!isSupabaseConfigured || !id) return { error: new Error('Missing post') }
   const patch = { updated_at: new Date().toISOString() }
-  // Unified single field: editing `text` rewrites both the body and the
-  // derived title so the card shows one coherent text.
-  if (text !== undefined) {
-    const body = String(text || '').trim()
-    patch.description = body.slice(0, 600)
-    patch.title       = deriveTitle(body, type)
-  } else {
-    if (title       !== undefined) patch.title       = String(title).trim().slice(0, 120)
-    if (description !== undefined) patch.description = String(description || '').trim().slice(0, 600)
-  }
+  if (title       !== undefined) patch.title       = String(title).trim().slice(0, 120)
+  if (description !== undefined) patch.description = String(description || '').trim().slice(0, 600)
   if (tags        !== undefined) patch.tags        = (tags || []).slice(0, 8)
   if (urgency     !== undefined) patch.urgency     = urgency?.trim() ? urgency.trim().slice(0, 40) : null
   if (promoteToDiscover !== undefined) patch.promote_to_discover = Boolean(promoteToDiscover)

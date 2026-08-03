@@ -19,28 +19,33 @@ const C = {
  * the optimistic-update + error handling it already had.
  */
 export default function EventJoinIntentModal({ open, eventTitle, prefill, onConfirm, onClose }) {
+  const [needTitle, setNeedTitle]   = useState(prefill?.needTitle || '')
   const [need, setNeed]   = useState(prefill?.needText || '')
+  const [offerTitle, setOfferTitle] = useState(prefill?.offerTitle || '')
   const [offer, setOffer] = useState(prefill?.offerText || '')
   const [busy, setBusy]   = useState(false)
   const [error, setError] = useState(null)
 
-  const join = async (needText, offerText) => {
+  const join = async (payload) => {
     if (busy) return
     // Need/offer are optional — joining shouldn't be blocked. Attendees can add
     // or edit them anytime on the event's Prepare page (the Opportunity Board).
     setBusy(true); setError(null)
-    const { error: err } = await onConfirm({ needText, offerText })
+    const { error: err } = await onConfirm(payload)
     setBusy(false)
     if (err) { setError(err.message || 'Could not join'); return }
     // Parent closes on success.
   }
 
-  const handleSubmit = () => join(need.trim(), offer.trim())
+  const handleSubmit = () => join({
+    needTitle: needTitle.trim(),   needText: need.trim(),
+    offerTitle: offerTitle.trim(), offerText: offer.trim(),
+  })
   // Join right away without sharing need/offer — the user can add them later
   // on the event page. Distinct from Cancel, which aborts joining entirely.
-  const handleSkip = () => join('', '')
+  const handleSkip = () => join({ needTitle: '', needText: '', offerTitle: '', offerText: '' })
 
-  const filledBoth = need.trim() && offer.trim()
+  const filledBoth = needTitle.trim() && offerTitle.trim()
   const canSubmit = !busy
 
   /* ── "Increase My Response Rate" — AI rewrite of either field ── */
@@ -125,6 +130,11 @@ export default function EventJoinIntentModal({ open, eventTitle, prefill, onConf
     padding: '11px 13px', fontSize: 14, color: C.ink, lineHeight: 1.4,
     fontFamily: 'Inter, system-ui, sans-serif', outline: 'none',
   }
+  const titleInput = {
+    width: '100%', background: '#FAFAFA', border: `1.5px solid ${C.border}`, borderRadius: 12,
+    padding: '11px 13px', fontSize: 14, color: C.ink,
+    fontFamily: 'Inter, system-ui, sans-serif', outline: 'none', marginBottom: 8,
+  }
   const label = {
     fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', color: C.goldDark,
     margin: '0 0 6px', fontFamily: 'Inter, system-ui, sans-serif',
@@ -176,9 +186,14 @@ export default function EventJoinIntentModal({ open, eventTitle, prefill, onConf
                 </p>
 
                 <p style={label}>What do you need at this event? <span style={{ color: '#B8B0A2', fontWeight: 500 }}>· optional</span></p>
+                <input
+                  value={needTitle} onChange={(e) => setNeedTitle(e.target.value.slice(0, 120))}
+                  placeholder="Short headline — e.g. Technical co-founder"
+                  style={titleInput}
+                />
                 <textarea
                   value={need} onChange={(e) => setNeed(e.target.value.slice(0, 600))}
-                  placeholder="e.g. Intros to AI infra investors; feedback on my eval startup"
+                  placeholder="Add detail — e.g. Intros to AI infra investors; feedback on my eval startup"
                   style={{ ...field, marginBottom: 6 }}
                 />
 
@@ -186,9 +201,14 @@ export default function EventJoinIntentModal({ open, eventTitle, prefill, onConf
                 {improveRow('need')}
 
                 <p style={label}>What can you offer? <span style={{ color: '#B8B0A2', fontWeight: 500 }}>· optional</span></p>
+                <input
+                  value={offerTitle} onChange={(e) => setOfferTitle(e.target.value.slice(0, 120))}
+                  placeholder="Short headline — e.g. VC interview coaching"
+                  style={titleInput}
+                />
                 <textarea
                   value={offer} onChange={(e) => setOffer(e.target.value.slice(0, 600))}
-                  placeholder="e.g. Happy to share hiring playbooks; intros to a16z network"
+                  placeholder="Add detail — e.g. Happy to share hiring playbooks; intros to a16z network"
                   style={{ ...field, marginBottom: 6 }}
                 />
 

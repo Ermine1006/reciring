@@ -60,7 +60,7 @@ export default function EventsList({ onCreateEvent, onOpenEvent, onPrepare, onOp
     setIntentEvent(ev || { id: eventId })
   }
 
-  const confirmJoin = async ({ needText, offerText }) => {
+  const confirmJoin = async (intentions = {}) => {
     if (!user || !intentEvent) return { error: null }
     const eventId = intentEvent.id
     setJoiningId(eventId)
@@ -73,7 +73,7 @@ export default function EventsList({ onCreateEvent, onOpenEvent, onPrepare, onOp
       e.id === eventId ? { ...e, attendee_count: (e.attendee_count || 0) + 1 } : e,
     ))
 
-    const { error } = await joinEvent(eventId, user.id, { needText, offerText })
+    const { error } = await joinEvent(eventId, user.id, intentions)
     setJoiningId(null)
     if (error) {
       // Rollback

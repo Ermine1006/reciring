@@ -17,17 +17,18 @@ const DESC_MAX = 600
  * one need + one offer per event).
  */
 export default function MarketplacePostComposer({ open, mode = 'create', type = 'need', initial = null, busy = false, error = null, allowPromotion = false, onSubmit, onClose }) {
-  // Unified format: ONE free-text field (like the Join and Discover flows) —
-  // no separate title. A short title is derived from this text for storage.
-  const [text, setText] = useState('')
+  // Unified with Discover: a short title (headline) + a description, plus the
+  // same "Increase My Response Rate" AI on the description.
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
   const [tagsText, setTagsText] = useState('')
   const [urgency, setUrgency] = useState('')
   const [promoteToDiscover, setPromoteToDiscover] = useState(false)
 
   useEffect(() => {
     if (open) {
-      // Seed from the post body; fall back to the old title for legacy posts.
-      setText(initial?.description || initial?.title || '')
+      setTitle(initial?.title || '')
+      setDescription(initial?.description || '')
       setTagsText((initial?.tags || []).join(', '))
       setUrgency(initial?.urgency || '')
       setPromoteToDiscover(Boolean(initial?.promote_to_discover))
@@ -39,22 +40,24 @@ export default function MarketplacePostComposer({ open, mode = 'create', type = 
   const accent = need ? C.goldDark : C.green
 
   // ── "Increase My Response Rate" — same AI rewrite as Join / Discover ──
+  // Rewrites the description (expanding the title if the description is empty).
   const [improving, setImproving] = useState(false)
   const [undo, setUndo] = useState(null) // { prev }
 
   const improve = async () => {
-    const source = text.trim()
+    const source = (description.trim() || title.trim())
     if (!source || improving || busy) return
     setImproving(true)
     const { text: out, error: err } = await rewriteText({
       kind: need ? 'event_need' : 'event_offer',
       text: source,
       maxChars: DESC_MAX,
+      context: { title: title.trim() },
     })
     setImproving(false)
     if (err || !out) return
-    setUndo({ prev: text })
-    setText(out)
+    setUndo({ prev: description })
+    setDescription(out)
   }
 
   useEffect(() => {
@@ -66,10 +69,10 @@ export default function MarketplacePostComposer({ open, mode = 'create', type = 
   if (!open) return null
 
   const submit = () => {
-    if (!text.trim() || busy) return
+    if (!title.trim() || busy) return
     const tags = tagsText.split(',').map(s => s.trim()).filter(Boolean).slice(0, 8)
     // Only allow opting in when the host enabled promotion for this event.
-    onSubmit?.({ type, text: text.trim(), tags, urgency, promoteToDiscover: allowPromotion && promoteToDiscover })
+    onSubmit?.({ type, title: title.trim(), description: description.trim(), tags, urgency, promoteToDiscover: allowPromotion && promoteToDiscover })
   }
 
   return createPortal(
@@ -101,15 +104,23 @@ export default function MarketplacePostComposer({ open, mode = 'create', type = 
           {mode === 'edit' ? 'Edit your post' : need ? 'What are you looking for?' : 'What can you offer?'}
         </h2>
 
-        <label style={labelStyle}>{need ? 'What are you looking for?' : 'What can you offer?'} <span style={{ color: C.danger }}>*</span></label>
+        <label style={labelStyle}>{need ? 'Looking for' : 'Offering'} <span style={{ color: C.danger }}>*</span></label>
+        <input
+          value={title}
+          onChange={e => setTitle(e.target.value.slice(0, 120))}
+          placeholder={need ? 'e.g. Technical co-founder' : 'e.g. VC interview coaching'}
+          style={inputStyle}
+        />
+
+        <label style={{ ...labelStyle, marginTop: 14 }}>Description</label>
         <textarea
-          value={text}
-          onChange={e => setText(e.target.value.slice(0, DESC_MAX))}
+          value={description}
+          onChange={e => setDescription(e.target.value.slice(0, DESC_MAX))}
           placeholder={need
-            ? 'e.g. Looking for a technical co-founder — building an AI networking platform, want a full-stack engineer into startups.'
-            : 'e.g. Happy to run VC-style mock interviews and review resumes for anyone recruiting.'}
+            ? 'Building an AI networking platform, looking for a full-stack engineer interested in startups.'
+            : 'Happy to review resumes or run mock interviews for VC recruiting.'}
           rows={4}
-          style={{ ...inputStyle, resize: 'vertical', minHeight: 100 }}
+          style={{ ...inputStyle, resize: 'vertical', minHeight: 92 }}
         />
 
         {/* Same AI helper as Join / Discover */}
@@ -117,12 +128,12 @@ export default function MarketplacePostComposer({ open, mode = 'create', type = 
           <button
             type="button"
             onClick={improve}
-            disabled={!text.trim() || improving || busy}
+            disabled={(!description.trim() && !title.trim()) || improving || busy}
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 6,
               padding: '4px 2px', background: 'transparent', border: 'none',
-              cursor: (text.trim() && !improving && !busy) ? 'pointer' : 'default',
-              color: (text.trim() && !improving && !busy) ? C.goldDark : '#B8B0A2',
+              cursor: ((description.trim() || title.trim()) && !improving && !busy) ? 'pointer' : 'default',
+              color: ((description.trim() || title.trim()) && !improving && !busy) ? C.goldDark : '#B8B0A2',
               fontSize: 12, fontWeight: 600, fontFamily: 'Inter, system-ui, sans-serif',
             }}
           >
@@ -201,12 +212,12 @@ export default function MarketplacePostComposer({ open, mode = 'create', type = 
         <button
           type="button"
           onClick={submit}
-          disabled={!text.trim() || busy}
+          disabled={!title.trim() || busy}
           style={{
             width: '100%', marginTop: 18, padding: '15px', borderRadius: 14, border: 'none',
-            background: !text.trim() || busy ? '#E5E1D8' : `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
-            color: !text.trim() || busy ? '#9B9384' : C.white,
-            fontSize: 15, fontWeight: 700, cursor: !text.trim() || busy ? 'default' : 'pointer',
+            background: !title.trim() || busy ? '#E5E1D8' : `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
+            color: !title.trim() || busy ? '#9B9384' : C.white,
+            fontSize: 15, fontWeight: 700, cursor: !title.trim() || busy ? 'default' : 'pointer',
             fontFamily: 'Inter, system-ui, sans-serif',
           }}
         >
