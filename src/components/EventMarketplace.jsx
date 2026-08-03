@@ -181,21 +181,7 @@ export default function EventMarketplace({ eventId, userId, isHost = false, allo
         before the event — names stay hidden until someone accepts.
       </p>
 
-      {/* Host dashboard */}
-      {isHost && hostTopics && (
-        <div style={{ ...cardStyle, background: C.goldBg, borderColor: C.goldLight }}>
-          <p style={sectionLabel}>Organizer view</p>
-          <div style={{ display: 'flex', gap: 10, marginBottom: hostTopics.topRequested.length || hostTopics.topOffered.length ? 12 : 0 }}>
-            <Stat n={hostTopics.total} label="posts" />
-            <Stat n={hostTopics.needs} label="looking for" />
-            <Stat n={hostTopics.offers} label="offering" />
-            <Stat n={stats?.interest_count ?? 0} label="interests" />
-            <Stat n={stats?.accepted_count ?? 0} label="connected" />
-          </div>
-          {hostTopics.topRequested.length > 0 && <TopList title="Most requested" items={hostTopics.topRequested} />}
-          {hostTopics.topOffered.length > 0 && <TopList title="Most offered" items={hostTopics.topOffered} />}
-        </div>
-      )}
+      {/* Host stats now live in the host-only Manage page, not on the Board. */}
 
       {/* Your event post — one combined card; Edit opens Prepare */}
       <p style={sectionLabel}>Your event post</p>

@@ -23,6 +23,7 @@ import EventMatchList from './EventMatchList'
 import { resolveAvatarSeed } from './SettingsPage'
 import { sendEventRegistrationEmail, sendEventUnregisterEmail, notifyEventCancellation } from '../lib/email'
 import EventModeSection from './EventModeSection'
+import EventManagePage from './EventManagePage'
 import EventMarketplace from './EventMarketplace'
 import EventCover from './EventCover'
 import EventRecapPage from './EventRecapPage'
@@ -405,6 +406,14 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
               Completed
             </span>
           )}
+          {/* Host-only Manage — not a participant tab */}
+          {isHost && !isCancelled && (viewMode === 'overview' || viewMode === 'marketplace') && (
+            <button type="button" onClick={() => setViewMode('manage')}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 13px', borderRadius: 99, background: '#EDF3FA', border: '1px solid #CFE0F2', color: '#3B6EA5', fontSize: 12.5, fontWeight: 650, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round"><path d="M4 6h10M18 6h2M4 12h2M10 12h10M4 18h7M15 18h5"/><circle cx="15" cy="6" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="13" cy="18" r="2"/></svg>
+              Manage
+            </button>
+          )}
         </div>
 
         {/* Incoming confirmation requests — surfaces even when the
@@ -502,9 +511,20 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
           />
         )}
 
+        {/* Host-only Manage — replaces the body. */}
+        {viewMode === 'manage' && isHost && (
+          <EventManagePage
+            event={event}
+            attendees={attendees}
+            userId={user?.id}
+            onEdit={() => onEdit?.(event.id)}
+            onCancel={handleCancel}
+          />
+        )}
+
         {/* Header card + rest of the normal overview render only
-            when we're not in dedicated recap or marketplace mode. */}
-        {viewMode !== 'recap' && viewMode !== 'marketplace' && (
+            when we're not in a dedicated full-screen mode. */}
+        {viewMode !== 'recap' && viewMode !== 'marketplace' && viewMode !== 'manage' && (
           <>
         {/* Cover — host's uploaded image, or a tasteful branded fallback */}
         <EventCover event={event} radius={16} aspectRatio="16 / 9" style={{ marginBottom: 14, border: `1px solid ${C.border}` }} />
