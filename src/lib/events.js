@@ -68,6 +68,44 @@ export async function fetchMyJoinedEventIds(userId) {
 }
 
 /**
+ * Every event the user hosts OR has joined — INCLUDING past ones. Powers the
+ * "My events" filter so a finished event (e.g. to complete its recap) never
+ * disappears just because its start time has passed. Newest start first.
+ */
+export async function fetchMyEvents(userId) {
+  if (!isSupabaseConfigured || !userId) return { data: [], error: null }
+
+  const COLS = `
+    id, title, description, start_at, location, category,
+    max_attendees, min_attendees, host_user_id, host_display_name, host_type,
+    image_url, is_sponsored, created_at,
+    status, cancellation_reason, cancelled_at,
+    attendee_visibility, moderation_status,
+    event_attendees ( count )`
+
+  const { data: joined } = await supabase
+    .from('event_attendees')
+    .select('event_id')
+    .eq('user_id', userId)
+  const joinedIds = (joined || []).map(r => r.event_id)
+
+  const [hostedRes, joinedRes] = await Promise.all([
+    supabase.from('events').select(COLS).eq('host_user_id', userId),
+    joinedIds.length
+      ? supabase.from('events').select(COLS).in('id', joinedIds)
+      : Promise.resolve({ data: [], error: null }),
+  ])
+  if (hostedRes.error) return { data: [], error: hostedRes.error }
+
+  const byId = new Map()
+  for (const e of [...(hostedRes.data || []), ...(joinedRes.data || [])]) byId.set(e.id, e)
+  const rows = [...byId.values()]
+    .map(e => ({ ...e, attendee_count: e.event_attendees?.[0]?.count || 0 }))
+    .sort((a, b) => new Date(b.start_at).getTime() - new Date(a.start_at).getTime())
+  return { data: rows, error: null }
+}
+
+/**
  * Create an event. The DB enforces host_user_id = auth.uid() via RLS.
  * `start_at` should be an ISO timestamp string (the form combines
  * its date + time inputs before calling here).

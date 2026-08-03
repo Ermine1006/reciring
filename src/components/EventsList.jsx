@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
-import { fetchUpcomingEvents, fetchMyJoinedEventIds, joinEvent, leaveEvent, cancelEvent } from '../lib/events'
+import { fetchUpcomingEvents, fetchMyJoinedEventIds, fetchMyEvents, joinEvent, leaveEvent, cancelEvent } from '../lib/events'
 import EventCard from './EventCard'
 import EventJoinIntentModal from './EventJoinIntentModal'
 import AppScreen from './AppScreen'
@@ -24,6 +24,7 @@ export default function EventsList({ onCreateEvent, onOpenEvent, onPrepare, onOp
   const { user } = useAuth()
 
   const [events, setEvents]         = useState([])
+  const [myEvents, setMyEvents]     = useState([]) // hosted + joined, incl. past
   const [joinedIds, setJoinedIds]   = useState(new Set())
   const [loading, setLoading]       = useState(true)
   // Events-vs-My-Networking toggle. Lifted to the parent (when props are
@@ -44,12 +45,14 @@ export default function EventsList({ onCreateEvent, onOpenEvent, onPrepare, onOp
 
   const refresh = useCallback(async () => {
     setLoading(true)
-    const [{ data: eventsData }, { data: joined }] = await Promise.all([
+    const [{ data: eventsData }, { data: joined }, { data: mine }] = await Promise.all([
       fetchUpcomingEvents(),
       user ? fetchMyJoinedEventIds(user.id) : Promise.resolve({ data: new Set() }),
+      user ? fetchMyEvents(user.id)         : Promise.resolve({ data: [] }),
     ])
     setEvents(eventsData || [])
     setJoinedIds(joined || new Set())
+    setMyEvents(mine || [])
     optimisticAdds.current.clear()
     setLoading(false)
   }, [user?.id])
@@ -154,12 +157,12 @@ export default function EventsList({ onCreateEvent, onOpenEvent, onPrepare, onOp
     setToast({ type: 'ok', msg: 'Event cancelled — attendees notified' })
   }
 
-  // "My events" = events I joined OR events I host (hosting doesn't auto-join).
-  const isMine = (e) => joinedIds.has(e.id) || (user && e.host_user_id === user.id)
+  // "My events" = events I host or joined — from a dedicated query that
+  // INCLUDES past events (so a finished event never disappears).
   const visible = useMemo(() => {
-    if (filter === 'joined') return events.filter(isMine)
+    if (filter === 'joined') return myEvents
     return events
-  }, [events, joinedIds, filter, user?.id])
+  }, [events, myEvents, filter])
 
   return (
     <AppScreen>
@@ -234,7 +237,7 @@ export default function EventsList({ onCreateEvent, onOpenEvent, onPrepare, onOp
         <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
           {[
             { id: 'upcoming', label: 'Upcoming',    count: events.length },
-            { id: 'joined',   label: 'My events',   count: events.filter(isMine).length },
+            { id: 'joined',   label: 'My events',   count: myEvents.length },
           ].map(f => {
             const active = filter === f.id
             return (
