@@ -25,7 +25,7 @@ const URGENCY = {
   soon:   { label: 'This week', color: '#92400E', dot: '#F59E0B' },
 }
 
-export default function RequestDetailModal({ request, matchReason, onClose, onMatch, onReport, onBlock }) {
+export default function RequestDetailModal({ request, matchReason, onClose, onMatch, onPass, onReport, onBlock }) {
   const [showMenu, setShowMenu]     = useState(false)
   const [showReport, setShowReport] = useState(false)
 
@@ -311,27 +311,46 @@ export default function RequestDetailModal({ request, matchReason, onClose, onMa
           background: 'rgba(255,255,255,0.95)',
           backdropFilter: 'blur(12px)',
         }}>
-          <button
-            type="button"
-            onClick={() => { onMatch(request); onClose() }}
-            style={{
-              width: '100%', padding: '14px 0',
-              borderRadius: 99, border: 'none', cursor: 'pointer',
-              background: `linear-gradient(135deg, ${C.gold} 0%, ${C.goldDark} 100%)`,
-              boxShadow: '0 6px 24px rgba(200,169,106,0.4)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-              fontSize: 15, fontWeight: 700, color: '#FFFFFF',
-              fontFamily: 'Inter, system-ui, sans-serif',
-              letterSpacing: '0.02em',
-              transition: 'transform 0.15s, box-shadow 0.15s',
-            }}
-            onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.97)' }}
-            onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)' }}
-            onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)' }}
-          >
-            <Handshake size={20} strokeWidth={2} />
-            I can help
-          </button>
+          <div style={{ display: 'flex', gap: 10 }}>
+            {/* Explicit "not for me" — only offered when a pass handler is
+                provided (e.g. from Home). Discover keeps its single action. */}
+            {onPass && (
+              <button
+                type="button"
+                onClick={() => { onPass(request); onClose() }}
+                style={{
+                  flex: 1, padding: '14px 0',
+                  borderRadius: 99, cursor: 'pointer',
+                  background: '#FFFFFF', border: `1.5px solid ${C.goldLight || '#E6D3A3'}`,
+                  fontSize: 15, fontWeight: 650, color: C.goldDark,
+                  fontFamily: 'Inter, system-ui, sans-serif',
+                }}
+              >
+                Not for me
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => { onMatch(request); onClose() }}
+              style={{
+                flex: onPass ? 2 : 1, padding: '14px 0',
+                borderRadius: 99, border: 'none', cursor: 'pointer',
+                background: `linear-gradient(135deg, ${C.gold} 0%, ${C.goldDark} 100%)`,
+                boxShadow: '0 6px 24px rgba(200,169,106,0.4)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                fontSize: 15, fontWeight: 700, color: '#FFFFFF',
+                fontFamily: 'Inter, system-ui, sans-serif',
+                letterSpacing: '0.02em',
+                transition: 'transform 0.15s, box-shadow 0.15s',
+              }}
+              onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.97)' }}
+              onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)' }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)' }}
+            >
+              <Handshake size={20} strokeWidth={2} />
+              I can help
+            </button>
+          </div>
         </div>
       </motion.div>
 

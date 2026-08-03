@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Clock, Users, CalendarDays, ArrowRight, MessageSquareText } from 'lucide-react'
 import AnonymousAvatar from './AnonymousAvatar'
 import { resolveAvatarSeed } from './SettingsPage'
-import { getMatchScore } from '../data/matchRanking'
+import { getMatchScore, DEFAULT_VIEWER_PROFILE } from '../data/matchRanking'
 import { fetchUpcomingEvents, fetchMyJoinedEventIds } from '../lib/events'
 import { fetchFollowups, fetchEncounters, personKey } from '../lib/eventMemory'
 
@@ -41,6 +41,15 @@ function initials(name) {
 }
 function oneLine(s, max = 92) {
   const t = String(s || '').trim().replace(/\s+/g, ' ')
+  return t.length <= max ? t : t.slice(0, max - 1).trimEnd() + '…'
+}
+// Just the headline: the part before a " — " separator (posts are stored as
+// "title — details"), or the first sentence. Keep it short.
+function titleOf(s, max = 64) {
+  let t = String(s || '').trim().replace(/\s+/g, ' ')
+  t = t.split(/\s[—–]\s|\s-\s/)[0]          // before " — " / " – " / " - "
+  const m = t.match(/^[^.!?]*[.!?]?/)        // up to the first sentence end
+  t = (m ? m[0] : t).trim()
   return t.length <= max ? t : t.slice(0, max - 1).trimEnd() + '…'
 }
 function fmtEventDate(iso) {
@@ -82,12 +91,16 @@ export default function HomePage({
   }, [userId])
 
   // Top person suggestion — from ranked community posts (real authors only).
+  // viewerProfile is null for a thin profile; fall back to the default so the
+  // ranker never dereferences a missing strengths/industries array.
+  const rankViewer = (viewerProfile && Array.isArray(viewerProfile.strengths) && Array.isArray(viewerProfile.industries))
+    ? viewerProfile : DEFAULT_VIEWER_PROFILE
   const personRec = useMemo(() => {
     return (requests || [])
       .filter(p => p.created_by !== userId && (p.needs || p.offers) && p.creator?.name && !p.isAnonymous)
-      .map(p => ({ post: p, score: getMatchScore(p, viewerProfile) }))
+      .map(p => ({ post: p, score: getMatchScore(p, rankViewer) }))
       .sort((a, b) => b.score - a.score)[0]?.post || null
-  }, [requests, userId, viewerProfile])
+  }, [requests, userId, rankViewer])
 
   const eventRec = data.events[0] || null
 
@@ -130,7 +143,7 @@ export default function HomePage({
             label="Person"
             title={personRec.creator?.name}
             sub={[personRec.creator?.headline, personRec.creator?.program].filter(Boolean).join(' · ') || 'Community member'}
-            reason={oneLine(personRec.needs || personRec.offers)}
+            reason={titleOf(personRec.needs || personRec.offers)}
             actionLabel="View"
             actionStyle="out"
             onAction={() => onOpenPost?.(personRec)}

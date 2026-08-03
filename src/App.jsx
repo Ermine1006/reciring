@@ -1200,6 +1200,7 @@ function AppShell() {
               setHomePostDetail(null)
               if (matchId) { loadMatches(); setChatMatchId(matchId); setTab('matches') }
             }}
+            onPass={(r) => { recordInteraction(r.id, 'swiped_left'); setHomePostDetail(null) }}
             onReport={handleReport}
             onBlock={handleBlock}
           />
