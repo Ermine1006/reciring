@@ -172,13 +172,16 @@ export async function joinEvent(eventId, userId, intentions = {}) {
     return t || null
   }
 
+  const needText  = clip(intentions.needText)
+  const offerText = clip(intentions.offerText)
+
   const { error } = await supabase
     .from('event_attendees')
     .insert({
       event_id:   eventId,
       user_id:    userId,
-      need_text:  clip(intentions.needText),
-      offer_text: clip(intentions.offerText),
+      need_text:  needText,
+      offer_text: offerText,
     })
 
   if (error) {
@@ -186,6 +189,22 @@ export async function joinEvent(eventId, userId, intentions = {}) {
     if (/capacity/i.test(error.message || '')) return { error: new Error('This event is full') }
     return { error }
   }
+
+  // Bridge the join intentions into the event's Marketplace so what the user
+  // typed actually shows up there (attendees expect one place, not two). The
+  // attendee row above satisfies the marketplace INSERT RLS. Best-effort:
+  // a failure here must not fail the join. ON CONFLICT DO NOTHING
+  // (ignoreDuplicates) so we never clobber a richer post they edited later.
+  const seedPosts = []
+  if (needText)  seedPosts.push({ event_id: eventId, user_id: userId, type: 'need',  title: needText.slice(0, 120),  description: needText })
+  if (offerText) seedPosts.push({ event_id: eventId, user_id: userId, type: 'offer', title: offerText.slice(0, 120), description: offerText })
+  if (seedPosts.length) {
+    const { error: mpErr } = await supabase
+      .from('event_marketplace_posts')
+      .upsert(seedPosts, { onConflict: 'event_id,user_id,type', ignoreDuplicates: true })
+    if (mpErr) console.warn('[events] marketplace seed from join failed:', mpErr.message)
+  }
+
   return { error: null }
 }
 

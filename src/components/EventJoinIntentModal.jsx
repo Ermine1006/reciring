@@ -24,16 +24,21 @@ export default function EventJoinIntentModal({ open, eventTitle, prefill, onConf
   const [busy, setBusy]   = useState(false)
   const [error, setError] = useState(null)
 
-  const handleSubmit = async () => {
+  const join = async (needText, offerText) => {
     if (busy) return
     // Need/offer are optional — joining shouldn't be blocked. Attendees can add
     // or edit them anytime on the event's Prepare page (the Opportunity Board).
     setBusy(true); setError(null)
-    const { error: err } = await onConfirm({ needText: need.trim(), offerText: offer.trim() })
+    const { error: err } = await onConfirm({ needText, offerText })
     setBusy(false)
     if (err) { setError(err.message || 'Could not join'); return }
     // Parent closes on success.
   }
+
+  const handleSubmit = () => join(need.trim(), offer.trim())
+  // Join right away without sharing need/offer — the user can add them later
+  // on the event page. Distinct from Cancel, which aborts joining entirely.
+  const handleSkip = () => join('', '')
 
   const filledBoth = need.trim() && offer.trim()
   const canSubmit = !busy
@@ -167,7 +172,7 @@ export default function EventJoinIntentModal({ open, eventTitle, prefill, onConf
                   {eventTitle || 'this event'}
                 </h2>
                 <p style={{ fontSize: 13, color: C.textSub, margin: '0 0 18px', lineHeight: 1.5 }}>
-                  Optional — sharing what you're after helps us suggest who to meet, and other attendees can see it. You can add or edit it anytime on the event page.
+                  Optional — what you share becomes your posts on the event's Marketplace, so other attendees can find and reach you. You can add or edit them anytime on the event page.
                 </p>
 
                 <p style={label}>What do you need at this event? <span style={{ color: '#B8B0A2', fontWeight: 500 }}>· optional</span></p>
@@ -205,8 +210,23 @@ export default function EventJoinIntentModal({ open, eventTitle, prefill, onConf
                     fontFamily: 'Inter, system-ui, sans-serif',
                   }}
                 >
-                  {busy ? 'Joining…' : filledBoth ? 'Join event' : 'Skip & join'}
+                  {busy ? 'Joining…' : 'Join event'}
                 </button>
+                {/* Join now, add need/offer later. Only worth showing when they
+                    haven't filled both — otherwise "Join event" is the move. */}
+                {!filledBoth && (
+                  <button
+                    type="button" onClick={busy ? undefined : handleSkip} disabled={busy}
+                    style={{
+                      width: '100%', marginTop: 8, padding: '12px', background: 'transparent',
+                      border: `1.5px solid ${C.border || '#E5E7EB'}`, borderRadius: 14,
+                      color: C.textSub, fontSize: 14, fontWeight: 600, cursor: busy ? 'default' : 'pointer',
+                      fontFamily: 'Inter, system-ui, sans-serif',
+                    }}
+                  >
+                    Skip for now
+                  </button>
+                )}
                 <button
                   type="button" onClick={busy ? undefined : onClose}
                   style={{
