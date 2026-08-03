@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { INDUSTRIES, HELP_TYPES } from '../data/requestOptions'
@@ -48,13 +48,20 @@ const inputStyle = {
 }
 
 // ── Section wrapper ────────────────────────────────────────────
-function Section({ title, children }) {
+function Section({ title, children, sectionRef, flash }) {
   return (
     <section
+      ref={sectionRef}
       className="rounded-2xl p-5 mb-4"
-      style={{ background: C.white, border: `1px solid ${C.border}` }}
+      style={{
+        background: C.white,
+        border: `1px solid ${flash ? C.gold : C.border}`,
+        scrollMarginTop: 10,
+        boxShadow: flash ? `0 0 0 3px rgba(200,169,106,0.16)` : 'none',
+        transition: 'border-color 0.6s ease, box-shadow 0.6s ease',
+      }}
     >
-      <h2 className="text-xs uppercase tracking-wider mb-5" style={{ color: C.textMuted }}>
+      <h2 className="text-xs uppercase tracking-wider mb-5" style={{ color: flash ? C.goldDark : C.textMuted, transition: 'color 0.6s ease' }}>
         {title}
       </h2>
       {children}
@@ -89,8 +96,25 @@ function makeToggle(setter, max = Infinity) {
 // matching / personality prompts + Save changes). Account-level
 // concerns (email prefs, logout, delete) live in SettingsTab.
 // ────────────────────────────────────────────────────────────────
-export default function SettingsPage() {
+export default function SettingsPage({ section }) {
   const { user, profile, updateProfile } = useAuth()
+
+  // Section-specific navigation: each requested section scrolls into view
+  // once laid out. Same form / same saved data — no duplication.
+  const refs = { basic: useRef(null), skills: useRef(null), privacy: useRef(null) }
+  const [flash, setFlash] = useState(null)
+  useEffect(() => {
+    const el = refs[section]?.current
+    if (!el) return
+    // Wait for layout (two frames) before scrolling so conditional sections
+    // and profile-derived content have rendered; instant jump, not a glide.
+    const raf = requestAnimationFrame(() => requestAnimationFrame(() => {
+      el.scrollIntoView({ block: 'start', behavior: 'auto' })
+      setFlash(section)
+      setTimeout(() => setFlash(null), 1300)
+    }))
+    return () => cancelAnimationFrame(raf)
+  }, [section])
 
   // Avatar
   const [selectedKey, setSelectedKey] = useState(
@@ -160,7 +184,7 @@ export default function SettingsPage() {
         {/* Header is provided by parent ProfilePage */}
 
         {/* ── 1. Basic Profile ────────────────────────────────── */}
-        <Section title="Basic profile">
+        <Section title="Basic profile" sectionRef={refs.basic} flash={flash === 'basic'}>
           {/* Avatar preview */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 18 }}>
             <div style={{
@@ -254,7 +278,7 @@ export default function SettingsPage() {
         </Section>
 
         {/* ── 1b. Profile visibility ─────────────────────────── */}
-        <Section title="Profile visibility">
+        <Section title="Profile visibility" sectionRef={refs.privacy} flash={flash === 'privacy'}>
           <Field
             label="How others see your posts in Discover"
             helper="You can change this anytime. Matching and chat are unaffected."
@@ -289,7 +313,7 @@ export default function SettingsPage() {
         </Section>
 
         {/* ── 2. Professional Matching ────────────────────────── */}
-        <Section title="Professional matching">
+        <Section title="Professional matching" sectionRef={refs.skills} flash={flash === 'skills'}>
           <Field label="Industry focus" helper="Pick up to 3 — surfaces the right requests for you.">
             <div className="flex flex-wrap gap-2">
               {INDUSTRIES.map(ind => (

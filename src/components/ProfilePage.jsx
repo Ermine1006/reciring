@@ -4,7 +4,6 @@ import { ChevronLeft, ChevronRight, Sparkle, SlidersHorizontal, Lock, Settings, 
 import { useAuth } from '../context/AuthContext'
 import SettingsPage, { resolveAvatarSeed } from './SettingsPage'
 import SettingsTab from './SettingsTab'
-import ImpactLedger from './ImpactLedger'
 import AnonymousAvatar from './AnonymousAvatar'
 
 // Profile — landing in the shared Home visual language: a header with the
@@ -48,6 +47,9 @@ export default function ProfilePage({
   const me = profile || {}
   // 'landing' | 'edit' | 'settings'
   const [view, setView] = useState('landing')
+  // Which section the edit screen opens on (and its title).
+  const [edit, setEditState] = useState({ section: 'basic', title: 'Edit profile & interests' })
+  const openEdit = (section, title) => { setEditState({ section, title }); setView('edit') }
 
   const completeness = useMemo(() => {
     const f = [me.name, me.headline || me.program, me.industry_interests?.length,
@@ -60,11 +62,13 @@ export default function ProfilePage({
   const seed = resolveAvatarSeed(me.avatar_url)
 
   // ── Pushed sub-screens keep the existing editors intact ──
+  // Same SettingsPage / same saved data — only the opening section differs,
+  // so no duplicate forms. (Recognition ledger is not shown before the
+  // requested section.)
   if (view === 'edit') {
     return (
-      <SubScreen title="Edit profile" onBack={() => setView('landing')}>
-        <ImpactLedger />
-        <SettingsPage />
+      <SubScreen title={edit.title} onBack={() => setView('landing')}>
+        <SettingsPage section={edit.section} />
       </SubScreen>
     )
   }
@@ -109,9 +113,9 @@ export default function ProfilePage({
 
         {/* Rows */}
         <div style={{ marginTop: 14, border: `1px solid ${C.cardLine}`, borderRadius: 16, overflow: 'hidden' }}>
-          <Row icon={<Sparkle size={16} strokeWidth={1.8} />} label="Edit profile & interests" onClick={() => setView('edit')} />
-          <Row icon={<SlidersHorizontal size={16} strokeWidth={1.8} />} label="Skills & matching" onClick={() => setView('edit')} />
-          <Row icon={<Lock size={16} strokeWidth={1.8} />} label="Privacy" onClick={() => setView('edit')} />
+          <Row icon={<Sparkle size={16} strokeWidth={1.8} />} label="Edit profile & interests" onClick={() => openEdit('basic', 'Edit profile & interests')} />
+          <Row icon={<SlidersHorizontal size={16} strokeWidth={1.8} />} label="Skills & matching" onClick={() => openEdit('skills', 'Skills & matching')} />
+          <Row icon={<Lock size={16} strokeWidth={1.8} />} label="Privacy" onClick={() => openEdit('privacy', 'Privacy')} />
           <Row icon={<Settings size={16} strokeWidth={1.8} />} label="Account settings" onClick={() => setView('settings')} />
           <Row icon={<LogOut size={16} strokeWidth={1.8} />} label="Sign out" danger onClick={() => signOut?.()} last />
         </div>
