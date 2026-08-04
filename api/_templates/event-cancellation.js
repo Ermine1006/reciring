@@ -165,6 +165,8 @@ function formatWhen(iso) {
   return d.toLocaleString('en-US', {
     weekday: 'short', month: 'short', day: 'numeric',
     hour: 'numeric', minute: '2-digit',
+    // Toronto-local; without this the serverless UTC runtime shifts the time.
+    timeZone: 'America/Toronto', timeZoneName: 'short',
   }).replace(',', ' ·').replace(' at ', ' · ')
 }
 

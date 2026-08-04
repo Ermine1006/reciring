@@ -159,6 +159,9 @@ function formatWhen(iso) {
   return d.toLocaleString('en-US', {
     weekday: 'short', month: 'short', day: 'numeric',
     hour: 'numeric', minute: '2-digit',
+    // Events are Toronto-local; without an explicit zone this runs in the
+    // serverless runtime's UTC and shows e.g. 1:00 PM for a 9:00 AM event.
+    timeZone: 'America/Toronto', timeZoneName: 'short',
   }).replace(',', ' ·').replace(' at ', ' · ')
 }
 
