@@ -79,6 +79,64 @@ export async function deleteMarketplacePost(id) {
   return { error }
 }
 
+// ── Carry a past-event post into Discover ────────────────────────────
+// An Event Board need/offer stops surfacing once its event is over. Find the
+// user's own still-active posts on PAST events that they haven't already shared
+// to Discover or dismissed — these power the "share it in Discover" reminder.
+// Requires migration-marketplace-discover-share.sql; if the columns aren't
+// there yet the query errors and we return [] so the reminder simply hides.
+export async function fetchPastEventPostsToShare(userId) {
+  if (!isSupabaseConfigured || !userId) return { data: [], error: null }
+  const { data: posts, error } = await supabase
+    .from('event_marketplace_posts')
+    .select('id, event_id, type, title, description, tags, urgency')
+    .eq('user_id', userId)
+    .eq('status', 'active')
+    .is('shared_to_discover_at', null)
+    .is('discover_prompt_dismissed_at', null)
+  if (error) return { data: [], error }
+  if (!posts || posts.length === 0) return { data: [], error: null }
+
+  const eventIds = Array.from(new Set(posts.map(p => p.event_id).filter(Boolean)))
+  const { data: events } = await supabase
+    .from('events')
+    .select('id, title, start_at, status')
+    .in('id', eventIds)
+  const evById = Object.fromEntries((events || []).map(e => [e.id, e]))
+
+  const now = Date.now()
+  const data = posts
+    .map(p => ({ p, ev: evById[p.event_id] }))
+    .filter(({ ev }) => ev && ev.status !== 'cancelled' && new Date(ev.start_at).getTime() < now)
+    .sort((a, b) => new Date(b.ev.start_at) - new Date(a.ev.start_at))
+    .map(({ p, ev }) => ({
+      id: p.id, type: p.type, title: p.title, description: p.description || '',
+      tags: p.tags || [], urgency: p.urgency || null,
+      eventId: p.event_id, eventTitle: ev.title, eventStartAt: ev.start_at,
+    }))
+  return { data, error: null }
+}
+
+// Stamp a post as shared (prevents a duplicate republish + stops the reminder).
+export async function markMarketplacePostSharedToDiscover(id) {
+  if (!isSupabaseConfigured || !id) return { error: new Error('Missing post') }
+  const { error } = await supabase
+    .from('event_marketplace_posts')
+    .update({ shared_to_discover_at: new Date().toISOString() })
+    .eq('id', id)
+  return { error }
+}
+
+// User tapped "Not now" — stop reminding about this post.
+export async function dismissDiscoverSharePrompt(id) {
+  if (!isSupabaseConfigured || !id) return { error: new Error('Missing post') }
+  const { error } = await supabase
+    .from('event_marketplace_posts')
+    .update({ discover_prompt_dismissed_at: new Date().toISOString() })
+    .eq('id', id)
+  return { error }
+}
+
 // I (requester) express interest in someone else's post.
 export async function expressInterest({ postId, eventId, ownerId, requesterId }) {
   if (!isSupabaseConfigured) return { error: new Error('Supabase not configured') }

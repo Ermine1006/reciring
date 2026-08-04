@@ -188,12 +188,16 @@ function SectionCard({ accentColor, accentBorder, label, labelColor, labelBg, la
 }
 
 /* ── Main component ─────────────────────────────────────────────── */
-export default function SubmitRequest({ onSubmitted }) {
-  const [title,    setTitle]    = useState('')
-  const [details,  setDetails]  = useState('')
-  const [offers,   setOffers]   = useState('')
-  const [helpType, setHelpType] = useState([])
-  const [industry, setIndustry] = useState([])
+export default function SubmitRequest({ onSubmitted, prefill = null }) {
+  // `prefill` carries an Event Board post being republished to Discover. It
+  // seeds the fields once (the parent remounts via `key` when it changes), and
+  // the user reviews/completes before posting — a single-sided Event Board post
+  // still needs its other side (offer for a need, need for an offer).
+  const [title,    setTitle]    = useState(prefill?.title    || '')
+  const [details,  setDetails]  = useState(prefill?.details  || '')
+  const [offers,   setOffers]   = useState(prefill?.offers   || '')
+  const [helpType, setHelpType] = useState(prefill?.helpType || [])
+  const [industry, setIndustry] = useState(prefill?.industry || [])
   const [time,     setTime]     = useState('15 min')
   const [urgency,  setUrgency]  = useState(null)
   const [expiresOn, setExpiresOn] = useState('')   // 'YYYY-MM-DD' or '' (never expires)
@@ -366,6 +370,15 @@ export default function SubmitRequest({ onSubmitted }) {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
+
+        {prefill?.sourceEvent && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: C.goldBg, border: `1px solid ${C.goldLight}`, borderRadius: 11, padding: '10px 12px' }}>
+            <span style={{ fontSize: 15 }}>↗️</span>
+            <span style={{ fontSize: 12.5, color: C.textSub, fontFamily: 'Inter, system-ui, sans-serif', lineHeight: 1.4 }}>
+              Carried over from <b style={{ color: C.text }}>{prefill.sourceEvent}</b>. Review and complete it before sharing to Discover.
+            </span>
+          </div>
+        )}
 
         {/* ── Help type (multi, required) ─────────────── */}
         <div>

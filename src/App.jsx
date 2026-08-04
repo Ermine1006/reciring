@@ -33,6 +33,8 @@ import { isAdmin } from './data/adminEmails'
 import { submitReport, blockUser, fetchBlockedIds } from './lib/safety'
 import { isSupabaseConfigured, supabase } from './lib/supabase'
 import { fetchPosts, createPost, updatePost } from './lib/posts'
+import { markMarketplacePostSharedToDiscover } from './lib/marketplace'
+import { HELP_TYPES, INDUSTRIES } from './data/requestOptions'
 import { fetchDiscoverEventPromos, logPromoEvent } from './lib/discoverPromos'
 import { fetchMyJoinedEventIds } from './lib/events'
 import { createMatch, fetchMyMatches, fetchMatchedPostIds, fetchUnmatchedPostIds, unmatchMatch, matchToUI, requestIdentityReveal, acceptIdentityReveal, declineIdentityReveal, fetchPeerProfile } from './lib/matches'
@@ -57,6 +59,25 @@ const C = {
 function profileInitials(name) {
   const p = String(name || '').trim().split(/\s+/)
   return ((p[0]?.[0] || '') + (p[1]?.[0] || '')).toUpperCase() || 'M'
+}
+
+/* Map a past-event Event Board post → seed values for the Discover composer.
+   A need seeds the ask; an offer seeds what they give back. The user completes
+   the other side (Discover posts are two-sided). Free-text tags are matched to
+   the known Help-type / Industry options so they land as real chips. */
+function marketplaceToPrefill(mkt) {
+  if (!mkt) return null
+  const tags = mkt.tags || []
+  const both = (mkt.title || '') + (mkt.description ? ` — ${mkt.description}` : '')
+  return {
+    sourceId:    mkt.id,
+    sourceEvent: mkt.eventTitle || null,
+    title:    mkt.type === 'need'  ? (mkt.title || '')       : '',
+    details:  mkt.type === 'need'  ? (mkt.description || '')  : '',
+    offers:   mkt.type === 'offer' ? both.trim()             : '',
+    helpType: tags.filter(t => HELP_TYPES.includes(t)).slice(0, 3),
+    industry: tags.filter(t => INDUSTRIES.includes(t)).slice(0, 3),
+  }
 }
 
 /* ─── Tab definitions (5-tab nav: Home · Discover · Post · Matches · Events).
@@ -636,11 +657,25 @@ function AppShell() {
     return revealed
   }, [chatMessages, chatMatchId])
 
+  // A past-event Event Board post the user chose to carry into Discover. Seeds
+  // the composer; cleared once posted (and the source is stamped as shared).
+  const [postPrefill, setPostPrefill] = useState(null)
+  const handleSharePastPost = useCallback((mkt) => {
+    setPostPrefill(marketplaceToPrefill(mkt))
+    setTab('post')
+  }, [])
+
   const handleNewRequest = async (newReq) => {
     if (isSupabaseConfigured && user) {
       const { data: card, error } = await createPost(user.id, newReq)
       if (error) return { error }
       setRequests((prev) => [card, ...prev])
+      // If this post was carried over from a past event, stamp the source so
+      // the reminder stops and we never republish it twice.
+      if (postPrefill?.sourceId) {
+        markMarketplacePostSharedToDiscover(postPrefill.sourceId).catch(() => {})
+        setPostPrefill(null)
+      }
       return {}
     }
     // Fallback for unconfigured / demo mode
@@ -985,6 +1020,7 @@ function AppShell() {
               onOpenNetworking={() => { setEventsTopView('networking'); setViewingEventId(null); setTab('events') }}
               onOpenEvents={() => { setEventsTopView('discover'); setViewingEventId(null); setTab('events') }}
               onAskMutu={() => setAskMutuOpen(true)}
+              onSharePastPost={handleSharePastPost}
             />
           )}
           {tab === 'discover' && (
@@ -1019,6 +1055,7 @@ function AppShell() {
               onEditPost={handleEditPost}
               onDeletePost={handleDeletePost}
               isSupabaseConfigured={isSupabaseConfigured}
+              prefill={postPrefill}
             />
           )}
           {tab === 'matches' && !chatMatchId && (

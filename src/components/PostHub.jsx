@@ -33,6 +33,7 @@ export default function PostHub({
   onEditPost,
   onDeletePost,
   isSupabaseConfigured = false,
+  prefill = null,
 }) {
   const [subTab, setSubTab] = useState('create')
   const [justPosted, setJustPosted] = useState(false)
@@ -135,7 +136,7 @@ export default function PostHub({
       <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
         {subTab === 'create' && (
           <div className="flex-1 phone-scroll min-h-0">
-            <SubmitRequest onSubmitted={handleSubmitted} />
+            <SubmitRequest key={prefill?.sourceId || 'blank'} onSubmitted={handleSubmitted} prefill={prefill} />
           </div>
         )}
         {subTab === 'manage' && (

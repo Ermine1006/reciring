@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Clock, Users, UserPlus, CalendarDays, ArrowRight, MessageSquareText } from 'lucide-react'
 import AnonymousAvatar from './AnonymousAvatar'
 import { resolveAvatarSeed } from './SettingsPage'
@@ -6,6 +7,7 @@ import { getMatchScore, DEFAULT_VIEWER_PROFILE } from '../data/matchRanking'
 import { fetchUpcomingEvents, fetchMyJoinedEventIds } from '../lib/events'
 import { fetchFollowups, fetchEncounters, personKey } from '../lib/eventMemory'
 import { fetchConnections } from '../lib/relationships'
+import { fetchPastEventPostsToShare, dismissDiscoverSharePrompt } from '../lib/marketplace'
 
 // ── Home ──────────────────────────────────────────────────────────────
 // Default landing screen: "Suggested for you" + a real "Your network"
@@ -64,23 +66,29 @@ function fmtEventDate(iso) {
 export default function HomePage({
   profile, viewerProfile, userId, requests = [],
   onOpenDiscover, onOpenEvent, onOpenProfile, onOpenPost, onOpenNetworking, onOpenEvents, onAskMutu,
+  onSharePastPost,
 }) {
   const me = profile || {}
 
   const [data, setData] = useState({ events: [], followUpsDue: 0, recentlyMet: 0, connections: 0, upcoming: 0, loading: true })
+  // Event Board posts on past events the user can carry into Discover.
+  const [pastPosts, setPastPosts] = useState([])
+  const [pastOpen, setPastOpen] = useState(false)
   useEffect(() => {
     let alive = true
     ;(async () => {
-      const [ev, fu, enc, conn, joined] = await Promise.all([
+      const [ev, fu, enc, conn, joined, past] = await Promise.all([
         fetchUpcomingEvents(),
         userId ? fetchFollowups(userId)        : Promise.resolve({ data: [] }),
         userId ? fetchEncounters(userId)       : Promise.resolve({ data: [] }),
         userId ? fetchConnections(userId)      : Promise.resolve({ data: [] }),
         userId ? fetchMyJoinedEventIds(userId) : Promise.resolve({ data: new Set() }),
+        userId ? fetchPastEventPostsToShare(userId) : Promise.resolve({ data: [] }),
       ])
       if (!alive) return
       const events = ev.data || []
       const joinedSet = joined.data instanceof Set ? joined.data : new Set(joined.data || [])
+      setPastPosts(past.data || [])
       setData({
         events,
         followUpsDue: (fu.data || []).length,
@@ -92,6 +100,11 @@ export default function HomePage({
     })()
     return () => { alive = false }
   }, [userId])
+
+  const dismissPast = async (id) => {
+    setPastPosts(prev => prev.filter(p => p.id !== id))
+    try { await dismissDiscoverSharePrompt(id) } catch { /* best effort */ }
+  }
 
   // Top person suggestion — from ranked community posts (real authors only).
   // viewerProfile is null for a thin profile; fall back to the default so the
@@ -131,6 +144,23 @@ export default function HomePage({
         <p style={{ fontSize: 13.5, color: C.ink2, margin: '3px 0 0', fontFamily: 'Inter, system-ui, sans-serif' }}>
           Here's what's worth your attention today.
         </p>
+
+        {/* ── Reminder: carry a past-event post into Discover ── */}
+        {pastPosts.length > 0 && (
+          <button type="button" onClick={() => setPastOpen(true)}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 11, textAlign: 'left', marginTop: 16, background: C.goldSoft, border: `1px solid ${C.goldLine}`, borderRadius: 14, padding: '12px 14px', cursor: 'pointer' }}>
+            <span style={{ fontSize: 18, flexShrink: 0 }}>↗️</span>
+            <span style={{ flex: 1, minWidth: 0 }}>
+              <span style={{ display: 'block', fontSize: 13.5, fontWeight: 650, color: C.ink, fontFamily: 'Inter, system-ui, sans-serif' }}>
+                {pastPosts.length === 1 ? 'Your event post ended' : `${pastPosts.length} event posts ended`}
+              </span>
+              <span style={{ display: 'block', fontSize: 12, color: C.ink2, marginTop: 1, fontFamily: 'Inter, system-ui, sans-serif' }}>
+                Share {pastPosts.length === 1 ? 'it' : 'them'} in Discover so people can still help.
+              </span>
+            </span>
+            <span style={{ fontSize: 12.5, fontWeight: 700, color: C.gold, flexShrink: 0, fontFamily: 'Inter, system-ui, sans-serif' }}>Review</span>
+          </button>
+        )}
 
         {/* ── Suggested for you ── */}
         <div style={secHead}><h2 style={secTitle}>Suggested for you</h2></div>
@@ -222,7 +252,62 @@ export default function HomePage({
           ))}
         </div>
       </div>
+
+      <PastPostsSheet
+        open={pastOpen}
+        posts={pastPosts}
+        onShare={(post) => { setPastOpen(false); onSharePastPost?.(post) }}
+        onDismiss={dismissPast}
+        onClose={() => setPastOpen(false)}
+      />
     </div>
+  )
+}
+
+// Bottom sheet listing past-event Event Board posts the user can carry into
+// Discover. "Share in Discover" opens the prefilled composer; "Not now" stops
+// the reminder for that post.
+function PastPostsSheet({ open, posts, onShare, onDismiss, onClose }) {
+  if (!open) return null
+  return createPortal(
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 96, background: 'rgba(17,17,17,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+      <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 460, background: '#F9F7F4', borderRadius: '24px 24px 0 0', maxHeight: '86vh', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 4px', flexShrink: 0 }}>
+          <div style={{ width: 36, height: 4, borderRadius: 99, background: '#D1D5DB' }} />
+        </div>
+        <div style={{ padding: '6px 22px 12px', flexShrink: 0 }}>
+          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: C.ink, fontFamily: 'Inter, system-ui, sans-serif' }}>Keep these going</h2>
+          <p style={{ margin: '3px 0 0', fontSize: 13, color: C.ink2, lineHeight: 1.5, fontFamily: 'Inter, system-ui, sans-serif' }}>
+            These posts were tied to events that have ended. Share one in Discover and the whole community can help — not just attendees.
+          </p>
+        </div>
+        <div className="phone-scroll" style={{ flex: 1, overflowY: 'auto', padding: '0 16px calc(20px + env(safe-area-inset-bottom))' }}>
+          {posts.map(p => (
+            <div key={p.id} style={{ background: C.ground, border: `1px solid ${C.line}`, borderRadius: 14, padding: 14, marginBottom: 10 }}>
+              <span style={{ display: 'inline-block', fontSize: 9.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', padding: '3px 9px', borderRadius: 99, marginBottom: 8, color: p.type === 'offer' ? '#047857' : '#4F46E5', background: p.type === 'offer' ? '#ECFDF5' : '#EEF2FF', border: `1px solid ${p.type === 'offer' ? '#A7F3D0' : '#C7D2FE'}` }}>
+                {p.type === 'offer' ? 'Offering' : 'Looking for'}
+              </span>
+              <p style={{ margin: '0 0 3px', fontSize: 14.5, fontWeight: 650, color: C.ink, lineHeight: 1.3, fontFamily: 'Inter, system-ui, sans-serif' }}>{p.title}</p>
+              <p style={{ margin: 0, fontSize: 11.5, color: C.ink3, fontFamily: 'Inter, system-ui, sans-serif' }}>from {p.eventTitle}</p>
+              <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                <button type="button" onClick={() => onShare(p)}
+                  style={{ flex: 1, padding: '10px', borderRadius: 11, border: 'none', background: `linear-gradient(135deg, ${C.goldBtn}, ${C.gold})`, color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
+                  Share in Discover
+                </button>
+                <button type="button" onClick={() => onDismiss(p.id)}
+                  style={{ padding: '10px 14px', borderRadius: 11, background: C.ground, border: `1px solid ${C.line}`, color: C.ink2, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
+                  Not now
+                </button>
+              </div>
+            </div>
+          ))}
+          {posts.length === 0 && (
+            <p style={{ textAlign: 'center', color: C.ink3, fontSize: 13, padding: '24px 0', fontFamily: 'Inter, system-ui, sans-serif' }}>All caught up.</p>
+          )}
+        </div>
+      </div>
+    </div>,
+    document.body
   )
 }
 
