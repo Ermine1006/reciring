@@ -101,9 +101,9 @@ export default function HomePage({
     return () => { alive = false }
   }, [userId])
 
-  const dismissPast = async (id) => {
-    setPastPosts(prev => prev.filter(p => p.id !== id))
-    try { await dismissDiscoverSharePrompt(id) } catch { /* best effort */ }
+  const dismissPast = async (item) => {
+    setPastPosts(prev => prev.filter(p => p.id !== item.id))
+    try { await Promise.all((item.postIds || []).map(id => dismissDiscoverSharePrompt(id))) } catch { /* best effort */ }
   }
 
   // Top person suggestion — from ranked community posts (real authors only).
@@ -282,19 +282,17 @@ function PastPostsSheet({ open, posts, onShare, onDismiss, onClose }) {
           </p>
         </div>
         <div className="phone-scroll" style={{ flex: 1, overflowY: 'auto', padding: '0 16px calc(20px + env(safe-area-inset-bottom))' }}>
-          {posts.map(p => (
-            <div key={p.id} style={{ background: C.ground, border: `1px solid ${C.line}`, borderRadius: 14, padding: 14, marginBottom: 10 }}>
-              <span style={{ display: 'inline-block', fontSize: 9.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', padding: '3px 9px', borderRadius: 99, marginBottom: 8, color: p.type === 'offer' ? '#047857' : '#4F46E5', background: p.type === 'offer' ? '#ECFDF5' : '#EEF2FF', border: `1px solid ${p.type === 'offer' ? '#A7F3D0' : '#C7D2FE'}` }}>
-                {p.type === 'offer' ? 'Offering' : 'Looking for'}
-              </span>
-              <p style={{ margin: '0 0 3px', fontSize: 14.5, fontWeight: 650, color: C.ink, lineHeight: 1.3, fontFamily: 'Inter, system-ui, sans-serif' }}>{p.title}</p>
-              <p style={{ margin: 0, fontSize: 11.5, color: C.ink3, fontFamily: 'Inter, system-ui, sans-serif' }}>from {p.eventTitle}</p>
+          {posts.map(item => (
+            <div key={item.id} style={{ background: C.ground, border: `1px solid ${C.line}`, borderRadius: 14, padding: 14, marginBottom: 10 }}>
+              {item.need  && <PastPostSide kind="need"  post={item.need} />}
+              {item.offer && <PastPostSide kind="offer" post={item.offer} spaced={Boolean(item.need)} />}
+              <p style={{ margin: '10px 0 0', fontSize: 11.5, color: C.ink3, fontFamily: 'Inter, system-ui, sans-serif' }}>from {item.eventTitle}</p>
               <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                <button type="button" onClick={() => onShare(p)}
+                <button type="button" onClick={() => onShare(item)}
                   style={{ flex: 1, padding: '10px', borderRadius: 11, border: 'none', background: `linear-gradient(135deg, ${C.goldBtn}, ${C.gold})`, color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
                   Share in Discover
                 </button>
-                <button type="button" onClick={() => onDismiss(p.id)}
+                <button type="button" onClick={() => onDismiss(item)}
                   style={{ padding: '10px 14px', borderRadius: 11, background: C.ground, border: `1px solid ${C.line}`, color: C.ink2, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
                   Not now
                 </button>
@@ -308,6 +306,19 @@ function PastPostsSheet({ open, posts, onShare, onDismiss, onClose }) {
       </div>
     </div>,
     document.body
+  )
+}
+
+// One need/offer block inside a combined past-post card.
+function PastPostSide({ kind, post, spaced }) {
+  const isOffer = kind === 'offer'
+  return (
+    <div style={{ marginTop: spaced ? 10 : 0 }}>
+      <span style={{ display: 'inline-block', fontSize: 9.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', padding: '3px 9px', borderRadius: 99, marginBottom: 6, color: isOffer ? '#047857' : '#4F46E5', background: isOffer ? '#ECFDF5' : '#EEF2FF', border: `1px solid ${isOffer ? '#A7F3D0' : '#C7D2FE'}` }}>
+        {isOffer ? 'Offering' : 'Looking for'}
+      </span>
+      <p style={{ margin: 0, fontSize: 14.5, fontWeight: 650, color: C.ink, lineHeight: 1.3, fontFamily: 'Inter, system-ui, sans-serif' }}>{post.title}</p>
+    </div>
   )
 }
 

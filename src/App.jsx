@@ -61,22 +61,23 @@ function profileInitials(name) {
   return ((p[0]?.[0] || '') + (p[1]?.[0] || '')).toUpperCase() || 'M'
 }
 
-/* Map a past-event Event Board post → seed values for the Discover composer.
-   A need seeds the ask; an offer seeds what they give back. The user completes
-   the other side (Discover posts are two-sided). Free-text tags are matched to
-   the known Help-type / Industry options so they land as real chips. */
-function marketplaceToPrefill(mkt) {
-  if (!mkt) return null
-  const tags = mkt.tags || []
-  const both = (mkt.title || '') + (mkt.description ? ` — ${mkt.description}` : '')
+/* Map a past-event item (its need and/or offer) → seed values for the Discover
+   composer. The need seeds the ask; the offer seeds what they give back — so a
+   person who posted both arrives with a complete two-sided post. Free-text tags
+   are matched to the known Help-type / Industry options so they land as chips. */
+function marketplaceToPrefill(item) {
+  if (!item) return null
+  const need = item.need, offer = item.offer
+  const tags = [...(need?.tags || []), ...(offer?.tags || [])]
+  const offerText = offer ? (offer.title || '') + (offer.description ? ` — ${offer.description}` : '') : ''
   return {
-    sourceId:    mkt.id,
-    sourceEvent: mkt.eventTitle || null,
-    title:    mkt.type === 'need'  ? (mkt.title || '')       : '',
-    details:  mkt.type === 'need'  ? (mkt.description || '')  : '',
-    offers:   mkt.type === 'offer' ? both.trim()             : '',
-    helpType: tags.filter(t => HELP_TYPES.includes(t)).slice(0, 3),
-    industry: tags.filter(t => INDUSTRIES.includes(t)).slice(0, 3),
+    sourceIds:   item.postIds || [],
+    sourceEvent: item.eventTitle || null,
+    title:    need ? (need.title || '')       : '',
+    details:  need ? (need.description || '')  : '',
+    offers:   offerText.trim(),
+    helpType: Array.from(new Set(tags.filter(t => HELP_TYPES.includes(t)))).slice(0, 3),
+    industry: Array.from(new Set(tags.filter(t => INDUSTRIES.includes(t)))).slice(0, 3),
   }
 }
 
@@ -670,10 +671,10 @@ function AppShell() {
       const { data: card, error } = await createPost(user.id, newReq)
       if (error) return { error }
       setRequests((prev) => [card, ...prev])
-      // If this post was carried over from a past event, stamp the source so
-      // the reminder stops and we never republish it twice.
-      if (postPrefill?.sourceId) {
-        markMarketplacePostSharedToDiscover(postPrefill.sourceId).catch(() => {})
+      // If this post was carried over from a past event, stamp every source
+      // row (need + offer) so the reminder stops and we never republish twice.
+      if (postPrefill?.sourceIds?.length) {
+        postPrefill.sourceIds.forEach(id => markMarketplacePostSharedToDiscover(id).catch(() => {}))
         setPostPrefill(null)
       }
       return {}

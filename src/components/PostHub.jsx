@@ -136,7 +136,7 @@ export default function PostHub({
       <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
         {subTab === 'create' && (
           <div className="flex-1 phone-scroll min-h-0">
-            <SubmitRequest key={prefill?.sourceId || 'blank'} onSubmitted={handleSubmitted} prefill={prefill} />
+            <SubmitRequest key={prefill?.sourceIds?.join(',') || 'blank'} onSubmitted={handleSubmitted} prefill={prefill} />
           </div>
         )}
         {subTab === 'manage' && (

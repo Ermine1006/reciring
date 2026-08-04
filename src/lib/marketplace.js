@@ -104,16 +104,26 @@ export async function fetchPastEventPostsToShare(userId) {
     .in('id', eventIds)
   const evById = Object.fromEntries((events || []).map(e => [e.id, e]))
 
+  // One item PER EVENT — a person's need and offer for the same event belong on
+  // one card (and prefill both sides of the Discover composer), never split.
   const now = Date.now()
-  const data = posts
-    .map(p => ({ p, ev: evById[p.event_id] }))
-    .filter(({ ev }) => ev && ev.status !== 'cancelled' && new Date(ev.start_at).getTime() < now)
-    .sort((a, b) => new Date(b.ev.start_at) - new Date(a.ev.start_at))
-    .map(({ p, ev }) => ({
-      id: p.id, type: p.type, title: p.title, description: p.description || '',
-      tags: p.tags || [], urgency: p.urgency || null,
-      eventId: p.event_id, eventTitle: ev.title, eventStartAt: ev.start_at,
-    }))
+  const byEvent = new Map()
+  for (const p of posts) {
+    const ev = evById[p.event_id]
+    if (!ev || ev.status === 'cancelled') continue
+    if (new Date(ev.start_at).getTime() >= now) continue   // only past events
+    let g = byEvent.get(p.event_id)
+    if (!g) {
+      g = { id: p.event_id, eventId: p.event_id, eventTitle: ev.title, eventStartAt: ev.start_at, need: null, offer: null, postIds: [] }
+      byEvent.set(p.event_id, g)
+    }
+    const side = { id: p.id, title: p.title, description: p.description || '', tags: p.tags || [], urgency: p.urgency || null }
+    if (p.type === 'need' && !g.need) g.need = side
+    else if (p.type === 'offer' && !g.offer) g.offer = side
+    g.postIds.push(p.id)
+  }
+  const data = Array.from(byEvent.values())
+    .sort((a, b) => new Date(b.eventStartAt) - new Date(a.eventStartAt))
   return { data, error: null }
 }
 
