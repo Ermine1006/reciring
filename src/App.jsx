@@ -38,7 +38,7 @@ import { fetchMyJoinedEventIds } from './lib/events'
 import { createMatch, fetchMyMatches, fetchMatchedPostIds, fetchUnmatchedPostIds, unmatchMatch, matchToUI, requestIdentityReveal, acceptIdentityReveal, declineIdentityReveal, fetchPeerProfile } from './lib/matches'
 import { fetchUserInteractions, recordPostInteraction, clearSwipedLeft } from './lib/interactions'
 import { fetchCompletedMatchIds } from './lib/recognition'
-import { notifyEventReview } from './lib/email'
+import { notifyEventReview, notifyNewMatch } from './lib/email'
 import { fetchMessages, sendMessage, sendMeetingProposal, updateMeetingStatus, msgToUI } from './lib/messages'
 
 /* ─── Design tokens ─────────────────────────────────────────────── */
@@ -289,24 +289,40 @@ function AppShell() {
     try {
       const params = new URLSearchParams(window.location.search)
       const ev = params.get('event')
-      if (ev) {
-        sessionStorage.setItem('mutu_pending_event', ev)
-        params.delete('event')
+      const tabParam = params.get('tab')   // e.g. ?tab=matches from a match email
+      let changed = false
+      if (ev) { sessionStorage.setItem('mutu_pending_event', ev); params.delete('event'); changed = true }
+      if (tabParam) {
+        if (['home', 'discover', 'post', 'matches', 'events'].includes(tabParam)) {
+          sessionStorage.setItem('mutu_pending_tab', tabParam)
+        }
+        params.delete('tab'); changed = true
+      }
+      if (changed) {
         const qs = params.toString()
         window.history.replaceState({}, '', window.location.pathname + (qs ? `?${qs}` : ''))
       }
     } catch { /* no-op */ }
   }, [])
 
-  // Once signed in, open any pending deep-linked event (from the QR/link).
+  // Once signed in, open any pending deep link (event QR/link, or a tab from an
+  // email CTA). A specific event wins over a plain tab.
   useEffect(() => {
     if (!user) return
-    let ev = null
-    try { ev = sessionStorage.getItem('mutu_pending_event') } catch { /* no-op */ }
+    let ev = null, pendingTab = null
+    try {
+      ev = sessionStorage.getItem('mutu_pending_event')
+      pendingTab = sessionStorage.getItem('mutu_pending_tab')
+    } catch { /* no-op */ }
     if (ev) {
-      try { sessionStorage.removeItem('mutu_pending_event') } catch { /* no-op */ }
+      try { sessionStorage.removeItem('mutu_pending_event'); sessionStorage.removeItem('mutu_pending_tab') } catch { /* no-op */ }
       setTab('events')
       setViewingEventId(ev)
+      return
+    }
+    if (pendingTab) {
+      try { sessionStorage.removeItem('mutu_pending_tab') } catch { /* no-op */ }
+      setTab(pendingTab)
     }
   }, [user?.id])
 
@@ -687,6 +703,9 @@ function AppShell() {
     // Refresh both sets: the post joins the active-matched set (hidden from
     // Discover) and leaves the unmatched set if it was a reconnect.
     await Promise.all([loadMatches(), loadMatchedPostIds(), loadUnmatchedPostIds()])
+    // Email the post author that someone connected — fire-and-forget so a
+    // mail hiccup never affects the match that already succeeded.
+    notifyNewMatch(data.id).catch(() => {})
     return { matchId: data.id, error: null }
   }
 

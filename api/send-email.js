@@ -28,6 +28,7 @@ import { welcomeTemplate } from './_templates/welcome.js'
 import { eventRegistrationTemplate } from './_templates/event-registration.js'
 import { eventCancellationTemplate } from './_templates/event-cancellation.js'
 import { eventReviewTemplate } from './_templates/event-review.js'
+import { matchNotificationTemplate } from './_templates/match-notification.js'
 import { isAdmin, REVIEW_NOTIFY_EMAILS } from './_lib/admin.js'
 import { makeUnsubscribeToken } from './_lib/unsubscribe-token.js'
 import { EMAIL_FROM, APP_URL as APP_URL_FALLBACK } from '../src/lib/branding.js'
@@ -89,6 +90,14 @@ export default async function handler(req, res) {
 
   const admin = createClient(SUPABASE_URL, SERVICE_KEY)
   const body  = req.body || {}
+
+  // ── Route: new-match notification (notifies the OTHER participant) ──
+  if (body.action === 'match_notification') {
+    return handleMatchNotification({
+      matchId: body.matchId,
+      user, admin, APP_URL, RESEND_KEY, res,
+    })
+  }
 
   // ── Route: action-based event flows ─────────────────────────
   if (body.action && EVENT_ACTIONS.has(body.action)) {
@@ -304,6 +313,93 @@ async function handleEventAction({ action, eventId, user, admin, APP_URL, RESEND
 }
 
 // ─────────────────────────────────────────────────────────────
+// New-match notification — emails the participant who did NOT
+// trigger the match. Identity-safe: never names the other person.
+// ─────────────────────────────────────────────────────────────
+
+async function handleMatchNotification({ matchId, user, admin, APP_URL, RESEND_KEY, res }) {
+  if (!matchId) return res.status(400).json({ error: 'matchId is required' })
+
+  const { data: match, error: matchErr } = await admin
+    .from('matches')
+    .select('id, requester_user_id, helper_user_id, post_id, marketplace_post_id, event_id, status')
+    .eq('id', matchId)
+    .maybeSingle()
+  if (matchErr) return res.status(500).json({ error: 'failed to load match', detail: matchErr.message })
+  if (!match)   return res.status(404).json({ error: 'match not found' })
+
+  // Caller must be a participant — prevents using this to email arbitrary users.
+  if (user.id !== match.requester_user_id && user.id !== match.helper_user_id) {
+    return res.status(403).json({ error: 'not a participant of this match' })
+  }
+  if (match.status && match.status !== 'active') {
+    return res.status(200).json({ skipped: true, reason: 'not_active' })
+  }
+
+  const recipientId = user.id === match.requester_user_id ? match.helper_user_id : match.requester_user_id
+  if (!recipientId || recipientId === user.id) {
+    return res.status(200).json({ skipped: true, reason: 'no_recipient' })
+  }
+
+  const { data: recipient } = await admin
+    .from('profiles')
+    .select('id, name, email, email_subscribed')
+    .eq('id', recipientId)
+    .maybeSingle()
+
+  const toEmail = recipient?.email
+  if (!toEmail) return res.status(200).json({ skipped: true, reason: 'recipient_no_email' })
+
+  // A notification, not a confirmation of the recipient's own action — respect
+  // their unsubscribe preference.
+  if (recipient.email_subscribed === false) {
+    await admin.from('email_logs').insert({
+      user_id: recipientId, recipient: toEmail, template: 'match_notification',
+      subject: null, status: 'failed', error: 'recipient unsubscribed', resend_id: null,
+    })
+    return res.status(200).json({ skipped: true, reason: 'recipient_unsubscribed' })
+  }
+
+  // Short, NON-identifying context — only ever reference the recipient's OWN
+  // post/offer (that's theirs to see); otherwise stay generic.
+  let contextLine = ''
+  if (match.post_id) {
+    const { data: post } = await admin
+      .from('posts').select('created_by, need_text, offer_text').eq('id', match.post_id).maybeSingle()
+    if (post && post.created_by === recipientId) {
+      const snippet = firstWords(post.need_text || post.offer_text, 12)
+      contextLine = snippet ? `about your post: ${snippet}` : 'about your post'
+    }
+  } else if (match.marketplace_post_id) {
+    const { data: mkt } = await admin
+      .from('event_marketplace_posts').select('user_id, title').eq('id', match.marketplace_post_id).maybeSingle()
+    if (mkt && mkt.user_id === recipientId) {
+      const snippet = firstWords(mkt.title, 12)
+      contextLine = snippet ? `about your Event Board post: ${snippet}` : 'about your Event Board post'
+    } else {
+      contextLine = 'on the Event Board'
+    }
+  }
+
+  const displayName = firstName(recipient.name) || firstName(toEmail.split('@')[0]) || 'there'
+  const matchUrl = `${APP_URL.replace(/\/$/, '')}/?tab=matches`
+  const unsubscribeUrl = `${APP_URL.replace(/\/$/, '')}/api/unsubscribe?token=${encodeURIComponent(makeUnsubscribeToken(recipientId, process.env.SUPABASE_SERVICE_ROLE_KEY))}`
+
+  const { subject, html } = matchNotificationTemplate({ displayName, contextLine, matchUrl, appUrl: APP_URL, unsubscribeUrl })
+
+  const resend = new Resend(RESEND_KEY)
+  const { resendId, sendError } = await sendOne(resend, toEmail, subject, html)
+  await admin.from('email_logs').insert({
+    user_id: recipientId, recipient: toEmail, template: 'match_notification',
+    subject, status: sendError ? 'failed' : 'sent',
+    error: sendError ? (sendError.message || JSON.stringify(sendError)) : null,
+    resend_id: resendId,
+  })
+  if (sendError) return res.status(502).json({ error: sendError.message || 'send failed' })
+  return res.status(200).json({ id: resendId, status: 'sent', action: 'match_notification' })
+}
+
+// ─────────────────────────────────────────────────────────────
 // Legacy template-based single send (welcome + admin ops)
 // ─────────────────────────────────────────────────────────────
 
@@ -408,4 +504,11 @@ async function sendOne(resend, toEmail, subject, html) {
 
 function firstName(s) {
   return String(s || '').trim().split(/\s+/)[0] || ''
+}
+
+function firstWords(s, n) {
+  const t = String(s || '').trim().replace(/\s+/g, ' ')
+  if (!t) return ''
+  const words = t.split(' ')
+  return words.length <= n ? t : words.slice(0, n).join(' ') + '…'
 }

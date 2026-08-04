@@ -9,6 +9,7 @@ import {
   deleteMarketplacePost, expressInterest, acceptInterest, declineInterest,
   fetchMarketplaceInterestStats,
 } from '../lib/marketplace'
+import { notifyNewMatch } from '../lib/email'
 
 const C = {
   gold: '#C8A96A', goldDark: '#A88245', goldLight: '#E6D3A3', goldBg: '#FBF6EC',
@@ -131,6 +132,8 @@ export default function EventMarketplace({ eventId, userId, isHost = false, allo
     if (error) { flash('Could not accept'); return }
     setManage(null)
     await loadAll()
+    // Email the person whose interest was accepted — fire-and-forget.
+    if (matchId) notifyNewMatch(matchId).catch(() => {})
     if (matchId) onOpenChat?.(matchId)   // reveal + open the private chat
   }
 

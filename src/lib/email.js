@@ -88,6 +88,39 @@ export async function notifyEventReview(eventId) {
   return postEventAction('event_review_notification', eventId)
 }
 
+/**
+ * Notify the OTHER participant that a new match was created. The server
+ * resolves the recipient from the match (never the caller), keeps identity
+ * anonymous, and respects the recipient's email preference. Fire-and-forget —
+ * a failed email must never break the match that already succeeded.
+ */
+export async function notifyNewMatch(matchId) {
+  if (!isSupabaseConfigured) return { data: null, error: new Error('Supabase not configured') }
+  if (!matchId)              return { data: null, error: new Error('missing matchId') }
+
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) return { data: null, error: new Error('Not signed in') }
+
+  let resp
+  try {
+    resp = await fetch(apiUrl('/api/send-email'), {
+      method: 'POST',
+      headers: {
+        Authorization:  `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ action: 'match_notification', matchId }),
+    })
+  } catch (err) {
+    return { data: null, error: new Error(err?.message || 'network error') }
+  }
+
+  let result = {}
+  try { result = await resp.json() } catch {}
+  if (!resp.ok) return { data: null, error: new Error(result.error || `send failed (${resp.status})`) }
+  return { data: result, error: null }
+}
+
 async function postEventAction(action, eventId) {
   if (!isSupabaseConfigured) return { data: null, error: new Error('Supabase not configured') }
   if (!eventId)              return { data: null, error: new Error('missing eventId') }
