@@ -17,10 +17,14 @@
 
 import { normalizeIndustry } from './requestOptions'
 
-// ── Default viewer profile (fallback when no auth) ───────────────
+// ── Default viewer profile (fallback when signed out / empty) ────
+// `strengths` = help I can give (can_help_with), `learn` = help I want
+// (skills_to_learn), `industries` = industry_interests. Kept light so a
+// signed-out viewer gets a neutral, non-biased feed.
 export const DEFAULT_VIEWER_PROFILE = {
-  strengths:  ['Consulting', 'Referral', 'Coffee Chat', 'Resume Review', 'Intro'],
-  industries: ['Consulting', 'Investment Banking'],
+  strengths:  ['Coffee Chat', 'Intro'],
+  learn:      [],
+  industries: [],
 }
 
 // ── Helpers ───────────────────────────────────────────────────────
@@ -34,19 +38,37 @@ function fuzzyMatch(a, b) {
 // ── Scoring components ───────────────────────────────────────────
 
 function relevanceScore(request, viewer) {
-  // 1) Tag overlap (0–24): request tags vs viewer's strengths
+  // Relevance is BIDIRECTIONAL — a good match is one where either side can help
+  // the other, which is the whole point of a reciprocity network:
+  //   forward  — I can help with what they need   (my offers  vs their tags)
+  //   reverse  — they can help me / I want to learn it (my goals vs their offer)
+  //   industry — we share an industry focus
   const tags = request.tags || []
-  const tagHits = tags.filter(t => viewer.strengths.some(s => fuzzyMatch(t, s))).length
-  const tagScore = tags.length > 0 ? (tagHits / tags.length) * 24 : 8
-
-  // 2) Industry overlap (0–16): request topics vs viewer's industries
   const topicSignals = [...tags, request.category || ''].filter(Boolean)
-  const indHits = viewer.industries.filter(ind =>
-    topicSignals.some(sig => fuzzyMatch(sig, ind))
-  ).length
-  const indScore = viewer.industries.length > 0 ? (indHits / viewer.industries.length) * 16 : 4
+  const strengths  = viewer.strengths  || []
+  const learn      = viewer.learn      || []
+  const industries = viewer.industries || []
 
-  return Math.round(tagScore + indScore)
+  // Forward (0–16): my strengths vs their tags/needs.
+  const fwdHits = tags.filter(t => strengths.some(s => fuzzyMatch(t, s))).length
+  const fwdScore = tags.length > 0 && strengths.length > 0 ? (fwdHits / tags.length) * 16 : 0
+
+  // Reverse (0–14): my learning goals vs what they OFFER (free-text offer +
+  // topical tags). Surfaces people who can help me, not just people I can help.
+  const offerText = String(request.offers || request.offer_text || '').toLowerCase()
+  const revHits = learn.filter(l =>
+    (offerText && offerText.includes(String(l).toLowerCase())) ||
+    topicSignals.some(sig => fuzzyMatch(sig, l))
+  ).length
+  const revScore = learn.length > 0 ? (revHits / learn.length) * 14 : 0
+
+  // Industry overlap (0–10).
+  const indHits = industries.filter(ind => topicSignals.some(sig => fuzzyMatch(sig, ind))).length
+  const indScore = industries.length > 0 ? (indHits / industries.length) * 10 : 0
+
+  // Neutral floor so a non-overlapping post isn't zeroed out for thin profiles.
+  const raw = fwdScore + revScore + indScore
+  return Math.round(raw > 0 ? raw : 8)
 }
 
 function reciprocityScore(request) {
@@ -129,12 +151,23 @@ export function getMatchScore(request, viewer = DEFAULT_VIEWER_PROFILE) {
 export function getMatchReason(request, viewer = DEFAULT_VIEWER_PROFILE) {
   const parts = []
 
-  // Relevance: which of the viewer's strengths match the request?
+  // Relevance — name the direction: can I help them, or can they help me?
   const tags = request.tags || []
-  const matchedTags = tags.filter(t => viewer.strengths.some(s => fuzzyMatch(t, s)))
+  const strengths = viewer.strengths || []
+  const learn = viewer.learn || []
+  const matchedTags = tags.filter(t => strengths.some(s => fuzzyMatch(t, s)))
   if (matchedTags.length > 0) {
-    const tagStr = matchedTags.slice(0, 2).join(' + ').toLowerCase()
-    parts.push(`Strong fit: ${tagStr}`)
+    parts.push(`You can help: ${matchedTags.slice(0, 2).join(' + ').toLowerCase()}`)
+  } else {
+    const offerText = String(request.offers || request.offer_text || '').toLowerCase()
+    const topicSignals = [...tags, request.category || ''].filter(Boolean)
+    const matchedLearn = learn.filter(l =>
+      (offerText && offerText.includes(String(l).toLowerCase())) ||
+      topicSignals.some(sig => fuzzyMatch(sig, l))
+    )
+    if (matchedLearn.length > 0) {
+      parts.push(`Matches what you want to learn: ${matchedLearn.slice(0, 2).join(' + ').toLowerCase()}`)
+    }
   }
 
   // Reciprocity signal

@@ -682,9 +682,16 @@ export function AuthProvider({ children }) {
     return { partial: true }
   }
 
-  // Derive viewer profile for match ranking from onboarding data
-  const viewerProfile = (profile?.can_help_with?.length && profile?.industry_interests?.length)
-    ? { strengths: profile.can_help_with, industries: profile.industry_interests }
+  // Derive viewer profile for match ranking from onboarding data. Personalize
+  // from ANY available signal (offers, learning goals, or industries) rather
+  // than only when two specific fields are set — otherwise thin profiles fall
+  // back to a generic default and matching isn't personalized at all.
+  const viewerProfile = (profile?.can_help_with?.length || profile?.skills_to_learn?.length || profile?.industry_interests?.length)
+    ? {
+        strengths:  profile.can_help_with || [],
+        learn:      profile.skills_to_learn || [],
+        industries: profile.industry_interests || [],
+      }
     : null
 
   return (
