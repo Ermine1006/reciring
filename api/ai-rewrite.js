@@ -142,6 +142,13 @@ export default async function handler(req, res) {
     return handleAssistant(body, res)
   }
 
+  // "Help me fill" — infer profile matching tags from a one-liner + existing
+  // profile info. Returns { tags: { canHelpWith, skillsToLearn, industries } },
+  // each constrained to the app's known option lists.
+  if (body.mode === 'profile_tags') {
+    return handleProfileTags(body, res)
+  }
+
   const kind = KINDS[body.kind] ? body.kind : 'post'
   const text = String(body.text || '').trim().slice(0, 2000)
   if (!text) return res.status(400).json({ error: 'Nothing to rewrite.' })
@@ -353,6 +360,85 @@ Style: concise, warm, plain. No preamble, no bullet-point dumps unless listing p
   const answer = String(data?.choices?.[0]?.message?.content || '').trim()
   if (!answer) return res.status(502).json({ error: 'No answer — try rephrasing.' })
   return res.status(200).json({ answer })
+}
+
+// ── "Help me fill" — infer profile matching tags ────────────────────
+// Keep these in sync with src/data/requestOptions.js (HELP_TYPES / INDUSTRIES).
+const PT_HELP_TYPES = ['Referral', 'Coffee Chat', 'Resume Review', 'Mock Interview', 'Intro', 'Study Group', 'Advice']
+const PT_INDUSTRIES = ['Consulting', 'Investment Banking', 'Tech', 'Private Equity', 'VC', 'Marketing', 'Operations', 'Other']
+
+async function handleProfileTags(body, res) {
+  const c = body.context || {}
+  const note = String(body.text || '').trim().slice(0, 500)
+  const known = [
+    note && `What they said: ${note}`,
+    c.program && `Program: ${c.program}`,
+    c.headline && `Headline / role: ${c.headline}`,
+    Array.isArray(c.industries) && c.industries.length && `Industry interests: ${c.industries.join(', ')}`,
+  ].filter(Boolean).join('\n')
+
+  if (!known) return res.status(400).json({ error: 'Add a sentence or some profile info first.' })
+
+  const system = `You set up a Rotman/UofT student's peer-networking profile so a matcher can pair them well.
+
+From the info given, decide THREE things — but ONLY choose from these exact lists (copy the labels verbatim, never invent new ones):
+- HELP_TYPES = ${JSON.stringify(PT_HELP_TYPES)}
+- INDUSTRIES = ${JSON.stringify(PT_INDUSTRIES)}
+
+Return STRICT JSON, no prose, no code fences:
+{"canHelpWith": [up to 5 HELP_TYPES they could offer others], "skillsToLearn": [up to 5 HELP_TYPES they'd want from a peer], "industries": [up to 3 INDUSTRIES]}
+
+Rules: pick only well-supported items; fewer is fine. If unsure about a field, return an empty array. Do not put the same label in both canHelpWith and skillsToLearn unless clearly justified.`
+
+  let resp
+  try {
+    resp = await fetch(OPENROUTER_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://muturing.com',
+        'X-Title': 'Mutu',
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: 400,
+        temperature: 0.3,
+        messages: [
+          { role: 'system', content: system },
+          { role: 'user', content: known },
+        ],
+      }),
+    })
+  } catch (err) {
+    return res.status(502).json({ error: 'Suggestions are unavailable right now.', detail: err?.message })
+  }
+
+  const data = await resp.json().catch(() => ({}))
+  if (!resp.ok) {
+    const detail = data?.error?.message || data?.error || `HTTP ${resp.status}`
+    console.error('[ai-rewrite:profile_tags] failed:', resp.status, detail)
+    return res.status(resp.status === 402 ? 402 : 502).json({ error: 'Suggestions are unavailable right now.', detail: String(detail) })
+  }
+
+  const parsed = parseCaptureJSON(data?.choices?.[0]?.message?.content || '') || {}
+  const clean = (arr, allowed, cap) => {
+    const seen = new Set()
+    const out = []
+    for (const v of Array.isArray(arr) ? arr : []) {
+      const hit = allowed.find(a => a.toLowerCase() === String(v).trim().toLowerCase())
+      if (hit && !seen.has(hit)) { seen.add(hit); out.push(hit) }
+      if (out.length >= cap) break
+    }
+    return out
+  }
+  return res.status(200).json({
+    tags: {
+      canHelpWith:  clean(parsed.canHelpWith,  PT_HELP_TYPES, 5),
+      skillsToLearn: clean(parsed.skillsToLearn, PT_HELP_TYPES, 5),
+      industries:   clean(parsed.industries,   PT_INDUSTRIES, 3),
+    },
+  })
 }
 
 // Parse the model's JSON, tolerating code fences / surrounding prose.

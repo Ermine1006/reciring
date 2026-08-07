@@ -7,6 +7,7 @@ import AnonymousAvatar from './AnonymousAvatar'
 import Chip from './Chip'
 import PRESET_AVATARS from '../data/presetAvatars'
 import { VISIBILITY_OPTIONS, VISIBILITY_PRIVATE } from '../lib/visibility'
+import { suggestProfileTags } from '../lib/aiRewrite'
 
 const C = {
   gold:      '#C8A96A',
@@ -143,6 +144,36 @@ export default function SettingsPage({ section }) {
   // support modal) moved to SettingsTab.
   const [saving, setSaving] = useState(false)
   const [status, setStatus] = useState(null)
+
+  // "Help me fill" — AI suggests matching tags from a one-liner + existing
+  // profile info, then pre-selects them below for the user to confirm + save.
+  const [aiNote, setAiNote] = useState('')
+  const [aiBusy, setAiBusy] = useState(false)
+  const [aiMsg, setAiMsg]   = useState(null)
+
+  const runSuggest = async () => {
+    if (aiBusy) return
+    setAiBusy(true); setAiMsg(null)
+    const { tags, error } = await suggestProfileTags({
+      text: aiNote,
+      context: { program, headline: headline.trim(), industries: industryInterests },
+    })
+    setAiBusy(false)
+    if (error || !tags) { setAiMsg({ type: 'err', text: error?.message || 'Could not generate suggestions.' }); return }
+    let added = 0
+    const addTo = (setter, current, additions, cap) => {
+      const merged = [...current]
+      for (const a of (additions || [])) if (!merged.includes(a) && merged.length < cap) merged.push(a)
+      added += merged.length - current.length
+      setter(merged)
+    }
+    addTo(setCanHelpWith,      canHelpWith,      tags.canHelpWith,   5)
+    addTo(setSkillsToLearn,    skillsToLearn,    tags.skillsToLearn, 5)
+    addTo(setIndustryInterests, industryInterests, tags.industries,  3)
+    setAiMsg(added > 0
+      ? { type: 'ok', text: `Added ${added} suggestion${added === 1 ? '' : 's'} below — review, then Save changes.` }
+      : { type: 'ok', text: 'Your selections already cover it — nothing new to add.' })
+  }
 
   const toggleNetworkingIntent = (id) => setNetworkingIntent(prev =>
     prev.includes(id) ? prev.filter(v => v !== id) : [...prev, id]
@@ -314,6 +345,42 @@ export default function SettingsPage({ section }) {
 
         {/* ── 2. Professional Matching ────────────────────────── */}
         <Section title="Professional matching" sectionRef={refs.skills} flash={flash === 'skills'}>
+
+          {/* ✨ Help me fill — AI pre-selects the fields below from a one-liner
+              + your existing profile. Lowers the "I won't fill this" barrier. */}
+          <div style={{ background: C.goldBg, border: `1px solid ${C.goldLight}`, borderRadius: 12, padding: 13, marginBottom: 20 }}>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: C.text, fontFamily: 'Inter, system-ui, sans-serif' }}>✨ Not sure what to pick?</p>
+            <p style={{ margin: '2px 0 9px', fontSize: 11.5, color: C.textSub, fontFamily: 'Inter, system-ui, sans-serif', lineHeight: 1.45 }}>
+              Say one line about what you do and want — or just tap Suggest and we'll use your profile. You can edit everything before saving.
+            </p>
+            <input
+              type="text"
+              value={aiNote}
+              onChange={e => setAiNote(e.target.value)}
+              placeholder="e.g. I'm in VC, want to learn fundraising, can help with market research"
+              style={{ ...inputStyle, marginBottom: 8 }}
+            />
+            <button
+              type="button"
+              onClick={runSuggest}
+              disabled={aiBusy}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 7,
+                padding: '9px 16px', borderRadius: 11, border: 'none',
+                background: aiBusy ? C.goldLight : `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
+                color: '#fff', fontSize: 13, fontWeight: 700, cursor: aiBusy ? 'default' : 'pointer',
+                fontFamily: 'Inter, system-ui, sans-serif',
+              }}
+            >
+              {aiBusy ? 'Thinking…' : '✨ Suggest for me'}
+            </button>
+            {aiMsg && (
+              <p style={{ margin: '9px 0 0', fontSize: 12, fontWeight: 600, lineHeight: 1.4, color: aiMsg.type === 'err' ? C.danger : C.success, fontFamily: 'Inter, system-ui, sans-serif' }}>
+                {aiMsg.text}
+              </p>
+            )}
+          </div>
+
           <Field label="Industry focus" helper="Pick up to 3 — surfaces the right requests for you.">
             <div className="flex flex-wrap gap-2">
               {INDUSTRIES.map(ind => (
