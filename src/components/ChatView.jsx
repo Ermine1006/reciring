@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, Fragment } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import AnonymousAvatar from './AnonymousAvatar'
 import CoffeeChatModal from './CoffeeChatModal'
@@ -21,6 +21,39 @@ const C = {
 
 function fmtTime(iso) {
   return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+}
+
+// Same calendar day (local) — used to decide when to draw a date separator.
+function sameDay(a, b) {
+  if (!a || !b) return false
+  return new Date(a).toDateString() === new Date(b).toDateString()
+}
+
+// Date-separator label: Today / Yesterday / "Wed, Aug 5" (+ year if not this one).
+function fmtDayLabel(iso) {
+  const d = new Date(iso)
+  const today = new Date()
+  const yest = new Date(); yest.setDate(today.getDate() - 1)
+  if (d.toDateString() === today.toDateString()) return 'Today'
+  if (d.toDateString() === yest.toDateString())  return 'Yesterday'
+  return d.toLocaleDateString('en-US', {
+    weekday: 'short', month: 'short', day: 'numeric',
+    ...(d.getFullYear() !== today.getFullYear() ? { year: 'numeric' } : {}),
+  })
+}
+
+function DaySeparator({ iso }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 16px 4px' }}>
+      <span style={{
+        fontSize: 11, fontWeight: 600, color: C.textSub,
+        background: 'rgba(0,0,0,0.05)', borderRadius: 99, padding: '3px 12px',
+        fontFamily: 'Inter, system-ui, sans-serif',
+      }}>
+        {fmtDayLabel(iso)}
+      </span>
+    </div>
+  )
 }
 
 function fmtMeeting(iso) {
@@ -644,52 +677,64 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
         )}
 
         {/* Message bubbles */}
-        {messages.map((msg) => {
+        {messages.map((msg, i) => {
+          // Draw a date separator whenever the day changes (and before the very
+          // first message), so the chat shows the date, not just the time.
+          const prev = messages[i - 1]
+          const daySep = !sameDay(prev?.timestamp, msg.timestamp)
+            ? <DaySeparator iso={msg.timestamp} />
+            : null
+
           if (msg.type === 'meeting_proposal') {
             return (
-              <MeetingCard
-                key={msg.id}
-                msg={msg}
-                onConfirm={() => onMeetingResponse(msg.id, 'confirmed')}
-                onSuggestAnother={() => {
-                  setRescheduleData({ datetime: msg.meeting.datetime, location: msg.meeting.location })
-                  setShowCoffee(true)
-                }}
-                onReschedule={() => {
-                  setRescheduleData({ datetime: msg.meeting.datetime, location: msg.meeting.location })
-                  setShowCoffee(true)
-                }}
-              />
+              <Fragment key={msg.id}>
+                {daySep}
+                <MeetingCard
+                  msg={msg}
+                  onConfirm={() => onMeetingResponse(msg.id, 'confirmed')}
+                  onSuggestAnother={() => {
+                    setRescheduleData({ datetime: msg.meeting.datetime, location: msg.meeting.location })
+                    setShowCoffee(true)
+                  }}
+                  onReschedule={() => {
+                    setRescheduleData({ datetime: msg.meeting.datetime, location: msg.meeting.location })
+                    setShowCoffee(true)
+                  }}
+                />
+              </Fragment>
             )
           }
           // System messages — centered, neutral
           if (msg.senderId === 'system') {
             return (
-              <motion.div
-                key={msg.id}
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.2 }}
-                style={{ display: 'flex', justifyContent: 'center', padding: '8px 16px' }}
-              >
-                <div style={{
-                  background: '#F0FDF4', border: '1px solid #BBF7D0',
-                  borderRadius: 20, padding: '8px 18px',
-                }}>
-                  <p style={{
-                    fontSize: 13, fontWeight: 600, color: '#166534',
-                    fontFamily: 'Inter, system-ui, sans-serif', textAlign: 'center',
+              <Fragment key={msg.id}>
+                {daySep}
+                <motion.div
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2 }}
+                  style={{ display: 'flex', justifyContent: 'center', padding: '8px 16px' }}
+                >
+                  <div style={{
+                    background: '#F0FDF4', border: '1px solid #BBF7D0',
+                    borderRadius: 20, padding: '8px 18px',
                   }}>
-                    {msg.content}
-                  </p>
-                </div>
-              </motion.div>
+                    <p style={{
+                      fontSize: 13, fontWeight: 600, color: '#166534',
+                      fontFamily: 'Inter, system-ui, sans-serif', textAlign: 'center',
+                    }}>
+                      {msg.content}
+                    </p>
+                  </div>
+                </motion.div>
+              </Fragment>
             )
           }
           const isMe = msg.senderId === 'me'
           return (
+            <Fragment key={msg.id}>
+            {daySep}
             <motion.div
-              key={msg.id}
               initial={{ opacity: 0, y: 6, scale: 0.96 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ duration: 0.18 }}
@@ -725,6 +770,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
                 {fmtTime(msg.timestamp)}
               </p>
             </motion.div>
+            </Fragment>
           )
         })}
         {/* ── Smart nudges ── */}

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Mutu</string>
+    <string name="title_activity_main">Mutu</string>
+    <string name="package_name">com.muturing.mutu</string>
+    <string name="custom_url_scheme">com.muturing.mutu</string>
+</resources>

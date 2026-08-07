@@ -6,3 +6,11 @@ dist
 .claude/
 supabase/.temp
 .DS_Store
+
+# Android signing (机密,绝不提交)
+mutu-upload-key.jks
+keystore.properties
+android/local.properties
+android/.gradle/
+android/app/build/
+android/build/
