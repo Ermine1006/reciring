@@ -268,7 +268,7 @@ export default function SettingsPage({ section }) {
             />
           </Field>
 
-          <Field label="Career stage" last>
+          <Field label="Career stage" helper="However you see yourself — it's a self-description, not a rule. Pick “Recent grad” if you're early in your career or new to the Canadian market, even with years of experience abroad." last>
             <div className="flex flex-wrap gap-2">
               {CAREER_STAGES.map(s => (
                 <Chip key={s} label={s} active={careerStage === s} onClick={() => setCareerStage(s)} />
