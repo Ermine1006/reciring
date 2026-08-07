@@ -35,6 +35,7 @@ import { isSupabaseConfigured, supabase } from './lib/supabase'
 import { fetchPosts, createPost, updatePost } from './lib/posts'
 import { markMarketplacePostSharedToDiscover } from './lib/marketplace'
 import { HELP_TYPES, INDUSTRIES } from './data/requestOptions'
+import { backfillMatchingTags } from './lib/profileBackfill'
 import { fetchDiscoverEventPromos, logPromoEvent } from './lib/discoverPromos'
 import { fetchMyJoinedEventIds } from './lib/events'
 import { createMatch, fetchMyMatches, fetchMatchedPostIds, fetchUnmatchedPostIds, unmatchMatch, matchToUI, requestIdentityReveal, acceptIdentityReveal, declineIdentityReveal, fetchPeerProfile } from './lib/matches'
@@ -135,7 +136,7 @@ const TABS = [
 
 /* ─── App shell (authenticated) ─────────────────────────────────── */
 function AppShell() {
-  const { session, user, profile, viewerProfile, signOut } = useAuth()
+  const { session, user, profile, viewerProfile, signOut, updateProfile } = useAuth()
   // Boot straight back into the event-create form if an unexpired draft is
   // waiting — an iOS webview reload mid-form otherwise dumps the user on the
   // Discover tab, so the restored draft (fb7) would sit unseen behind a tab
@@ -671,6 +672,16 @@ function AppShell() {
       const { data: card, error } = await createPost(user.id, newReq)
       if (error) return { error }
       setRequests((prev) => [card, ...prev])
+      // Quietly grow the matching profile from the structured choices they just
+      // made: the help types they're asking for → "want to learn", the tagged
+      // industries → interests. Additive only; fire-and-forget with a subtle
+      // notice so it's transparent and editable.
+      backfillMatchingTags({
+        profile, updateProfile,
+        learnTags: newReq.helpType, industryTags: newReq.industry,
+      }).then(({ added }) => {
+        if (added?.length) setBanner(`Added ${added.join(', ')} to your matching profile — edit anytime in Profile → Skills & matching.`)
+      }).catch(() => {})
       // If this post was carried over from a past event, stamp every source
       // row (need + offer) so the reminder stops and we never republish twice.
       if (postPrefill?.sourceIds?.length) {
