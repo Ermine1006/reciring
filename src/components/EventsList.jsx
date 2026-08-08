@@ -6,6 +6,41 @@ import EventCard from './EventCard'
 import EventJoinIntentModal from './EventJoinIntentModal'
 import AppScreen from './AppScreen'
 import MyNetworkingDashboard from './MyNetworkingDashboard'
+import { EVENT_CATEGORIES } from '../data/eventCategories'
+
+// Date-range filters ("by time"). Presets are rolling (relative to now).
+const DATE_PRESETS = [
+  { id: 'all',   label: 'Any time' },
+  { id: 'today', label: 'Today' },
+  { id: 'week',  label: 'This week' },
+  { id: 'month', label: 'This month' },
+]
+function inDateRange(iso, range) {
+  if (!iso) return false
+  const d = new Date(iso)
+  const now = new Date()
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const DAY = 86400000
+  if (range === 'today')  return d >= startOfToday && d < new Date(startOfToday.getTime() + DAY)
+  if (range === 'week')   return d >= startOfToday && d < new Date(startOfToday.getTime() + 7 * DAY)
+  if (range === 'month')  return d >= startOfToday && d < new Date(now.getFullYear(), now.getMonth() + 1, 1)
+  return true
+}
+function isSameLocalDay(iso, ymd) {
+  if (!iso || !ymd) return false
+  const d = new Date(iso)
+  const s = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  return s === ymd
+}
+function filterChip(active) {
+  return {
+    padding: '6px 12px', borderRadius: 99, whiteSpace: 'nowrap', flexShrink: 0,
+    background: active ? `linear-gradient(135deg, ${C.gold}, ${C.goldDark})` : C.white,
+    color: active ? '#fff' : C.textSub,
+    border: `1px solid ${active ? C.gold : C.border}`,
+    fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif',
+  }
+}
 
 const C = {
   bg:        '#F6F3EC',
@@ -34,6 +69,10 @@ export default function EventsList({ onCreateEvent, onOpenEvent, onPrepare, onOp
   const topView    = topViewProp ?? topViewLocal
   const setTopView = onTopViewChange ?? setTopViewLocal
   const [filter, setFilter]         = useState('upcoming') // 'upcoming' | 'joined'
+  const [catFilter, setCatFilter]   = useState(() => new Set()) // selected category ids
+  const [dateFilter, setDateFilter] = useState('all')      // date-range preset id
+  const [pickedDate, setPickedDate] = useState('')         // 'YYYY-MM-DD' from the calendar picker
+  const [showFilters, setShowFilters] = useState(false)
   const [joiningId, setJoiningId]   = useState(null)
   const [leaveTarget, setLeaveTarget]   = useState(null)  // event being left (pre-confirm)
   const [cancelTarget, setCancelTarget] = useState(null)  // event being cancelled (pre-confirm)
@@ -158,11 +197,23 @@ export default function EventsList({ onCreateEvent, onOpenEvent, onPrepare, onOp
   }
 
   // "My events" = events I host or joined — from a dedicated query that
-  // INCLUDES past events (so a finished event never disappears).
+  // INCLUDES past events (so a finished event never disappears). Then apply the
+  // category + date filters (a picked calendar date overrides the preset).
   const visible = useMemo(() => {
-    if (filter === 'joined') return myEvents
-    return events
-  }, [events, myEvents, filter])
+    let list = filter === 'joined' ? myEvents : events
+    if (catFilter.size) list = list.filter(e => catFilter.has(e.category))
+    if (pickedDate)          list = list.filter(e => isSameLocalDay(e.start_at, pickedDate))
+    else if (dateFilter !== 'all') list = list.filter(e => inDateRange(e.start_at, dateFilter))
+    return list
+  }, [events, myEvents, filter, catFilter, dateFilter, pickedDate])
+
+  const filtersActive = catFilter.size > 0 || dateFilter !== 'all' || Boolean(pickedDate)
+  const clearFilters = () => { setCatFilter(new Set()); setDateFilter('all'); setPickedDate('') }
+  const toggleCat = (id) => setCatFilter(prev => {
+    const next = new Set(prev)
+    next.has(id) ? next.delete(id) : next.add(id)
+    return next
+  })
 
   return (
     <AppScreen>
@@ -274,6 +325,53 @@ export default function EventsList({ onCreateEvent, onOpenEvent, onPrepare, onOp
           })}
         </div>
 
+        {/* Filters — by category + date/calendar */}
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <button type="button" onClick={() => setShowFilters(s => !s)}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '6px 14px', borderRadius: 99,
+                background: (showFilters || filtersActive) ? C.goldBg : C.white,
+                border: `1px solid ${filtersActive ? C.gold : C.border}`,
+                color: filtersActive ? C.goldDark : C.textSub,
+                fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 6h18M7 12h10M11 18h2" /></svg>
+              Filters{filtersActive ? ` · ${catFilter.size + (dateFilter !== 'all' || pickedDate ? 1 : 0)}` : ''}
+            </button>
+            {filtersActive && (
+              <button type="button" onClick={clearFilters}
+                style={{ background: 'none', border: 'none', color: C.textSub, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>Clear</button>
+            )}
+          </div>
+
+          {showFilters && (
+            <div style={{ marginTop: 10, background: C.white, border: `1px solid ${C.border}`, borderRadius: 14, padding: 13 }}>
+              <p style={{ margin: '0 0 8px', fontSize: 10.5, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: C.textMuted, fontFamily: 'Inter, system-ui, sans-serif' }}>When</p>
+              <div className="phone-scroll" style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 2 }}>
+                {DATE_PRESETS.map(p => (
+                  <button key={p.id} type="button"
+                    onClick={() => { setDateFilter(p.id); setPickedDate('') }}
+                    style={filterChip(!pickedDate && dateFilter === p.id)}>{p.label}</button>
+                ))}
+                <label style={{ ...filterChip(Boolean(pickedDate)), position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                  📅 {pickedDate ? new Date(`${pickedDate}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Pick a date'}
+                  <input type="date" value={pickedDate}
+                    onChange={e => { setPickedDate(e.target.value); if (e.target.value) setDateFilter('all') }}
+                    style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }} />
+                </label>
+              </div>
+
+              <p style={{ margin: '13px 0 8px', fontSize: 10.5, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: C.textMuted, fontFamily: 'Inter, system-ui, sans-serif' }}>Category</p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {EVENT_CATEGORIES.map(cat => (
+                  <button key={cat.id} type="button" onClick={() => toggleCat(cat.id)} style={filterChip(catFilter.has(cat.id))}>
+                    {cat.emoji} {cat.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Toast */}
         {toast && (
           <motion.div
@@ -300,7 +398,17 @@ export default function EventsList({ onCreateEvent, onOpenEvent, onPrepare, onOp
             Loading events…
           </p>
         ) : visible.length === 0 ? (
-          <EmptyState filter={filter} onCreateEvent={onCreateEvent} />
+          filtersActive ? (
+            <div style={{ textAlign: 'center', padding: '36px 16px', color: C.textSub, fontFamily: 'Inter, system-ui, sans-serif' }}>
+              <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: C.text }}>No events match your filters</p>
+              <button type="button" onClick={clearFilters}
+                style={{ marginTop: 10, padding: '8px 16px', borderRadius: 10, border: `1px solid ${C.goldLight}`, background: C.goldBg, color: C.goldDark, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
+                Clear filters
+              </button>
+            </div>
+          ) : (
+            <EmptyState filter={filter} onCreateEvent={onCreateEvent} />
+          )
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {visible.map(ev => (
