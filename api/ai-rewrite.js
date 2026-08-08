@@ -381,14 +381,25 @@ async function handleProfileTags(body, res) {
 
   const system = `You set up a Rotman/UofT student's peer-networking profile so a matcher can pair them well.
 
-From the info given, decide THREE things — but ONLY choose from these exact lists (copy the labels verbatim, never invent new ones):
+Read everything they gave (a sentence and/or their program, role, industries) and map it to THREE fields. ONLY use labels from these exact lists — copy them verbatim, never invent new ones:
 - HELP_TYPES = ${JSON.stringify(PT_HELP_TYPES)}
 - INDUSTRIES = ${JSON.stringify(PT_INDUSTRIES)}
 
-Return STRICT JSON, no prose, no code fences:
-{"canHelpWith": [up to 5 HELP_TYPES they could offer others], "skillsToLearn": [up to 5 HELP_TYPES they'd want from a peer], "industries": [up to 3 INDUSTRIES]}
+Map everyday language to HELP_TYPES (applies to both what they can OFFER and what they WANT):
+- "connections / network / meet people / intros" → Intro, Coffee Chat
+- "advice / mentorship / guidance / feedback / pick your brain" → Advice
+- "referral / warm intro to a company / get me in the door" → Referral
+- "practice or prep interviews" → Mock Interview
+- "resume / CV" → Resume Review
+- "study or prep together" → Study Group
+- a founder/operator offering their time can usually OFFER: Advice, Coffee Chat, Intro
 
-Rules: pick only well-supported items; fewer is fine. If unsure about a field, return an empty array. Do not put the same label in both canHelpWith and skillsToLearn unless clearly justified.`
+Infer INDUSTRIES from what they do: "startup / founder / building a product" → Tech (unless another industry is clearly stated); "VC / fund / investing" → VC; "PE / buyout" → Private Equity; "consulting" → Consulting; "banking / IB" → Investment Banking; "brand / growth / marketing" → Marketing; "ops / supply chain" → Operations. Use Other only if nothing fits.
+
+Return STRICT JSON, no prose, no code fences:
+{"canHelpWith": [up to 5 HELP_TYPES they can offer], "skillsToLearn": [up to 5 HELP_TYPES they'd want from a peer], "industries": [up to 3 INDUSTRIES]}
+
+Be genuinely helpful: whenever there's any reasonable signal, suggest at least one or two items per field rather than nothing — the user reviews and edits before saving. Only return an empty array for a field when there is truly nothing to go on. Avoid putting the same label in both canHelpWith and skillsToLearn unless clearly justified.`
 
   let resp
   try {

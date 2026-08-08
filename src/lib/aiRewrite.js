@@ -40,7 +40,13 @@ export async function suggestProfileTags({ text, context } = {}) {
     })
     const data = await res.json().catch(() => ({}))
     if (!res.ok) return { tags: null, error: new Error(data.error || 'Suggestions failed.') }
-    const t = data.tags || {}
+    // A real success always carries a `tags` object. If it's missing, the
+    // endpoint wasn't reached (e.g. the /api functions don't run on the local
+    // dev server) — surface that instead of pretending we got empty results.
+    if (!data || typeof data.tags !== 'object' || data.tags === null) {
+      return { tags: null, error: new Error("Couldn't reach the suggestion service — AI features run on the deployed site, not localhost.") }
+    }
+    const t = data.tags
     return {
       tags: {
         canHelpWith:  Array.isArray(t.canHelpWith)  ? t.canHelpWith  : [],

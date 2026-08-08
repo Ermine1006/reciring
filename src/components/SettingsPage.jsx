@@ -160,6 +160,7 @@ export default function SettingsPage({ section }) {
     })
     setAiBusy(false)
     if (error || !tags) { setAiMsg({ type: 'err', text: error?.message || 'Could not generate suggestions.' }); return }
+    const suggested = (tags.canHelpWith?.length || 0) + (tags.skillsToLearn?.length || 0) + (tags.industries?.length || 0)
     let added = 0
     const addTo = (setter, current, additions, cap) => {
       const merged = [...current]
@@ -170,9 +171,15 @@ export default function SettingsPage({ section }) {
     addTo(setCanHelpWith,      canHelpWith,      tags.canHelpWith,   5)
     addTo(setSkillsToLearn,    skillsToLearn,    tags.skillsToLearn, 5)
     addTo(setIndustryInterests, industryInterests, tags.industries,  3)
-    setAiMsg(added > 0
-      ? { type: 'ok', text: `Added ${added} suggestion${added === 1 ? '' : 's'} below — review, then Save changes.` }
-      : { type: 'ok', text: 'Your selections already cover it — nothing new to add.' })
+    if (added > 0) {
+      setAiMsg({ type: 'ok', text: `Added ${added} suggestion${added === 1 ? '' : 's'} below — review, then Save changes.` })
+    } else if (suggested === 0) {
+      // AI couldn't infer anything (e.g. nothing typed + thin profile) — guide
+      // the user rather than pretending they already have everything.
+      setAiMsg({ type: 'info', text: 'Tell me a bit more — write one line about what you do and want, then tap Suggest.' })
+    } else {
+      setAiMsg({ type: 'ok', text: 'Your selections already cover it — nothing new to add.' })
+    }
   }
 
   const toggleNetworkingIntent = (id) => setNetworkingIntent(prev =>
@@ -375,7 +382,7 @@ export default function SettingsPage({ section }) {
               {aiBusy ? 'Thinking…' : '✨ Suggest for me'}
             </button>
             {aiMsg && (
-              <p style={{ margin: '9px 0 0', fontSize: 12, fontWeight: 600, lineHeight: 1.4, color: aiMsg.type === 'err' ? C.danger : C.success, fontFamily: 'Inter, system-ui, sans-serif' }}>
+              <p style={{ margin: '9px 0 0', fontSize: 12, fontWeight: 600, lineHeight: 1.4, color: aiMsg.type === 'err' ? C.danger : aiMsg.type === 'info' ? C.textSub : C.success, fontFamily: 'Inter, system-ui, sans-serif' }}>
                 {aiMsg.text}
               </p>
             )}
