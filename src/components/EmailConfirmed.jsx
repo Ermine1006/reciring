@@ -2,10 +2,10 @@ import { motion } from 'framer-motion'
 import ReciRingLogo from './ReciRingLogo'
 
 const C = {
-  gold:      '#C8A96A',
-  goldDark:  '#A88245',
-  goldLight: '#E6D3A3',
-  goldBg:    '#FBF6EC',
+  gold:      '#C9A33B',
+  goldDark:  '#A6822A',
+  goldLight: '#E8D9A7',
+  goldBg:    '#F8F3E5',
   text:      '#111111',
   textSub:   '#6B7280',
   textMuted: '#9CA3AF',
@@ -26,7 +26,7 @@ export default function EmailConfirmed({ onGoToLogin }) {
           background: C.white,
           borderRadius: 28,
           padding: '44px 30px 36px',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.10), 0 4px 16px rgba(200,169,106,0.12)',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.10), 0 4px 16px rgba(201,163,59,0.12)',
           textAlign: 'center',
         }}
       >
@@ -41,7 +41,7 @@ export default function EmailConfirmed({ onGoToLogin }) {
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           margin: '0 auto 20px',
         }}>
-          <svg width="28" height="28" fill="none" stroke="#16A34A" viewBox="0 0 24 24" strokeWidth={2.5}>
+          <svg width="28" height="28" fill="none" stroke="#2E6B4F" viewBox="0 0 24 24" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>
         </div>
@@ -64,7 +64,7 @@ export default function EmailConfirmed({ onGoToLogin }) {
           style={{
             background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
             color: '#fff',
-            boxShadow: '0 6px 20px rgba(200,169,106,0.35)',
+            boxShadow: '0 6px 20px rgba(201,163,59,0.35)',
             border: 'none',
             cursor: 'pointer',
           }}

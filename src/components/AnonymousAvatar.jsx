@@ -23,7 +23,7 @@ const PALETTES = [
   { bg: '#F5DDD5', bodyLt: '#FFF2EC', body: '#FFD0BC', bodyDk: '#FFAA90', eyes: '#2D1A33', cheek: '#FF9B8A' },
   { bg: '#D5E5F8', bodyLt: '#E8F0FF', body: '#BBCEFF', bodyDk: '#8AAAF0', eyes: '#1A2640', cheek: '#6688DD' },
   { bg: '#E5D5F8', bodyLt: '#EEE8FF', body: '#D0BBFF', bodyDk: '#AA88EE', eyes: '#28184A', cheek: '#AA77EE' },
-  { bg: '#D5F0E5', bodyLt: '#E8F8EE', body: '#B8EECE', bodyDk: '#80CCAA', eyes: '#183A28', cheek: '#55BB88' },
+  { bg: '#D5F0E5', bodyLt: '#EDF3EE', body: '#B8EECE', bodyDk: '#80CCAA', eyes: '#183A28', cheek: '#55BB88' },
   { bg: '#F5D5E0', bodyLt: '#FFECEE', body: '#FFC0CC', bodyDk: '#EE8899', eyes: '#3A1820', cheek: '#EE6688' },
   { bg: '#F8EDD5', bodyLt: '#FFF8E5', body: '#FFE2AA', bodyDk: '#EEC070', eyes: '#382A14', cheek: '#DDAA44' },
   { bg: '#D5EEF8', bodyLt: '#E5F6FF', body: '#AADDF8', bodyDk: '#70BBDD', eyes: '#14303A', cheek: '#44AACC' },
@@ -58,7 +58,7 @@ const renderAccessory = (variant, p) => {
     case 3: return (
       <path
         d="M32 38 L33.5 42 L37.7 42.15 L34.4 44.8 L35.5 48.85 L32 46.5 L28.5 48.85 L29.6 44.8 L26.3 42.15 L30.5 42 Z"
-        fill="#C8A96A" stroke="#A88245" strokeWidth="0.6"
+        fill="#C9A33B" stroke="#A6822A" strokeWidth="0.6"
       />
     )
     /* ── Round glasses over eyes ── */

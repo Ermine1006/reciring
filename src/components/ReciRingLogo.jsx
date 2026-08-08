@@ -11,7 +11,7 @@ import { useState } from 'react'
 
 /* ── Gradient definitions ─────────────────────────────────────── */
 const WORDMARK_GRADIENT =
-  'linear-gradient(135deg, #7A5910 0%, #C8A832 38%, #D4AF37 55%, #8B6914 100%)'
+  'linear-gradient(135deg, #7A5E17 0%, #C9A33B 38%, #D8B54B 55%, #8A6E1E 100%)'
 
 /* ── Interlocking Rings icon ─────────────────────────────────── */
 function InterlockingRings({ size }) {
@@ -33,14 +33,14 @@ function InterlockingRings({ size }) {
     >
       <defs>
         <linearGradient id="ringGoldL" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%"   stopColor="#FFD700" />
-          <stop offset="50%"  stopColor="#D4AF37" />
-          <stop offset="100%" stopColor="#B8962E" />
+          <stop offset="0%"   stopColor="#E6C866" />
+          <stop offset="50%"  stopColor="#D8B54B" />
+          <stop offset="100%" stopColor="#A6822A" />
         </linearGradient>
         <linearGradient id="ringGoldR" x1="100%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%"   stopColor="#FFD700" />
-          <stop offset="50%"  stopColor="#D4AF37" />
-          <stop offset="100%" stopColor="#9A7B1F" />
+          <stop offset="0%"   stopColor="#E6C866" />
+          <stop offset="50%"  stopColor="#D8B54B" />
+          <stop offset="100%" stopColor="#7A5E17" />
         </linearGradient>
       </defs>
 

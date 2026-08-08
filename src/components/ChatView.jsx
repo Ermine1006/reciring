@@ -8,10 +8,10 @@ import PeerProfileCard from './PeerProfileCard'
 import RecognitionCard from './RecognitionCard'
 
 const C = {
-  gold:      '#C8A96A',
-  goldDark:  '#A88245',
-  goldLight: '#E6D3A3',
-  goldBg:    '#FBF6EC',
+  gold:      '#C9A33B',
+  goldDark:  '#A6822A',
+  goldLight: '#E8D9A7',
+  goldBg:    '#F8F3E5',
   text:      '#111111',
   textSub:   '#6B7280',
   textMuted: '#9CA3AF',
@@ -70,17 +70,17 @@ function MeetingCard({ msg, onConfirm, onSuggestAnother, onReschedule }) {
     <div style={{ display: 'flex', justifyContent: isMe ? 'flex-end' : 'flex-start', padding: '4px 16px' }}>
       <div style={{
         background: C.white,
-        border: `1.5px solid ${meeting.status === 'confirmed' ? '#BBF7D0' : C.goldLight}`,
+        border: `1.5px solid ${meeting.status === 'confirmed' ? '#CBDBCF' : C.goldLight}`,
         borderRadius: 18, padding: '14px 16px',
         maxWidth: 270,
-        boxShadow: '0 2px 12px rgba(200,169,106,0.12)',
+        boxShadow: '0 2px 12px rgba(201,163,59,0.12)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
           <span style={{ fontSize: 18 }}>☕</span>
           <p style={{
             fontSize: 11, fontWeight: 700, letterSpacing: '0.1em',
             textTransform: 'uppercase',
-            color: meeting.status === 'confirmed' ? '#16A34A' : C.goldDark,
+            color: meeting.status === 'confirmed' ? '#2E6B4F' : C.goldDark,
             fontFamily: 'Inter, system-ui, sans-serif',
           }}>
             {meeting.status === 'confirmed' ? 'Coffee Chat Confirmed ✅' : `Coffee Chat ${isMe ? 'Suggested' : 'Proposed'}`}
@@ -170,8 +170,8 @@ function MeetingCard({ msg, onConfirm, onSuggestAnother, onReschedule }) {
               }}
               style={{
                 flex: 1, padding: '7px 0', borderRadius: 10,
-                background: '#F0FDF4', border: '1px solid #BBF7D0',
-                color: '#166534', fontSize: 11, fontWeight: 600,
+                background: '#EDF3EE', border: '1px solid #CBDBCF',
+                color: '#214E3A', fontSize: 11, fontWeight: 600,
                 fontFamily: 'Inter, system-ui, sans-serif', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
               }}
@@ -288,7 +288,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
         display: 'flex', alignItems: 'center', gap: 12,
         padding: '10px 16px 10px',
         background: C.white,
-        borderBottom: `1px solid rgba(200,169,106,0.18)`,
+        borderBottom: `1px solid rgba(201,163,59,0.18)`,
         flexShrink: 0,
       }}>
         <button onClick={onBack} style={{
@@ -313,7 +313,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
           const subtitle = explicitlyRevealed
             ? 'Identity revealed'
             : (revealed && peerProfile?.program) || 'Active match'
-          const subtitleColor = explicitlyRevealed ? C.goldDark : '#16A34A'
+          const subtitleColor = explicitlyRevealed ? C.goldDark : '#2E6B4F'
 
           const HeaderInner = (
             <>
@@ -393,7 +393,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
                   style={{
                     display: 'block', width: '100%', textAlign: 'left',
                     padding: '11px 16px', fontSize: 13, fontWeight: 600,
-                    color: '#A88245', background: 'none', border: 'none', cursor: 'pointer',
+                    color: '#A6822A', background: 'none', border: 'none', cursor: 'pointer',
                   }}
                 >
                   Request to reveal identity
@@ -406,7 +406,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
                   style={{
                     display: 'block', width: '100%', textAlign: 'left',
                     padding: '11px 16px', fontSize: 13, fontWeight: 600,
-                    color: '#A88245', background: 'none', border: 'none', cursor: 'pointer',
+                    color: '#A6822A', background: 'none', border: 'none', cursor: 'pointer',
                   }}
                 >
                   Review reveal request
@@ -419,7 +419,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
                   style={{
                     display: 'block', width: '100%', textAlign: 'left',
                     padding: '11px 16px', fontSize: 13, fontWeight: 600,
-                    color: '#A88245', background: 'none', border: 'none', cursor: 'pointer',
+                    color: '#A6822A', background: 'none', border: 'none', cursor: 'pointer',
                   }}
                 >
                   View peer profile
@@ -437,7 +437,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
                   style={{
                     display: 'block', width: '100%', textAlign: 'left',
                     padding: '11px 16px', fontSize: 13, fontWeight: 500,
-                    color: '#C8A96A', background: 'none', border: 'none', cursor: 'pointer',
+                    color: '#C9A33B', background: 'none', border: 'none', cursor: 'pointer',
                     borderTop: '1px solid #F3F4F6',
                   }}
                 >
@@ -502,7 +502,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
           <div style={{
             margin: '0 16px 16px', background: C.white, borderRadius: 16,
             padding: '12px 16px', border: `1px solid ${C.goldLight}`,
-            boxShadow: '0 2px 8px rgba(200,169,106,0.08)',
+            boxShadow: '0 2px 8px rgba(201,163,59,0.08)',
           }}>
             <p style={{
               fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase',
@@ -525,7 +525,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
             background: C.white, borderRadius: 16,
             padding: '12px 16px',
             border: `1px solid ${C.goldLight}`,
-            boxShadow: '0 2px 8px rgba(200,169,106,0.08)',
+            boxShadow: '0 2px 8px rgba(201,163,59,0.08)',
           }}>
             <p style={{
               fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase',
@@ -574,7 +574,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
               border: `1.5px solid ${C.goldLight}`,
               borderRadius: 16,
               padding: '14px 16px',
-              boxShadow: '0 4px 14px rgba(200,169,106,0.16)',
+              boxShadow: '0 4px 14px rgba(201,163,59,0.16)',
             }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 12 }}>
                 <span style={{ fontSize: 18, lineHeight: 1 }}>🔓</span>
@@ -716,11 +716,11 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
                   style={{ display: 'flex', justifyContent: 'center', padding: '8px 16px' }}
                 >
                   <div style={{
-                    background: '#F0FDF4', border: '1px solid #BBF7D0',
+                    background: '#EDF3EE', border: '1px solid #CBDBCF',
                     borderRadius: 20, padding: '8px 18px',
                   }}>
                     <p style={{
-                      fontSize: 13, fontWeight: 600, color: '#166534',
+                      fontSize: 13, fontWeight: 600, color: '#214E3A',
                       fontFamily: 'Inter, system-ui, sans-serif', textAlign: 'center',
                     }}>
                       {msg.content}
@@ -784,7 +784,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
               background: C.goldBg, border: `1px solid ${C.goldLight}`,
               borderRadius: 16, padding: '10px 18px',
               display: 'flex', alignItems: 'center', gap: 10,
-              boxShadow: '0 2px 8px rgba(200,169,106,0.1)',
+              boxShadow: '0 2px 8px rgba(201,163,59,0.1)',
             }}>
               <span style={{ fontSize: 16 }}>✨</span>
               <p style={{ fontSize: 12, color: C.goldDark, fontFamily: 'Inter, system-ui, sans-serif', fontWeight: 500 }}>
@@ -816,13 +816,13 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
             style={{ padding: '8px 16px', display: 'flex', justifyContent: 'center' }}
           >
             <div style={{
-              background: '#F0FDF4', border: '1px solid #BBF7D0',
+              background: '#EDF3EE', border: '1px solid #CBDBCF',
               borderRadius: 16, padding: '12px 20px', textAlign: 'center',
             }}>
-              <p style={{ fontSize: 14, fontWeight: 600, color: '#166534', fontFamily: 'Inter, system-ui, sans-serif' }}>
+              <p style={{ fontSize: 14, fontWeight: 600, color: '#214E3A', fontFamily: 'Inter, system-ui, sans-serif' }}>
                 Nice — your chat is set 🎉
               </p>
-              <p style={{ fontSize: 11, color: '#16A34A', fontFamily: 'Inter, system-ui, sans-serif', marginTop: 4 }}>
+              <p style={{ fontSize: 11, color: '#2E6B4F', fontFamily: 'Inter, system-ui, sans-serif', marginTop: 4 }}>
                 +10 points after completion
               </p>
             </div>
@@ -839,7 +839,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
             <div style={{
               background: C.white, border: `1.5px solid ${C.goldLight}`,
               borderRadius: 18, padding: '14px 20px', textAlign: 'center',
-              boxShadow: '0 2px 12px rgba(200,169,106,0.12)',
+              boxShadow: '0 2px 12px rgba(201,163,59,0.12)',
               maxWidth: 280, width: '100%',
             }}>
               <p style={{ fontSize: 14, fontWeight: 600, color: C.text, fontFamily: 'Inter, system-ui, sans-serif', marginBottom: 12 }}>
@@ -854,7 +854,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
                     color: '#fff', fontSize: 13, fontWeight: 600,
                     fontFamily: 'Inter, system-ui, sans-serif',
                     border: 'none', cursor: 'pointer',
-                    boxShadow: '0 4px 12px rgba(200,169,106,0.3)',
+                    boxShadow: '0 4px 12px rgba(201,163,59,0.3)',
                   }}
                 >
                   Yes — leave a review
@@ -944,7 +944,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
             cursor: input.trim() ? 'pointer' : 'default',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             transition: 'all 0.2s',
-            boxShadow: input.trim() ? '0 4px 12px rgba(200,169,106,0.3)' : 'none',
+            boxShadow: input.trim() ? '0 4px 12px rgba(201,163,59,0.3)' : 'none',
           }}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill={input.trim() ? 'white' : '#9CA3AF'}>

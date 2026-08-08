@@ -21,11 +21,11 @@ export function Button({
 
   const variants = {
     primary:
-      'bg-[#C8A45D] text-black hover:bg-[#D2B06A] active:bg-[#B8914C] focus-visible:ring-[#C8A45D]',
+      'bg-[#C9A33B] text-black hover:bg-[#D8B54B] active:bg-[#A6822A] focus-visible:ring-[#C9A33B]',
     secondary:
-      'bg-[#14141A] text-[#E5E5E5] border border-white/10 hover:border-[#C8A45D]/60 hover:bg-white/5 active:bg-white/[0.08] focus-visible:ring-[#C8A45D]',
+      'bg-[#14141A] text-[#E5E5E5] border border-white/10 hover:border-[#C9A33B]/60 hover:bg-white/5 active:bg-white/[0.08] focus-visible:ring-[#C9A33B]',
     ghost:
-      'bg-transparent text-[#E5E5E5] hover:bg-white/5 active:bg-white/[0.08] focus-visible:ring-[#C8A45D]',
+      'bg-transparent text-[#E5E5E5] hover:bg-white/5 active:bg-white/[0.08] focus-visible:ring-[#C9A33B]',
   }
 
   const sizes = {
@@ -48,9 +48,9 @@ export function Chip({ className = '', active = false, ...props }) {
     'border transition'
 
   const activeClasses =
-    'bg-[#C8A45D] text-black border-transparent shadow-[0_0_0_1px_rgba(0,0,0,0.5)]'
+    'bg-[#C9A33B] text-black border-transparent shadow-[0_0_0_1px_rgba(0,0,0,0.5)]'
   const inactiveClasses =
-    'bg-[#14141A] text-[#A1A1AA] border-white/10 hover:border-[#C8A45D]/60 hover:text-[#E5E5E5]'
+    'bg-[#14141A] text-[#A1A1AA] border-white/10 hover:border-[#C9A33B]/60 hover:text-[#E5E5E5]'
 
   return (
     <button
@@ -67,7 +67,7 @@ export function Input({ className = '', ...props }) {
   const base =
     'w-full rounded-2xl bg-[#09090F] border border-white/10 px-4 py-3 text-sm ' +
     'text-[#E5E5E5] placeholder:text-[#52525B] ' +
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C8A45D] focus-visible:border-transparent'
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A33B] focus-visible:border-transparent'
 
   return <input className={mergeClasses(base, className)} {...props} />
 }
@@ -76,7 +76,7 @@ export function TextArea({ className = '', ...props }) {
   const base =
     'w-full rounded-2xl bg-[#09090F] border border-white/10 px-4 py-3 text-sm ' +
     'text-[#E5E5E5] placeholder:text-[#52525B] resize-none ' +
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C8A45D] focus-visible:border-transparent'
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A33B] focus-visible:border-transparent'
 
   return <textarea className={mergeClasses(base, className)} {...props} />
 }

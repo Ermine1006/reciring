@@ -6,16 +6,16 @@ import AdminEmailComposer from './AdminEmailComposer'
 import AdminEmailPreview from './AdminEmailPreview'
 
 const C = {
-  gold:      '#C8A96A',
-  goldDark:  '#A88245',
-  goldLight: '#E6D3A3',
-  goldBg:    '#FBF6EC',
+  gold:      '#C9A33B',
+  goldDark:  '#A6822A',
+  goldLight: '#E8D9A7',
+  goldBg:    '#F8F3E5',
   text:      '#111111',
   textSub:   '#6B7280',
   textMuted: '#9CA3AF',
   white:     '#FFFFFF',
   border:    '#E5E7EB',
-  success:   '#16A34A',
+  success:   '#2E6B4F',
   danger:    '#DC2626',
   amber:     '#B45309',
 }
@@ -481,7 +481,7 @@ export default function AdminEmailTest({ onClose }) {
           {(valid.length > 0 || invalid.length > 0) && (
             <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
               {valid.length > 0 && (
-                <span style={{ fontSize: 11, fontWeight: 600, color: C.success, background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: 99, padding: '4px 10px', fontFamily: 'Inter, system-ui, sans-serif' }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: C.success, background: '#EDF3EE', border: '1px solid #CBDBCF', borderRadius: 99, padding: '4px 10px', fontFamily: 'Inter, system-ui, sans-serif' }}>
                   ✓ {valid.length} valid
                 </span>
               )}
@@ -533,7 +533,7 @@ export default function AdminEmailTest({ onClose }) {
               background: canSendBroadcast ? `linear-gradient(135deg, ${C.gold}, ${C.goldDark})` : '#F3F4F6',
               color:      canSendBroadcast ? '#fff' : C.textMuted,
               border: 'none',
-              boxShadow: canSendBroadcast ? '0 6px 18px rgba(200,169,106,0.34)' : 'none',
+              boxShadow: canSendBroadcast ? '0 6px 18px rgba(201,163,59,0.34)' : 'none',
               fontSize: 13, fontWeight: 700,
               letterSpacing: '0.08em', textTransform: 'uppercase',
               fontFamily: 'Inter, system-ui, sans-serif',
@@ -564,7 +564,7 @@ export default function AdminEmailTest({ onClose }) {
               Result · {result.mode === 'broadcast' ? 'Broadcast' : 'Test'}
             </p>
             <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
-              <ResultBadge label="Sent"         count={result.sent}         color={C.success}  bg="#F0FDF4" border="#BBF7D0" />
+              <ResultBadge label="Sent"         count={result.sent}         color={C.success}  bg="#EDF3EE" border="#CBDBCF" />
               <ResultBadge label="Failed"       count={result.failed}       color={C.danger}   bg="#FEF2F2" border="#FECACA" />
               <ResultBadge label="Unsubscribed" count={result.unsubscribed} color={C.amber}    bg="#FFFBEB" border="#FDE68A" />
             </div>
@@ -625,7 +625,7 @@ export default function AdminEmailTest({ onClose }) {
 
           <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
             {[
-              { id: 'subscribe',   label: 'Resubscribe',  color: C.success, bg: '#F0FDF4', border: '#BBF7D0' },
+              { id: 'subscribe',   label: 'Resubscribe',  color: C.success, bg: '#EDF3EE', border: '#CBDBCF' },
               { id: 'unsubscribe', label: 'Unsubscribe',  color: C.amber,   bg: '#FFFBEB', border: '#FDE68A' },
             ].map(opt => {
               const active = subAction === opt.id
@@ -660,7 +660,7 @@ export default function AdminEmailTest({ onClose }) {
               background: (subSaving || !subEmail.trim()) ? '#F3F4F6' : `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
               color: (subSaving || !subEmail.trim()) ? C.textMuted : '#fff',
               border: 'none',
-              boxShadow: (subSaving || !subEmail.trim()) ? 'none' : '0 4px 14px rgba(200,169,106,0.3)',
+              boxShadow: (subSaving || !subEmail.trim()) ? 'none' : '0 4px 14px rgba(201,163,59,0.3)',
               cursor: (subSaving || !subEmail.trim()) ? 'default' : 'pointer',
             }}
           >
@@ -677,8 +677,8 @@ export default function AdminEmailTest({ onClose }) {
 
           {subResult && (
             <div className="rounded-xl p-3 mt-3" style={{
-              background: subResult.status === 'subscribed' ? '#F0FDF4' : '#FFFBEB',
-              border: `1px solid ${subResult.status === 'subscribed' ? '#BBF7D0' : '#FDE68A'}`,
+              background: subResult.status === 'subscribed' ? '#EDF3EE' : '#FFFBEB',
+              border: `1px solid ${subResult.status === 'subscribed' ? '#CBDBCF' : '#FDE68A'}`,
             }}>
               <p style={{
                 fontSize: 13, fontWeight: 600,

@@ -10,17 +10,17 @@ import { VISIBILITY_OPTIONS, VISIBILITY_PRIVATE } from '../lib/visibility'
 import { writeProfilePrompt } from '../lib/aiRewrite'
 
 const C = {
-  gold:      '#C8A96A',
-  goldDark:  '#A88245',
-  goldLight: '#E6D3A3',
-  goldBg:    '#FBF6EC',
+  gold:      '#C9A33B',
+  goldDark:  '#A6822A',
+  goldLight: '#E8D9A7',
+  goldBg:    '#F8F3E5',
   text:      '#111111',
   textSub:   '#6B7280',
   textMuted: '#9CA3AF',
   white:     '#FFFFFF',
   border:    '#E5E7EB',
   danger:    '#DC2626',
-  success:   '#16A34A',
+  success:   '#2E6B4F',
 }
 
 /** Resolve a `preset:key` avatar_url → the seed for AnonymousAvatar. */
@@ -65,7 +65,7 @@ function Section({ title, children, sectionRef, flash }) {
         background: C.white,
         border: `1px solid ${flash ? C.gold : C.border}`,
         scrollMarginTop: 10,
-        boxShadow: flash ? `0 0 0 3px rgba(200,169,106,0.16)` : 'none',
+        boxShadow: flash ? `0 0 0 3px rgba(201,163,59,0.16)` : 'none',
         transition: 'border-color 0.6s ease, box-shadow 0.6s ease',
       }}
     >
@@ -217,7 +217,7 @@ export default function SettingsPage({ section }) {
             <div style={{
               borderRadius: '50%',
               border: `3px solid ${C.goldLight}`,
-              boxShadow: '0 4px 20px rgba(200,169,106,0.25)',
+              boxShadow: '0 4px 20px rgba(201,163,59,0.25)',
               marginBottom: 8,
             }}>
               <AnonymousAvatar
@@ -248,7 +248,7 @@ export default function SettingsPage({ section }) {
                       padding: 0, background: 'none', cursor: 'pointer',
                       border: isActive ? `2.5px solid ${C.gold}` : '2.5px solid transparent',
                       borderRadius: '50%',
-                      boxShadow: isActive ? `0 0 0 2px ${C.goldLight}, 0 4px 12px rgba(200,169,106,0.3)` : 'none',
+                      boxShadow: isActive ? `0 0 0 2px ${C.goldLight}, 0 4px 12px rgba(201,163,59,0.3)` : 'none',
                       transform: isActive ? 'scale(1.08)' : 'scale(1)',
                       transition: 'all 0.15s ease',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -321,8 +321,8 @@ export default function SettingsPage({ section }) {
                     onClick={() => setVisibility(opt.id)}
                     className="text-left rounded-xl border px-4 py-3 transition"
                     style={{
-                      borderColor: active ? '#C8A96A' : 'rgba(0,0,0,0.12)',
-                      background:  active ? 'rgba(200,169,106,0.10)' : '#fff',
+                      borderColor: active ? '#C9A33B' : 'rgba(0,0,0,0.12)',
+                      background:  active ? 'rgba(201,163,59,0.10)' : '#fff',
                     }}
                   >
                     <div className="flex items-center gap-2 font-medium" style={{ color: '#1a1a1a' }}>
@@ -439,7 +439,7 @@ export default function SettingsPage({ section }) {
               color: '#fff',
               border: 'none',
               opacity: saving ? 0.6 : 1,
-              boxShadow: '0 6px 20px rgba(200,169,106,0.35)',
+              boxShadow: '0 6px 20px rgba(201,163,59,0.35)',
               cursor: saving ? 'wait' : 'pointer',
             }}
           >
@@ -458,8 +458,8 @@ export default function SettingsPage({ section }) {
                   marginTop: 12,
                   padding: '10px 14px',
                   borderRadius: 12,
-                  background: status.type === 'ok' ? '#F0FDF4' : '#FEF2F2',
-                  border: `1px solid ${status.type === 'ok' ? '#BBF7D0' : '#FECACA'}`,
+                  background: status.type === 'ok' ? '#EDF3EE' : '#FEF2F2',
+                  border: `1px solid ${status.type === 'ok' ? '#CBDBCF' : '#FECACA'}`,
                   display: 'flex', alignItems: 'center', gap: 8,
                 }}
               >

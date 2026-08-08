@@ -9,9 +9,9 @@
  *   disabled — optional, dims the chip and blocks clicks
  */
 const C = {
-  gold:      '#C8A96A',
-  goldDark:  '#A88245',
-  goldBg:    '#FBF6EC',
+  gold:      '#C9A33B',
+  goldDark:  '#A6822A',
+  goldBg:    '#F8F3E5',
   textSub:   '#6B7280',
   white:     '#FFFFFF',
   border:    '#E5E7EB',
@@ -29,12 +29,12 @@ export default function Chip({ label, active, onClick, disabled = false }) {
         fontSize: 12, fontWeight: 600, fontFamily: 'Inter, system-ui, sans-serif',
         cursor: disabled ? 'not-allowed' : 'pointer',
         background: active
-          ? `linear-gradient(135deg, ${C.goldBg}, rgba(200,169,106,0.18))`
+          ? `linear-gradient(135deg, ${C.goldBg}, rgba(201,163,59,0.18))`
           : C.white,
         color: active ? C.goldDark : C.textSub,
         border: `1.5px solid ${active ? C.gold : C.border}`,
         boxShadow: active
-          ? '0 2px 10px rgba(200,169,106,0.25), inset 0 1px 0 rgba(255,255,255,0.6)'
+          ? '0 2px 10px rgba(201,163,59,0.25), inset 0 1px 0 rgba(255,255,255,0.6)'
           : '0 1px 2px rgba(0,0,0,0.04)',
         opacity: disabled ? 0.5 : 1,
       }}

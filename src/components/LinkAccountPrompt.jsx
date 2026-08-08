@@ -4,10 +4,10 @@ import { useAuth } from '../context/AuthContext'
 import { isInstitutionalEmail } from '../config/auth'
 
 const C = {
-  gold:      '#C8A96A',
-  goldDark:  '#A88245',
-  goldLight: '#E6D3A3',
-  goldBg:    '#FBF6EC',
+  gold:      '#C9A33B',
+  goldDark:  '#A6822A',
+  goldLight: '#E8D9A7',
+  goldBg:    '#F8F3E5',
   text:      '#111111',
   textSub:   '#4B5563',
   textMuted: '#9CA3AF',
@@ -111,7 +111,7 @@ export default function LinkAccountPrompt() {
           pointerEvents: 'auto',
           background: C.white, borderRadius: 24,
           padding: '28px 24px 22px',
-          boxShadow: '0 24px 60px rgba(0,0,0,0.22), 0 4px 16px rgba(200,169,106,0.18)',
+          boxShadow: '0 24px 60px rgba(0,0,0,0.22), 0 4px 16px rgba(201,163,59,0.18)',
         }}
       >
         {/* Gold cap on the icon */}
@@ -152,7 +152,7 @@ export default function LinkAccountPrompt() {
               color: '#fff', fontSize: 14, fontWeight: 600,
               fontFamily: 'Inter, system-ui, sans-serif',
               cursor: linking ? 'default' : 'pointer',
-              boxShadow: '0 6px 18px rgba(200,169,106,0.32)',
+              boxShadow: '0 6px 18px rgba(201,163,59,0.32)',
               opacity: linking ? 0.6 : 1,
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             }}

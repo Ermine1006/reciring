@@ -1,9 +1,9 @@
 import AnonymousAvatar from './AnonymousAvatar'
 
 const C = {
-  gold: '#C8A96A', goldDark: '#A88245', goldLight: '#E6D3A3', goldBg: '#FBF6EC',
+  gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7', goldBg: '#F8F3E5',
   ink: '#111111', textSub: '#6B7280', textMuted: '#9CA3AF', white: '#FFFFFF',
-  border: '#F0ECE4', green: '#16A34A', greenBg: '#F0FDF4', greenBorder: '#BBF7D0',
+  border: '#F0ECE4', green: '#2E6B4F', greenBg: '#EDF3EE', greenBorder: '#CBDBCF',
   danger: '#DC2626',
 }
 
@@ -146,7 +146,7 @@ const primaryBtn = {
   flex: 1, padding: '11px 14px', borderRadius: 12, border: 'none',
   background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`, color: C.white,
   fontSize: 13.5, fontWeight: 700, cursor: 'pointer',
-  boxShadow: '0 2px 8px rgba(200,169,106,0.32)',
+  boxShadow: '0 2px 8px rgba(201,163,59,0.32)',
   fontFamily: 'Inter, system-ui, sans-serif',
 }
 

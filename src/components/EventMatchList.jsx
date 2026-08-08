@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { fetchEventMatches } from '../lib/eventMatch'
 
 const C = {
-  gold: '#C8A96A', goldDark: '#A88245', goldLight: '#E6D3A3', goldBg: '#FBF6EC',
+  gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7', goldBg: '#F8F3E5',
   ink: '#1A1712', textSub: '#6B6152', textMuted: '#9CA3AF', white: '#FFFFFF', border: '#EFEAE0',
 }
 

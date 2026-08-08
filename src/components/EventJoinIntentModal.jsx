@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 
 const C = {
   ground:'#FFFFFF', ivory:'#FBF8F3', ink:'#1A1712', ink2:'#5F584D', ink3:'#9A958B',
-  line:'#ECE7DE', gold:'#A67C33', goldBtn:'#C6A25A', goldBtnInk:'#241B0C',
+  line:'#ECE7DE', gold:'#A6822A', goldBtn:'#C9A33B', goldBtnInk:'#2E2405',
   sage:'#2F7A55', sageBg:'#EEF5F0', sageLine:'#CFE4D6',
 }
 

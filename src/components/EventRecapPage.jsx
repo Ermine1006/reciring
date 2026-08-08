@@ -15,10 +15,10 @@ import { addFollowup } from '../lib/eventMemory'
 import { whyThisConnectionMayMatter, rankByConnectionValue } from '../lib/opportunityMatch'
 
 const C = {
-  gold:      '#C8A96A',
-  goldDark:  '#A88245',
-  goldLight: '#E6D3A3',
-  goldBg:    '#FBF6EC',
+  gold:      '#C9A33B',
+  goldDark:  '#A6822A',
+  goldLight: '#E8D9A7',
+  goldBg:    '#F8F3E5',
   text:      '#111111',
   textSub:   '#4B5563',
   textMuted: '#9CA3AF',
@@ -201,7 +201,7 @@ export default function EventRecapPage({
             </p>
             {onAddPeople && (
               <button type="button" onClick={onAddPeople}
-                style={{ marginTop: 14, padding: '11px 18px', borderRadius: 11, border: 'none', background: '#C6A25A', color: '#241B0C', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
+                style={{ marginTop: 14, padding: '11px 18px', borderRadius: 11, border: 'none', background: '#C9A33B', color: '#2E2405', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
                 Choose from attendees
               </button>
             )}
@@ -515,7 +515,7 @@ function EncounterCard({ encounter, them, themTopPost, rationale, onEdit, onFoll
       {/* One primary action + a ••• overflow — not four equal buttons. */}
       <div style={{ position: 'relative', display: 'flex', gap: 8, marginTop: 12, alignItems: 'stretch' }}>
         <button type="button" onClick={onFollowUp} className="active:scale-[0.98]"
-          style={{ flex: 1, padding: '10px 12px', borderRadius: 10, background: '#C6A25A', color: '#241B0C', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
+          style={{ flex: 1, padding: '10px 12px', borderRadius: 10, background: '#C9A33B', color: '#2E2405', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
           Follow up
         </button>
         <button type="button" onClick={() => setMenuOpen(o => !o)} aria-label="More options"

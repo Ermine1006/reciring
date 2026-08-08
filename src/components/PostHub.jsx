@@ -5,8 +5,8 @@ import MyPostsPage from './MyPostsPage'
 import AppScreen from './AppScreen'
 
 const C = {
-  gold:     '#C8A96A',
-  goldDark: '#A88245',
+  gold:     '#C9A33B',
+  goldDark: '#A6822A',
   text:     '#111111',
   textSub:  '#6B7280',
   border:   '#E5E7EB',
@@ -85,7 +85,7 @@ export default function PostHub({
                   letterSpacing: '0.02em',
                   fontFamily: 'Inter, system-ui, sans-serif',
                   cursor: 'pointer',
-                  boxShadow: active ? '0 1px 4px rgba(200,169,106,0.35)' : 'none',
+                  boxShadow: active ? '0 1px 4px rgba(201,163,59,0.35)' : 'none',
                   transition: 'all 0.18s',
                   textAlign: 'center',
                   whiteSpace: 'nowrap',
@@ -112,7 +112,7 @@ export default function PostHub({
                 background: 'rgba(34,197,94,0.10)',
                 border: '1px solid rgba(34,197,94,0.30)',
                 borderRadius: 10,
-                color: '#166534',
+                color: '#214E3A',
                 fontSize: 12,
                 fontWeight: 500,
                 display: 'flex',

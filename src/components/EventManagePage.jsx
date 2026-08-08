@@ -11,7 +11,7 @@ import { fetchMarketplaceInterestStats, fetchMarketplaceFeed } from '../lib/mark
 
 const C = {
   ground:'#FFFFFF', ivory:'#FBF8F3', ink:'#1A1712', ink2:'#5F584D', ink3:'#9A958B',
-  line:'#ECE7DE', line2:'#F3EFE8', gold:'#A67C33', goldInk:'#7A5A22',
+  line:'#ECE7DE', line2:'#F3EFE8', gold:'#A6822A', goldInk:'#7A5E17',
   host:'#3B6EA5', hostBg:'#EDF3FA', hostLine:'#CFE0F2', danger:'#B4453A', dangerBg:'#FBEEEC', dangerLine:'#F0D6D2',
 }
 

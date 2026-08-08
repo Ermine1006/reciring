@@ -7,10 +7,10 @@ import { posterDisplay } from '../lib/visibility'
 import { resolveAvatarSeed } from './SettingsPage'
 
 const C = {
-  gold:       '#C8A96A',
-  goldDark:   '#A88245',
-  goldLight:  '#E6D3A3',
-  goldBg:     '#FBF6EC',
+  gold:       '#C9A33B',
+  goldDark:   '#A6822A',
+  goldLight:  '#E8D9A7',
+  goldBg:     '#F8F3E5',
   warm:       '#8B6F47',
   warmDark:   '#3D3020',
   warmBorder: '#E8DDD0',
@@ -98,7 +98,7 @@ export default function RequestDetailModal({ request, matchReason, onClose, onMa
               borderRadius: 99, padding: '5px 14px',
               fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
               fontFamily: 'Inter, system-ui, sans-serif',
-              boxShadow: '0 2px 6px rgba(200,169,106,0.25)',
+              boxShadow: '0 2px 6px rgba(201,163,59,0.25)',
             }}>
               {request.category}
             </span>
@@ -139,7 +139,7 @@ export default function RequestDetailModal({ request, matchReason, onClose, onMa
               <div style={{ width: 2.5, height: 14, background: C.gold, borderRadius: 99, marginRight: 10, flexShrink: 0 }} />
               <span style={{
                 fontSize: 10, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase',
-                color: '#8C6B3F', fontFamily: 'Inter, system-ui, sans-serif',
+                color: '#8A6E1E', fontFamily: 'Inter, system-ui, sans-serif',
               }}>
                 What they need
               </span>
@@ -174,7 +174,7 @@ export default function RequestDetailModal({ request, matchReason, onClose, onMa
           {/* Divider */}
           <div style={{
             height: 1, marginBottom: 22,
-            background: 'linear-gradient(90deg, rgba(200,169,106,0.25), rgba(139,111,71,0.1), transparent)',
+            background: 'linear-gradient(90deg, rgba(201,163,59,0.25), rgba(139,111,71,0.1), transparent)',
           }} />
 
           {/* ── WHAT THEY OFFER (full) ────────────────────── */}
@@ -307,7 +307,7 @@ export default function RequestDetailModal({ request, matchReason, onClose, onMa
         {/* ── Sticky CTA ─────────────────────────────────── */}
         <div style={{
           flexShrink: 0, padding: '16px 28px 24px',
-          borderTop: '1px solid rgba(200,169,106,0.15)',
+          borderTop: '1px solid rgba(201,163,59,0.15)',
           background: 'rgba(255,255,255,0.95)',
           backdropFilter: 'blur(12px)',
         }}>
@@ -321,7 +321,7 @@ export default function RequestDetailModal({ request, matchReason, onClose, onMa
                 style={{
                   flex: 1, padding: '14px 0',
                   borderRadius: 99, cursor: 'pointer',
-                  background: '#FFFFFF', border: `1.5px solid ${C.goldLight || '#E6D3A3'}`,
+                  background: '#FFFFFF', border: `1.5px solid ${C.goldLight || '#E8D9A7'}`,
                   fontSize: 15, fontWeight: 650, color: C.goldDark,
                   fontFamily: 'Inter, system-ui, sans-serif',
                 }}
@@ -336,7 +336,7 @@ export default function RequestDetailModal({ request, matchReason, onClose, onMa
                 flex: onPass ? 2 : 1, padding: '14px 0',
                 borderRadius: 99, border: 'none', cursor: 'pointer',
                 background: `linear-gradient(135deg, ${C.gold} 0%, ${C.goldDark} 100%)`,
-                boxShadow: '0 6px 24px rgba(200,169,106,0.4)',
+                boxShadow: '0 6px 24px rgba(201,163,59,0.4)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
                 fontSize: 15, fontWeight: 700, color: '#FFFFFF',
                 fontFamily: 'Inter, system-ui, sans-serif',

@@ -1,9 +1,9 @@
 export const BADGE_LEVELS = [
   { min: 0,   id: 'new',       label: 'New Member',        color: '#9CA3AF' },
   { min: 50,  id: 'helper',    label: 'Helper',            color: '#6B9AB8' },
-  { min: 100, id: 'connector', label: 'Connector',         color: '#C8A96A' },
-  { min: 250, id: 'builder',   label: 'Community Builder', color: '#22AA88' },
-  { min: 500, id: 'super',     label: 'Super Connector',   color: '#A88245' },
+  { min: 100, id: 'connector', label: 'Connector',         color: '#C9A33B' },
+  { min: 250, id: 'builder',   label: 'Community Builder', color: '#2E6B4F' },
+  { min: 500, id: 'super',     label: 'Super Connector',   color: '#A6822A' },
 ]
 
 export function getBadge(points) {
@@ -23,7 +23,7 @@ export function getNextBadge(points) {
 export function getReliability(scheduled, completed) {
   if (!scheduled || scheduled === 0) return null
   const rate = Math.round((completed / scheduled) * 100)
-  if (rate > 90) return { label: 'Highly reliable', color: '#16A34A', bg: '#F0FDF4', border: '#BBF7D0', rate }
+  if (rate > 90) return { label: 'Highly reliable', color: '#2E6B4F', bg: '#EDF3EE', border: '#CBDBCF', rate }
   if (rate > 80) return { label: 'Reliable',        color: '#2563EB', bg: '#EFF6FF', border: '#BFDBFE', rate }
   if (rate < 60) return { label: 'Inconsistent',    color: '#9CA3AF', bg: '#F9FAFB', border: '#E5E7EB', rate }
   return { label: null, rate }

@@ -4,7 +4,7 @@ import { fetchEncounters, buildAssistantContext, askMutu, fetchAskHistory, saveA
 import { fetchConnections } from '../lib/relationships'
 
 const C = {
-  gold: '#C8A96A', goldDark: '#A88245', goldLight: '#E6D3A3', goldBg: '#FBF6EC',
+  gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7', goldBg: '#F8F3E5',
   ink: '#14110C', sub: '#6B6152', muted: '#9C9789', white: '#FFFFFF', border: '#E5E7EB',
 }
 

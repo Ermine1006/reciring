@@ -31,10 +31,10 @@ export const BLOCK_TYPES = new Set([
 const C = {
   bgPage:      '#EEE9E0',
   bgCard:      '#FFFFFF',
-  bgHighlight: '#FBF6EC',
-  gold:        '#C8A96A',
-  goldDark:    '#A88245',
-  goldLight:   '#E6D3A3',
+  bgHighlight: '#F8F3E5',
+  gold:        '#C9A33B',
+  goldDark:    '#A6822A',
+  goldLight:   '#E8D9A7',
   text:        '#111111',
   textBody:    '#4B5563',
   textMuted:   '#9CA3AF',
@@ -203,7 +203,7 @@ function renderBlock(b) {
         // Missing/invalid URL — render as disabled-looking button
         return `<div style="text-align:center; margin:20px 0;"><span style="display:inline-block; background:${C.border}; color:${C.textMuted}; font-weight:600; font-size:14px; padding:12px 28px; border-radius:12px;">${label}</span></div>`
       }
-      return `<div style="text-align:center; margin:24px 0;"><a href="${href}" style="display:inline-block; background:linear-gradient(135deg,${C.gold} 0%,${C.goldDark} 100%); color:#FFFFFF; text-decoration:none; font-weight:600; font-size:14px; padding:13px 30px; border-radius:12px; box-shadow:0 6px 20px rgba(200,169,106,0.35);">${label}</a></div>`
+      return `<div style="text-align:center; margin:24px 0;"><a href="${href}" style="display:inline-block; background:linear-gradient(135deg,${C.gold} 0%,${C.goldDark} 100%); color:#FFFFFF; text-decoration:none; font-weight:600; font-size:14px; padding:13px 30px; border-radius:12px; box-shadow:0 6px 20px rgba(201,163,59,0.35);">${label}</a></div>`
     }
 
     default:

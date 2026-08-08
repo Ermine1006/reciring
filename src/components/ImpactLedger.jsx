@@ -8,7 +8,7 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase'
 // points, scores, stars, ranks, or levels.
 
 const C = {
-  gold: '#C8A96A', goldDark: '#A88245', goldLight: '#E6D3A3', goldBg: '#FBF6EC',
+  gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7', goldBg: '#F8F3E5',
   ink: '#1A1712', text: '#111111', textSub: '#6B6152', textMuted: '#9CA3AF',
   border: '#EFE1C8',
 }

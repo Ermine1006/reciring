@@ -2,10 +2,10 @@ import { motion, AnimatePresence } from 'framer-motion'
 import AnonymousAvatar from './AnonymousAvatar'
 
 const C = {
-  gold:      '#C8A96A',
-  goldDark:  '#A88245',
-  goldLight: '#E6D3A3',
-  goldBg:    '#FBF6EC',
+  gold:      '#C9A33B',
+  goldDark:  '#A6822A',
+  goldLight: '#E8D9A7',
+  goldBg:    '#F8F3E5',
   text:      '#111111',
   textSub:   '#6B7280',
   textMuted: '#9CA3AF',
@@ -40,7 +40,7 @@ export default function NewMatchModal({ open, match, onView, onDismiss }) {
               background: C.white,
               borderRadius: 28,
               padding: '32px 26px 24px',
-              boxShadow: '0 24px 70px rgba(0,0,0,0.22), 0 4px 16px rgba(200,169,106,0.18)',
+              boxShadow: '0 24px 70px rgba(0,0,0,0.22), 0 4px 16px rgba(201,163,59,0.18)',
               textAlign: 'center',
               position: 'relative',
             }}
@@ -53,7 +53,7 @@ export default function NewMatchModal({ open, match, onView, onDismiss }) {
                 left: '50%',
                 transform: 'translateX(-50%)',
                 fontSize: 40,
-                filter: 'drop-shadow(0 4px 10px rgba(200,169,106,0.35))',
+                filter: 'drop-shadow(0 4px 10px rgba(201,163,59,0.35))',
               }}
             >
               🎉
@@ -116,7 +116,7 @@ export default function NewMatchModal({ open, match, onView, onDismiss }) {
                   background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
                   color: '#fff',
                   border: 'none',
-                  boxShadow: '0 6px 20px rgba(200,169,106,0.38)',
+                  boxShadow: '0 6px 20px rgba(201,163,59,0.38)',
                   cursor: 'pointer',
                 }}
               >

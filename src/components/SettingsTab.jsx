@@ -6,17 +6,17 @@ import { isAdmin } from '../data/adminEmails'
 import LinkedAccountsSection from './LinkedAccountsSection'
 
 const C = {
-  gold:      '#C8A96A',
-  goldDark:  '#A88245',
-  goldLight: '#E6D3A3',
-  goldBg:    '#FBF6EC',
+  gold:      '#C9A33B',
+  goldDark:  '#A6822A',
+  goldLight: '#E8D9A7',
+  goldBg:    '#F8F3E5',
   text:      '#111111',
   textSub:   '#6B7280',
   textMuted: '#9CA3AF',
   white:     '#FFFFFF',
   border:    '#E5E7EB',
   danger:    '#DC2626',
-  success:   '#16A34A',
+  success:   '#2E6B4F',
 }
 
 function Section({ title, children }) {
@@ -142,7 +142,7 @@ export default function SettingsTab({ onOpenAdminEmailTest, onOpenEventReview })
               transition: 'background 0.2s ease',
               opacity: emailToggleSaving ? 0.7 : 1,
               boxShadow: emailSubscribed
-                ? '0 2px 8px rgba(200,169,106,0.3)'
+                ? '0 2px 8px rgba(201,163,59,0.3)'
                 : 'inset 0 1px 2px rgba(0,0,0,0.1)',
             }}
           >
@@ -376,7 +376,7 @@ export default function SettingsTab({ onOpenAdminEmailTest, onOpenEventReview })
                 style={{
                   background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
                   color: '#fff', textDecoration: 'none', display: 'flex',
-                  border: 'none', boxShadow: '0 4px 14px rgba(200,169,106,0.30)',
+                  border: 'none', boxShadow: '0 4px 14px rgba(201,163,59,0.30)',
                   marginBottom: 6,
                 }}
               >

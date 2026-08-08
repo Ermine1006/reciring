@@ -8,10 +8,10 @@ import Chip from './Chip'
 import { VISIBILITY_OPTIONS, VISIBILITY_PRIVATE } from '../lib/visibility'
 
 const C = {
-  gold:      '#C8A96A',
-  goldDark:  '#A88245',
-  goldLight: '#E6D3A3',
-  goldBg:    '#FBF6EC',
+  gold:      '#C9A33B',
+  goldDark:  '#A6822A',
+  goldLight: '#E8D9A7',
+  goldBg:    '#F8F3E5',
   text:      '#111111',
   textSub:   '#6B7280',
   textMuted: '#9CA3AF',
@@ -183,7 +183,7 @@ export default function OnboardingProfile() {
           background: C.white,
           borderRadius: 28,
           padding: '36px 28px 32px',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.10), 0 4px 16px rgba(200,169,106,0.12)',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.10), 0 4px 16px rgba(201,163,59,0.12)',
           maxHeight: '92dvh', overflowY: 'auto',
         }}
       >
@@ -359,8 +359,8 @@ export default function OnboardingProfile() {
                           onClick={() => setVisibility(opt.id)}
                           className="text-left rounded-xl border px-4 py-3 transition"
                           style={{
-                            borderColor: active ? '#C8A96A' : 'rgba(0,0,0,0.12)',
-                            background:  active ? 'rgba(200,169,106,0.10)' : '#fff',
+                            borderColor: active ? '#C9A33B' : 'rgba(0,0,0,0.12)',
+                            background:  active ? 'rgba(201,163,59,0.10)' : '#fff',
                           }}
                         >
                           <div className="flex items-center gap-2 font-medium" style={{ color: '#1a1a1a' }}>
@@ -455,7 +455,7 @@ export default function OnboardingProfile() {
               color: (saving || (step < 3 && !canAdvance)) ? C.textMuted : '#fff',
               boxShadow: (saving || (step < 3 && !canAdvance))
                 ? 'none'
-                : '0 6px 20px rgba(200,169,106,0.35)',
+                : '0 6px 20px rgba(201,163,59,0.35)',
               border: 'none',
               cursor: (saving || (step < 3 && !canAdvance)) ? 'default' : 'pointer',
             }}

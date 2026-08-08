@@ -6,10 +6,10 @@ import { rewriteText } from '../lib/aiRewrite'
 
 /* ── Design tokens ──────────────────────────────────────────────── */
 const C = {
-  gold:       '#C8A96A',
-  goldDark:   '#A88245',
-  goldLight:  '#E6D3A3',
-  goldBg:     '#FBF6EC',
+  gold:       '#C9A33B',
+  goldDark:   '#A6822A',
+  goldLight:  '#E8D9A7',
+  goldBg:     '#F8F3E5',
   warm:       '#8B6F47',
   warmDark:   '#3D3020',
   warmBg:     '#FAF6F0',
@@ -126,7 +126,7 @@ function ChipGroup({ options, selected, onToggle, multi = false }) {
               background: active ? C.goldBg   : C.white,
               border:     active ? `1.5px solid ${C.gold}`   : `1.5px solid ${C.border}`,
               color:      active ? C.goldDark  : C.textSub,
-              boxShadow:  active ? '0 2px 8px rgba(200,169,106,0.2)' : 'none',
+              boxShadow:  active ? '0 2px 8px rgba(201,163,59,0.2)' : 'none',
             }}
           >
             {label}
@@ -336,7 +336,7 @@ export default function SubmitRequest({ onSubmitted, prefill = null }) {
   }
 
   /* ── Focus helpers ── */
-  const focusGold = (e) => { e.target.style.borderColor = C.gold;  e.target.style.boxShadow = '0 0 0 3px rgba(200,169,106,0.12)' }
+  const focusGold = (e) => { e.target.style.borderColor = C.gold;  e.target.style.boxShadow = '0 0 0 3px rgba(201,163,59,0.12)' }
   const focusWarm = (e) => { e.target.style.borderColor = C.warm;  e.target.style.boxShadow = '0 0 0 3px rgba(139,111,71,0.12)' }
   const blurReset = (e) => { e.target.style.borderColor = C.border; e.target.style.boxShadow = 'none' }
 
@@ -553,8 +553,8 @@ export default function SubmitRequest({ onSubmitted, prefill = null }) {
               animate={{ opacity: 1, y: 0 }}
               className="flex items-center gap-2 px-1"
             >
-              <span style={{ fontSize: 12, color: '#16A34A' }}>{fb.icon}</span>
-              <p style={{ fontSize: 12, color: '#16A34A', fontFamily: 'Inter, system-ui, sans-serif', fontWeight: 500 }}>
+              <span style={{ fontSize: 12, color: '#2E6B4F' }}>{fb.icon}</span>
+              <p style={{ fontSize: 12, color: '#2E6B4F', fontFamily: 'Inter, system-ui, sans-serif', fontWeight: 500 }}>
                 {fb.text}
               </p>
             </motion.div>
@@ -571,7 +571,7 @@ export default function SubmitRequest({ onSubmitted, prefill = null }) {
             style={{
               background: 'linear-gradient(180deg, #FFFFFF 0%, #FBF8F2 100%)',
               border: `1px solid ${C.goldLight}`,
-              boxShadow: '0 8px 28px rgba(0,0,0,0.06), 0 2px 8px rgba(200,169,106,0.1)',
+              boxShadow: '0 8px 28px rgba(0,0,0,0.06), 0 2px 8px rgba(201,163,59,0.1)',
             }}
           >
             {/* Accent stripe */}
@@ -649,7 +649,7 @@ export default function SubmitRequest({ onSubmitted, prefill = null }) {
               )}
 
               {/* Divider + offer */}
-              <div style={{ height: 1, background: 'linear-gradient(90deg, rgba(200,169,106,0.2), transparent)', marginBottom: 10 }} />
+              <div style={{ height: 1, background: 'linear-gradient(90deg, rgba(201,163,59,0.2), transparent)', marginBottom: 10 }} />
               <p style={{
                 fontSize: 12, lineHeight: 1.5,
                 color: offers.trim() ? '#666' : '#D1D5DB',
@@ -690,7 +690,7 @@ export default function SubmitRequest({ onSubmitted, prefill = null }) {
                   color: active ? '#fff' : C.textMuted,
                   border: 'none',
                   cursor: 'pointer',
-                  boxShadow: active ? '0 2px 6px rgba(200,169,106,0.28)' : 'none',
+                  boxShadow: active ? '0 2px 6px rgba(201,163,59,0.28)' : 'none',
                   transition: 'all 0.18s',
                 }}
               >
@@ -716,7 +716,7 @@ export default function SubmitRequest({ onSubmitted, prefill = null }) {
           style={{
             background: canSubmit ? `linear-gradient(135deg, ${C.gold} 0%, ${C.goldDark} 100%)` : '#F3F4F6',
             color:      canSubmit ? '#fff' : C.textMuted,
-            boxShadow:  canSubmit ? '0 8px 24px rgba(200,169,106,0.35)' : 'none',
+            boxShadow:  canSubmit ? '0 8px 24px rgba(201,163,59,0.35)' : 'none',
             opacity:    submitting ? 0.6 : 1,
           }}
         >

@@ -255,7 +255,7 @@ export default function EventsList({ onCreateEvent, onOpenEvent, onPrepare, onOp
                   letterSpacing: '0.04em',
                   fontFamily: 'Inter, system-ui, sans-serif',
                   cursor: 'pointer',
-                  boxShadow: active ? '0 2px 8px rgba(200,169,106,0.25)' : 'none',
+                  boxShadow: active ? '0 2px 8px rgba(201,163,59,0.25)' : 'none',
                   transition: 'all 0.15s',
                 }}
               >
@@ -282,10 +282,10 @@ export default function EventsList({ onCreateEvent, onOpenEvent, onPrepare, onOp
             style={{
               padding: '10px 14px',
               borderRadius: 12,
-              background: toast.type === 'ok' ? '#F0FDF4' : '#FEF2F2',
-              border: `1px solid ${toast.type === 'ok' ? '#BBF7D0' : '#FECACA'}`,
+              background: toast.type === 'ok' ? '#EDF3EE' : '#FEF2F2',
+              border: `1px solid ${toast.type === 'ok' ? '#CBDBCF' : '#FECACA'}`,
               fontSize: 13, fontWeight: 500,
-              color: toast.type === 'ok' ? '#166534' : '#991B1B',
+              color: toast.type === 'ok' ? '#214E3A' : '#991B1B',
               fontFamily: 'Inter, system-ui, sans-serif',
               marginBottom: 14,
             }}
@@ -426,7 +426,7 @@ function ConfirmModal({ open, title, body, confirmLabel, confirmIntent, busy, on
                   fontFamily: 'Inter, system-ui, sans-serif',
                   cursor: busy ? 'default' : 'pointer',
                   opacity: busy ? 0.7 : 1,
-                  boxShadow: confirmIntent === 'danger' ? '0 4px 14px rgba(220,38,38,0.32)' : '0 4px 14px rgba(200,169,106,0.32)',
+                  boxShadow: confirmIntent === 'danger' ? '0 4px 14px rgba(220,38,38,0.32)' : '0 4px 14px rgba(201,163,59,0.32)',
                 }}
               >
                 {confirmLabel}
@@ -673,7 +673,7 @@ function EmptyState({ filter, onCreateEvent }) {
         <div style={{
           position: 'absolute', inset: 0,
           borderRadius: '50%',
-          background: 'radial-gradient(circle at center, rgba(200,169,106,0.20) 0%, rgba(200,169,106,0.04) 55%, transparent 75%)',
+          background: 'radial-gradient(circle at center, rgba(201,163,59,0.20) 0%, rgba(201,163,59,0.04) 55%, transparent 75%)',
         }} />
         {/* Center hero */}
         <div style={{
@@ -684,7 +684,7 @@ function EmptyState({ filter, onCreateEvent }) {
           border: `2px solid ${C.goldLight}`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 38, lineHeight: 1,
-          boxShadow: '0 8px 24px rgba(200,169,106,0.28), inset 0 1px 0 rgba(255,255,255,0.6)',
+          boxShadow: '0 8px 24px rgba(201,163,59,0.28), inset 0 1px 0 rgba(255,255,255,0.6)',
         }}>
           🤝
         </div>
@@ -775,7 +775,7 @@ function EmptyState({ filter, onCreateEvent }) {
           fontSize: 14, fontWeight: 700,
           letterSpacing: '0.08em', textTransform: 'uppercase',
           fontFamily: 'Inter, system-ui, sans-serif',
-          boxShadow: '0 8px 24px rgba(200,169,106,0.40)',
+          boxShadow: '0 8px 24px rgba(201,163,59,0.40)',
           transition: 'transform 0.12s ease',
         }}
       >

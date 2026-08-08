@@ -7,8 +7,8 @@ import { rewriteText } from '../lib/aiRewrite'
 
 const C = {
   ground:'#FFFFFF', ivory:'#FBF8F3', ink:'#1A1712', ink2:'#5F584D', ink3:'#9A958B',
-  line:'#ECE7DE', gold:'#A67C33', goldInk:'#7A5A22', goldBtn:'#C6A25A', goldBtnInk:'#241B0C',
-  goldSoft:'#FBF6EC', goldLine:'#EBDBAE', slate:'#4B5A8A', sage:'#2F7A55',
+  line:'#ECE7DE', gold:'#A6822A', goldInk:'#7A5E17', goldBtn:'#C9A33B', goldBtnInk:'#2E2405',
+  goldSoft:'#F8F3E5', goldLine:'#E8D9A7', slate:'#4B5A8A', sage:'#2F7A55',
 }
 
 function fmtWhen(iso) {

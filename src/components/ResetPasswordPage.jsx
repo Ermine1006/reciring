@@ -4,10 +4,10 @@ import { useAuth } from '../context/AuthContext'
 import ReciRingLogo from './ReciRingLogo'
 
 const C = {
-  gold:      '#C8A96A',
-  goldDark:  '#A88245',
-  goldLight: '#E6D3A3',
-  goldBg:    '#FBF6EC',
+  gold:      '#C9A33B',
+  goldDark:  '#A6822A',
+  goldLight: '#E8D9A7',
+  goldBg:    '#F8F3E5',
   text:      '#111111',
   textSub:   '#6B7280',
   textMuted: '#9CA3AF',
@@ -127,7 +127,7 @@ export default function ResetPasswordPage() {
           background: C.white,
           borderRadius: 28,
           padding: '44px 30px 36px',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.10), 0 4px 16px rgba(200,169,106,0.12)',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.10), 0 4px 16px rgba(201,163,59,0.12)',
         }}
       >
         <div className="flex justify-center mb-6">
@@ -154,7 +154,7 @@ export default function ResetPasswordPage() {
             style={{
               background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
               color: '#fff',
-              boxShadow: '0 6px 20px rgba(200,169,106,0.35)',
+              boxShadow: '0 6px 20px rgba(201,163,59,0.35)',
               border: 'none',
               cursor: 'pointer',
             }}
@@ -225,7 +225,7 @@ export default function ResetPasswordPage() {
               style={{
                 background: canSubmit ? `linear-gradient(135deg, ${C.gold}, ${C.goldDark})` : '#E5E7EB',
                 color: canSubmit ? '#fff' : C.textMuted,
-                boxShadow: canSubmit ? '0 6px 20px rgba(200,169,106,0.35)' : 'none',
+                boxShadow: canSubmit ? '0 6px 20px rgba(201,163,59,0.35)' : 'none',
                 border: 'none',
                 cursor: canSubmit ? 'pointer' : 'not-allowed',
                 opacity: loading ? 0.6 : 1,

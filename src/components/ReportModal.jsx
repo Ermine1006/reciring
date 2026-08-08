@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const C = {
-  gold:      '#C8A96A',
-  goldDark:  '#A88245',
+  gold:      '#C9A33B',
+  goldDark:  '#A6822A',
   text:      '#111111',
   textSub:   '#6B7280',
   textMuted: '#9CA3AF',
@@ -134,7 +134,7 @@ export default function ReportModal({ type = 'post', targetId, onSubmit, onClose
                     textAlign: 'left',
                     padding: '12px 14px', borderRadius: 12,
                     border: `1.5px solid ${reason === r ? C.gold : C.border}`,
-                    background: reason === r ? '#FBF6EC' : C.white,
+                    background: reason === r ? '#F8F3E5' : C.white,
                     color: C.text, fontSize: 14, fontWeight: reason === r ? 600 : 400,
                     cursor: 'pointer', transition: 'all 0.15s',
                   }}

@@ -7,8 +7,8 @@ import { WEB_ORIGIN } from '../lib/platform'
 import ReciRingLogo from './ReciRingLogo'
 
 const C = {
-  gold: '#C8A96A', goldDark: '#A88245', goldLight: '#E6D3A3',
-  cream: '#FBF6EC', ink: '#1A1712', textSub: '#6B6152', white: '#FFFFFF',
+  gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7',
+  cream: '#F8F3E5', ink: '#1A1712', textSub: '#6B6152', white: '#FFFFFF',
 }
 
 function posterDate(iso) {
@@ -301,7 +301,7 @@ export default function EventSharePoster({ event, open, onClose }) {
         {/* Live QR — hold up your phone so anyone can scan to join in person. */}
         {qrUrl && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, margin: '0 0 20px' }}>
-            <div style={{ background: '#fff', borderRadius: 16, padding: 12, border: `1.5px solid ${C.goldLight}`, boxShadow: '0 6px 18px -8px rgba(200,169,106,0.4)' }}>
+            <div style={{ background: '#fff', borderRadius: 16, padding: 12, border: `1.5px solid ${C.goldLight}`, boxShadow: '0 6px 18px -8px rgba(201,163,59,0.4)' }}>
               <img src={qrUrl} alt="QR code to join the event" width={168} height={168} style={{ display: 'block' }} />
             </div>
             <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: C.textSub, fontFamily: 'Inter, system-ui, sans-serif' }}>Scan to join · new members sign up first</p>

@@ -10,10 +10,10 @@ import { INDUSTRIES, HELP_TYPES, TIME_OPTIONS } from '../data/requestOptions'
 import { useAuth } from '../context/AuthContext'
 
 const C = {
-  gold:      '#C8A96A',
-  goldDark:  '#A88245',
-  goldLight: '#E6D3A3',
-  goldBg:    '#FBF6EC',
+  gold:      '#C9A33B',
+  goldDark:  '#A6822A',
+  goldLight: '#E8D9A7',
+  goldBg:    '#F8F3E5',
   text:      '#111111',
   textSub:   '#6B7280',
   textMuted: '#9CA3AF',
@@ -32,7 +32,7 @@ function FilterChip({ label, active, onClick }) {
         background: active ? `linear-gradient(135deg, ${C.gold}, ${C.goldDark})` : C.white,
         color: active ? '#fff' : C.textSub,
         border: `1px solid ${active ? C.gold : '#E5E7EB'}`,
-        boxShadow: active ? '0 2px 8px rgba(200,169,106,0.25)' : 'none',
+        boxShadow: active ? '0 2px 8px rgba(201,163,59,0.25)' : 'none',
       }}
     >
       {label}
@@ -357,7 +357,7 @@ export default function CardStack({ requests, eventPromos, unmatchedPostIds, int
               border: `1.5px solid ${C.goldLight}`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               marginBottom: 24,
-              boxShadow: '0 8px 24px rgba(200,169,106,0.18)',
+              boxShadow: '0 8px 24px rgba(201,163,59,0.18)',
             }}
           >
             <svg width="30" height="30" fill="none" stroke={C.gold} viewBox="0 0 24 24" strokeWidth={1.5}>
@@ -484,8 +484,8 @@ export default function CardStack({ requests, eventPromos, unmatchedPostIds, int
             className="flex items-center justify-center transition-all duration-200 active:scale-90"
             style={{
               width: 68, height: 68, borderRadius: '50%',
-              background: 'linear-gradient(135deg, #C8A96A 0%, #E6D3A3 100%)',
-              boxShadow: '0 8px 28px rgba(200,169,106,0.45), 0 2px 8px rgba(200,169,106,0.2)',
+              background: 'linear-gradient(135deg, #C9A33B 0%, #E8D9A7 100%)',
+              boxShadow: '0 8px 28px rgba(201,163,59,0.45), 0 2px 8px rgba(201,163,59,0.2)',
               border: `1px solid ${C.goldLight}`,
             }}
             aria-label="Match if you can help and want what they offer"

@@ -5,10 +5,10 @@ import EventMemoryModal from './EventMemoryModal'
 import { recordEncounter, updateEncounter, deleteEncounter, requestConfirmation } from '../lib/eventEncounters'
 
 const C = {
-  gold:      '#C8A96A',
-  goldDark:  '#A88245',
-  goldLight: '#E6D3A3',
-  goldBg:    '#FBF6EC',
+  gold:      '#C9A33B',
+  goldDark:  '#A6822A',
+  goldLight: '#E8D9A7',
+  goldBg:    '#F8F3E5',
   text:      '#111111',
   textSub:   '#4B5563',
   textMuted: '#9CA3AF',
@@ -207,7 +207,7 @@ export default function EventModeSection({
               color: '#fff', border: 'none',
               fontSize: 12, fontWeight: 700, letterSpacing: '0.04em',
               fontFamily: 'Inter, system-ui, sans-serif',
-              boxShadow: '0 4px 12px rgba(200,169,106,0.32)',
+              boxShadow: '0 4px 12px rgba(201,163,59,0.32)',
               cursor: 'pointer', whiteSpace: 'nowrap',
             }}
           >

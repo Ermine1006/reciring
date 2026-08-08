@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { uploadEventPoster } from '../lib/storage'
 
 const C = {
-  gold: '#C8A96A', goldDark: '#A88245', goldLight: '#E6D3A3', goldBg: '#FBF6EC',
+  gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7', goldBg: '#F8F3E5',
   text: '#111111', textSub: '#6B7280', white: '#FFFFFF', border: '#E5E7EB', danger: '#DC2626',
 }
 

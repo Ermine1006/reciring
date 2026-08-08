@@ -2,10 +2,10 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const C = {
-  gold:      '#C8A96A',
-  goldDark:  '#A88245',
-  goldLight: '#E6D3A3',
-  goldBg:    '#FBF6EC',
+  gold:      '#C9A33B',
+  goldDark:  '#A6822A',
+  goldLight: '#E8D9A7',
+  goldBg:    '#F8F3E5',
   text:      '#111111',
   textSub:   '#6B7280',
   textMuted: '#9CA3AF',
@@ -122,7 +122,7 @@ export default function CoffeeChatModal({ onConfirm, onClose, initialValues }) {
                   fontSize: 11, fontWeight: 600,
                   fontFamily: 'Inter, system-ui, sans-serif',
                   cursor: 'pointer', lineHeight: 1.3, textAlign: 'center',
-                  boxShadow: isSelected ? '0 4px 12px rgba(200,169,106,0.3)' : 'none',
+                  boxShadow: isSelected ? '0 4px 12px rgba(201,163,59,0.3)' : 'none',
                   transition: 'background 0.2s, color 0.2s, box-shadow 0.2s',
                 }}
               >
@@ -188,7 +188,7 @@ export default function CoffeeChatModal({ onConfirm, onClose, initialValues }) {
               color: '#fff', fontSize: 15, fontWeight: 600,
               fontFamily: 'Inter, system-ui, sans-serif',
               letterSpacing: '0.04em', border: 'none', cursor: 'pointer',
-              boxShadow: '0 8px 24px rgba(200,169,106,0.35)',
+              boxShadow: '0 8px 24px rgba(201,163,59,0.35)',
             }}
           >
             Send Suggestion

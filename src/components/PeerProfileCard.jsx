@@ -2,10 +2,10 @@ import { motion, AnimatePresence } from 'framer-motion'
 import AnonymousAvatar from './AnonymousAvatar'
 
 const C = {
-  gold:      '#C8A96A',
-  goldDark:  '#A88245',
-  goldLight: '#E6D3A3',
-  goldBg:    '#FBF6EC',
+  gold:      '#C9A33B',
+  goldDark:  '#A6822A',
+  goldLight: '#E8D9A7',
+  goldBg:    '#F8F3E5',
   text:      '#111111',
   textSub:   '#6B7280',
   textMuted: '#9CA3AF',
@@ -15,8 +15,8 @@ const C = {
 }
 
 const STATUS_LABEL = {
-  active:    { text: 'Active match',    color: '#16A34A', bg: '#F0FDF4' },
-  completed: { text: 'Completed',       color: '#15803D', bg: '#F0FDF4' },
+  active:    { text: 'Active match',    color: '#2E6B4F', bg: '#EDF3EE' },
+  completed: { text: 'Completed',       color: '#15803D', bg: '#EDF3EE' },
   cancelled: { text: 'Cancelled',       color: '#B45309', bg: '#FEF3C7' },
   unmatched: { text: 'Unmatched',       color: '#9CA3AF', bg: '#F3F4F6' },
 }
@@ -120,7 +120,7 @@ export default function PeerProfileCard({ open, onClose, match, peerProfile }) {
                   padding: 3,
                   borderRadius: '50%',
                   background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
-                  boxShadow: '0 6px 20px rgba(200,169,106,0.25)',
+                  boxShadow: '0 6px 20px rgba(201,163,59,0.25)',
                   marginBottom: 14,
                 }}>
                   <div style={{
@@ -218,7 +218,7 @@ function InfoRow({ label, value, copyable }) {
       <p style={{
         fontSize: 10, fontWeight: 600,
         letterSpacing: '0.14em', textTransform: 'uppercase',
-        color: '#A88245',
+        color: '#A6822A',
         fontFamily: 'Inter, system-ui, sans-serif',
         margin: 0,
       }}>
@@ -243,12 +243,12 @@ function InfoRow({ label, value, copyable }) {
               flexShrink: 0,
               width: 28, height: 28, borderRadius: 8,
               background: '#FFFFFF',
-              border: '1px solid #E6D3A3',
+              border: '1px solid #E8D9A7',
               cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#A88245" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#A6822A" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
               <rect x="9" y="9" width="13" height="13" rx="2" />
               <path d="M5 15V5a2 2 0 012-2h10" />
             </svg>
@@ -260,5 +260,5 @@ function InfoRow({ label, value, copyable }) {
 }
 
 function Divider() {
-  return <div style={{ height: 1, background: 'rgba(200,169,106,0.25)', margin: '0 14px' }} />
+  return <div style={{ height: 1, background: 'rgba(201,163,59,0.25)', margin: '0 14px' }} />
 }

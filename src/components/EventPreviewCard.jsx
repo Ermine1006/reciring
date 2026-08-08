@@ -16,10 +16,10 @@ const SWIPE_THRESHOLD = 90
 const ROTATION_RANGE  = 10
 
 const C = {
-  gold:      '#C8A96A',
-  goldDark:  '#A88245',
-  goldLight: '#E6D3A3',
-  goldBg:    '#FBF6EC',
+  gold:      '#C9A33B',
+  goldDark:  '#A6822A',
+  goldLight: '#E8D9A7',
+  goldBg:    '#F8F3E5',
   ink:       '#111111',
   sub:       '#4B5563',
   muted:     '#9CA3AF',
@@ -130,7 +130,7 @@ export default function EventPreviewCard({ promo, isTop, onDrag, onSwipeLeft, on
         background: C.white,
         border: `1px solid ${C.goldLight}`,
         boxShadow: isTop
-          ? '0 16px 50px rgba(0,0,0,0.08), 0 4px 16px rgba(200,169,106,0.12)'
+          ? '0 16px 50px rgba(0,0,0,0.08), 0 4px 16px rgba(201,163,59,0.12)'
           : '0 6px 20px rgba(0,0,0,0.05)',
         overflow: 'hidden',
         height: 'auto',
@@ -237,7 +237,7 @@ export default function EventPreviewCard({ promo, isTop, onDrag, onSwipeLeft, on
             color: '#fff', border: 'none', cursor: 'pointer',
             fontSize: 14, fontWeight: 700, fontFamily: 'Inter, system-ui, sans-serif',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-            boxShadow: '0 6px 20px rgba(200,169,106,0.28)',
+            boxShadow: '0 6px 20px rgba(201,163,59,0.28)',
           }}
         >
           {ctaLabel} <ArrowRight size={16} />

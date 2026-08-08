@@ -5,10 +5,10 @@ import Certificate from './Certificate'
 import { MOCK_ME, MOCK_LEADERBOARD, getBadge, getNextBadge, getReliability } from '../data/reputationData'
 
 const C = {
-  gold:      '#C8A96A',
-  goldDark:  '#A88245',
-  goldLight: '#E6D3A3',
-  goldBg:    '#FBF6EC',
+  gold:      '#C9A33B',
+  goldDark:  '#A6822A',
+  goldLight: '#E8D9A7',
+  goldBg:    '#F8F3E5',
   text:      '#111111',
   textSub:   '#4B5563',
   textMuted: '#9CA3AF',
@@ -83,7 +83,7 @@ export default function LeaderboardView() {
         <div style={{
           background: C.white, borderRadius: 18,
           border: `1.5px solid ${C.goldLight}`,
-          boxShadow: `0 4px 20px rgba(200,169,106,0.12)`,
+          boxShadow: `0 4px 20px rgba(201,163,59,0.12)`,
           overflow: 'hidden', marginBottom: 16,
         }}>
           <div style={{ height: 3, background: `linear-gradient(90deg, ${C.goldLight}, ${C.gold}, ${C.goldLight})` }} />
@@ -121,8 +121,8 @@ export default function LeaderboardView() {
             <div style={{
               padding: '10px 14px', marginBottom: 10,
               borderRadius: 12,
-              background: myReliability?.label === 'Inconsistent' ? '#F9FAFB' : '#F0FDF4',
-              border: `1px solid ${myReliability?.label === 'Inconsistent' ? '#E5E7EB' : '#BBF7D0'}`,
+              background: myReliability?.label === 'Inconsistent' ? '#F9FAFB' : '#EDF3EE',
+              border: `1px solid ${myReliability?.label === 'Inconsistent' ? '#E5E7EB' : '#CBDBCF'}`,
             }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
                 <p style={{ fontSize: 13, fontWeight: 600, color: C.text, fontFamily: 'Inter, system-ui, sans-serif' }}>
@@ -170,7 +170,7 @@ export default function LeaderboardView() {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             style={{
-              background: `linear-gradient(135deg, #FFFBF0, #FBF6EC)`,
+              background: `linear-gradient(135deg, #FFFBF0, #F8F3E5)`,
               borderRadius: 18,
               border: `1.5px solid ${C.goldLight}`,
               padding: '16px 20px',
@@ -182,7 +182,7 @@ export default function LeaderboardView() {
               width: 44, height: 44, borderRadius: 12, flexShrink: 0,
               background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 4px 12px rgba(200,169,106,0.35)',
+              boxShadow: '0 4px 12px rgba(201,163,59,0.35)',
               fontSize: 22,
             }}>
               🏅
@@ -203,7 +203,7 @@ export default function LeaderboardView() {
                 color: '#fff', fontSize: 12, fontWeight: 600,
                 fontFamily: 'Inter, system-ui, sans-serif',
                 border: 'none', cursor: 'pointer',
-                boxShadow: '0 4px 12px rgba(200,169,106,0.3)',
+                boxShadow: '0 4px 12px rgba(201,163,59,0.3)',
               }}
             >
               View
@@ -265,7 +265,7 @@ export default function LeaderboardView() {
                 style={{
                   display: 'flex', alignItems: 'center', gap: 12,
                   background: entry.isMe
-                    ? `linear-gradient(135deg, #FFFBF0, #FBF6EC)`
+                    ? `linear-gradient(135deg, #FFFBF0, #F8F3E5)`
                     : C.white,
                   borderRadius: 16,
                   border: entry.isMe
@@ -273,7 +273,7 @@ export default function LeaderboardView() {
                     : '1px solid rgba(0,0,0,0.06)',
                   padding: '12px 16px',
                   boxShadow: entry.isMe
-                    ? '0 4px 16px rgba(200,169,106,0.12)'
+                    ? '0 4px 16px rgba(201,163,59,0.12)'
                     : '0 1px 4px rgba(0,0,0,0.04)',
                 }}
               >

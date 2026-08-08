@@ -6,10 +6,10 @@ import { checkAccessCode, accessCodeReasonLabel } from '../lib/accessCodes'
 import ReciRingLogo from './ReciRingLogo'
 
 const C = {
-  gold:      '#C8A96A',
-  goldDark:  '#A88245',
-  goldLight: '#E6D3A3',
-  goldBg:    '#FBF6EC',
+  gold:      '#C9A33B',
+  goldDark:  '#A6822A',
+  goldLight: '#E8D9A7',
+  goldBg:    '#F8F3E5',
   text:      '#111111',
   textSub:   '#6B7280',
   textMuted: '#9CA3AF',
@@ -266,7 +266,7 @@ export default function LoginScreen() {
           background: C.white,
           borderRadius: 28,
           padding: '44px 30px 36px',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.10), 0 4px 16px rgba(200,169,106,0.12)',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.10), 0 4px 16px rgba(201,163,59,0.12)',
         }}
       >
         <div className="flex justify-center mb-6">
@@ -314,7 +314,7 @@ export default function LoginScreen() {
                     color: active ? '#fff' : C.textSub,
                     border: 'none',
                     cursor: 'pointer',
-                    boxShadow: active ? '0 2px 6px rgba(200,169,106,0.28)' : 'none',
+                    boxShadow: active ? '0 2px 6px rgba(201,163,59,0.28)' : 'none',
                     transition: 'all 0.18s',
                   }}
                 >
@@ -433,7 +433,7 @@ export default function LoginScreen() {
                   style={{
                     background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
                     color: '#fff',
-                    boxShadow: '0 6px 20px rgba(200,169,106,0.35)',
+                    boxShadow: '0 6px 20px rgba(201,163,59,0.35)',
                     border: 'none',
                     cursor: loading ? 'default' : 'pointer',
                     opacity: loading ? 0.6 : 1,
@@ -472,7 +472,7 @@ export default function LoginScreen() {
                   autoCapitalize="characters"
                   className="w-full rounded-xl px-4 py-3 text-sm mb-1"
                   style={{
-                    background: '#FBF6EC',
+                    background: '#F8F3E5',
                     border: `1.5px solid ${C.goldLight}`,
                     color: C.text,
                     outline: 'none',
@@ -549,7 +549,7 @@ export default function LoginScreen() {
                   style={{
                     background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
                     color: '#fff',
-                    boxShadow: '0 6px 20px rgba(200,169,106,0.35)',
+                    boxShadow: '0 6px 20px rgba(201,163,59,0.35)',
                     border: 'none',
                     cursor: loading ? 'default' : 'pointer',
                     opacity: loading ? 0.6 : 1,

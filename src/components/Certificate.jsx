@@ -1,9 +1,9 @@
 import { useRef, useState } from 'react'
 import { toPng } from 'html-to-image'
 
-const GOLD = '#C8A96A'
-const GOLD_DARK = '#A88245'
-const GOLD_LIGHT = '#E6D3A3'
+const GOLD = '#C9A33B'
+const GOLD_DARK = '#A6822A'
+const GOLD_LIGHT = '#E8D9A7'
 const CREAM = '#FFFBF4'
 
 // Small interlocking-rings SVG inline (same concept as ReciRingLogo)
@@ -133,7 +133,7 @@ export default function Certificate({ points, onClose }) {
             padding: '14px 0',
             borderRadius: 14,
             background: done
-              ? '#E8F5EE'
+              ? '#EDF3EE'
               : `linear-gradient(135deg, ${GOLD}, ${GOLD_DARK})`,
             color: done ? '#22AA66' : '#fff',
             fontFamily: 'Inter, system-ui, sans-serif',
@@ -142,7 +142,7 @@ export default function Certificate({ points, onClose }) {
             letterSpacing: '0.06em',
             border: 'none',
             cursor: downloading ? 'wait' : 'pointer',
-            boxShadow: done ? 'none' : '0 8px 24px rgba(200,169,106,0.4)',
+            boxShadow: done ? 'none' : '0 8px 24px rgba(201,163,59,0.4)',
           }}
         >
           {done ? '✓  Saved — Share on LinkedIn' : downloading ? 'Exporting…' : '⬇  Download for LinkedIn'}

@@ -3,10 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { HELP_TYPES, INDUSTRIES, TIME_OPTIONS } from '../data/requestOptions'
 
 const C = {
-  gold:      '#C8A96A',
-  goldDark:  '#A88245',
-  goldLight: '#E6D3A3',
-  goldBg:    '#FBF6EC',
+  gold:      '#C9A33B',
+  goldDark:  '#A6822A',
+  goldLight: '#E8D9A7',
+  goldBg:    '#F8F3E5',
   text:      '#111111',
   textSub:   '#6B7280',
   textMuted: '#9CA3AF',
@@ -48,7 +48,7 @@ function ChipGroup({ options, selected, onToggle, multi = false }) {
               background: active ? C.goldBg : C.white,
               border: active ? `1.5px solid ${C.gold}` : `1.5px solid ${C.border}`,
               color: active ? C.goldDark : C.textSub,
-              boxShadow: active ? '0 2px 6px rgba(200,169,106,0.18)' : 'none',
+              boxShadow: active ? '0 2px 6px rgba(201,163,59,0.18)' : 'none',
             }}
           >
             {label}
@@ -253,7 +253,7 @@ function EditPostModal({ post, onSave, onClose }) {
         </div>
 
         {/* Footer: error + save */}
-        <div style={{ flexShrink: 0, padding: '12px 24px 24px', borderTop: '1px solid rgba(200,169,106,0.12)' }}>
+        <div style={{ flexShrink: 0, padding: '12px 24px 24px', borderTop: '1px solid rgba(201,163,59,0.12)' }}>
           {error && (
             <p className="text-center text-xs mb-3" style={{ color: C.danger }}>{error}</p>
           )}
@@ -267,7 +267,7 @@ function EditPostModal({ post, onSave, onClose }) {
               color: canSave ? '#fff' : C.textMuted,
               border: 'none',
               opacity: saving ? 0.6 : 1,
-              boxShadow: canSave ? '0 6px 20px rgba(200,169,106,0.35)' : 'none',
+              boxShadow: canSave ? '0 6px 20px rgba(201,163,59,0.35)' : 'none',
             }}
           >
             {saving ? 'Saving & republishing…' : 'Save & republish'}

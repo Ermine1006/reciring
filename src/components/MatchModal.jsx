@@ -1,10 +1,10 @@
 import { motion, AnimatePresence } from 'framer-motion'
 
 const C = {
-  gold:      '#C8A96A',
-  goldDark:  '#A88245',
-  goldLight: '#E6D3A3',
-  goldBg:    '#FBF6EC',
+  gold:      '#C9A33B',
+  goldDark:  '#A6822A',
+  goldLight: '#E8D9A7',
+  goldBg:    '#F8F3E5',
   text:      '#111111',
   textSub:   '#6B7280',
   textMuted: '#9CA3AF',
@@ -30,7 +30,7 @@ export default function MatchModal({ match, onClose, onConfirm, onSchedule }) {
           className="w-full max-w-[360px] rounded-[28px] overflow-hidden"
           style={{
             background: C.white,
-            boxShadow: '0 24px 80px rgba(0,0,0,0.18), 0 0 0 1px rgba(200,169,106,0.18)',
+            boxShadow: '0 24px 80px rgba(0,0,0,0.18), 0 0 0 1px rgba(201,163,59,0.18)',
           }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -38,14 +38,14 @@ export default function MatchModal({ match, onClose, onConfirm, onSchedule }) {
           <div
             className="px-7 pt-8 pb-7 text-center relative overflow-hidden"
             style={{
-              background: 'linear-gradient(160deg, #FBF6EC 0%, #FFFDF8 100%)',
+              background: 'linear-gradient(160deg, #F8F3E5 0%, #FFFDF8 100%)',
               borderBottom: `1px solid ${C.goldLight}`,
             }}
           >
             {/* Decorative radial glow */}
             <div
               className="absolute inset-0 pointer-events-none"
-              style={{ background: 'radial-gradient(ellipse at 50% 80%, rgba(200,169,106,0.14) 0%, transparent 68%)' }}
+              style={{ background: 'radial-gradient(ellipse at 50% 80%, rgba(201,163,59,0.14) 0%, transparent 68%)' }}
             />
 
             {/* Emoji with spring entrance */}
@@ -112,7 +112,7 @@ export default function MatchModal({ match, onClose, onConfirm, onSchedule }) {
               style={{
                 background: `linear-gradient(135deg, ${C.gold} 0%, ${C.goldDark} 100%)`,
                 color: '#fff',
-                boxShadow: '0 8px 24px rgba(200,169,106,0.35)',
+                boxShadow: '0 8px 24px rgba(201,163,59,0.35)',
               }}
             >
               ☕ Schedule coffee chat

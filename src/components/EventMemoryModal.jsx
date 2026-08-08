@@ -4,10 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { TOPIC_CHIPS } from '../lib/eventEncounters'
 
 const C = {
-  gold:      '#C8A96A',
-  goldDark:  '#A88245',
-  goldLight: '#E6D3A3',
-  goldBg:    '#FBF6EC',
+  gold:      '#C9A33B',
+  goldDark:  '#A6822A',
+  goldLight: '#E8D9A7',
+  goldBg:    '#F8F3E5',
   text:      '#111111',
   textSub:   '#4B5563',
   textMuted: '#9CA3AF',
@@ -169,7 +169,7 @@ export default function EventMemoryModal({
                         fontSize: 12, fontWeight: 600,
                         fontFamily: 'Inter, system-ui, sans-serif',
                         cursor: 'pointer',
-                        boxShadow: active ? '0 2px 6px rgba(200,169,106,0.18)' : 'none',
+                        boxShadow: active ? '0 2px 6px rgba(201,163,59,0.18)' : 'none',
                       }}
                     >
                       {t}
@@ -234,7 +234,7 @@ export default function EventMemoryModal({
                   background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
                   color: '#fff',
                   border: 'none',
-                  boxShadow: '0 6px 20px rgba(200,169,106,0.32)',
+                  boxShadow: '0 6px 20px rgba(201,163,59,0.32)',
                   cursor: saving ? 'default' : 'pointer',
                   opacity: saving ? 0.6 : 1,
                 }}

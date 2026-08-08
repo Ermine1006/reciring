@@ -6,7 +6,7 @@ import {
 } from '../lib/recognition'
 
 const C = {
-  gold: '#C8A96A', goldDark: '#A88245', goldLight: '#E6D3A3', goldBg: '#FBF6EC',
+  gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7', goldBg: '#F8F3E5',
   ink: '#1A1712', text: '#111111', textSub: '#6B6152', textMuted: '#9CA3AF',
   border: '#E5E7EB', white: '#FFFFFF',
 }
@@ -34,7 +34,7 @@ const inputStyle = {
 const card = {
   background: 'linear-gradient(180deg, #FFFFFF 0%, #FBF8F2 100%)',
   border: `1px solid ${C.goldLight}`, borderRadius: 18, overflow: 'hidden',
-  boxShadow: '0 6px 18px rgba(200,169,106,0.10)',
+  boxShadow: '0 6px 18px rgba(201,163,59,0.10)',
 }
 
 /**
@@ -174,7 +174,7 @@ export default function RecognitionCard({ matchId, peerId, peerName, currentUser
           <motion.div key="done" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
             style={{ textAlign: 'center', padding: '10px 6px' }}>
             <div style={{ width: 56, height: 56, borderRadius: '50%', margin: '0 auto 12px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'radial-gradient(circle at 35% 30%, #F4E4BE, #C8A96A)', boxShadow: '0 8px 22px rgba(200,169,106,0.4)' }}>
+              background: 'radial-gradient(circle at 35% 30%, #F4E4BE, #C9A33B)', boxShadow: '0 8px 22px rgba(201,163,59,0.4)' }}>
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#5C3D11" strokeWidth="2.4">
                 <path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
@@ -206,9 +206,9 @@ function PrimaryButton({ children, onClick, busy, disabled, style }) {
         width: '100%', padding: 14, borderRadius: 14, border: 'none',
         fontSize: 14.5, fontWeight: 700, letterSpacing: '0.02em', cursor: off ? 'default' : 'pointer',
         fontFamily: 'Inter, system-ui, sans-serif', transition: 'all 0.18s',
-        background: off ? '#EEE9DE' : 'linear-gradient(135deg, #C8A96A, #A88245)',
+        background: off ? '#EEE9DE' : 'linear-gradient(135deg, #C9A33B, #A6822A)',
         color: off ? '#B4AC9C' : '#fff',
-        boxShadow: off ? 'none' : '0 8px 22px rgba(200,169,106,0.4)',
+        boxShadow: off ? 'none' : '0 8px 22px rgba(201,163,59,0.4)',
         ...style,
       }}
     >

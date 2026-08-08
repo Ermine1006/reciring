@@ -7,10 +7,10 @@ import Chip from './Chip'
 import PosterUpload from './PosterUpload'
 
 const C = {
-  gold:      '#C8A96A',
-  goldDark:  '#A88245',
-  goldLight: '#E6D3A3',
-  goldBg:    '#FBF6EC',
+  gold:      '#C9A33B',
+  goldDark:  '#A6822A',
+  goldLight: '#E8D9A7',
+  goldBg:    '#F8F3E5',
   text:      '#111111',
   textSub:   '#6B7280',
   textMuted: '#9CA3AF',
@@ -373,7 +373,7 @@ export default function CreateEventForm({ onCreated, onClose }) {
                         padding: '10px 14px',
                         borderRadius: 12,
                         border: active ? `1.5px solid ${C.gold}` : '1.5px solid rgba(0,0,0,0.12)',
-                        background: active ? 'rgba(200,169,106,0.10)' : '#fff',
+                        background: active ? 'rgba(201,163,59,0.10)' : '#fff',
                         cursor: 'pointer',
                         fontFamily: 'Inter, system-ui, sans-serif',
                       }}
@@ -400,7 +400,7 @@ export default function CreateEventForm({ onCreated, onClose }) {
                 style={{
                   width: '100%', textAlign: 'left', padding: '12px 14px', borderRadius: 12,
                   border: allowDiscoverPromotion ? `1.5px solid ${C.gold}` : '1.5px solid rgba(0,0,0,0.12)',
-                  background: allowDiscoverPromotion ? 'rgba(200,169,106,0.10)' : '#fff',
+                  background: allowDiscoverPromotion ? 'rgba(201,163,59,0.10)' : '#fff',
                   cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif',
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
                 }}
@@ -463,7 +463,7 @@ export default function CreateEventForm({ onCreated, onClose }) {
                 : '#F3F4F6',
               color: canSubmit ? '#fff' : C.textMuted,
               border: 'none',
-              boxShadow: canSubmit ? '0 6px 20px rgba(200,169,106,0.35)' : 'none',
+              boxShadow: canSubmit ? '0 6px 20px rgba(201,163,59,0.35)' : 'none',
               fontSize: 14, fontWeight: 700,
               letterSpacing: '0.08em', textTransform: 'uppercase',
               fontFamily: 'Inter, system-ui, sans-serif',

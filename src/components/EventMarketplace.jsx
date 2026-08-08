@@ -12,9 +12,9 @@ import {
 import { notifyNewMatch } from '../lib/email'
 
 const C = {
-  gold: '#C8A96A', goldDark: '#A88245', goldLight: '#E6D3A3', goldBg: '#FBF6EC',
+  gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7', goldBg: '#F8F3E5',
   ink: '#111111', textSub: '#6B7280', textMuted: '#9CA3AF', white: '#FFFFFF',
-  border: '#F0ECE4', green: '#16A34A',
+  border: '#F0ECE4', green: '#2E6B4F',
 }
 
 /**
@@ -209,7 +209,7 @@ export default function EventMarketplace({ eventId, userId, isHost = false, allo
             Let attendees know what you're looking for or can offer.
           </p>
           <button type="button" onClick={() => (onPrepare ? onPrepare() : setComposer({ mode: 'create', type: 'need' }))}
-            style={{ width: '100%', marginTop: 12, padding: '12px', borderRadius: 11, border: 'none', background: 'linear-gradient(135deg,#C6A25A,#A88245)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
+            style={{ width: '100%', marginTop: 12, padding: '12px', borderRadius: 11, border: 'none', background: 'linear-gradient(135deg,#C9A33B,#A6822A)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
             Create event post
           </button>
         </div>

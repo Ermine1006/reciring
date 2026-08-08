@@ -2,9 +2,9 @@ import { useMemo, useState } from 'react'
 import { renderBlocksEmail } from '../lib/emailBlocks'
 
 const C = {
-  gold:     '#C8A96A',
-  goldDark: '#A88245',
-  goldBg:   '#FBF6EC',
+  gold:     '#C9A33B',
+  goldDark: '#A6822A',
+  goldBg:   '#F8F3E5',
   text:     '#111111',
   textSub:  '#6B7280',
   textMuted:'#9CA3AF',

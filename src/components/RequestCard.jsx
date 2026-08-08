@@ -15,10 +15,10 @@ const SWIPE_THRESHOLD = 90
 const ROTATION_RANGE  = 10
 
 const C = {
-  gold:       '#C8A96A',
-  goldDark:   '#A88245',
-  goldLight:  '#E6D3A3',
-  goldBg:     '#FBF6EC',
+  gold:       '#C9A33B',
+  goldDark:   '#A6822A',
+  goldLight:  '#E8D9A7',
+  goldBg:     '#F8F3E5',
   warm:       '#8B6F47',
   warmDark:   '#3D3020',
   warmBg:     '#FAF6F0',
@@ -115,7 +115,7 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
         background: 'linear-gradient(180deg, #FFFFFF 0%, #FBF8F2 100%)',
         border: `1px solid ${C.goldLight}`,
         boxShadow: isTop
-          ? '0 16px 50px rgba(0,0,0,0.08), 0 4px 16px rgba(200,169,106,0.12)'
+          ? '0 16px 50px rgba(0,0,0,0.08), 0 4px 16px rgba(201,163,59,0.12)'
           : '0 6px 20px rgba(0,0,0,0.05)',
         overflow: 'hidden',
         height: 'auto',
@@ -180,7 +180,7 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
               borderRadius: 12,
               border: `3px solid ${C.gold}`,
               background: 'rgba(251,246,236,0.92)',
-              boxShadow: '0 4px 20px rgba(200,169,106,0.35)',
+              boxShadow: '0 4px 20px rgba(201,163,59,0.35)',
             }}>
               <Handshake size={22} stroke={C.goldDark} strokeWidth={2.2} />
               <span style={{
@@ -276,7 +276,7 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
                 borderRadius: 99, padding: '5px 14px',
                 fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
                 fontFamily: 'Inter, system-ui, sans-serif',
-                boxShadow: '0 2px 6px rgba(200,169,106,0.25)',
+                boxShadow: '0 2px 6px rgba(201,163,59,0.25)',
               }}>
                 {request.category}
               </span>
@@ -326,7 +326,7 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
                 fontWeight: 600,
                 letterSpacing: '0.2em',
                 textTransform: 'uppercase',
-                color: '#8C6B3F',
+                color: '#8A6E1E',
                 fontFamily: 'Inter, system-ui, sans-serif',
               }}
             >
@@ -380,7 +380,7 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
         <div
           style={{
             height: 1,
-            background: 'linear-gradient(90deg, rgba(200,169,106,0.25), rgba(139,111,71,0.1), transparent)',
+            background: 'linear-gradient(90deg, rgba(201,163,59,0.25), rgba(139,111,71,0.1), transparent)',
             marginBottom: 22,
           }}
         />
@@ -477,9 +477,9 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
                   borderRadius: 999,
                   fontSize: 9, fontWeight: 700, letterSpacing: '0.1em',
                   textTransform: 'uppercase',
-                  color: request.creator.member_type === 'alumni' ? '#8C6B3F' : '#4B6B8C',
-                  background: request.creator.member_type === 'alumni' ? 'rgba(200,169,106,0.14)' : 'rgba(75,107,140,0.10)',
-                  border: `1px solid ${request.creator.member_type === 'alumni' ? 'rgba(200,169,106,0.4)' : 'rgba(75,107,140,0.25)'}`,
+                  color: request.creator.member_type === 'alumni' ? '#8A6E1E' : '#4B6B8C',
+                  background: request.creator.member_type === 'alumni' ? 'rgba(201,163,59,0.14)' : 'rgba(75,107,140,0.10)',
+                  border: `1px solid ${request.creator.member_type === 'alumni' ? 'rgba(201,163,59,0.4)' : 'rgba(75,107,140,0.25)'}`,
                   verticalAlign: 'middle',
                 }}>
                   {request.creator.member_type === 'alumni' ? 'Alumni' : 'Student'}

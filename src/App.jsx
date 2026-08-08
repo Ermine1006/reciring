@@ -46,13 +46,13 @@ import { fetchMessages, sendMessage, sendMeetingProposal, updateMeetingStatus, m
 
 /* ─── Design tokens ─────────────────────────────────────────────── */
 const C = {
-  gold:        '#C8A96A',
-  goldLight:   '#E6D3A3',
-  goldBg:      '#FBF6EC',
+  gold:        '#C9A33B',
+  goldLight:   '#E8D9A7',
+  goldBg:      '#F8F3E5',
   text:        '#111111',
   textSub:     '#6B7280',
   textMuted:   '#9CA3AF',
-  border:      'rgba(200,169,106,0.22)',
+  border:      'rgba(201,163,59,0.22)',
   white:       '#FFFFFF',
 }
 
@@ -916,7 +916,7 @@ function AppShell() {
           background: C.white,
           boxShadow: [
             '0 0 0 1px rgba(0,0,0,0.07)',
-            '0 0 0 1px rgba(200,169,106,0.15)',
+            '0 0 0 1px rgba(201,163,59,0.15)',
             '0 40px 90px rgba(0,0,0,0.14)',
             '0 8px 20px rgba(0,0,0,0.06)',
           ].join(','),
@@ -966,8 +966,8 @@ function AppShell() {
                 overflow: 'hidden',
                 padding: 0, flexShrink: 0,
                 background: resolveAvatarSeed(profile?.avatar_url) ? 'none' : '#D9C084',
-                border: resolveAvatarSeed(profile?.avatar_url) ? '1px solid #E6D3A3' : 'none',
-                boxShadow: profileHovered ? '0 0 0 3px rgba(212,175,55,0.12)' : 'none',
+                border: resolveAvatarSeed(profile?.avatar_url) ? '1px solid #E8D9A7' : 'none',
+                boxShadow: profileHovered ? '0 0 0 3px rgba(201,163,59,0.12)' : 'none',
                 transform: profileHovered ? 'scale(1.04)' : 'scale(1)',
                 transition: 'all 0.2s ease',
               }}
@@ -988,7 +988,7 @@ function AppShell() {
           <div
             className="mt-3 h-px"
             style={{
-              background: 'linear-gradient(90deg, transparent 0%, rgba(212,175,55,0.28) 18%, rgba(212,175,55,0.55) 50%, rgba(212,175,55,0.28) 82%, transparent 100%)',
+              background: 'linear-gradient(90deg, transparent 0%, rgba(201,163,59,0.28) 18%, rgba(201,163,59,0.55) 50%, rgba(201,163,59,0.28) 82%, transparent 100%)',
             }}
           />
         </header>
@@ -1001,8 +1001,8 @@ function AppShell() {
             className="flex-shrink-0"
             style={{
               margin: '0 16px 8px', padding: '10px 14px',
-              background: '#FBF6EC', border: '1px solid #E6D3A3', borderRadius: 12,
-              fontSize: 12.5, lineHeight: 1.45, color: '#8C6B3F',
+              background: '#F8F3E5', border: '1px solid #E8D9A7', borderRadius: 12,
+              fontSize: 12.5, lineHeight: 1.45, color: '#8A6E1E',
               fontFamily: 'Inter, system-ui, sans-serif', cursor: 'pointer',
               display: 'flex', gap: 8, alignItems: 'flex-start',
             }}

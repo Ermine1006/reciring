@@ -3,9 +3,9 @@ import { createPortal } from 'react-dom'
 import AnonymousAvatar from './AnonymousAvatar'
 
 const C = {
-  gold: '#C8A96A', goldDark: '#A88245', goldLight: '#E6D3A3', goldBg: '#FBF6EC',
+  gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7', goldBg: '#F8F3E5',
   ink: '#1A1712', textSub: '#6B6152', textMuted: '#9CA3AF', white: '#FFFFFF',
-  border: '#E5E7EB', green: '#16A34A', greenBg: '#F0FDF4', greenBorder: '#BBF7D0',
+  border: '#E5E7EB', green: '#2E6B4F', greenBg: '#EDF3EE', greenBorder: '#CBDBCF',
   danger: '#DC2626',
 }
 

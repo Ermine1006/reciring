@@ -2,10 +2,10 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const C = {
-  gold:      '#C8A96A',
-  goldDark:  '#A88245',
-  goldLight: '#E6D3A3',
-  goldBg:    '#FBF6EC',
+  gold:      '#C9A33B',
+  goldDark:  '#A6822A',
+  goldLight: '#E8D9A7',
+  goldBg:    '#F8F3E5',
   text:      '#111111',
   textSub:   '#6B7280',
   textMuted: '#9CA3AF',
@@ -76,7 +76,7 @@ export default function IdentityRevealRequestModal({ open, onAccept, onDecline, 
               background: C.white,
               borderRadius: 24,
               padding: '32px 26px 26px',
-              boxShadow: '0 24px 60px rgba(0,0,0,0.22), 0 4px 16px rgba(200,169,106,0.18)',
+              boxShadow: '0 24px 60px rgba(0,0,0,0.22), 0 4px 16px rgba(201,163,59,0.18)',
             }}
           >
             {/* Lock-key ornament */}
@@ -145,7 +145,7 @@ export default function IdentityRevealRequestModal({ open, onAccept, onDecline, 
                   fontSize: 14, fontWeight: 600,
                   fontFamily: 'Inter, system-ui, sans-serif',
                   cursor: busy ? 'default' : 'pointer',
-                  boxShadow: '0 6px 18px rgba(200,169,106,0.32)',
+                  boxShadow: '0 6px 18px rgba(201,163,59,0.32)',
                   opacity: busy === 'decline' ? 0.5 : 1,
                 }}
               >

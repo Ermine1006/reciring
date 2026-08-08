@@ -15,8 +15,8 @@ const C = {
   ink3:     '#9A958B',
   line:     '#E9E5DD',
   line2:    '#F1EEE7',
-  gold:     '#B4842E',
-  goldRing: '#C9A85A',
+  gold:     '#A6822A',
+  goldRing: '#C9A33B',
   sage:     '#2F7A55',
   sageBg:   '#EEF5F0',
 }

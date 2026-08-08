@@ -7,8 +7,8 @@ import AnonymousAvatar from './AnonymousAvatar'
 
 const C = {
   ground:'#FFFFFF', ivory:'#FBF8F3', ink:'#1A1712', ink2:'#5F584D', ink3:'#9A958B',
-  line:'#ECE7DE', line2:'#F3EFE8', gold:'#A67C33', goldInk:'#7A5A22',
-  goldBtn:'#C6A25A', goldBtnInk:'#241B0C', goldLine:'#EBDBAE',
+  line:'#ECE7DE', line2:'#F3EFE8', gold:'#A6822A', goldInk:'#7A5E17',
+  goldBtn:'#C9A33B', goldBtnInk:'#2E2405', goldLine:'#E8D9A7',
   slate:'#4B5A8A', sage:'#2F7A55', danger:'#B4453A',
 }
 
@@ -99,6 +99,6 @@ export default function EventPostCard({
 
 const primary = {
   width: '100%', padding: '10px 14px', borderRadius: 10, border: 'none',
-  background: 'linear-gradient(135deg,#C6A25A,#A88245)', color: '#fff',
+  background: 'linear-gradient(135deg,#C9A33B,#A6822A)', color: '#fff',
   fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif',
 }

@@ -32,16 +32,16 @@ import { listEncountersForEvent } from '../lib/eventEncounters'
 import { fetchConnections } from '../lib/relationships'
 
 const C = {
-  gold:      '#C8A96A',
-  goldDark:  '#A88245',
-  goldLight: '#E6D3A3',
-  goldBg:    '#FBF6EC',
+  gold:      '#C9A33B',
+  goldDark:  '#A6822A',
+  goldLight: '#E8D9A7',
+  goldBg:    '#F8F3E5',
   text:      '#111111',
   textSub:   '#6B7280',
   textMuted: '#9CA3AF',
   white:     '#FFFFFF',
   border:    '#F0ECE4',
-  success:   '#16A34A',
+  success:   '#2E6B4F',
   danger:    '#DC2626',
 }
 
@@ -461,7 +461,7 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
                     color: active ? '#fff' : C.textSub, border: 'none',
                     fontSize: 12, fontWeight: 600, letterSpacing: '0.02em',
                     fontFamily: 'Inter, system-ui, sans-serif', cursor: 'pointer',
-                    boxShadow: active ? '0 1px 4px rgba(200,169,106,0.35)' : 'none', transition: 'all 0.18s',
+                    boxShadow: active ? '0 1px 4px rgba(201,163,59,0.35)' : 'none', transition: 'all 0.18s',
                   }}>
                   {t.label}
                 </button>
@@ -474,8 +474,8 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
             has started, both "Who did you meet?" and "Complete recap" are
             available together — the more time-relevant one is primary. */}
         {(joined || isHost) && !isCancelled && viewMode === 'overview' && (() => {
-          const gold = { background: '#C6A25A', color: '#241B0C', border: 'none' }
-          const outline = { background: '#fff', color: '#A67C33', border: '1px solid #EBDBAE' }
+          const gold = { background: '#C9A33B', color: '#2E2405', border: 'none' }
+          const outline = { background: '#fff', color: '#A6822A', border: '1px solid #E8D9A7' }
           const base = { flex: 1, padding: '13px', borderRadius: 12, fontSize: 13.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }
           const start = event.start_at ? new Date(event.start_at) : null
           const now = Date.now()
@@ -711,18 +711,18 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
           if (known.length === 0) return null
           return (
             <button type="button" onClick={() => setViewMode('event_mode')}
-              style={{ ...cardStyle, display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', cursor: 'pointer', background: '#FBF6EC', border: '1px solid #EBDBAE' }}>
+              style={{ ...cardStyle, display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', cursor: 'pointer', background: '#F8F3E5', border: '1px solid #E8D9A7' }}>
               <div style={{ display: 'flex', flexShrink: 0 }}>
                 {known.slice(0, 3).map((a, i) => (
-                  <span key={a.user_id} style={{ marginLeft: i ? -10 : 0, border: '2px solid #FBF6EC', borderRadius: '50%', display: 'flex' }}>
+                  <span key={a.user_id} style={{ marginLeft: i ? -10 : 0, border: '2px solid #F8F3E5', borderRadius: '50%', display: 'flex' }}>
                     <AnonymousAvatar seed={resolveAvatarSeed(a.avatar_url) || a.user_id} size={30} />
                   </span>
                 ))}
               </div>
-              <span style={{ flex: 1, fontSize: 13.5, fontWeight: 600, color: '#7A5A22', fontFamily: 'Inter, system-ui, sans-serif' }}>
+              <span style={{ flex: 1, fontSize: 13.5, fontWeight: 600, color: '#7A5E17', fontFamily: 'Inter, system-ui, sans-serif' }}>
                 {known.length} {known.length === 1 ? 'person' : 'people'} you know {known.length === 1 ? 'is' : 'are'} attending
               </span>
-              <span style={{ fontSize: 12.5, fontWeight: 700, color: '#A88245', fontFamily: 'Inter, system-ui, sans-serif', whiteSpace: 'nowrap' }}>See who</span>
+              <span style={{ fontSize: 12.5, fontWeight: 700, color: '#A6822A', fontFamily: 'Inter, system-ui, sans-serif', whiteSpace: 'nowrap' }}>See who</span>
             </button>
           )
         })()}
@@ -939,10 +939,10 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
             animate={{ opacity: 1, y: 0 }}
             style={{
               padding: '10px 14px', borderRadius: 12,
-              background: toast.type === 'ok' ? '#F0FDF4' : '#FEF2F2',
-              border: `1px solid ${toast.type === 'ok' ? '#BBF7D0' : '#FECACA'}`,
+              background: toast.type === 'ok' ? '#EDF3EE' : '#FEF2F2',
+              border: `1px solid ${toast.type === 'ok' ? '#CBDBCF' : '#FECACA'}`,
               fontSize: 13, fontWeight: 500,
-              color: toast.type === 'ok' ? '#166534' : '#991B1B',
+              color: toast.type === 'ok' ? '#214E3A' : '#991B1B',
               fontFamily: 'Inter, system-ui, sans-serif',
               marginBottom: 14,
             }}
@@ -969,7 +969,7 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
                     letterSpacing: '0.08em', textTransform: 'uppercase',
                     fontFamily: 'Inter, system-ui, sans-serif',
                     cursor: 'pointer',
-                    boxShadow: '0 4px 14px rgba(200,169,106,0.32)',
+                    boxShadow: '0 4px 14px rgba(201,163,59,0.32)',
                   }}
                 >
                   Edit event
@@ -1027,7 +1027,7 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
                   fontFamily: 'Inter, system-ui, sans-serif',
                   cursor: (joinPending || isFull) ? 'default' : 'pointer',
                   opacity: joinPending ? 0.7 : 1,
-                  boxShadow: isFull ? 'none' : '0 8px 24px rgba(200,169,106,0.32)',
+                  boxShadow: isFull ? 'none' : '0 8px 24px rgba(201,163,59,0.32)',
                 }}
               >
                 {isFull ? 'Event full' : joinPending ? 'Joining…' : (cameFromPromo ? 'Join event to connect' : 'Join event')}
