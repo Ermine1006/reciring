@@ -7,7 +7,7 @@ import AnonymousAvatar from './AnonymousAvatar'
 import Chip from './Chip'
 import PRESET_AVATARS from '../data/presetAvatars'
 import { VISIBILITY_OPTIONS, VISIBILITY_PRIVATE } from '../lib/visibility'
-import { suggestProfileTags } from '../lib/aiRewrite'
+import { writeProfilePrompt } from '../lib/aiRewrite'
 
 const C = {
   gold:      '#C8A96A',
@@ -45,6 +45,13 @@ const inputStyle = {
   width: '100%', background: '#FAFAFA',
   border: `1.5px solid ${C.border}`, color: C.text, outline: 'none',
   padding: '12px 16px', borderRadius: 12, fontSize: 14,
+  fontFamily: 'Inter, system-ui, sans-serif',
+}
+// Subtle AI-assist link under the free-text prompt fields.
+const writeBtnStyle = {
+  marginTop: 7, display: 'inline-flex', alignItems: 'center', gap: 6,
+  padding: '5px 10px', borderRadius: 9, background: 'transparent', border: 'none',
+  color: C.goldDark, fontSize: 12, fontWeight: 600, cursor: 'pointer',
   fontFamily: 'Inter, system-ui, sans-serif',
 }
 
@@ -145,41 +152,23 @@ export default function SettingsPage({ section }) {
   const [saving, setSaving] = useState(false)
   const [status, setStatus] = useState(null)
 
-  // "Help me fill" — AI suggests matching tags from a one-liner + existing
-  // profile info, then pre-selects them below for the user to confirm + save.
-  const [aiNote, setAiNote] = useState('')
-  const [aiBusy, setAiBusy] = useState(false)
-  const [aiMsg, setAiMsg]   = useState(null)
+  // "Help me write" — AI drafts/polishes the free-text personality prompts
+  // (they have no options, so this is where AI helps most).
+  const [promptBusy, setPromptBusy] = useState(null)   // 'ask_me' | 'weekend' | null
+  const [promptErr, setPromptErr]   = useState(null)
 
-  const runSuggest = async () => {
-    if (aiBusy) return
-    setAiBusy(true); setAiMsg(null)
-    const { tags, error } = await suggestProfileTags({
-      text: aiNote,
+  const writePrompt = async (which) => {
+    if (promptBusy) return
+    setPromptBusy(which); setPromptErr(null)
+    const current = which === 'ask_me' ? promptAskMe : promptWeekend
+    const { text, error } = await writeProfilePrompt({
+      which, text: current,
       context: { program, headline: headline.trim(), industries: industryInterests },
     })
-    setAiBusy(false)
-    if (error || !tags) { setAiMsg({ type: 'err', text: error?.message || 'Could not generate suggestions.' }); return }
-    const suggested = (tags.canHelpWith?.length || 0) + (tags.skillsToLearn?.length || 0) + (tags.industries?.length || 0)
-    let added = 0
-    const addTo = (setter, current, additions, cap) => {
-      const merged = [...current]
-      for (const a of (additions || [])) if (!merged.includes(a) && merged.length < cap) merged.push(a)
-      added += merged.length - current.length
-      setter(merged)
-    }
-    addTo(setCanHelpWith,      canHelpWith,      tags.canHelpWith,   5)
-    addTo(setSkillsToLearn,    skillsToLearn,    tags.skillsToLearn, 5)
-    addTo(setIndustryInterests, industryInterests, tags.industries,  3)
-    if (added > 0) {
-      setAiMsg({ type: 'ok', text: `Added ${added} suggestion${added === 1 ? '' : 's'} below — review, then Save changes.` })
-    } else if (suggested === 0) {
-      // AI couldn't infer anything (e.g. nothing typed + thin profile) — guide
-      // the user rather than pretending they already have everything.
-      setAiMsg({ type: 'info', text: 'Tell me a bit more — write one line about what you do and want, then tap Suggest.' })
-    } else {
-      setAiMsg({ type: 'ok', text: 'Your selections already cover it — nothing new to add.' })
-    }
+    setPromptBusy(null)
+    if (error || !text) { setPromptErr(error?.message || 'Could not write that.'); return }
+    const clean = text.slice(0, 160)
+    if (which === 'ask_me') setPromptAskMe(clean); else setPromptWeekend(clean)
   }
 
   const toggleNetworkingIntent = (id) => setNetworkingIntent(prev =>
@@ -352,42 +341,6 @@ export default function SettingsPage({ section }) {
 
         {/* ── 2. Professional Matching ────────────────────────── */}
         <Section title="Professional matching" sectionRef={refs.skills} flash={flash === 'skills'}>
-
-          {/* ✨ Help me fill — AI pre-selects the fields below from a one-liner
-              + your existing profile. Lowers the "I won't fill this" barrier. */}
-          <div style={{ background: C.goldBg, border: `1px solid ${C.goldLight}`, borderRadius: 12, padding: 13, marginBottom: 20 }}>
-            <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: C.text, fontFamily: 'Inter, system-ui, sans-serif' }}>✨ Not sure what to pick?</p>
-            <p style={{ margin: '2px 0 9px', fontSize: 11.5, color: C.textSub, fontFamily: 'Inter, system-ui, sans-serif', lineHeight: 1.45 }}>
-              Say one line about what you do and want — or just tap Suggest and we'll use your profile. You can edit everything before saving.
-            </p>
-            <input
-              type="text"
-              value={aiNote}
-              onChange={e => setAiNote(e.target.value)}
-              placeholder="e.g. I'm in VC, want to learn fundraising, can help with market research"
-              style={{ ...inputStyle, marginBottom: 8 }}
-            />
-            <button
-              type="button"
-              onClick={runSuggest}
-              disabled={aiBusy}
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 7,
-                padding: '9px 16px', borderRadius: 11, border: 'none',
-                background: aiBusy ? C.goldLight : `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
-                color: '#fff', fontSize: 13, fontWeight: 700, cursor: aiBusy ? 'default' : 'pointer',
-                fontFamily: 'Inter, system-ui, sans-serif',
-              }}
-            >
-              {aiBusy ? 'Thinking…' : '✨ Suggest for me'}
-            </button>
-            {aiMsg && (
-              <p style={{ margin: '9px 0 0', fontSize: 12, fontWeight: 600, lineHeight: 1.4, color: aiMsg.type === 'err' ? C.danger : aiMsg.type === 'info' ? C.textSub : C.success, fontFamily: 'Inter, system-ui, sans-serif' }}>
-                {aiMsg.text}
-              </p>
-            )}
-          </div>
-
           <Field label="Industry focus" helper="Pick up to 3 — surfaces the right requests for you.">
             <div className="flex flex-wrap gap-2">
               {INDUSTRIES.map(ind => (
@@ -442,6 +395,8 @@ export default function SettingsPage({ section }) {
         </Section>
 
         {/* ── 3. Personality prompts ──────────────────────────── */}
+        {/* These are free text (no options), so this is where AI helps most:
+            "Help me write" drafts or polishes an answer from your profile. */}
         <Section title="Personality prompts">
           <Field label="Ask me about…" helper="A topic, a skill, an industry — anything you'd love to be asked about.">
             <input
@@ -450,6 +405,9 @@ export default function SettingsPage({ section }) {
               placeholder="e.g. growth at a Series A, breaking into VC, founder fundraising"
               style={inputStyle}
             />
+            <button type="button" onClick={() => writePrompt('ask_me')} disabled={promptBusy === 'ask_me'} style={writeBtnStyle}>
+              {promptBusy === 'ask_me' ? 'Writing…' : (promptAskMe.trim() ? '✨ Polish this' : '✨ Help me write')}
+            </button>
           </Field>
 
           <Field label="Weekend you're most likely to find me…" helper="A glimpse of who you are outside work." last>
@@ -459,7 +417,14 @@ export default function SettingsPage({ section }) {
               placeholder="e.g. hiking the Bruce Trail with a podcast in my ears"
               style={inputStyle}
             />
+            <button type="button" onClick={() => writePrompt('weekend')} disabled={promptBusy === 'weekend'} style={writeBtnStyle}>
+              {promptBusy === 'weekend' ? 'Writing…' : (promptWeekend.trim() ? '✨ Polish this' : '✨ Help me write')}
+            </button>
           </Field>
+
+          {promptErr && (
+            <p style={{ margin: '2px 0 0', fontSize: 12, fontWeight: 600, color: C.danger, fontFamily: 'Inter, system-ui, sans-serif' }}>{promptErr}</p>
+          )}
         </Section>
 
         {/* ── Save changes ────────────────────────────────────── */}

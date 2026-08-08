@@ -27,6 +27,26 @@ export async function rewriteText({ kind = 'post', text, context, maxChars } = {
   }
 }
 
+// "Help me write" — draft or polish a free-text personality-prompt answer.
+// which = 'ask_me' | 'weekend'. Returns { text, error }.
+export async function writeProfilePrompt({ which, text, context } = {}) {
+  try {
+    const res = await fetch(apiUrl('/api/ai-rewrite'), {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ mode: 'prompt_write', which, text: String(text || ''), context: context || {} }),
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) return { text: null, error: new Error(data.error || 'Could not write that.') }
+    if (typeof data.text !== 'string' || !data.text.trim()) {
+      return { text: null, error: new Error("Couldn't reach the writer — AI features run on the deployed site, not localhost.") }
+    }
+    return { text: data.text.trim(), error: null }
+  } catch (err) {
+    return { text: null, error: err instanceof Error ? err : new Error('Network error.') }
+  }
+}
+
 // "Help me fill" — infer profile matching tags from a one-line note plus any
 // existing profile info (program / headline / industries). The server returns
 // only values from the app's known option lists. Returns { tags, error } where

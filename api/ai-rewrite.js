@@ -149,6 +149,12 @@ export default async function handler(req, res) {
     return handleProfileTags(body, res)
   }
 
+  // "Help me write" — draft/polish a free-text personality prompt answer.
+  // Returns { text }.
+  if (body.mode === 'prompt_write') {
+    return handlePromptWrite(body, res)
+  }
+
   const kind = KINDS[body.kind] ? body.kind : 'post'
   const text = String(body.text || '').trim().slice(0, 2000)
   if (!text) return res.status(400).json({ error: 'Nothing to rewrite.' })
@@ -495,6 +501,68 @@ Be genuinely helpful: whenever there's any reasonable signal, suggest at least o
       industries:   clean([...(parsed.industries   || []), ...kwInds],    PT_INDUSTRIES, 3),
     },
   })
+}
+
+// ── "Help me write" — draft/polish a personality-prompt answer ──────
+async function handlePromptWrite(body, res) {
+  const c = body.context || {}
+  const which = body.which === 'weekend' ? 'weekend' : 'ask_me'
+  const draft = String(body.text || '').trim().slice(0, 200)
+  const ctxLine = [
+    c.program && `Program: ${c.program}`,
+    c.headline && `Role: ${c.headline}`,
+    Array.isArray(c.industries) && c.industries.length && `Industries: ${c.industries.join(', ')}`,
+  ].filter(Boolean).join(' · ')
+
+  const question = which === 'weekend'
+    ? "The weekend you're most likely to find me…"
+    : 'Ask me about…'
+  const guide = which === 'weekend'
+    ? "Give a warm, specific glimpse of life outside work — a hobby, place, or activity. If they left a draft, polish it. If it's blank, write ONE relatable, inviting example they can easily edit (keep it light and generic enough to be safe to change — don't assert specific personal facts as if certain)."
+    : "Name a topic, skill, or industry they'd love to be asked about, grounded in their role/industry. If they left a draft, polish it; if blank, generate one from their context."
+
+  const system = `You write a short answer to a networking-profile personality prompt.
+Prompt: "${question}"
+${guide}
+Output ONLY the answer — no quotes, no label, no trailing period needed. One line, under 120 characters, natural and specific (a noun phrase or first person both fine).${ctxLine ? `\nTheir context: ${ctxLine}` : ''}`
+
+  const userMessage = draft ? `Their draft: ${draft}` : 'They left it blank — write a good starter.'
+
+  let resp
+  try {
+    resp = await fetch(OPENROUTER_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://muturing.com',
+        'X-Title': 'Mutu',
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: 200,
+        temperature: 0.7,
+        messages: [
+          { role: 'system', content: system },
+          { role: 'user', content: userMessage },
+        ],
+      }),
+    })
+  } catch (err) {
+    return res.status(502).json({ error: 'AI is unavailable right now.', detail: err?.message })
+  }
+
+  const data = await resp.json().catch(() => ({}))
+  if (!resp.ok) {
+    const detail = data?.error?.message || data?.error || `HTTP ${resp.status}`
+    console.error('[ai-rewrite:prompt_write] failed:', resp.status, detail)
+    return res.status(resp.status === 402 ? 402 : 502).json({ error: 'AI is unavailable right now.', detail: String(detail) })
+  }
+
+  let text = String(data?.choices?.[0]?.message?.content || '').trim()
+  text = text.replace(/^["'“”]+|["'“”]+$/g, '').trim().slice(0, 160)
+  if (!text) return res.status(502).json({ error: 'No text — try again.' })
+  return res.status(200).json({ text })
 }
 
 // Parse the model's JSON, tolerating code fences / surrounding prose.
