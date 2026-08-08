@@ -42,7 +42,7 @@ import { createMatch, fetchMyMatches, fetchMatchedPostIds, fetchUnmatchedPostIds
 import { fetchUserInteractions, recordPostInteraction, clearSwipedLeft } from './lib/interactions'
 import { fetchCompletedMatchIds } from './lib/recognition'
 import { notifyEventReview, notifyNewMatch } from './lib/email'
-import { fetchMessages, sendMessage, sendMeetingProposal, updateMeetingStatus, msgToUI } from './lib/messages'
+import { fetchMessages, sendMessage, sendMeetingProposal, updateMeetingStatus, msgToUI, markMessagesRead } from './lib/messages'
 
 /* ─── Design tokens ─────────────────────────────────────────────── */
 const C = {
@@ -420,15 +420,18 @@ function AppShell() {
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'messages', filter: `match_id=eq.${chatMatchId}` },
         (payload) => {
-          // Only patch meeting_proposal status changes
-          if (payload.new.type !== 'meeting_proposal') return
           const newMeta = payload.new.metadata
-          if (!newMeta?.status) return // incomplete payload — skip
           setChatMessages(prev => prev.map(m => {
             if (m.id !== payload.new.id) return m
-            // If our optimistic state already matches or exceeds, keep it
-            if (m.meeting?.status === newMeta.status) return m
-            return msgToUI(payload.new, uid)
+            // Meeting status change → rebuild the message from the row.
+            if (payload.new.type === 'meeting_proposal' && newMeta?.status && m.meeting?.status !== newMeta.status) {
+              return msgToUI(payload.new, uid)
+            }
+            // Read receipt → light up the sender's ✓✓ without touching the rest.
+            if (payload.new.read_at && m.readAt !== payload.new.read_at) {
+              return { ...m, readAt: payload.new.read_at }
+            }
+            return m
           }))
         }
       )
@@ -436,6 +439,21 @@ function AppShell() {
 
     return () => { supabase.removeChannel(channel) }
   }, [chatMatchId, user?.id])
+
+  // Read receipts: while the chat is open, mark the peer's messages as read.
+  // Optimistically flip local readAt so this doesn't re-fire, and guard against
+  // overlapping calls. The peer's client gets the ✓✓ via the realtime UPDATE.
+  const markingReadRef = useRef(false)
+  useEffect(() => {
+    if (!isSupabaseConfigured || !chatMatchId || !user) return
+    const hasUnread = chatMessages.some(m => m.senderId === 'peer' && !m.readAt)
+    if (!hasUnread || markingReadRef.current) return
+    markingReadRef.current = true
+    markMessagesRead(chatMatchId, user.id)
+      .then(() => setChatMessages(prev => prev.map(m =>
+        m.senderId === 'peer' && !m.readAt ? { ...m, readAt: new Date().toISOString() } : m)))
+      .finally(() => { markingReadRef.current = false })
+  }, [chatMatchId, chatMessages, user?.id])
 
   // ── Realtime: new matches involving the current user ──────────
   // Supabase filter supports one column, but matches have two user

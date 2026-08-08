@@ -99,8 +99,25 @@ export function msgToUI(row, currentUserId) {
     content:   row.body,
     type,
     timestamp: row.created_at,
+    readAt:    row.read_at || null,   // recipient's read time (for ✓✓ receipts)
     ...(meeting ? { meeting } : {}),
   }
+}
+
+/**
+ * Mark every message the PEER sent in this match as read (sets read_at=now on
+ * the still-unread ones). Called when the recipient has the chat open. The
+ * sender sees the ✓✓ update via the realtime messages-UPDATE subscription.
+ */
+export async function markMessagesRead(matchId, myUserId) {
+  if (!isSupabaseConfigured || !matchId || !myUserId) return { error: null }
+  const { error } = await supabase
+    .from('messages')
+    .update({ read_at: new Date().toISOString() })
+    .eq('match_id', matchId)
+    .neq('sender_user_id', myUserId)
+    .is('read_at', null)
+  return { error }
 }
 
 function tryParseJSON(str) {

@@ -42,6 +42,20 @@ function fmtDayLabel(iso) {
   })
 }
 
+// WhatsApp-style delivery ticks on my own messages: one grey tick when sent,
+// a gold double tick once the peer has read it.
+function ReadTicks({ read }) {
+  const color = read ? C.gold : C.textMuted
+  return (
+    <svg width="15" height="11" viewBox="0 0 15 11" fill="none" stroke={color}
+      strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"
+      style={{ flexShrink: 0 }} aria-label={read ? 'Read' : 'Sent'}>
+      <path d={read ? 'M0.5 5.5 L3 8 L7.5 2.5' : 'M3 5.5 L5.5 8 L10 2.5'} />
+      {read && <path d="M5 5.5 L7.5 8 L12 2.5" />}
+    </svg>
+  )
+}
+
 function DaySeparator({ iso }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 16px 4px' }}>
@@ -766,8 +780,10 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
                 fontSize: 10, color: C.textMuted,
                 fontFamily: 'Inter, system-ui, sans-serif',
                 marginTop: 3, paddingLeft: isMe ? 0 : 4, paddingRight: isMe ? 4 : 0,
+                display: 'flex', alignItems: 'center', gap: 4,
               }}>
                 {fmtTime(msg.timestamp)}
+                {isMe && <ReadTicks read={Boolean(msg.readAt)} />}
               </p>
             </motion.div>
             </Fragment>
