@@ -367,6 +367,36 @@ Style: concise, warm, plain. No preamble, no bullet-point dumps unless listing p
 const PT_HELP_TYPES = ['Referral', 'Coffee Chat', 'Resume Review', 'Mock Interview', 'Intro', 'Study Group', 'Advice']
 const PT_INDUSTRIES = ['Consulting', 'Investment Banking', 'Tech', 'Private Equity', 'VC', 'Marketing', 'Operations', 'Other']
 
+// Deterministic keyword extraction — a reliable floor so obvious signals ("VC",
+// "connections") always yield tags even when the model returns nothing.
+function ptIndustriesFromText(text) {
+  const t = ' ' + String(text || '').toLowerCase() + ' '
+  const rules = [
+    [/\bvc\b|venture capital|\bventure\b/, 'VC'],
+    [/\bib\b|investment bank|\bbanking\b/, 'Investment Banking'],
+    [/\bpe\b|private equity|buyout/, 'Private Equity'],
+    [/consult/, 'Consulting'],
+    [/\btech\b|startups?\b|start-?up|software|\bsaas\b|\bai\b|engineer|\bproduct\b/, 'Tech'],
+    [/marketing|\bbrand\b|\bgrowth\b/, 'Marketing'],
+    [/\bops\b|operations|supply chain|logistics/, 'Operations'],
+  ]
+  const out = []
+  for (const [re, ind] of rules) if (re.test(t)) out.push(ind)
+  return out
+}
+function ptHelpFromText(text) {
+  const t = ' ' + String(text || '').toLowerCase() + ' '
+  const out = []
+  if (/connection|network|stakeholder|meet people|\bintro/.test(t)) out.push('Intro', 'Coffee Chat')
+  if (/coffee/.test(t)) out.push('Coffee Chat')
+  if (/referral|warm intro/.test(t)) out.push('Referral')
+  if (/mentor|advice|guidance|\bfeedback\b|pick your brain/.test(t)) out.push('Advice')
+  if (/resume|\bcv\b/.test(t)) out.push('Resume Review')
+  if (/interview/.test(t)) out.push('Mock Interview')
+  if (/study group|prep together|study together/.test(t)) out.push('Study Group')
+  return out
+}
+
 async function handleProfileTags(body, res) {
   const c = body.context || {}
   const note = String(body.text || '').trim().slice(0, 500)
@@ -443,11 +473,26 @@ Be genuinely helpful: whenever there's any reasonable signal, suggest at least o
     }
     return out
   }
+  // Union the model's output with deterministic keyword extraction so obvious
+  // signals never get lost. Route free help keywords by intent cue.
+  const lower = note.toLowerCase()
+  const wantCue  = /looking for|want|need|seeking|hoping|interested in|help me|trying to|would love/.test(lower)
+  const offerCue = /can help|i can|i offer|happy to|provide|good at|expert|experience (in|with)|help (others|people|with)|mentor others/.test(lower)
+  const kwHelp = ptHelpFromText(note)
+  let kwLearn = [], kwCanHelp = []
+  if (kwHelp.length) {
+    if (wantCue && !offerCue)       kwLearn = kwHelp
+    else if (offerCue && !wantCue)  kwCanHelp = kwHelp
+    else if (!wantCue && !offerCue) kwLearn = kwHelp   // mentioned, no cue → assume they want it
+    // both cues present → trust the model for direction
+  }
+  const kwInds = ptIndustriesFromText(note)
+
   return res.status(200).json({
     tags: {
-      canHelpWith:  clean(parsed.canHelpWith,  PT_HELP_TYPES, 5),
-      skillsToLearn: clean(parsed.skillsToLearn, PT_HELP_TYPES, 5),
-      industries:   clean(parsed.industries,   PT_INDUSTRIES, 3),
+      canHelpWith:  clean([...(parsed.canHelpWith  || []), ...kwCanHelp], PT_HELP_TYPES, 5),
+      skillsToLearn: clean([...(parsed.skillsToLearn || []), ...kwLearn],   PT_HELP_TYPES, 5),
+      industries:   clean([...(parsed.industries   || []), ...kwInds],    PT_INDUSTRIES, 3),
     },
   })
 }
