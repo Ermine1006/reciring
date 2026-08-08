@@ -49,9 +49,28 @@ export async function recordPostInteraction(userId, postId, type) {
         interaction_type:    type,
         last_interaction_at: new Date().toISOString(),
       },
-      { onConflict: 'user_id,post_id' },
+      // Enforce the priority (swiped_left > viewed) at the DB level: a 'viewed'
+      // write must never overwrite an existing row (which could be a
+      // swiped_left) — otherwise a passed post silently un-passes and reappears
+      // on the next load. 'swiped_left' still upgrades a prior 'viewed'.
+      { onConflict: 'user_id,post_id', ignoreDuplicates: type === 'viewed' },
     )
 
+  return { error }
+}
+
+/**
+ * Un-pass a SINGLE post (the "rewind / undo last pass" action) — deletes only
+ * its swiped_left row so it returns to the deck. Leaves other posts untouched.
+ */
+export async function unpassPost(userId, postId) {
+  if (!isSupabaseConfigured || !userId || !postId) return { error: null }
+  const { error } = await supabase
+    .from('post_interactions')
+    .delete()
+    .eq('user_id', userId)
+    .eq('post_id', postId)
+    .eq('interaction_type', 'swiped_left')
   return { error }
 }
 

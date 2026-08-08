@@ -39,7 +39,7 @@ import { backfillMatchingTags } from './lib/profileBackfill'
 import { fetchDiscoverEventPromos, logPromoEvent } from './lib/discoverPromos'
 import { fetchMyJoinedEventIds } from './lib/events'
 import { createMatch, fetchMyMatches, fetchMatchedPostIds, fetchUnmatchedPostIds, unmatchMatch, matchToUI, requestIdentityReveal, acceptIdentityReveal, declineIdentityReveal, fetchPeerProfile } from './lib/matches'
-import { fetchUserInteractions, recordPostInteraction, clearSwipedLeft } from './lib/interactions'
+import { fetchUserInteractions, recordPostInteraction, clearSwipedLeft, unpassPost } from './lib/interactions'
 import { fetchCompletedMatchIds } from './lib/recognition'
 import { notifyEventReview, notifyNewMatch } from './lib/email'
 import { fetchMessages, sendMessage, sendMeetingProposal, updateMeetingStatus, msgToUI, markMessagesRead } from './lib/messages'
@@ -367,18 +367,36 @@ function AppShell() {
   // existing 'swiped_left' to 'viewed'.
   const recordInteraction = useCallback((postId, type) => {
     if (!user || !postId) return
+    let write = true
     setInteractionMap(prev => {
       const existing = prev.get(postId)
-      if (existing === 'swiped_left' && type === 'viewed') return prev
-      if (existing === type) return prev
+      // Never downgrade a pass to a view (and skip redundant writes).
+      if ((existing === 'swiped_left' && type === 'viewed') || existing === type) { write = false; return prev }
       const next = new Map(prev)
       next.set(postId, type)
       return next
     })
+    if (!write) return
     // Fire and forget — UX prefers responsiveness over write confirmation.
     // If it fails, the next load will re-sync from DB.
     recordPostInteraction(user.id, postId, type).then(({ error }) => {
       if (error) console.warn('[ReciRing] recordPostInteraction failed:', error.message || error)
+    })
+  }, [user?.id])
+
+  // Rewind / undo the last pass: un-pass a single post so it returns to the
+  // deck. Optimistic (drop it from the local map → treated as unseen), then
+  // delete the swiped_left row.
+  const unpassOne = useCallback((postId) => {
+    if (!user || !postId) return
+    setInteractionMap(prev => {
+      if (!prev.has(postId)) return prev
+      const next = new Map(prev)
+      next.delete(postId)
+      return next
+    })
+    unpassPost(user.id, postId).then(({ error }) => {
+      if (error) console.warn('[ReciRing] unpassPost failed:', error.message || error)
     })
   }, [user?.id])
 
@@ -1061,6 +1079,7 @@ function AppShell() {
               interactionMap={interactionMap}
               onSwipeRight={(r) => console.log('Helping:', r.id)}
               onSwipeLeft={(r) => recordInteraction(r.id, 'swiped_left')}
+              onUnpass={unpassOne}
               onCardViewed={(r) => recordInteraction(r.id, 'viewed')}
               onMatchConfirm={handleMatchConfirm}
               onOpenChat={handleOpenChat}

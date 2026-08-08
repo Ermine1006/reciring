@@ -40,7 +40,7 @@ function FilterChip({ label, active, onClick }) {
   )
 }
 
-export default function CardStack({ requests, eventPromos, unmatchedPostIds, interactionMap, onSwipeRight, onSwipeLeft, onCardViewed, onMatchConfirm, onOpenChat, onScheduleChat, onReport, onBlock, onRestorePassed, onOpenEventPromo, onPromoImpression }) {
+export default function CardStack({ requests, eventPromos, unmatchedPostIds, interactionMap, onSwipeRight, onSwipeLeft, onUnpass, onCardViewed, onMatchConfirm, onOpenChat, onScheduleChat, onReport, onBlock, onRestorePassed, onOpenEventPromo, onPromoImpression }) {
   const { viewerProfile } = useAuth()
   const viewer = viewerProfile || DEFAULT_VIEWER_PROFILE
 
@@ -200,15 +200,25 @@ export default function CardStack({ requests, eventPromos, unmatchedPostIds, int
     (request) => {
       // Event-promo left swipe = dismiss for this session (no persistence).
       if (isPromo(request)) { dismissPromo(request); return }
-      // Persistent: records 'swiped_left' in App.jsx → updates
-      // interactionMap → tier 3 (or stays tier 4 if also unmatched).
-      // Session: also push to bottom so the user always sees the
-      // next card immediately — even when every card is tier 4.
+      // Persistent: records 'swiped_left' in App.jsx → updates interactionMap
+      // → the deck filters it out. Remember it so the user can rewind the pass.
       markRecentlyActed(request.id)
+      setLastPassed(request)
       onSwipeLeft?.(request)
     },
     [onSwipeLeft, markRecentlyActed, dismissPromo]
   )
+
+  // Rewind / undo the last pass: un-pass the post (parent removes swiped_left +
+  // deletes the row) and drop it from the acted-order so it returns to the top.
+  const [lastPassed, setLastPassed] = useState(null)
+  const handleUndoPass = useCallback(() => {
+    if (!lastPassed) return
+    const card = lastPassed
+    setLastPassed(null)
+    setRecentlyActedOrder(prev => prev.filter(x => x !== card.id))
+    onUnpass?.(card.id)
+  }, [lastPassed, onUnpass])
 
   const handleCardTap = useCallback(
     (request) => {
@@ -456,9 +466,30 @@ export default function CardStack({ requests, eventPromos, unmatchedPostIds, int
 
         {/* ── Action buttons (flow layout, not absolute) ──────── */}
         <div
-          className="flex-shrink-0 flex justify-center z-20"
-          style={{ paddingTop: 12, paddingBottom: 20, gap: 24 }}
+          className="flex-shrink-0 flex justify-center items-center z-20"
+          style={{ paddingTop: 12, paddingBottom: 20, gap: 20 }}
         >
+          {/* Rewind — undo the last pass (only when there's one to undo) */}
+          {lastPassed && (
+            <button
+              type="button"
+              onClick={handleUndoPass}
+              className="flex items-center justify-center transition-all duration-200 active:scale-90"
+              style={{
+                width: 48, height: 48, borderRadius: '50%',
+                background: C.white, border: `1.5px solid ${C.goldLight}`,
+                boxShadow: '0 4px 14px rgba(0,0,0,0.08)',
+              }}
+              aria-label="Undo last pass"
+              title="Undo last pass"
+            >
+              <svg width="20" height="20" fill="none" stroke="#C9A33B" viewBox="0 0 24 24" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 14l-4-4 4-4" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 10h10a4 4 0 010 8h-2" />
+              </svg>
+            </button>
+          )}
+
           {/* Pass */}
           <button
             type="button"
