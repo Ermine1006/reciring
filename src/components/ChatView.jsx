@@ -750,14 +750,14 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
                 padding: '10px 14px',
                 borderRadius: isMe ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
                 background: isMe
-                  ? `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`
-                  : C.white,
-                color: isMe ? '#fff' : C.text,
+                  ? '#E7EFE1'
+                  : '#F1F0ED',
+                color: isMe ? '#2C4632' : C.text,
                 fontSize: 14, lineHeight: 1.5,
                 fontFamily: 'Inter, system-ui, sans-serif',
                 boxShadow: isMe
-                  ? '0 4px 12px rgba(200,169,106,0.3)'
-                  : '0 2px 8px rgba(0,0,0,0.06)',
+                  ? '0 2px 8px rgba(119,148,125,0.22)'
+                  : '0 1px 4px rgba(0,0,0,0.05)',
                 wordBreak: 'break-word',
               }}>
                 {msg.content}
