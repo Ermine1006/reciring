@@ -279,24 +279,35 @@ export default function SubmitRequest({ onSubmitted, prefill = null }) {
         type="button"
         onClick={() => handleImprove(field)}
         disabled={!can}
-        className="mt-1 inline-flex items-center gap-1.5 transition-all duration-150 active:scale-[0.98]"
+        className="mt-2 inline-flex items-center gap-2 transition-all duration-150 active:scale-[0.98]"
         style={{
-          padding: '6px 11px', borderRadius: 10, background: 'transparent',
-          border: 'none', cursor: can ? 'pointer' : 'default',
+          padding: '8px 14px', borderRadius: 999,
+          background: can ? C.goldBg : '#F3F4F6',
+          border: `1.5px solid ${can ? C.goldLight : C.border}`,
+          cursor: can ? 'pointer' : 'default',
           color: can ? C.goldDark : C.textMuted,
-          fontSize: 12, fontWeight: 600, fontFamily: 'Inter, system-ui, sans-serif',
+          fontSize: 12.5, fontWeight: 700, fontFamily: 'Inter, system-ui, sans-serif',
+          boxShadow: can ? '0 2px 8px rgba(201,163,59,0.18)' : 'none',
         }}
+        title="Let AI rewrite this to get more replies"
       >
         {busyThis ? (
           <>
             <span
               className="inline-block animate-spin"
-              style={{ width: 12, height: 12, border: `1.5px solid ${C.goldLight}`, borderTopColor: C.goldDark, borderRadius: '50%' }}
+              style={{ width: 13, height: 13, border: `1.5px solid ${C.goldLight}`, borderTopColor: C.goldDark, borderRadius: '50%' }}
             />
-            Improving your {field === 'details' ? 'request' : 'offer'}…
+            Improving with AI…
           </>
         ) : (
-          <>✨ Increase My Response Rate</>
+          <>
+            <span style={{ fontSize: 14, lineHeight: 1 }}>✨</span>
+            Increase My Response Rate
+            <span style={{
+              fontSize: 9, fontWeight: 800, letterSpacing: '0.06em', color: C.white,
+              background: can ? C.goldDark : C.textMuted, borderRadius: 5, padding: '2px 5px',
+            }}>AI</span>
+          </>
         )}
       </button>
     )
