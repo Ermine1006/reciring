@@ -542,26 +542,18 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
         {viewMode !== 'recap' && viewMode !== 'marketplace' && viewMode !== 'manage' && viewMode !== 'discussion' && (
           <>
         {/* Cover — host's uploaded image, or a tasteful branded fallback */}
-        <EventCover event={event} radius={26} aspectRatio="3 / 2" style={{ marginBottom: 18 }} />
+        <EventCover event={event} radius={18} aspectRatio="16 / 9" style={{ marginBottom: 16 }} />
 
-        {/* Title + category + share */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{
-              fontSize: 12, color: C.gold, fontWeight: 700, letterSpacing: '0.06em',
-              textTransform: 'uppercase',
-              fontFamily: 'Inter, system-ui, sans-serif', margin: '0 0 5px',
-            }}>
-              {event.category}
-            </p>
-            <h1 style={{
-              fontSize: 25, fontWeight: 600, color: C.text,
-              fontFamily: 'Fraunces, Georgia, serif',
-              margin: 0, lineHeight: 1.2, letterSpacing: '-0.01em',
-            }}>
-              {event.title}
-            </h1>
-          </div>
+        {/* Title + share (editorial serif, no card) */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 14 }}>
+          <h1 style={{
+            flex: 1, minWidth: 0,
+            fontSize: 24, fontWeight: 600, color: C.text,
+            fontFamily: 'Fraunces, Georgia, serif',
+            margin: 0, lineHeight: 1.22, letterSpacing: '-0.01em',
+          }}>
+            {event.title}
+          </h1>
           {/* Share (fb8) */}
           <button
             type="button"
@@ -587,10 +579,33 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
           </button>
         </div>
 
-        {/* Meta rows — tight, no card */}
-        <div style={{ marginBottom: 16 }}>
+        {/* Meta rows — date · location · host (inline) · attendance. No card. */}
+        <div style={{ marginBottom: 18 }}>
           <MetaRow icon={<CalendarIcon />} label={formatLongDate(event.start_at)} />
           {event.location && <MetaRow icon={<PinIcon />} label={event.location} />}
+          {event.host_display_name && (() => {
+            const hostRow = (
+              <>
+                <span style={{
+                  width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
+                  background: C.goldBg, border: `1px solid ${C.goldLight}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 11, fontWeight: 700, color: C.goldDark,
+                  fontFamily: 'Inter, system-ui, sans-serif',
+                }}>
+                  {(event.host_display_name || '?').charAt(0).toUpperCase()}
+                </span>
+                <p style={{ fontSize: 13.5, fontWeight: 500, color: C.text, fontFamily: 'Inter, system-ui, sans-serif', margin: 0, lineHeight: 1.4 }}>
+                  Hosted by {event.host_display_name}
+                  {sponsorBadge && <span style={{ color: C.goldDark, fontWeight: 600 }}>{' · '}{sponsorBadge}</span>}
+                </p>
+              </>
+            )
+            const rowStyle = { display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0', width: '100%', textAlign: 'left', background: 'none', border: 'none', font: 'inherit' }
+            return (!isHost && !isCancelled)
+              ? <button type="button" onClick={scrollToChat} style={{ ...rowStyle, cursor: 'pointer' }}>{hostRow}</button>
+              : <div style={rowStyle}>{hostRow}</div>
+          })()}
           <MetaRow
             icon={<UsersIcon />}
             label={isCancelled
@@ -611,7 +626,7 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
           </p>
         )}
 
-        {/* ── Primary lifecycle CTA — exactly one, slim ─────────── */}
+        {/* ── Primary lifecycle CTA — exactly one, prominent ────── */}
         {!isCancelled && (() => {
           const goldBtn = { width: '100%', padding: '16px 0', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif', background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`, color: '#fff', border: 'none', boxShadow: '0 6px 18px rgba(201,163,59,0.3)' }
           const outlineBtn = { flex: 1, padding: '15px 0', borderRadius: 14, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif', background: '#fff', color: C.goldDark, border: `1px solid ${C.goldLight}` }
@@ -620,7 +635,7 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
             if (isCompleted) return null
             return (
               <button type="button" onClick={() => setShowJoinIntent(true)} disabled={joinPending || isFull}
-                style={{ ...goldBtn, ...(isFull ? { background: '#F3F4F6', color: C.textMuted, boxShadow: 'none' } : {}), opacity: joinPending ? 0.7 : 1 }}>
+                style={{ ...goldBtn, marginBottom: 18, ...(isFull ? { background: '#F3F4F6', color: C.textMuted, boxShadow: 'none' } : {}), opacity: joinPending ? 0.7 : 1 }}>
                 {isFull ? 'Event full' : joinPending ? 'Joining…' : (cameFromPromo ? 'Join event to connect' : 'Join event')}
               </button>
             )
@@ -632,116 +647,64 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
           if (phase === 'before') {
             if (!onPrepare) return null
             return (
-              <button type="button" onClick={() => onPrepare(event.id)} style={goldBtn}>
+              <button type="button" onClick={() => onPrepare(event.id)} style={{ ...goldBtn, marginBottom: 18 }}>
                 {hasPrepared ? 'Update your event post' : 'Prepare for event'}
               </button>
             )
           }
           const meetPrimary = phase === 'during'
           return (
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 18 }}>
               <button type="button" onClick={() => setViewMode('event_mode')} style={meetPrimary ? goldFlex : outlineBtn}>Who did you meet?</button>
               <button type="button" onClick={() => setViewMode('recap')} style={meetPrimary ? outlineBtn : goldFlex}>Complete recap</button>
             </div>
           )
         })()}
 
-        {/* ── Hosted by — compact divider row ───────────────────── */}
-        <div style={dividerStyle} />
-        <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
-          <div style={{
-            width: 38, height: 38, borderRadius: '50%',
-            background: C.goldBg, border: `1.5px solid ${C.goldLight}`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 15, fontWeight: 700, color: C.goldDark, flexShrink: 0,
-            fontFamily: 'Inter, system-ui, sans-serif',
-          }}>
-            {(event.host_display_name || '?').charAt(0).toUpperCase()}
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{
-              fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase',
-              color: '#8A94A6', fontFamily: 'Inter, system-ui, sans-serif', margin: '0 0 2px',
-            }}>
-              Hosted by
-            </p>
-            <p style={{
-              fontSize: 14, fontWeight: 600, color: C.text,
-              fontFamily: 'Inter, system-ui, sans-serif', margin: 0,
-              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            }}>
-              {event.host_display_name}
-              {sponsorBadge && <span style={{ color: C.goldDark, fontWeight: 600 }}>{' · '}{sponsorBadge}</span>}
-            </p>
-          </div>
-          {!isHost && !isCancelled && (
-            <button
-              type="button"
-              onClick={scrollToChat}
-              style={{
-                flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer',
-                color: C.goldDark, fontSize: 13, fontWeight: 700,
-                fontFamily: 'Inter, system-ui, sans-serif',
-                display: 'flex', alignItems: 'center', gap: 5, padding: '6px 2px',
-              }}
-            >
-              <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.96 9.96 0 01-4.418-1.026L3 20l1.026-4.418A8.964 8.964 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-              </svg>
-              Message
-            </button>
-          )}
-        </div>
-
-        {/* ── Event Board — lightweight divider section ─────────── */}
+        {/* ── Event Board — bordered card ───────────────────────── */}
         {(joined || isHost) && !isCancelled && (() => {
           const known = attendees.filter(a => a.user_id !== user?.id && knownContext.has(a.user_id))
           const canSeeKnown = (event.attendee_visibility !== 'private' || isHost) && known.length > 0
+          const rowIcon = (
+            <svg width="15" height="15" fill="none" stroke={C.textMuted} strokeWidth={1.8} viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 10-4-4 4 4 0 004 4z" />
+            </svg>
+          )
           return (
-            <>
-              <div style={dividerStyle} />
-              <button type="button" onClick={() => setViewMode('marketplace')}
-                style={{ width: '100%', textAlign: 'left', cursor: 'pointer', background: 'none', border: 'none', padding: 0, display: 'block' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <p style={{ ...sectionLabelStyle, margin: 0 }}>Event Board</p>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: C.goldDark, fontFamily: 'Inter, system-ui, sans-serif' }}>View board →</span>
-                </div>
-                {canSeeKnown && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
-                    <div style={{ display: 'flex', flexShrink: 0 }}>
-                      {known.slice(0, 3).map((a, i) => (
-                        <span key={a.user_id} style={{ marginLeft: i ? -8 : 0, border: '2px solid #fff', borderRadius: '50%', display: 'flex' }}>
-                          <AnonymousAvatar seed={resolveAvatarSeed(a.avatar_url) || a.user_id} size={24} />
-                        </span>
-                      ))}
-                    </div>
-                    <span style={{ fontSize: 13, color: C.text, fontWeight: 600, fontFamily: 'Inter, system-ui, sans-serif' }}>
-                      {known.length} {known.length === 1 ? 'person' : 'people'} you know {known.length === 1 ? 'is' : 'are'} attending
-                    </span>
-                  </div>
-                )}
-                <p style={{ margin: `${canSeeKnown ? 6 : 8}px 0 0`, fontSize: 13, color: C.textSub, fontFamily: 'Inter, system-ui, sans-serif' }}>
+            <button type="button" onClick={() => setViewMode('marketplace')}
+              style={{ ...cardStyle, width: '100%', textAlign: 'left', cursor: 'pointer', display: 'block' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                <span style={{ fontSize: 15, fontWeight: 700, color: C.text, fontFamily: 'Inter, system-ui, sans-serif' }}>Event Board</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: C.goldDark, fontFamily: 'Inter, system-ui, sans-serif' }}>View board →</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: canSeeKnown ? 8 : 0 }}>
+                {rowIcon}
+                <span style={{ fontSize: 13.5, color: C.text, fontFamily: 'Inter, system-ui, sans-serif' }}>
                   {boardSharedCount > 0
-                    ? `${boardSharedCount} ${boardSharedCount === 1 ? 'attendee' : 'attendees'} shared what they're looking for`
-                    : 'See what attendees are looking for and offering'}
-                </p>
-              </button>
-            </>
+                    ? `${boardSharedCount} ${boardSharedCount === 1 ? 'attendee' : 'attendees'} shared a post`
+                    : 'No posts yet — be the first to share'}
+                </span>
+              </div>
+              {canSeeKnown && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  {rowIcon}
+                  <span style={{ fontSize: 13.5, color: C.text, fontFamily: 'Inter, system-ui, sans-serif' }}>
+                    {known.length} relevant {known.length === 1 ? 'person' : 'people'} found
+                  </span>
+                </div>
+              )}
+            </button>
           )
         })()}
 
-        {/* ── Discussion → nav row ──────────────────────────────── */}
+        {/* ── Discussion — bordered card row ────────────────────── */}
         {!isCancelled && (
-          <>
-            <div style={dividerStyle} />
-            <button type="button" onClick={() => setViewMode('discussion')}
-              style={{ width: '100%', textAlign: 'left', cursor: 'pointer', background: 'none', border: 'none', padding: '2px 0', display: 'flex', alignItems: 'center', gap: 10 }}>
-              <svg width="16" height="16" fill="none" stroke={C.goldDark} strokeWidth={1.9} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21 12c0 4.418-4.03 8-9 8a9.96 9.96 0 01-4.418-1.026L3 20l1.026-4.418A8.964 8.964 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-              <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: C.text, fontFamily: 'Inter, system-ui, sans-serif' }}>Discussion</span>
-              <svg width="18" height="18" fill="none" stroke={C.textMuted} strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 6l6 6-6 6"/></svg>
-            </button>
-            <div style={dividerStyle} />
-          </>
+          <button type="button" onClick={() => setViewMode('discussion')}
+            style={{ ...cardStyle, width: '100%', textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, padding: '16px 18px' }}>
+            <svg width="16" height="16" fill="none" stroke={C.goldDark} strokeWidth={1.9} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21 12c0 4.418-4.03 8-9 8a9.96 9.96 0 01-4.418-1.026L3 20l1.026-4.418A8.964 8.964 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+            <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: C.text, fontFamily: 'Inter, system-ui, sans-serif' }}>Discussion</span>
+            <svg width="18" height="18" fill="none" stroke={C.textMuted} strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 6l6 6-6 6"/></svg>
+          </button>
         )}
 
         {/* Leave event — small secondary (joined non-host). */}
