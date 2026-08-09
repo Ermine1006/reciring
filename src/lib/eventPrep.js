@@ -7,10 +7,9 @@ import { supabase, isSupabaseConfigured } from './supabase'
 
 // The canonical goal options shown on the Prepare page.
 export const GOAL_OPTIONS = [
-  { id: 'meet_founders',     label: 'Meet founders' },
-  { id: 'find_collaborators', label: 'Find collaborators' },
-  { id: 'learn',             label: 'Learn' },
-  { id: 'offer_help',        label: 'Offer help' },
+  { id: 'find_collaborators', label: 'Meet collaborators' },
+  { id: 'learn',              label: 'Learn' },
+  { id: 'explore',            label: 'Explore' },
 ]
 
 export async function fetchEventGoals(eventId, userId) {

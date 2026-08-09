@@ -110,31 +110,6 @@ export default function EventRecapPage({
     )
   }, [encounters, profilesById, postsByUserId, profile])
 
-  // Missed connections: attendees the user hasn't met, ranked by
-  // connection value (highest first). Cap at 5 so the section
-  // doesn't dominate the recap.
-  const missed = useMemo(() => {
-    if (!allAttendees || allAttendees.length === 0) return []
-    const metIds = new Set(encounters.map(e => e.encountered_user_id))
-    if (user?.id) metIds.add(user.id)
-    const candidates = allAttendees
-      .filter(a => !metIds.has(a.user_id))
-      .map(a => ({
-        them: { id: a.user_id, name: a.name, avatar_url: a.avatar_url },
-        themProfile: profilesById[a.user_id] || {
-          id: a.user_id,
-          industry_interests: [],
-          can_help_with:      [],
-        },
-        themPosts: postsByUserId[a.user_id] || [],
-      }))
-    return rankByConnectionValue(candidates, profile)
-      .map(c => ({ ...c, rationale: whyThisConnectionMayMatter({
-        them: c.them, themProfile: c.themProfile, themPosts: c.themPosts, meProfile: profile,
-      }) }))
-      .filter(c => c.rationale) // only show if the matcher had SOMETHING to say
-      .slice(0, 5)
-  }, [allAttendees, encounters, profilesById, postsByUserId, profile, user?.id])
 
   const stats = useMemo(() => ({
     total:       entries.length,
@@ -250,23 +225,6 @@ export default function EventRecapPage({
           </button>
         )}
 
-        {missed.length > 0 && (
-          <div className="mt-4">
-            <p style={{
-              fontSize: 10, letterSpacing: '0.22em', textTransform: 'uppercase',
-              fontWeight: 700, color: C.gold, margin: '0 0 4px',
-              fontFamily: 'Inter, system-ui, sans-serif',
-            }}>
-              People you may have missed
-            </p>
-            <p style={{ fontSize: 12, color: C.textMuted, marginBottom: 10, fontFamily: 'Inter, system-ui, sans-serif', lineHeight: 1.5 }}>
-              Ranked by relevance to your profile. Not tracked physically — these are simply attendees who overlap with what you're working on.
-            </p>
-            {missed.map(m => (
-              <MissedCard key={m.them.id} entry={m} />
-            ))}
-          </div>
-        )}
       </motion.div>
 
       <EventMemoryModal
@@ -544,46 +502,6 @@ function MenuItem({ children, onClick, danger }) {
       style={{ display: 'block', width: '100%', textAlign: 'left', padding: '11px 14px', background: '#fff', border: 'none', borderBottom: '1px solid #F3EFE8', fontSize: 13, fontWeight: 500, color: danger ? '#B4453A' : '#1A1712', cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
       {children}
     </button>
-  )
-}
-
-// ────────────────────────────────────────────────────────────────
-// MissedCard
-// ────────────────────────────────────────────────────────────────
-
-function MissedCard({ entry }) {
-  const { them, themProfile, themPosts, rationale } = entry
-  const seed = resolveAvatarSeed(them.avatar_url) || them.id
-  const top  = themPosts[0]
-  return (
-    <div
-      className="rounded-2xl p-4 mb-2"
-      style={{ background: C.white, border: `1px solid ${C.border}` }}
-    >
-      <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-        <AnonymousAvatar seed={seed} size={40} />
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ fontSize: 14, fontWeight: 600, color: C.text, margin: 0, fontFamily: 'Inter, system-ui, sans-serif' }}>
-            {them.name || 'Member'}
-          </p>
-          {themProfile.program && (
-            <p style={{ fontSize: 11, color: C.textMuted, margin: '2px 0 0', fontFamily: 'Inter, system-ui, sans-serif' }}>
-              {themProfile.program}
-            </p>
-          )}
-        </div>
-      </div>
-      {rationale && (
-        <p style={{ fontSize: 12, color: C.text, margin: '8px 0 0', lineHeight: 1.5, fontFamily: 'Inter, system-ui, sans-serif' }}>
-          {rationale}
-        </p>
-      )}
-      {top?.need_text && (
-        <p style={{ fontSize: 11.5, color: C.textSub, margin: '4px 0 0', lineHeight: 1.5, fontFamily: 'Inter, system-ui, sans-serif' }}>
-          <em>Currently looking for:</em> {top.need_text.slice(0, 100)}{top.need_text.length > 100 ? '…' : ''}
-        </p>
-      )}
-    </div>
   )
 }
 
