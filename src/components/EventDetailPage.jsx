@@ -465,16 +465,16 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
             are NOT tabs — they're reached from the contextual action below.
             The tab bar hides while those lifecycle screens are open. */}
         {(joined || isHost) && !isCancelled && (viewMode === 'overview' || viewMode === 'marketplace') && (
-          <div style={{ display: 'flex', gap: 4, marginBottom: 14, background: '#F2EEE5', padding: 3, borderRadius: 12 }}>
+          <div style={{ display: 'flex', gap: 4, marginBottom: 16, background: '#F2EEE5', padding: 4, borderRadius: 12 }}>
             {[{ id: 'overview', label: 'Event' }, { id: 'marketplace', label: 'Board' }].map(t => {
               const active = viewMode === t.id
               return (
                 <button key={t.id} type="button" onClick={() => setViewMode(t.id)}
                   style={{
-                    flex: 1, padding: '8px 6px', borderRadius: 9,
+                    flex: 1, padding: '10px 6px', borderRadius: 9,
                     background: active ? `linear-gradient(135deg, ${C.gold}, ${C.goldDark})` : 'transparent',
                     color: active ? '#fff' : C.textSub, border: 'none',
-                    fontSize: 12, fontWeight: 600, letterSpacing: '0.02em',
+                    fontSize: 13, fontWeight: 600, letterSpacing: '0.01em',
                     fontFamily: 'Inter, system-ui, sans-serif', cursor: 'pointer',
                     boxShadow: active ? '0 1px 4px rgba(201,163,59,0.35)' : 'none', transition: 'all 0.18s',
                   }}>
@@ -542,7 +542,7 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
         {viewMode !== 'recap' && viewMode !== 'marketplace' && viewMode !== 'manage' && viewMode !== 'discussion' && (
           <>
         {/* Cover — host's uploaded image, or a tasteful branded fallback */}
-        <EventCover event={event} radius={13} aspectRatio="16 / 9" style={{ marginBottom: 16 }} />
+        <EventCover event={event} radius={26} aspectRatio="3 / 2" style={{ marginBottom: 18 }} />
 
         {/* Title + category + share */}
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
@@ -555,9 +555,9 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
               {event.category}
             </p>
             <h1 style={{
-              fontSize: 23, fontWeight: 600, color: C.text,
+              fontSize: 25, fontWeight: 600, color: C.text,
               fontFamily: 'Fraunces, Georgia, serif',
-              margin: 0, lineHeight: 1.22, letterSpacing: '-0.01em',
+              margin: 0, lineHeight: 1.2, letterSpacing: '-0.01em',
             }}>
               {event.title}
             </h1>
@@ -613,8 +613,8 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
 
         {/* ── Primary lifecycle CTA — exactly one, slim ─────────── */}
         {!isCancelled && (() => {
-          const goldBtn = { width: '100%', height: 50, borderRadius: 12, fontSize: 14.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif', background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`, color: '#fff', border: 'none', boxShadow: '0 4px 14px rgba(201,163,59,0.28)' }
-          const outlineBtn = { flex: 1, height: 48, borderRadius: 12, fontSize: 13.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif', background: '#fff', color: C.goldDark, border: `1px solid ${C.goldLight}` }
+          const goldBtn = { width: '100%', padding: '16px 0', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif', background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`, color: '#fff', border: 'none', boxShadow: '0 6px 18px rgba(201,163,59,0.3)' }
+          const outlineBtn = { flex: 1, padding: '15px 0', borderRadius: 14, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif', background: '#fff', color: C.goldDark, border: `1px solid ${C.goldLight}` }
           const goldFlex = { ...outlineBtn, background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`, color: '#fff', border: 'none' }
           if (!joined && !isHost) {
             if (isCompleted) return null
@@ -661,7 +661,7 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
           <div style={{ flex: 1, minWidth: 0 }}>
             <p style={{
               fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase',
-              color: C.textMuted, fontFamily: 'Inter, system-ui, sans-serif', margin: '0 0 2px',
+              color: '#8A94A6', fontFamily: 'Inter, system-ui, sans-serif', margin: '0 0 2px',
             }}>
               Hosted by
             </p>
