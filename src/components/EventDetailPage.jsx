@@ -472,11 +472,11 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
                 <button key={t.id} type="button" onClick={() => setViewMode(t.id)}
                   style={{
                     flex: 1, padding: '10px 6px', borderRadius: 9,
-                    background: active ? `linear-gradient(135deg, ${C.gold}, ${C.goldDark})` : 'transparent',
-                    color: active ? '#fff' : C.textSub, border: 'none',
-                    fontSize: 13, fontWeight: 600, letterSpacing: '0.01em',
+                    background: active ? '#FFFFFF' : 'transparent',
+                    color: active ? C.text : C.textSub, border: 'none',
+                    fontSize: 13, fontWeight: active ? 700 : 600, letterSpacing: '0.01em',
                     fontFamily: 'Inter, system-ui, sans-serif', cursor: 'pointer',
-                    boxShadow: active ? '0 1px 4px rgba(201,163,59,0.35)' : 'none', transition: 'all 0.18s',
+                    boxShadow: active ? '0 1px 3px rgba(0,0,0,0.10)' : 'none', transition: 'all 0.18s',
                   }}>
                   {t.label}
                 </button>
@@ -628,7 +628,7 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
 
         {/* ── Primary lifecycle CTA — exactly one, prominent ────── */}
         {!isCancelled && (() => {
-          const goldBtn = { width: '100%', padding: '16px 0', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif', background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`, color: '#fff', border: 'none', boxShadow: '0 6px 18px rgba(201,163,59,0.3)' }
+          const goldBtn = { width: '100%', padding: '16px 0', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif', background: '#C39A2B', color: '#fff', border: 'none', boxShadow: '0 2px 8px rgba(195,154,43,0.22)' }
           const outlineBtn = { flex: 1, padding: '15px 0', borderRadius: 14, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif', background: '#fff', color: C.goldDark, border: `1px solid ${C.goldLight}` }
           const goldFlex = { ...outlineBtn, background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`, color: '#fff', border: 'none' }
           if (!joined && !isHost) {
@@ -941,7 +941,7 @@ function MetaRow({ icon, label, danger }) {
       padding: '6px 0',
     }}>
       <span style={{
-        color: danger ? C.danger : C.gold,
+        color: danger ? C.danger : '#6E675B',
         flexShrink: 0, display: 'flex',
       }}>{icon}</span>
       <p style={{
