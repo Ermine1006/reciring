@@ -10,6 +10,7 @@ import {
   fetchMarketplaceInterestStats,
 } from '../lib/marketplace'
 import { notifyNewMatch } from '../lib/email'
+import EventMatchList from './EventMatchList'
 
 const C = {
   gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7', goldBg: '#F8F3E5',
@@ -214,6 +215,9 @@ export default function EventMarketplace({ eventId, userId, isHost = false, allo
           </button>
         </div>
       )}
+
+      {/* Suggested people — relevant attendees with a factual reason (no %). */}
+      {userId && <EventMatchList eventId={eventId} userId={userId} title="Suggested people" />}
 
       {/* Attendee posts — one combined card per person */}
       <p style={{ ...sectionLabel, marginTop: 22 }}>Attendee posts</p>

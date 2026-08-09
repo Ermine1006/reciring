@@ -13,7 +13,7 @@ const C = {
  * has joined; if they joined without stating intentions, it nudges them to add
  * some rather than showing an empty list.
  */
-export default function EventMatchList({ eventId, userId }) {
+export default function EventMatchList({ eventId, userId, title = 'People to meet here' }) {
   const [matches, setMatches] = useState([])
   const [loading, setLoading] = useState(true)
   const [needsIntentions, setNeedsIntentions] = useState(false)
@@ -36,7 +36,7 @@ export default function EventMatchList({ eventId, userId }) {
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
       <span style={{ fontSize: 18 }}>✨</span>
       <h3 style={{ fontSize: 16, fontWeight: 700, color: C.ink, margin: 0, fontFamily: 'Fraunces, Georgia, serif' }}>
-        People to meet here
+        {title}
       </h3>
     </div>
   )

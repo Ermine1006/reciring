@@ -19,7 +19,6 @@ import { categoryEmoji } from '../data/eventCategories'
 import AnonymousAvatar from './AnonymousAvatar'
 import EventSharePoster from './EventSharePoster'
 import EventJoinIntentModal from './EventJoinIntentModal'
-import EventMatchList from './EventMatchList'
 import { resolveAvatarSeed } from './SettingsPage'
 import { sendEventRegistrationEmail, sendEventUnregisterEmail, notifyEventCancellation } from '../lib/email'
 import EventModeSection from './EventModeSection'
@@ -30,6 +29,7 @@ import EventRecapPage from './EventRecapPage'
 import PendingConfirmationsBanner from './PendingConfirmationsBanner'
 import { listEncountersForEvent } from '../lib/eventEncounters'
 import { fetchConnections } from '../lib/relationships'
+import { fetchMarketplaceFeed, fetchMyMarketplacePosts } from '../lib/marketplace'
 
 const C = {
   gold:      '#C9A33B',
@@ -105,6 +105,9 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
   // People I already know (connections), for "who you know is attending" and
   // ordering the Who-did-you-meet picker. peerId → context label.
   const [knownContext, setKnownContext] = useState(new Map())
+  // Compact Event Board preview + lifecycle CTA state.
+  const [boardSharedCount, setBoardSharedCount] = useState(0)  // # attendees who posted
+  const [hasPrepared, setHasPrepared] = useState(false)         // viewer has an event post
 
   // The view this page opened on (captured once). If you deep-linked straight
   // into Recap from My Networking, "entryView" is 'recap'.
@@ -168,9 +171,21 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
       // surface "people you know are attending" and to order the picker.
       const { data: conns } = await fetchConnections(user.id)
       setKnownContext(new Map((conns || []).map(c => [c.peerId, c.context])))
+      // Event Board summary for the compact preview: how many attendees shared
+      // a post, and whether the viewer has already prepared one.
+      const [{ data: feed }, { data: mine }] = await Promise.all([
+        fetchMarketplaceFeed(eventId, user.id),
+        fetchMyMarketplacePosts(eventId, user.id),
+      ])
+      const sharers = new Set((feed || []).map(p => p.user_id))
+      if (mine && mine.length) sharers.add(user.id)
+      setBoardSharedCount(sharers.size)
+      setHasPrepared(Boolean(mine && mine.length))
     } else {
       setMyEncounters([])
       setKnownContext(new Map())
+      setBoardSharedCount(0)
+      setHasPrepared(false)
     }
 
     setLoading(false)
@@ -470,40 +485,7 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
           </div>
         )}
 
-        {/* Contextual lifecycle action(s). Before the event: Prepare. Once it
-            has started, both "Who did you meet?" and "Complete recap" are
-            available together — the more time-relevant one is primary. */}
-        {(joined || isHost) && !isCancelled && viewMode === 'overview' && (() => {
-          const gold = { background: '#C9A33B', color: '#2E2405', border: 'none' }
-          const outline = { background: '#fff', color: '#A6822A', border: '1px solid #E8D9A7' }
-          const base = { flex: 1, padding: '13px', borderRadius: 12, fontSize: 13.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }
-          const start = event.start_at ? new Date(event.start_at) : null
-          const now = Date.now()
-          const phase = !start ? 'before'
-            : now < start.getTime() ? 'before'
-            : now < new Date(start.getFullYear(), start.getMonth(), start.getDate() + 1).getTime() ? 'during'
-            : 'after'
-
-          if (phase === 'before') {
-            if (!onPrepare) return null
-            return (
-              <button type="button" onClick={() => onPrepare(event.id)} style={{ width: '100%', margin: '0 0 14px', ...base, ...gold }}>
-                Prepare for event
-              </button>
-            )
-          }
-          const meetPrimary = phase === 'during'
-          return (
-            <div style={{ display: 'flex', gap: 8, margin: '0 0 14px' }}>
-              <button type="button" onClick={() => setViewMode('event_mode')} style={{ ...base, ...(meetPrimary ? gold : outline) }}>
-                Who did you meet?
-              </button>
-              <button type="button" onClick={() => setViewMode('recap')} style={{ ...base, ...(meetPrimary ? outline : gold) }}>
-                Complete recap
-              </button>
-            </div>
-          )
-        })()}
+        {/* Lifecycle CTA moved below the description (reference order). */}
 
         {/* Recap mode replaces the entire overview body. */}
         {viewMode === 'recap' && (
@@ -557,7 +539,7 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
 
         {/* Header card + rest of the normal overview render only
             when we're not in a dedicated full-screen mode. */}
-        {viewMode !== 'recap' && viewMode !== 'marketplace' && viewMode !== 'manage' && (
+        {viewMode !== 'recap' && viewMode !== 'marketplace' && viewMode !== 'manage' && viewMode !== 'discussion' && (
           <>
         {/* Cover — host's uploaded image, or a tasteful branded fallback */}
         <EventCover event={event} radius={16} aspectRatio="16 / 9" style={{ marginBottom: 14, border: `1px solid ${C.border}` }} />
@@ -692,245 +674,92 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
           </section>
         )}
 
-        {/* Who to meet — only once the viewer has joined (they need to be an
-            attendee with stated intentions for the matcher to run). */}
-        {joined && user && !isCancelled && (
-          <section style={cardStyle}>
-            <EventMatchList eventId={event.id} userId={user.id} />
-          </section>
-        )}
-
-        {/* "People you know are attending" — connections (matched / revealed /
-            chatted) who are on the guest list. Count only, never named, so no
-            identity leaks. Hidden entirely when zero, and suppressed on private
-            guest lists for non-hosts (attendance isn't visible to them). */}
-        {(() => {
-          const canSeeAttendance = event.attendee_visibility !== 'private' || isHost
-          if (!canSeeAttendance) return null
-          const known = attendees.filter(a => a.user_id !== user?.id && knownContext.has(a.user_id))
-          if (known.length === 0) return null
+        {/* ── Primary lifecycle CTA — exactly one ─────────────── */}
+        {!isCancelled && (() => {
+          const goldBtn = { width: '100%', padding: 14, borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif', background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`, color: '#fff', border: 'none', boxShadow: '0 6px 18px rgba(201,163,59,0.3)' }
+          const outlineBtn = { flex: 1, padding: 13, borderRadius: 12, fontSize: 13.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif', background: '#fff', color: C.goldDark, border: `1px solid ${C.goldLight}` }
+          const goldFlex = { ...outlineBtn, background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`, color: '#fff', border: 'none' }
+          if (!joined && !isHost) {
+            if (isCompleted) return null
+            return (
+              <button type="button" onClick={() => setShowJoinIntent(true)} disabled={joinPending || isFull}
+                style={{ ...goldBtn, marginBottom: 14, ...(isFull ? { background: '#F3F4F6', color: C.textMuted, boxShadow: 'none' } : {}), opacity: joinPending ? 0.7 : 1 }}>
+                {isFull ? 'Event full' : joinPending ? 'Joining…' : (cameFromPromo ? 'Join event to connect' : 'Join event')}
+              </button>
+            )
+          }
+          const start = event.start_at ? new Date(event.start_at) : null
+          const now = Date.now()
+          const phase = !start ? 'before' : now < start.getTime() ? 'before'
+            : now < new Date(start.getFullYear(), start.getMonth(), start.getDate() + 1).getTime() ? 'during' : 'after'
+          if (phase === 'before') {
+            if (!onPrepare) return null
+            return (
+              <button type="button" onClick={() => onPrepare(event.id)} style={{ ...goldBtn, marginBottom: 14 }}>
+                {hasPrepared ? 'Update your event post' : 'Prepare for event'}
+              </button>
+            )
+          }
+          const meetPrimary = phase === 'during'
           return (
-            <button type="button" onClick={() => setViewMode('event_mode')}
-              style={{ ...cardStyle, display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', cursor: 'pointer', background: '#F8F3E5', border: '1px solid #E8D9A7' }}>
-              <div style={{ display: 'flex', flexShrink: 0 }}>
-                {known.slice(0, 3).map((a, i) => (
-                  <span key={a.user_id} style={{ marginLeft: i ? -10 : 0, border: '2px solid #F8F3E5', borderRadius: '50%', display: 'flex' }}>
-                    <AnonymousAvatar seed={resolveAvatarSeed(a.avatar_url) || a.user_id} size={30} />
-                  </span>
-                ))}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+              <button type="button" onClick={() => setViewMode('event_mode')} style={meetPrimary ? goldFlex : outlineBtn}>Who did you meet?</button>
+              <button type="button" onClick={() => setViewMode('recap')} style={meetPrimary ? outlineBtn : goldFlex}>Complete recap</button>
+            </div>
+          )
+        })()}
+
+        {/* ── Compact Event Board preview ─────────────────────── */}
+        {(joined || isHost) && !isCancelled && (() => {
+          const known = attendees.filter(a => a.user_id !== user?.id && knownContext.has(a.user_id))
+          const canSeeKnown = (event.attendee_visibility !== 'private' || isHost) && known.length > 0
+          return (
+            <button type="button" onClick={() => setViewMode('marketplace')}
+              style={{ ...cardStyle, width: '100%', textAlign: 'left', cursor: 'pointer', display: 'block' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                <p style={{ ...sectionLabelStyle, margin: 0 }}>Event Board</p>
+                <span style={{ fontSize: 12.5, fontWeight: 700, color: C.goldDark, fontFamily: 'Inter, system-ui, sans-serif' }}>View board →</span>
               </div>
-              <span style={{ flex: 1, fontSize: 13.5, fontWeight: 600, color: '#7A5E17', fontFamily: 'Inter, system-ui, sans-serif' }}>
-                {known.length} {known.length === 1 ? 'person' : 'people'} you know {known.length === 1 ? 'is' : 'are'} attending
-              </span>
-              <span style={{ fontSize: 12.5, fontWeight: 700, color: '#A6822A', fontFamily: 'Inter, system-ui, sans-serif', whiteSpace: 'nowrap' }}>See who</span>
+              <p style={{ margin: 0, fontSize: 13.5, color: C.text, fontFamily: 'Inter, system-ui, sans-serif' }}>
+                {boardSharedCount > 0
+                  ? `${boardSharedCount} ${boardSharedCount === 1 ? 'attendee' : 'attendees'} shared a post`
+                  : 'See what attendees are looking for and offering'}
+              </p>
+              {canSeeKnown && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+                  <div style={{ display: 'flex', flexShrink: 0 }}>
+                    {known.slice(0, 3).map((a, i) => (
+                      <span key={a.user_id} style={{ marginLeft: i ? -8 : 0, border: '2px solid #fff', borderRadius: '50%', display: 'flex' }}>
+                        <AnonymousAvatar seed={resolveAvatarSeed(a.avatar_url) || a.user_id} size={22} />
+                      </span>
+                    ))}
+                  </div>
+                  <span style={{ fontSize: 12.5, color: C.goldDark, fontWeight: 600, fontFamily: 'Inter, system-ui, sans-serif' }}>
+                    {known.length} {known.length === 1 ? 'person' : 'people'} you know {known.length === 1 ? 'is' : 'are'} attending
+                  </span>
+                </div>
+              )}
             </button>
           )
         })()}
 
-        {/* Participants — three cases:
-              1. Host view → "Manage participants" with contact details
-              2. Non-host + private list → count only, names withheld
-              3. Non-host + public list → avatars + first names           */}
-        {(() => {
-          const isPrivate = event.attendee_visibility === 'private'
-          const attendeeCount = event.attendee_count || 0
-          const spotsLine = isFull
-            ? 'Full'
-            : `${spotsLeft} spot${spotsLeft === 1 ? '' : 's'} left`
+        {/* ── Discussion row → full discussion view ───────────── */}
+        {!isCancelled && (
+          <button type="button" onClick={() => setViewMode('discussion')}
+            style={{ ...cardStyle, width: '100%', textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <svg width="16" height="16" fill="none" stroke={C.goldDark} strokeWidth={1.9} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21 12c0 4.418-4.03 8-9 8a9.96 9.96 0 01-4.418-1.026L3 20l1.026-4.418A8.964 8.964 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+            <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: C.text, fontFamily: 'Inter, system-ui, sans-serif' }}>Discussion</span>
+            <svg width="18" height="18" fill="none" stroke={C.textMuted} strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 6l6 6-6 6"/></svg>
+          </button>
+        )}
 
-          // ── Host view: full contact list ──────────────────────
-          if (isHost) {
-            return (
-              <section style={cardStyle}>
-                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <p style={{ ...sectionLabelStyle, margin: 0 }}>
-                    Manage participants ({attendeeCount}/{event.max_attendees})
-                  </p>
-                  {!isCancelled && (
-                    <p style={{
-                      fontSize: 11, fontWeight: 600,
-                      color: isFull ? C.danger : C.textMuted,
-                      fontFamily: 'Inter, system-ui, sans-serif', margin: 0,
-                    }}>
-                      {spotsLine}
-                    </p>
-                  )}
-                </div>
-
-                {attendees.length === 0 ? (
-                  <p style={{
-                    fontSize: 13, color: C.textMuted, lineHeight: 1.55,
-                    fontFamily: 'Inter, system-ui, sans-serif', margin: '12px 0 0',
-                  }}>
-                    No one's joined yet.
-                  </p>
-                ) : (
-                  <>
-                    {/* Copy emails action */}
-                    {attendees.some(a => a.email) && (
-                      <button
-                        type="button"
-                        onClick={handleCopyEmails}
-                        style={{
-                          margin: '10px 0 14px',
-                          padding: '8px 14px',
-                          background: C.goldBg,
-                          border: `1.5px solid ${C.goldLight}`,
-                          borderRadius: 999,
-                          color: C.goldDark,
-                          fontSize: 12, fontWeight: 600,
-                          fontFamily: 'Inter, system-ui, sans-serif',
-                          cursor: 'pointer',
-                          display: 'inline-flex', alignItems: 'center', gap: 6,
-                        }}
-                      >
-                        {copiedEmails ? '✓ Copied' : `📋 Copy ${attendees.filter(a => a.email).length} emails`}
-                      </button>
-                    )}
-
-                    <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
-                      {attendees.map(a => {
-                        const seed = resolveAvatarSeed(a.avatar_url) || a.user_id
-                        return (
-                          <li key={a.user_id} style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                            <AnonymousAvatar seed={seed} size={36} />
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <p style={{
-                                fontSize: 14, color: C.text, fontWeight: 600,
-                                fontFamily: 'Inter, system-ui, sans-serif',
-                                margin: 0, lineHeight: 1.3,
-                              }}>
-                                {a.name}
-                                {a.program && (
-                                  <span style={{ color: C.textMuted, fontWeight: 400, marginLeft: 6 }}>
-                                    · {a.program}
-                                  </span>
-                                )}
-                                {a.user_id === user?.id && (
-                                  <span style={{ color: C.textMuted, fontWeight: 400, marginLeft: 6 }}>· You</span>
-                                )}
-                              </p>
-                              {a.email && (
-                                <a
-                                  href={`mailto:${a.email}`}
-                                  style={{
-                                    display: 'inline-block',
-                                    fontSize: 12, color: C.goldDark,
-                                    fontFamily: 'Inter, system-ui, sans-serif',
-                                    textDecoration: 'none',
-                                    marginTop: 2,
-                                    wordBreak: 'break-all',
-                                  }}
-                                >
-                                  {a.email}
-                                </a>
-                              )}
-                              <p style={{
-                                fontSize: 11, color: C.textMuted,
-                                fontFamily: 'Inter, system-ui, sans-serif',
-                                margin: '2px 0 0',
-                              }}>
-                                Joined {formatJoinedTime(a.joined_at)}
-                              </p>
-                            </div>
-                          </li>
-                        )
-                      })}
-                    </ul>
-
-                    <p style={{
-                      marginTop: 14,
-                      fontSize: 11, color: C.textMuted, lineHeight: 1.5,
-                      fontFamily: 'Inter, system-ui, sans-serif',
-                    }}>
-                      Emails are visible only to the host for event coordination.
-                    </p>
-                  </>
-                )}
-              </section>
-            )
-          }
-
-          // ── Non-host + private: count only ────────────────────
-          if (isPrivate) {
-            return (
-              <section style={cardStyle}>
-                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <p style={{ ...sectionLabelStyle, margin: 0 }}>Participants</p>
-                  {!isCancelled && (
-                    <p style={{
-                      fontSize: 11, fontWeight: 600,
-                      color: isFull ? C.danger : C.textMuted,
-                      fontFamily: 'Inter, system-ui, sans-serif', margin: 0,
-                    }}>
-                      {spotsLine}
-                    </p>
-                  )}
-                </div>
-                <p style={{
-                  fontSize: 15, color: C.text, fontWeight: 500,
-                  fontFamily: 'Inter, system-ui, sans-serif', margin: '0 0 6px',
-                }}>
-                  🔒 {attendeeCount} {attendeeCount === 1 ? 'person' : 'people'} attending
-                </p>
-                <p style={{
-                  fontSize: 12, color: C.textMuted, lineHeight: 1.55,
-                  fontFamily: 'Inter, system-ui, sans-serif', margin: 0,
-                }}>
-                  The host has set this event's attendee list to private.
-                </p>
-              </section>
-            )
-          }
-
-          // ── Non-host + public: avatars + first names ──────────
-          return (
-            <section style={cardStyle}>
-              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12 }}>
-                <p style={{ ...sectionLabelStyle, margin: 0 }}>
-                  Participants ({attendeeCount}/{event.max_attendees})
-                </p>
-                {!isCancelled && (
-                  <p style={{
-                    fontSize: 11, fontWeight: 600,
-                    color: isFull ? C.danger : C.textMuted,
-                    fontFamily: 'Inter, system-ui, sans-serif', margin: 0,
-                  }}>
-                    {spotsLine}
-                  </p>
-                )}
-              </div>
-              {attendees.length === 0 ? (
-                <p style={{
-                  fontSize: 13, color: C.textMuted, lineHeight: 1.55,
-                  fontFamily: 'Inter, system-ui, sans-serif', margin: 0,
-                }}>
-                  No one's joined yet — be the first.
-                </p>
-              ) : (
-                <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {attendees.map(a => {
-                    const seed = resolveAvatarSeed(a.avatar_url) || a.user_id
-                    return (
-                      <li key={a.user_id} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <AnonymousAvatar seed={seed} size={32} />
-                        <p style={{
-                          fontSize: 14, color: C.text, fontWeight: 500,
-                          fontFamily: 'Inter, system-ui, sans-serif', margin: 0,
-                        }}>
-                          {a.name}
-                          {a.user_id === user?.id && (
-                            <span style={{ color: C.textMuted, fontWeight: 400, marginLeft: 6 }}>· You</span>
-                          )}
-                        </p>
-                      </li>
-                    )
-                  })}
-                </ul>
-              )}
-            </section>
-          )
-        })()}
+        {/* Leave event — small secondary (joined non-host). */}
+        {joined && !isHost && !isCancelled && (
+          <button type="button" onClick={handleLeave} disabled={joinPending}
+            style={{ display: 'block', margin: '2px auto 4px', background: 'none', border: 'none', color: C.textMuted, fontSize: 12.5, fontWeight: 600, cursor: joinPending ? 'default' : 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
+            Leave event
+          </button>
+        )}
 
         {/* Toast */}
         {toast && (
@@ -951,92 +780,10 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
           </motion.div>
         )}
 
-        {/* Primary action — hidden for cancelled or completed events */}
-        {!isCancelled && !isCompleted && (
-          <div style={{ marginBottom: 16 }}>
-            {isHost ? (
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button
-                  type="button"
-                  onClick={() => onEdit?.(event.id)}
-                  style={{
-                    flex: 1, padding: '14px 0',
-                    borderRadius: 12,
-                    background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
-                    color: '#fff',
-                    border: 'none',
-                    fontSize: 14, fontWeight: 700,
-                    letterSpacing: '0.08em', textTransform: 'uppercase',
-                    fontFamily: 'Inter, system-ui, sans-serif',
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 14px rgba(201,163,59,0.32)',
-                  }}
-                >
-                  Edit event
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCancel}
-                  style={{
-                    flex: 1, padding: '14px 0',
-                    borderRadius: 12,
-                    background: C.white, color: C.danger,
-                    border: `1.5px solid ${C.danger}`,
-                    fontSize: 14, fontWeight: 700,
-                    letterSpacing: '0.08em', textTransform: 'uppercase',
-                    fontFamily: 'Inter, system-ui, sans-serif',
-                    cursor: 'pointer',
-                  }}
-                >
-                  Cancel event
-                </button>
-              </div>
-            ) : joined ? (
-              <button
-                type="button"
-                onClick={handleLeave}
-                disabled={joinPending}
-                style={{
-                  width: '100%', padding: '14px 0',
-                  borderRadius: 12,
-                  background: C.success, color: '#fff',
-                  border: 'none',
-                  fontSize: 14, fontWeight: 700,
-                  letterSpacing: '0.08em', textTransform: 'uppercase',
-                  fontFamily: 'Inter, system-ui, sans-serif',
-                  cursor: joinPending ? 'default' : 'pointer',
-                  opacity: joinPending ? 0.7 : 1,
-                  boxShadow: '0 4px 12px rgba(22,163,74,0.28)',
-                }}
-              >
-                ✓ Joined — tap to leave
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setShowJoinIntent(true)}
-                disabled={joinPending || isFull}
-                style={{
-                  width: '100%', padding: '14px 0',
-                  borderRadius: 12,
-                  background: isFull ? '#F3F4F6' : `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
-                  color: isFull ? C.textMuted : '#fff',
-                  border: 'none',
-                  fontSize: 14, fontWeight: 700,
-                  letterSpacing: '0.08em', textTransform: 'uppercase',
-                  fontFamily: 'Inter, system-ui, sans-serif',
-                  cursor: (joinPending || isFull) ? 'default' : 'pointer',
-                  opacity: joinPending ? 0.7 : 1,
-                  boxShadow: isFull ? 'none' : '0 8px 24px rgba(201,163,59,0.32)',
-                }}
-              >
-                {isFull ? 'Event full' : joinPending ? 'Joining…' : (cameFromPromo ? 'Join event to connect' : 'Join event')}
-              </button>
-            )}
-          </div>
+          </>
         )}
-
-        {/* Group thread. canChat = attendee, host, or the host opened it up. */}
+        {/* Discussion — full view, reached from the Discussion row */}
+        {viewMode === 'discussion' && (
         <section ref={chatSectionRef} style={{ ...cardStyle, padding: 0 }}>
           <div style={{ padding: '18px 18px 10px' }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
@@ -1184,8 +931,8 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
             </div>
           )}
         </section>
-          </>
         )}
+
       </motion.div>
 
       <EventSharePoster event={event} open={showShare} onClose={() => setShowShare(false)} />
