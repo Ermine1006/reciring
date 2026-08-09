@@ -75,13 +75,13 @@ export function broadcastMessageTemplate({
         <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="background:#FFFFFF; border-radius:24px; max-width:560px; overflow:hidden; box-shadow:0 12px 40px rgba(0,0,0,0.08);">
           <!-- Gold accent stripe -->
           <tr>
-            <td style="height:4px; background:linear-gradient(90deg,#E6D3A3 0%,#C8A96A 50%,#A88245 100%);"></td>
+            <td style="height:4px; background:linear-gradient(90deg,#E8D9A7 0%,#C9A33B 50%,#A6822A 100%);"></td>
           </tr>
 
           <!-- Body -->
           <tr>
             <td style="padding:36px 40px 28px 40px;">
-              ${safeEyebrow ? `<p style="font-size:11px; letter-spacing:0.22em; text-transform:uppercase; font-weight:700; color:#C8A96A; margin:0 0 14px;">${safeEyebrow}</p>` : ''}
+              ${safeEyebrow ? `<p style="font-size:11px; letter-spacing:0.22em; text-transform:uppercase; font-weight:700; color:#C9A33B; margin:0 0 14px;">${safeEyebrow}</p>` : ''}
               <h1 style="font-family:'Playfair Display',Georgia,serif; font-size:22px; font-weight:500; color:#111111; margin:0 0 18px; letter-spacing:-0.01em; line-height:1.3;">
                 ${escapeHtml(safeSubject)}
               </h1>
@@ -94,7 +94,7 @@ export function broadcastMessageTemplate({
           <!-- CTA -->
           <tr>
             <td style="padding:0 40px 36px; text-align:center;">
-              <a href="${safeUrl}" style="display:inline-block; padding:13px 32px; background:#A88245; background-image:linear-gradient(135deg,#C8A96A 0%,#A88245 100%); color:#FFFFFF; text-decoration:none; border-radius:12px; font-size:13px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase;">
+              <a href="${safeUrl}" style="display:inline-block; padding:13px 32px; background:#A6822A; background-image:linear-gradient(135deg,#C9A33B 0%,#A6822A 100%); color:#FFFFFF; text-decoration:none; border-radius:12px; font-size:13px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase;">
                 Open Mutu
               </a>
             </td>
@@ -107,7 +107,7 @@ export function broadcastMessageTemplate({
                 Sent to <span style="color:#6B7280;">${safeEmail}</span> · Mutu Team
               </p>
               ${safeUnsub ? `<p style="font-size:11px; color:#9CA3AF; line-height:1.6; margin:6px 0 0; text-align:center;">
-                <a href="${safeUnsub}" style="color:#A88245; text-decoration:underline;">Unsubscribe from non-essential mail</a>
+                <a href="${safeUnsub}" style="color:#A6822A; text-decoration:underline;">Unsubscribe from non-essential mail</a>
               </p>` : ''}
             </td>
           </tr>

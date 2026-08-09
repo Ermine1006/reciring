@@ -48,16 +48,16 @@ export function eventReviewTemplate({
 
           <!-- Gold accent stripe -->
           <tr>
-            <td style="height:4px; background:linear-gradient(90deg,#E6D3A3 0%,#C8A96A 50%,#A88245 100%);"></td>
+            <td style="height:4px; background:linear-gradient(90deg,#E8D9A7 0%,#C9A33B 50%,#A6822A 100%);"></td>
           </tr>
 
           <!-- ── HERO ─────────────────────────────────────── -->
           <tr>
             <td style="padding:36px 40px 24px 40px; text-align:center;">
-              <p style="font-family:'Playfair Display',Georgia,serif; font-size:18px; font-weight:500; color:#A88245; letter-spacing:0.18em; margin:0 0 22px;">
+              <p style="font-family:'Playfair Display',Georgia,serif; font-size:18px; font-weight:500; color:#A6822A; letter-spacing:0.18em; margin:0 0 22px;">
                 M U T U
               </p>
-              <p style="font-size:10px; font-weight:700; letter-spacing:0.28em; text-transform:uppercase; color:#C8A96A; margin:0 0 14px;">
+              <p style="font-size:10px; font-weight:700; letter-spacing:0.28em; text-transform:uppercase; color:#C9A33B; margin:0 0 14px;">
                 Event awaiting review
               </p>
               <h1 style="font-family:'Playfair Display',Georgia,serif; font-size:26px; font-weight:500; color:#111111; margin:0 0 10px; letter-spacing:-0.01em; line-height:1.25;">
@@ -72,10 +72,10 @@ export function eventReviewTemplate({
           <!-- ── EVENT CARD ───────────────────────────────── -->
           <tr>
             <td style="padding:0 40px 24px 40px;">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#FBF6EC; border:1px solid #E6D3A3; border-radius:16px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F8F3E5; border:1px solid #E8D9A7; border-radius:16px;">
                 <tr>
                   <td style="padding:22px 24px;">
-                    <p style="font-size:10px; font-weight:700; letter-spacing:0.18em; text-transform:uppercase; color:#A88245; margin:0 0 12px;">
+                    <p style="font-size:10px; font-weight:700; letter-spacing:0.18em; text-transform:uppercase; color:#A6822A; margin:0 0 12px;">
                       Submission
                     </p>
                     <h2 style="font-family:'Playfair Display',Georgia,serif; font-size:20px; font-weight:500; color:#111111; margin:0 0 14px; line-height:1.3;">
@@ -98,7 +98,7 @@ export function eventReviewTemplate({
                     </table>
 
                     ${safeDesc ? `
-                    <p style="font-size:14px; color:#4B5563; line-height:1.6; margin:16px 0 0; padding-top:16px; border-top:1px solid #E6D3A3;">
+                    <p style="font-size:14px; color:#4B5563; line-height:1.6; margin:16px 0 0; padding-top:16px; border-top:1px solid #E8D9A7;">
                       ${safeDesc.replace(/\n/g, '<br>')}
                     </p>` : ''}
                   </td>
@@ -110,7 +110,7 @@ export function eventReviewTemplate({
           <!-- ── CTA ─────────────────────────────────────── -->
           <tr>
             <td style="padding:0 40px 32px 40px; text-align:center;">
-              <a href="${safeUrl}" style="display:inline-block; background:linear-gradient(135deg,#C8A96A 0%,#A88245 100%); color:#FFFFFF; text-decoration:none; font-weight:600; font-size:15px; padding:14px 32px; border-radius:12px; box-shadow:0 6px 20px rgba(200,169,106,0.35);">
+              <a href="${safeUrl}" style="display:inline-block; background:linear-gradient(135deg,#C9A33B 0%,#A6822A 100%); color:#FFFFFF; text-decoration:none; font-weight:600; font-size:15px; padding:14px 32px; border-radius:12px; box-shadow:0 6px 20px rgba(201,163,59,0.35);">
                 Open review queue →
               </a>
               <p style="font-size:12px; color:#9CA3AF; margin:14px 0 0; line-height:1.5;">
@@ -123,7 +123,7 @@ export function eventReviewTemplate({
           <tr>
             <td style="padding:20px 40px 32px 40px; text-align:center; border-top:1px solid #F0ECE4;">
               <p style="font-size:11px; color:#9CA3AF; margin:0; line-height:1.6;">
-                Internal admin notification · <a href="${safeApp}" style="color:#A88245; text-decoration:none;">muturing.com</a>
+                Internal admin notification · <a href="${safeApp}" style="color:#A6822A; text-decoration:none;">muturing.com</a>
               </p>
             </td>
           </tr>

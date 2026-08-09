@@ -39,18 +39,18 @@ export function eventsLaunchTemplate({ userEmail, appUrl, unsubscribeUrl }) {
 
           <!-- Gold accent stripe -->
           <tr>
-            <td style="height:4px; background:linear-gradient(90deg,#E6D3A3 0%,#C8A96A 50%,#A88245 100%);"></td>
+            <td style="height:4px; background:linear-gradient(90deg,#E8D9A7 0%,#C9A33B 50%,#A6822A 100%);"></td>
           </tr>
 
           <!-- ── HERO ──────────────────────────────────────── -->
           <tr>
             <td style="padding:36px 40px 28px 40px; text-align:center;">
               <!-- Logo wordmark -->
-              <p style="font-family:'Playfair Display',Georgia,serif; font-size:18px; font-weight:500; color:#A88245; letter-spacing:0.18em; margin:0 0 22px;">
+              <p style="font-family:'Playfair Display',Georgia,serif; font-size:18px; font-weight:500; color:#A6822A; letter-spacing:0.18em; margin:0 0 22px;">
                 M U T U
               </p>
               <!-- Eyebrow label -->
-              <p style="font-size:10px; font-weight:700; letter-spacing:0.28em; text-transform:uppercase; color:#C8A96A; margin:0 0 14px;">
+              <p style="font-size:10px; font-weight:700; letter-spacing:0.28em; text-transform:uppercase; color:#C9A33B; margin:0 0 14px;">
                 Community Update
               </p>
               <!-- Headline -->
@@ -67,10 +67,10 @@ export function eventsLaunchTemplate({ userEmail, appUrl, unsubscribeUrl }) {
           <!-- ── FEATURE CARD ─────────────────────────────── -->
           <tr>
             <td style="padding:8px 32px 0;">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#FBF6EC; border:1px solid #E6D3A3; border-radius:16px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F8F3E5; border:1px solid #E8D9A7; border-radius:16px;">
                 <tr>
                   <td style="padding:22px 24px 22px;">
-                    <p style="font-size:11px; font-weight:700; letter-spacing:0.18em; text-transform:uppercase; color:#A88245; margin:0 0 10px;">
+                    <p style="font-size:11px; font-weight:700; letter-spacing:0.18em; text-transform:uppercase; color:#A6822A; margin:0 0 10px;">
                       🎉 New Feature
                     </p>
                     <p style="font-size:18px; font-weight:600; color:#3D3020; margin:0 0 8px; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
@@ -79,7 +79,7 @@ export function eventsLaunchTemplate({ userEmail, appUrl, unsubscribeUrl }) {
                     <p style="font-size:14px; line-height:1.55; color:#6B5A40; margin:0 0 16px;">
                       Create and join events across the community.
                     </p>
-                    <p style="font-size:11px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; color:#A88245; margin:0 0 8px;">
+                    <p style="font-size:11px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; color:#A6822A; margin:0 0 8px;">
                       Examples
                     </p>
                     <ul style="margin:0; padding:0 0 0 18px; color:#3D3020; font-size:14px; line-height:1.85;">
@@ -98,7 +98,7 @@ export function eventsLaunchTemplate({ userEmail, appUrl, unsubscribeUrl }) {
           <!-- ── PRIMARY CTA ──────────────────────────────── -->
           <tr>
             <td style="padding:26px 40px 28px; text-align:center;">
-              <a href="${safeUrl}" style="display:inline-block; padding:15px 36px; background:#A88245; background-image:linear-gradient(135deg,#C8A96A 0%,#A88245 100%); color:#FFFFFF; text-decoration:none; border-radius:12px; font-size:14px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase;">
+              <a href="${safeUrl}" style="display:inline-block; padding:15px 36px; background:#A6822A; background-image:linear-gradient(135deg,#C9A33B 0%,#A6822A 100%); color:#FFFFFF; text-decoration:none; border-radius:12px; font-size:14px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase;">
                 Create Your First Event
               </a>
             </td>
@@ -124,13 +124,13 @@ export function eventsLaunchTemplate({ userEmail, appUrl, unsubscribeUrl }) {
           <!-- ── FOUNDER NOTE ─────────────────────────────── -->
           <tr>
             <td style="padding:32px 32px 0;">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#FAFAF8; border-left:3px solid #C8A96A; border-radius:0 12px 12px 0;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#FAFAF8; border-left:3px solid #C9A33B; border-radius:0 12px 12px 0;">
                 <tr>
                   <td style="padding:20px 22px;">
                     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 12px;">
                       <tr>
                         <td style="vertical-align:middle;">
-                          <div style="width:34px; height:34px; border-radius:50%; background:#FBF6EC; border:1.5px solid #E6D3A3; text-align:center; line-height:34px; font-size:14px; font-weight:700; color:#A88245; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+                          <div style="width:34px; height:34px; border-radius:50%; background:#F8F3E5; border:1.5px solid #E8D9A7; text-align:center; line-height:34px; font-size:14px; font-weight:700; color:#A6822A; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
                             S
                           </div>
                         </td>
@@ -156,12 +156,12 @@ export function eventsLaunchTemplate({ userEmail, appUrl, unsubscribeUrl }) {
           <!-- ── FOOTER ───────────────────────────────────── -->
           <tr>
             <td style="padding:28px 40px 32px;">
-              <div style="height:1px; background:linear-gradient(90deg,transparent,#E6D3A3,transparent); margin-bottom:18px;"></div>
+              <div style="height:1px; background:linear-gradient(90deg,transparent,#E8D9A7,transparent); margin-bottom:18px;"></div>
               <p style="font-size:11px; color:#9CA3AF; line-height:1.6; margin:0; text-align:center;">
                 Sent to <span style="color:#6B7280;">${safeEmail}</span> · Mutu Team
               </p>
               ${safeUnsub ? `<p style="font-size:11px; color:#9CA3AF; line-height:1.6; margin:6px 0 0; text-align:center;">
-                <a href="${safeUnsub}" style="color:#A88245; text-decoration:underline;">Unsubscribe from non-essential mail</a>
+                <a href="${safeUnsub}" style="color:#A6822A; text-decoration:underline;">Unsubscribe from non-essential mail</a>
               </p>` : ''}
             </td>
           </tr>

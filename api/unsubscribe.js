@@ -101,18 +101,18 @@ function shell(title, bodyHtml) {
   }
   .accent {
     position: absolute; top: 0; left: 0; right: 0; height: 4px;
-    background: linear-gradient(90deg, #E6D3A3 0%, #C8A96A 50%, #A88245 100%);
+    background: linear-gradient(90deg, #E8D9A7 0%, #C9A33B 50%, #A6822A 100%);
   }
   h1 {
     font-family: "Playfair Display", Georgia, serif;
-    font-size: 24px; font-weight: 500; color: #A88245;
+    font-size: 24px; font-weight: 500; color: #A6822A;
     margin: 0 0 12px;
   }
   p { font-size: 14px; line-height: 1.55; color: #6B7280; margin: 0 0 10px; }
   .email { color: #111111; font-weight: 600; }
   a {
     display: inline-block; margin-top: 18px;
-    padding: 12px 28px; background: linear-gradient(135deg, #C8A96A, #A88245);
+    padding: 12px 28px; background: linear-gradient(135deg, #C9A33B, #A6822A);
     color: #FFFFFF; text-decoration: none; border-radius: 12px;
     font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
   }

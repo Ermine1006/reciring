@@ -33,14 +33,14 @@ export function welcomeTemplate({ displayName, userEmail, appUrl, unsubscribeUrl
         <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="background:#FFFFFF; border-radius:24px; max-width:560px; overflow:hidden; box-shadow:0 12px 40px rgba(0,0,0,0.08);">
           <!-- Gold accent stripe -->
           <tr>
-            <td style="height:4px; background:linear-gradient(90deg,#E6D3A3 0%,#C8A96A 50%,#A88245 100%);"></td>
+            <td style="height:4px; background:linear-gradient(90deg,#E8D9A7 0%,#C9A33B 50%,#A6822A 100%);"></td>
           </tr>
 
           <!-- Header -->
           <tr>
             <td style="padding:40px 40px 22px 40px; text-align:center;">
               <p style="font-size:42px; line-height:1; margin:0 0 18px;">🤝</p>
-              <h1 style="font-family:'Playfair Display',Georgia,serif; font-size:26px; font-weight:500; color:#A88245; margin:0 0 10px; letter-spacing:0.02em;">
+              <h1 style="font-family:'Playfair Display',Georgia,serif; font-size:26px; font-weight:500; color:#A6822A; margin:0 0 10px; letter-spacing:0.02em;">
                 Welcome to Mutu
               </h1>
               <p style="font-size:15px; line-height:1.55; color:#6B7280; margin:0;">
@@ -52,15 +52,15 @@ export function welcomeTemplate({ displayName, userEmail, appUrl, unsubscribeUrl
           <!-- Gold divider -->
           <tr>
             <td style="padding:0 40px;">
-              <div style="height:1px; background:linear-gradient(90deg,transparent,#E6D3A3,transparent);"></div>
+              <div style="height:1px; background:linear-gradient(90deg,transparent,#E8D9A7,transparent);"></div>
             </td>
           </tr>
 
           <!-- Why Reciring? -->
           <tr>
             <td style="padding:24px 40px 8px;">
-              <div style="background:#FBF6EC; border:1px solid #E6D3A3; border-radius:14px; padding:20px 22px;">
-                <p style="font-size:11px; letter-spacing:0.18em; text-transform:uppercase; font-weight:600; color:#C8A96A; margin:0 0 10px;">
+              <div style="background:#F8F3E5; border:1px solid #E8D9A7; border-radius:14px; padding:20px 22px;">
+                <p style="font-size:11px; letter-spacing:0.18em; text-transform:uppercase; font-weight:600; color:#C9A33B; margin:0 0 10px;">
                   Why Mutu?
                 </p>
                 <p style="font-size:14px; line-height:1.6; color:#3D3020; margin:0 0 10px; font-weight:600;">
@@ -76,7 +76,7 @@ export function welcomeTemplate({ displayName, userEmail, appUrl, unsubscribeUrl
           <!-- First steps -->
           <tr>
             <td style="padding:24px 40px 8px;">
-              <p style="font-size:11px; letter-spacing:0.18em; text-transform:uppercase; font-weight:600; color:#C8A96A; margin:0 0 14px;">
+              <p style="font-size:11px; letter-spacing:0.18em; text-transform:uppercase; font-weight:600; color:#C9A33B; margin:0 0 14px;">
                 First steps
               </p>
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
@@ -111,7 +111,7 @@ export function welcomeTemplate({ displayName, userEmail, appUrl, unsubscribeUrl
           <!-- CTA -->
           <tr>
             <td style="padding:26px 40px 36px; text-align:center;">
-              <a href="${safeUrl}" style="display:inline-block; padding:14px 40px; background:#A88245; background-image:linear-gradient(135deg,#C8A96A 0%,#A88245 100%); color:#FFFFFF; text-decoration:none; border-radius:12px; font-size:14px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase;">
+              <a href="${safeUrl}" style="display:inline-block; padding:14px 40px; background:#A6822A; background-image:linear-gradient(135deg,#C9A33B 0%,#A6822A 100%); color:#FFFFFF; text-decoration:none; border-radius:12px; font-size:14px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase;">
                 Start Exploring
               </a>
               <p style="font-size:11px; color:#9CA3AF; margin:14px 0 0;">
@@ -123,7 +123,7 @@ export function welcomeTemplate({ displayName, userEmail, appUrl, unsubscribeUrl
           <!-- Footer -->
           <tr>
             <td style="padding:22px 40px 28px; background:#FAFAF8; border-top:1px solid #F0ECE4;">
-              <p style="font-size:12px; color:#A88245; font-weight:600; line-height:1.5; margin:0 0 4px; text-align:center;">
+              <p style="font-size:12px; color:#A6822A; font-weight:600; line-height:1.5; margin:0 0 4px; text-align:center;">
                 Privacy first.
               </p>
               <p style="font-size:11px; color:#9CA3AF; line-height:1.6; margin:0 0 10px; text-align:center;">
@@ -134,7 +134,7 @@ export function welcomeTemplate({ displayName, userEmail, appUrl, unsubscribeUrl
                 Mutu Team · A Rotman MBA community for warm introductions.
               </p>
               ${safeUnsub ? `<p style="font-size:11px; color:#9CA3AF; line-height:1.6; margin:6px 0 0; text-align:center;">
-                Prefer fewer emails? <a href="${safeUnsub}" style="color:#A88245; text-decoration:underline;">Unsubscribe from non-essential mail</a>.
+                Prefer fewer emails? <a href="${safeUnsub}" style="color:#A6822A; text-decoration:underline;">Unsubscribe from non-essential mail</a>.
               </p>` : ''}
             </td>
           </tr>

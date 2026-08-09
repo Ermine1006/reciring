@@ -68,16 +68,16 @@ export function eventCancellationTemplate({
 
           <!-- Gold accent stripe -->
           <tr>
-            <td style="height:4px; background:linear-gradient(90deg,#E6D3A3 0%,#C8A96A 50%,#A88245 100%);"></td>
+            <td style="height:4px; background:linear-gradient(90deg,#E8D9A7 0%,#C9A33B 50%,#A6822A 100%);"></td>
           </tr>
 
           <!-- HERO -->
           <tr>
             <td style="padding:36px 40px 24px 40px; text-align:center;">
-              <p style="font-family:'Playfair Display',Georgia,serif; font-size:18px; font-weight:500; color:#A88245; letter-spacing:0.18em; margin:0 0 22px;">
+              <p style="font-family:'Playfair Display',Georgia,serif; font-size:18px; font-weight:500; color:#A6822A; letter-spacing:0.18em; margin:0 0 22px;">
                 M U T U
               </p>
-              <p style="font-size:10px; font-weight:700; letter-spacing:0.28em; text-transform:uppercase; color:#C8A96A; margin:0 0 14px;">
+              <p style="font-size:10px; font-weight:700; letter-spacing:0.28em; text-transform:uppercase; color:#C9A33B; margin:0 0 14px;">
                 ${escapeHtml(eyebrow)}
               </p>
               <h1 style="font-family:'Playfair Display',Georgia,serif; font-size:26px; font-weight:500; color:#111111; margin:0 0 10px; letter-spacing:-0.01em; line-height:1.25;">
@@ -129,7 +129,7 @@ export function eventCancellationTemplate({
           <!-- CTA -->
           <tr>
             <td style="padding:0 40px 32px 40px; text-align:center;">
-              <a href="${safeUrl}" style="display:inline-block; background:linear-gradient(135deg,#C8A96A 0%,#A88245 100%); color:#FFFFFF; text-decoration:none; font-weight:600; font-size:14px; padding:12px 28px; border-radius:12px; box-shadow:0 6px 20px rgba(200,169,106,0.35);">
+              <a href="${safeUrl}" style="display:inline-block; background:linear-gradient(135deg,#C9A33B 0%,#A6822A 100%); color:#FFFFFF; text-decoration:none; font-weight:600; font-size:14px; padding:12px 28px; border-radius:12px; box-shadow:0 6px 20px rgba(201,163,59,0.35);">
                 ${isHostCancel ? 'Discover other events' : 'View event page'} →
               </a>
             </td>
@@ -142,7 +142,7 @@ export function eventCancellationTemplate({
                 Sent from Mutu — the Rotman peer network.
               </p>
               <p style="font-size:11px; color:#9CA3AF; margin:0; line-height:1.6;">
-                <a href="${safeApp}" style="color:#A88245; text-decoration:none;">muturing.com</a>${safeUnsub ? `
+                <a href="${safeApp}" style="color:#A6822A; text-decoration:none;">muturing.com</a>${safeUnsub ? `
                 &nbsp;·&nbsp;
                 <a href="${safeUnsub}" style="color:#9CA3AF; text-decoration:none;">Unsubscribe</a>` : ''}
               </p>
