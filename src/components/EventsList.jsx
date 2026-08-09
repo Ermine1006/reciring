@@ -55,7 +55,7 @@ const C = {
   border:    '#ECE6DB',
 }
 
-export default function EventsList({ onCreateEvent, onOpenEvent, onPrepare, onOpenMatch, onAskMutu, onOpenEventRecap, topView: topViewProp, onTopViewChange }) {
+export default function EventsList({ onCreateEvent, onOpenEvent, onPrepare, onOpenMatch, onAskMutu, onOpenEventRecap, topView: topViewProp, onTopViewChange, filter: filterProp, onFilterChange }) {
   const { user } = useAuth()
 
   const [events, setEvents]         = useState([])
@@ -68,7 +68,11 @@ export default function EventsList({ onCreateEvent, onOpenEvent, onPrepare, onOp
   const [topViewLocal, setTopViewLocal] = useState('discover') // 'discover' | 'networking'
   const topView    = topViewProp ?? topViewLocal
   const setTopView = onTopViewChange ?? setTopViewLocal
-  const [filter, setFilter]         = useState('upcoming') // 'upcoming' | 'joined'
+  // Like topView, lifted to the parent (when provided) so the chosen tab
+  // survives this list being remounted on Back from an event.
+  const [filterLocal, setFilterLocal] = useState('upcoming') // 'upcoming' | 'joined'
+  const filter    = filterProp ?? filterLocal
+  const setFilter = onFilterChange ?? setFilterLocal
   const [catFilter, setCatFilter]   = useState(() => new Set()) // selected category ids
   const [dateFilter, setDateFilter] = useState('all')      // date-range preset id
   const [pickedDate, setPickedDate] = useState('')         // 'YYYY-MM-DD' from the calendar picker

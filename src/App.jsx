@@ -164,6 +164,10 @@ function AppShell() {
   // Events tab's Events-vs-My-Networking toggle. Held here so it survives
   // EventsList being remounted (key bump) when returning from an event.
   const [eventsTopView, setEventsTopView] = useState('discover')
+  // Events tab's Upcoming-vs-My-events (past) filter. Also held here for the
+  // same reason — otherwise opening a past event and pressing Back snapped the
+  // list back to Upcoming instead of the "My events" list it came from.
+  const [eventsFilter, setEventsFilter] = useState('upcoming')
   // Optional initial sub-view for the event detail (e.g. 'recap' from a contact).
   const [eventInitialView, setEventInitialView] = useState(null)
   const [promoOriginEventId, setPromoOriginEventId] = useState(null) // event opened via a Discover promo card
@@ -1204,6 +1208,8 @@ function AppShell() {
               key={eventsRefreshKey}
               topView={eventsTopView}
               onTopViewChange={setEventsTopView}
+              filter={eventsFilter}
+              onFilterChange={setEventsFilter}
               onCreateEvent={() => setShowCreateEvent(true)}
               onOpenEvent={(id) => { setEventInitialView(null); setViewingEventId(id) }}
               onOpenEventRecap={(id) => { setEventInitialView('recap'); setViewingEventId(id) }}
