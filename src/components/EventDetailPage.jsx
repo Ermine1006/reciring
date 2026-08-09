@@ -542,57 +542,53 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
         {viewMode !== 'recap' && viewMode !== 'marketplace' && viewMode !== 'manage' && viewMode !== 'discussion' && (
           <>
         {/* Cover — host's uploaded image, or a tasteful branded fallback */}
-        <EventCover event={event} radius={16} aspectRatio="16 / 9" style={{ marginBottom: 14, border: `1px solid ${C.border}` }} />
+        <EventCover event={event} radius={13} aspectRatio="16 / 9" style={{ marginBottom: 16 }} />
 
-
-        {/* Header card */}
-        <section style={cardStyle}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, marginBottom: 14 }}>
-            <span style={{ fontSize: 40, lineHeight: 1, flexShrink: 0 }}>
-              {categoryEmoji(event.category)}
-            </span>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <h1 style={{
-                fontSize: 20, fontWeight: 700, color: C.text,
-                fontFamily: 'Inter, system-ui, sans-serif',
-                margin: '0 0 4px', lineHeight: 1.3,
-              }}>
-                {event.title}
-              </h1>
-              <p style={{
-                fontSize: 13, color: C.gold, fontWeight: 600,
-                fontFamily: 'Inter, system-ui, sans-serif',
-                margin: 0,
-              }}>
-                {event.category}
-              </p>
-            </div>
-            {/* Share (fb8) */}
-            <button
-              type="button"
-              onClick={() => setShowShare(true)}
-              aria-label="Share event"
-              className="active:scale-95"
-              style={{
-                flexShrink: 0,
-                width: 36, height: 36, borderRadius: '50%',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: C.goldBg,
-                border: `1px solid ${C.goldLight}`,
-                cursor: 'pointer',
-                transition: 'transform 0.1s',
-              }}
-            >
-              {/* iOS-style share glyph */}
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.goldDark} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 3v12" />
-                <path d="M8 7l4-4 4 4" />
-                <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7" />
-              </svg>
-            </button>
+        {/* Title + category + share */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{
+              fontSize: 12, color: C.gold, fontWeight: 700, letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+              fontFamily: 'Inter, system-ui, sans-serif', margin: '0 0 5px',
+            }}>
+              {event.category}
+            </p>
+            <h1 style={{
+              fontSize: 23, fontWeight: 600, color: C.text,
+              fontFamily: 'Fraunces, Georgia, serif',
+              margin: 0, lineHeight: 1.22, letterSpacing: '-0.01em',
+            }}>
+              {event.title}
+            </h1>
           </div>
+          {/* Share (fb8) */}
+          <button
+            type="button"
+            onClick={() => setShowShare(true)}
+            aria-label="Share event"
+            className="active:scale-95"
+            style={{
+              flexShrink: 0,
+              width: 34, height: 34, borderRadius: '50%',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: C.goldBg,
+              border: `1px solid ${C.goldLight}`,
+              cursor: 'pointer',
+              transition: 'transform 0.1s',
+            }}
+          >
+            {/* iOS-style share glyph */}
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={C.goldDark} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 3v12" />
+              <path d="M8 7l4-4 4 4" />
+              <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7" />
+            </svg>
+          </button>
+        </div>
 
-          {/* Meta rows */}
+        {/* Meta rows — tight, no card */}
+        <div style={{ marginBottom: 16 }}>
           <MetaRow icon={<CalendarIcon />} label={formatLongDate(event.start_at)} />
           {event.location && <MetaRow icon={<PinIcon />} label={event.location} />}
           <MetaRow
@@ -602,88 +598,29 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
               : `${event.attendee_count || 0} / ${event.max_attendees} attending${isFull ? ' · Full' : ` · ${spotsLeft} spot${spotsLeft === 1 ? '' : 's'} left`}`}
             danger={isCancelled || isFull}
           />
-        </section>
+        </div>
 
-        {/* Host */}
-        <section style={cardStyle}>
-          <p style={sectionLabelStyle}>Hosted by</p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-            <div style={{
-              width: 40, height: 40, borderRadius: '50%',
-              background: C.goldBg, border: `1.5px solid ${C.goldLight}`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 16, fontWeight: 700, color: C.goldDark, flexShrink: 0,
-              fontFamily: 'Inter, system-ui, sans-serif',
-            }}>
-              {(event.host_display_name || '?').charAt(0).toUpperCase()}
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{
-                fontSize: 14, fontWeight: 600, color: C.text,
-                fontFamily: 'Inter, system-ui, sans-serif', margin: 0,
-              }}>
-                {event.host_display_name}
-              </p>
-              {sponsorBadge && (
-                <p style={{
-                  fontSize: 11, color: C.goldDark, fontWeight: 600,
-                  fontFamily: 'Inter, system-ui, sans-serif', margin: '2px 0 0',
-                  letterSpacing: '0.08em', textTransform: 'uppercase',
-                }}>
-                  {sponsorBadge}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {!isHost && !isCancelled && (
-            <button
-              type="button"
-              onClick={scrollToChat}
-              style={{
-                width: '100%', padding: '11px 0',
-                borderRadius: 10,
-                background: C.white,
-                color: C.goldDark,
-                border: `1.5px solid ${C.goldLight}`,
-                fontSize: 13, fontWeight: 600, letterSpacing: '0.04em',
-                fontFamily: 'Inter, system-ui, sans-serif',
-                cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-              }}
-            >
-              <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.96 9.96 0 01-4.418-1.026L3 20l1.026-4.418A8.964 8.964 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-              </svg>
-              Message Host
-            </button>
-          )}
-        </section>
-
-        {/* Description */}
+        {/* Description — plain body copy */}
         {event.description && (
-          <section style={cardStyle}>
-            <p style={sectionLabelStyle}>About this event</p>
-            <p style={{
-              fontSize: 14, lineHeight: 1.6, color: C.text,
-              fontFamily: 'Inter, system-ui, sans-serif',
-              margin: 0, whiteSpace: 'pre-wrap',
-            }}>
-              {event.description}
-            </p>
-          </section>
+          <p style={{
+            fontSize: 14, lineHeight: 1.6, color: C.textSub,
+            fontFamily: 'Inter, system-ui, sans-serif',
+            margin: '0 0 18px', whiteSpace: 'pre-wrap',
+          }}>
+            {event.description}
+          </p>
         )}
 
-        {/* ── Primary lifecycle CTA — exactly one ─────────────── */}
+        {/* ── Primary lifecycle CTA — exactly one, slim ─────────── */}
         {!isCancelled && (() => {
-          const goldBtn = { width: '100%', padding: 14, borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif', background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`, color: '#fff', border: 'none', boxShadow: '0 6px 18px rgba(201,163,59,0.3)' }
-          const outlineBtn = { flex: 1, padding: 13, borderRadius: 12, fontSize: 13.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif', background: '#fff', color: C.goldDark, border: `1px solid ${C.goldLight}` }
+          const goldBtn = { width: '100%', height: 50, borderRadius: 12, fontSize: 14.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif', background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`, color: '#fff', border: 'none', boxShadow: '0 4px 14px rgba(201,163,59,0.28)' }
+          const outlineBtn = { flex: 1, height: 48, borderRadius: 12, fontSize: 13.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif', background: '#fff', color: C.goldDark, border: `1px solid ${C.goldLight}` }
           const goldFlex = { ...outlineBtn, background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`, color: '#fff', border: 'none' }
           if (!joined && !isHost) {
             if (isCompleted) return null
             return (
               <button type="button" onClick={() => setShowJoinIntent(true)} disabled={joinPending || isFull}
-                style={{ ...goldBtn, marginBottom: 14, ...(isFull ? { background: '#F3F4F6', color: C.textMuted, boxShadow: 'none' } : {}), opacity: joinPending ? 0.7 : 1 }}>
+                style={{ ...goldBtn, ...(isFull ? { background: '#F3F4F6', color: C.textMuted, boxShadow: 'none' } : {}), opacity: joinPending ? 0.7 : 1 }}>
                 {isFull ? 'Event full' : joinPending ? 'Joining…' : (cameFromPromo ? 'Join event to connect' : 'Join event')}
               </button>
             )
@@ -695,62 +632,116 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
           if (phase === 'before') {
             if (!onPrepare) return null
             return (
-              <button type="button" onClick={() => onPrepare(event.id)} style={{ ...goldBtn, marginBottom: 14 }}>
+              <button type="button" onClick={() => onPrepare(event.id)} style={goldBtn}>
                 {hasPrepared ? 'Update your event post' : 'Prepare for event'}
               </button>
             )
           }
           const meetPrimary = phase === 'during'
           return (
-            <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+            <div style={{ display: 'flex', gap: 8 }}>
               <button type="button" onClick={() => setViewMode('event_mode')} style={meetPrimary ? goldFlex : outlineBtn}>Who did you meet?</button>
               <button type="button" onClick={() => setViewMode('recap')} style={meetPrimary ? outlineBtn : goldFlex}>Complete recap</button>
             </div>
           )
         })()}
 
-        {/* ── Compact Event Board preview ─────────────────────── */}
+        {/* ── Hosted by — compact divider row ───────────────────── */}
+        <div style={dividerStyle} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
+          <div style={{
+            width: 38, height: 38, borderRadius: '50%',
+            background: C.goldBg, border: `1.5px solid ${C.goldLight}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 15, fontWeight: 700, color: C.goldDark, flexShrink: 0,
+            fontFamily: 'Inter, system-ui, sans-serif',
+          }}>
+            {(event.host_display_name || '?').charAt(0).toUpperCase()}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{
+              fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase',
+              color: C.textMuted, fontFamily: 'Inter, system-ui, sans-serif', margin: '0 0 2px',
+            }}>
+              Hosted by
+            </p>
+            <p style={{
+              fontSize: 14, fontWeight: 600, color: C.text,
+              fontFamily: 'Inter, system-ui, sans-serif', margin: 0,
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}>
+              {event.host_display_name}
+              {sponsorBadge && <span style={{ color: C.goldDark, fontWeight: 600 }}>{' · '}{sponsorBadge}</span>}
+            </p>
+          </div>
+          {!isHost && !isCancelled && (
+            <button
+              type="button"
+              onClick={scrollToChat}
+              style={{
+                flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer',
+                color: C.goldDark, fontSize: 13, fontWeight: 700,
+                fontFamily: 'Inter, system-ui, sans-serif',
+                display: 'flex', alignItems: 'center', gap: 5, padding: '6px 2px',
+              }}
+            >
+              <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.96 9.96 0 01-4.418-1.026L3 20l1.026-4.418A8.964 8.964 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+              Message
+            </button>
+          )}
+        </div>
+
+        {/* ── Event Board — lightweight divider section ─────────── */}
         {(joined || isHost) && !isCancelled && (() => {
           const known = attendees.filter(a => a.user_id !== user?.id && knownContext.has(a.user_id))
           const canSeeKnown = (event.attendee_visibility !== 'private' || isHost) && known.length > 0
           return (
-            <button type="button" onClick={() => setViewMode('marketplace')}
-              style={{ ...cardStyle, width: '100%', textAlign: 'left', cursor: 'pointer', display: 'block' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                <p style={{ ...sectionLabelStyle, margin: 0 }}>Event Board</p>
-                <span style={{ fontSize: 12.5, fontWeight: 700, color: C.goldDark, fontFamily: 'Inter, system-ui, sans-serif' }}>View board →</span>
-              </div>
-              <p style={{ margin: 0, fontSize: 13.5, color: C.text, fontFamily: 'Inter, system-ui, sans-serif' }}>
-                {boardSharedCount > 0
-                  ? `${boardSharedCount} ${boardSharedCount === 1 ? 'attendee' : 'attendees'} shared a post`
-                  : 'See what attendees are looking for and offering'}
-              </p>
-              {canSeeKnown && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
-                  <div style={{ display: 'flex', flexShrink: 0 }}>
-                    {known.slice(0, 3).map((a, i) => (
-                      <span key={a.user_id} style={{ marginLeft: i ? -8 : 0, border: '2px solid #fff', borderRadius: '50%', display: 'flex' }}>
-                        <AnonymousAvatar seed={resolveAvatarSeed(a.avatar_url) || a.user_id} size={22} />
-                      </span>
-                    ))}
-                  </div>
-                  <span style={{ fontSize: 12.5, color: C.goldDark, fontWeight: 600, fontFamily: 'Inter, system-ui, sans-serif' }}>
-                    {known.length} {known.length === 1 ? 'person' : 'people'} you know {known.length === 1 ? 'is' : 'are'} attending
-                  </span>
+            <>
+              <div style={dividerStyle} />
+              <button type="button" onClick={() => setViewMode('marketplace')}
+                style={{ width: '100%', textAlign: 'left', cursor: 'pointer', background: 'none', border: 'none', padding: 0, display: 'block' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <p style={{ ...sectionLabelStyle, margin: 0 }}>Event Board</p>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: C.goldDark, fontFamily: 'Inter, system-ui, sans-serif' }}>View board →</span>
                 </div>
-              )}
-            </button>
+                {canSeeKnown && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
+                    <div style={{ display: 'flex', flexShrink: 0 }}>
+                      {known.slice(0, 3).map((a, i) => (
+                        <span key={a.user_id} style={{ marginLeft: i ? -8 : 0, border: '2px solid #fff', borderRadius: '50%', display: 'flex' }}>
+                          <AnonymousAvatar seed={resolveAvatarSeed(a.avatar_url) || a.user_id} size={24} />
+                        </span>
+                      ))}
+                    </div>
+                    <span style={{ fontSize: 13, color: C.text, fontWeight: 600, fontFamily: 'Inter, system-ui, sans-serif' }}>
+                      {known.length} {known.length === 1 ? 'person' : 'people'} you know {known.length === 1 ? 'is' : 'are'} attending
+                    </span>
+                  </div>
+                )}
+                <p style={{ margin: `${canSeeKnown ? 6 : 8}px 0 0`, fontSize: 13, color: C.textSub, fontFamily: 'Inter, system-ui, sans-serif' }}>
+                  {boardSharedCount > 0
+                    ? `${boardSharedCount} ${boardSharedCount === 1 ? 'attendee' : 'attendees'} shared what they're looking for`
+                    : 'See what attendees are looking for and offering'}
+                </p>
+              </button>
+            </>
           )
         })()}
 
-        {/* ── Discussion row → full discussion view ───────────── */}
+        {/* ── Discussion → nav row ──────────────────────────────── */}
         {!isCancelled && (
-          <button type="button" onClick={() => setViewMode('discussion')}
-            style={{ ...cardStyle, width: '100%', textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <svg width="16" height="16" fill="none" stroke={C.goldDark} strokeWidth={1.9} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21 12c0 4.418-4.03 8-9 8a9.96 9.96 0 01-4.418-1.026L3 20l1.026-4.418A8.964 8.964 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-            <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: C.text, fontFamily: 'Inter, system-ui, sans-serif' }}>Discussion</span>
-            <svg width="18" height="18" fill="none" stroke={C.textMuted} strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 6l6 6-6 6"/></svg>
-          </button>
+          <>
+            <div style={dividerStyle} />
+            <button type="button" onClick={() => setViewMode('discussion')}
+              style={{ width: '100%', textAlign: 'left', cursor: 'pointer', background: 'none', border: 'none', padding: '2px 0', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <svg width="16" height="16" fill="none" stroke={C.goldDark} strokeWidth={1.9} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21 12c0 4.418-4.03 8-9 8a9.96 9.96 0 01-4.418-1.026L3 20l1.026-4.418A8.964 8.964 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+              <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: C.text, fontFamily: 'Inter, system-ui, sans-serif' }}>Discussion</span>
+              <svg width="18" height="18" fill="none" stroke={C.textMuted} strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 6l6 6-6 6"/></svg>
+            </button>
+            <div style={dividerStyle} />
+          </>
         )}
 
         {/* Leave event — small secondary (joined non-host). */}
@@ -960,10 +951,16 @@ const cardStyle = {
 }
 
 const sectionLabelStyle = {
-  fontSize: 10, fontWeight: 600, letterSpacing: '0.18em',
-  textTransform: 'uppercase', color: C.gold,
+  fontSize: 10, fontWeight: 700, letterSpacing: '0.12em',
+  textTransform: 'uppercase', color: C.textMuted,
   fontFamily: 'Inter, system-ui, sans-serif',
   margin: '0 0 10px',
+}
+
+// Thin hairline used between the dense overview sections.
+const dividerStyle = {
+  height: 1, background: C.border,
+  margin: '16px 0',
 }
 
 const backButtonStyle = {
