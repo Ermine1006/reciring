@@ -125,27 +125,34 @@ export default function EventPreparePage({ eventId, userId, onBack, onSaved }) {
             const on = goals.includes(g.id)
             return (
               <button key={g.id} type="button" onClick={() => toggleGoal(g.id)}
-                style={{ padding: '8px 14px', borderRadius: 999, border: `1px solid ${on ? C.goldLine : C.line}`, background: on ? C.goldSoft : C.ground, color: on ? C.goldInk : C.ink2, fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
-                {on ? '✓ ' : ''}{g.label}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 16px', borderRadius: 10, border: `1.5px solid ${on ? C.goldBtn : C.line}`, background: C.ground, color: on ? C.gold : C.ink2, fontSize: 13.5, fontWeight: on ? 700 : 600, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
+                {g.label}{on && <span style={{ fontSize: 13, lineHeight: 1 }}>✓</span>}
               </button>
             )
           })}
         </div>
 
         {/* My event post — one combined contribution */}
-        <div style={{ background: C.ivory, border: `1px solid ${C.line}`, borderRadius: 14, padding: 14, marginTop: 20 }}>
-          <p style={{ margin: 0, fontSize: 13.5, fontWeight: 700, color: C.ink, fontFamily: 'Inter, system-ui, sans-serif' }}>My event post</p>
-          <p style={{ ...fieldLabel, color: C.slate, marginTop: 12 }}>I'm looking for</p>
-          <textarea value={look} onChange={e => setLook(e.target.value.slice(0, 600))} rows={3}
-            placeholder="e.g. Introductions to AI infrastructure founders or operators." style={input} />
+        <div style={{ background: C.ground, border: `1px solid ${C.line}`, borderRadius: 14, padding: 16, marginTop: 20 }}>
+          <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: C.ink, fontFamily: 'Inter, system-ui, sans-serif' }}>My event post</p>
+
+          <p style={{ ...fieldHead, marginTop: 14 }}>I'm looking for</p>
+          <div style={{ position: 'relative' }}>
+            <textarea value={look} onChange={e => setLook(e.target.value.slice(0, MAX))} rows={3} maxLength={MAX}
+              placeholder="e.g. Introductions to AI infrastructure founders or operators." style={input} />
+            <span style={counterStyle}>{look.length}/{MAX}</span>
+          </div>
           <AiRow field="look" value={look} improving={improving} undo={undo} onImprove={improve} onUndo={() => { setLook(undo.prev); setUndo(null) }} />
 
-          <p style={{ ...fieldLabel, color: C.sage, marginTop: 12 }}>I can offer</p>
-          <textarea value={offer} onChange={e => setOffer(e.target.value.slice(0, 600))} rows={3}
-            placeholder="e.g. VC interview coaching and fundraising feedback." style={input} />
+          <p style={{ ...fieldHead, marginTop: 16 }}>I can offer</p>
+          <div style={{ position: 'relative' }}>
+            <textarea value={offer} onChange={e => setOffer(e.target.value.slice(0, MAX))} rows={3} maxLength={MAX}
+              placeholder="e.g. VC interview coaching and fundraising feedback." style={input} />
+            <span style={counterStyle}>{offer.length}/{MAX}</span>
+          </div>
           <AiRow field="offer" value={offer} improving={improving} undo={undo} onImprove={improve} onUndo={() => { setOffer(undo.prev); setUndo(null) }} />
 
-          <p style={{ margin: '10px 0 0', fontSize: 11.5, color: C.ink3, fontFamily: 'Inter, system-ui, sans-serif' }}>Fill in one or both. Shown on the Event Board; names stay hidden until someone connects.</p>
+          <p style={{ margin: '14px 0 0', fontSize: 11.5, color: C.ink3, fontFamily: 'Inter, system-ui, sans-serif' }}>Fill in one or both. Shown on the Event Board; names stay hidden until someone connects.</p>
         </div>
 
         {/* Optionally surface this post on the Mutu home page (Discover) —
@@ -165,7 +172,7 @@ export default function EventPreparePage({ eventId, userId, onBack, onSaved }) {
         {err && <p style={{ margin: '12px 2px 0', fontSize: 12.5, color: '#B4453A', fontFamily: 'Inter, system-ui, sans-serif' }}>{err}</p>}
 
         <button type="button" onClick={save} disabled={!canSave || saving}
-          style={{ width: '100%', marginTop: 18, padding: '13px', borderRadius: 12, border: 'none', cursor: canSave && !saving ? 'pointer' : 'default', background: canSave ? C.goldBtn : '#E5E1D8', color: canSave ? C.goldBtnInk : '#9B9384', fontSize: 14, fontWeight: 700, fontFamily: 'Inter, system-ui, sans-serif' }}>
+          style={{ width: '100%', marginTop: 18, padding: '15px', borderRadius: 14, border: 'none', cursor: canSave && !saving ? 'pointer' : 'default', background: canSave ? '#C39A2B' : '#E5E1D8', color: canSave ? '#FFFFFF' : '#9B9384', fontSize: 15, fontWeight: 700, fontFamily: 'Inter, system-ui, sans-serif', boxShadow: canSave ? '0 2px 8px rgba(195,154,43,0.22)' : 'none' }}>
           {saving ? 'Saving…' : 'Save event post'}
         </button>
         <button type="button" onClick={onBack} style={{ width: '100%', marginTop: 8, padding: '11px', borderRadius: 12, background: 'transparent', border: 'none', color: C.ink2, fontSize: 13.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
@@ -176,16 +183,37 @@ export default function EventPreparePage({ eventId, userId, onBack, onSaved }) {
   )
 }
 
-// "Increase response rate" — the same AI rewrite used in Discover / Marketplace.
+// "Increase My Response Rate" — the same prominent AI rewrite the Post composer
+// uses (a gold pill + sparkle + explicit "AI" badge), so testers recognise it
+// as an AI feature.
 function AiRow({ field, value, improving, undo, onImprove, onUndo }) {
   const busy = improving === field
-  const canDo = value.trim() && !improving
+  const can = value.trim() && !improving
   const showUndo = undo?.field === field
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 7, minHeight: 22 }}>
-      <button type="button" onClick={() => onImprove(field)} disabled={!canDo}
-        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', padding: '2px 1px', cursor: canDo ? 'pointer' : 'default', color: canDo ? C.gold : '#B8B0A2', fontSize: 12, fontWeight: 650, fontFamily: 'Inter, system-ui, sans-serif' }}>
-        {busy ? (<><span className="inline-block animate-spin" style={{ width: 11, height: 11, border: `1.5px solid ${C.goldLine}`, borderTopColor: C.goldInk, borderRadius: '50%' }} /> Improving…</>) : (<>✦ Increase response rate</>)}
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8, flexWrap: 'wrap', minHeight: 22 }}>
+      <button type="button" onClick={() => onImprove(field)} disabled={!can}
+        className="inline-flex items-center gap-2 transition-all duration-150 active:scale-[0.98]"
+        style={{
+          display: 'inline-flex', alignItems: 'center', gap: 6,
+          padding: '8px 14px', borderRadius: 999,
+          background: can ? C.goldSoft : '#F3F4F6',
+          border: `1.5px solid ${can ? C.goldLine : C.line}`,
+          cursor: can ? 'pointer' : 'default',
+          color: can ? C.gold : '#B8B0A2',
+          fontSize: 12.5, fontWeight: 700, fontFamily: 'Inter, system-ui, sans-serif',
+          boxShadow: can ? '0 2px 8px rgba(201,163,59,0.18)' : 'none',
+        }}
+        title="Let AI rewrite this to get more replies">
+        {busy ? (
+          <><span className="inline-block animate-spin" style={{ width: 13, height: 13, border: `1.5px solid ${C.goldLine}`, borderTopColor: C.goldInk, borderRadius: '50%' }} /> Improving with AI…</>
+        ) : (
+          <>
+            <span style={{ fontSize: 14, lineHeight: 1 }}>✨</span>
+            Increase My Response Rate
+            <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.06em', color: '#fff', background: can ? C.gold : '#B8B0A2', borderRadius: 5, padding: '2px 5px' }}>AI</span>
+          </>
+        )}
       </button>
       {showUndo && (
         <span style={{ fontSize: 11, color: C.ink2, fontFamily: 'Inter, system-ui, sans-serif' }}>
@@ -197,6 +225,8 @@ function AiRow({ field, value, improving, undo, onImprove, onUndo }) {
   )
 }
 
-const label = { fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: C.ink3, fontFamily: 'Inter, system-ui, sans-serif', margin: '0 1px 8px' }
-const fieldLabel = { fontSize: 9.5, fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', margin: '0 0 6px', fontFamily: 'Inter, system-ui, sans-serif' }
-const input = { width: '100%', background: C.ground, border: `1px solid ${C.line}`, borderRadius: 11, padding: '11px 12px', fontSize: 13.5, color: C.ink, fontFamily: 'Inter, system-ui, sans-serif', outline: 'none', resize: 'vertical', lineHeight: 1.45 }
+const MAX = 150
+const label = { fontSize: 16, fontWeight: 700, color: C.ink, fontFamily: 'Inter, system-ui, sans-serif', margin: '0 1px 12px' }
+const fieldHead = { fontSize: 13, fontWeight: 600, color: C.ink, margin: '0 0 7px', fontFamily: 'Inter, system-ui, sans-serif' }
+const input = { width: '100%', background: C.ground, border: `1px solid ${C.line}`, borderRadius: 11, padding: '11px 12px 24px', fontSize: 13.5, color: C.ink, fontFamily: 'Inter, system-ui, sans-serif', outline: 'none', resize: 'none', lineHeight: 1.45 }
+const counterStyle = { position: 'absolute', right: 12, bottom: 9, fontSize: 11, color: C.ink3, fontFamily: 'Inter, system-ui, sans-serif', pointerEvents: 'none' }
