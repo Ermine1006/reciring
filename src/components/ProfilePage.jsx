@@ -8,8 +8,11 @@ import AnonymousAvatar from './AnonymousAvatar'
 import ProfileView from './profile/ProfileView'
 import ProfileWizard from './profile/ProfileWizard'
 import { useProfileV3 } from './profile/useProfileV3'
-import { isProfileV3Enabled } from '../lib/featureFlags'
+import { isProfileV3Enabled, isLinkedInEnabled } from '../lib/featureFlags'
 import { rowToViewProps } from '../lib/profileV3'
+import LinkedInConnectCard from './profile/LinkedInConnectCard'
+import LinkedInImportReview from './profile/LinkedInImportReview'
+import { useLinkedInProfileLink } from './profile/useLinkedInProfileLink'
 
 // Profile — landing in the shared Home visual language: a header with the
 // completion ring, a need/offer summary, then rows into the existing editors.
@@ -65,6 +68,25 @@ export default function ProfilePage({
     setView('v3edit')
   }
 
+  // LinkedIn-assisted profile — the connect card + review sit atop Edit profile.
+  const liEnabled = v3 && isLinkedInEnabled(user)
+  const li = useLinkedInProfileLink(liEnabled, me)
+  const useLinkedIn = (choices, extra) => {
+    const { patch, importedFields } = li.apply(choices, extra?.values)
+    const now = new Date().toISOString()
+    updateProfile?.({
+      ...patch,
+      linkedin_subject: li.claims?.subject || null,
+      linkedin_profile_url: (extra?.linkedinUrl || me.linkedin_profile_url || '') || null,
+      linkedin_connected_at: now,
+      linkedin_imported_fields: importedFields,
+      profile_source_updated_at: now,
+    })
+    // Reflect the imported headline into the wizard draft so it shows below.
+    if (patch.professional_headline !== undefined) onChange({ ...draft, professionalHeadline: patch.professional_headline })
+    li.reset()
+  }
+
   const completeness = useMemo(() => {
     const f = [me.name, me.headline || me.program, me.industry_interests?.length,
               me.can_help_with?.length, me.skills_to_learn?.length, resolveAvatarSeed(me.avatar_url)]
@@ -98,9 +120,27 @@ export default function ProfilePage({
 
   // ── Redesigned Profile (flagged accounts) ──
   if (v3 && view === 'v3edit') {
+    const reviewing = liEnabled && li.status === 'reviewing'
     return (
       <SubScreen title="Edit profile" onBack={() => setView('landing')}>
-        <ProfileWizard value={draft} onChange={onChange} onFinish={() => setView('landing')} onBack={() => setView('landing')} />
+        {reviewing ? (
+          <div style={{ maxWidth: 620, margin: '0 auto', padding: '18px 18px 40px' }}>
+            <LinkedInImportReview claims={li.claims} rows={li.rows} onUse={useLinkedIn} onDiscard={li.reset} />
+          </div>
+        ) : (<>
+          {liEnabled && (
+            <div style={{ maxWidth: 620, margin: '0 auto', padding: '16px 18px 0' }}>
+              <LinkedInConnectCard
+                onConnect={li.connect}
+                onManual={() => {}}
+                connecting={li.status === 'connecting' || li.status === 'loading'}
+                error={li.error}
+                connected={Boolean(me.linkedin_connected_at)}
+              />
+            </div>
+          )}
+          <ProfileWizard value={draft} onChange={onChange} onFinish={() => setView('landing')} onBack={() => setView('landing')} />
+        </>)}
       </SubScreen>
     )
   }

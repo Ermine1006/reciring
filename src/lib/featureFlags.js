@@ -13,14 +13,25 @@ const PROFILE_V3_EMAILS = [
   'xiaoling.lyu@rotman.utoronto.ca',
 ]
 
-export function isProfileV3Enabled(user) {
+function flag(user, key, allowlist) {
   try {
     if (typeof localStorage !== 'undefined') {
-      const o = localStorage.getItem('mutu_profile_v3')
+      const o = localStorage.getItem(key)
       if (o === 'on') return true
       if (o === 'off') return false
     }
   } catch { /* ignore */ }
   const email = (user?.email || '').trim().toLowerCase()
-  return PROFILE_V3_EMAILS.includes(email)
+  return allowlist.includes(email)
+}
+
+export function isProfileV3Enabled(user) {
+  return flag(user, 'mutu_profile_v3', PROFILE_V3_EMAILS)
+}
+
+// LinkedIn-assisted profile — same allowlist, its own override key. Gated
+// separately because it ALSO needs the linkedin_oidc provider configured in
+// Supabase Auth before the connect button can actually complete.
+export function isLinkedInEnabled(user) {
+  return flag(user, 'mutu_linkedin', PROFILE_V3_EMAILS)
 }

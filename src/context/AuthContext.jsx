@@ -524,6 +524,44 @@ export function AuthProvider({ children }) {
     return { data, error }
   }
 
+  // Attach the user's LinkedIn (OIDC) identity to the CURRENT Mutu account —
+  // enrichment only, never a new account. Mirrors linkGoogleIdentity. Returns
+  // to `?linked=linkedin` on the web so the profile flow can pick up the review
+  // step; native uses the shared deep-link callback. LinkedIn OIDC must be
+  // enabled in Supabase Auth for this to complete (see the feature flag).
+  async function linkLinkedInIdentity() {
+    if (!isSupabaseConfigured) return { error: new Error('Supabase not configured.') }
+    if (!session) return { error: new Error('Sign in first, then connect LinkedIn.') }
+    if (typeof supabase.auth.linkIdentity !== 'function') {
+      return { error: new Error('This Supabase client is too old — update @supabase/supabase-js to link identities.') }
+    }
+    const options = { scopes: 'openid profile email' }
+    if (isNativeApp) {
+      return runNativeOAuth(() =>
+        supabase.auth.linkIdentity({
+          provider: 'linkedin_oidc',
+          options: { ...options, redirectTo: authRedirect('/auth/callback'), skipBrowserRedirect: true },
+        })
+      )
+    }
+    const { data, error } = await supabase.auth.linkIdentity({
+      provider: 'linkedin_oidc',
+      options: { ...options, redirectTo: `${window.location.origin}/?linked=linkedin` },
+    })
+    return { data, error }
+  }
+
+  // Read the current auth user's linked identities (used to pull LinkedIn
+  // claims after the connect round-trip). Never throws.
+  async function getLinkedInIdentity() {
+    if (!isSupabaseConfigured || typeof supabase.auth.getUserIdentities !== 'function') return null
+    try {
+      const { data, error } = await supabase.auth.getUserIdentities()
+      if (error) return null
+      return (data?.identities || []).find(i => i?.provider === 'linkedin_oidc') || null
+    } catch { return null }
+  }
+
   // Return every email address linked to the current session's auth
   // user, freshest first. Used by the Settings "Linked accounts"
   // section. RLS on user_emails allows any authenticated user to read;
@@ -706,6 +744,8 @@ export function AuthProvider({ children }) {
       signIn,
       signInWithGoogle,
       linkGoogleIdentity,
+      linkLinkedInIdentity,
+      getLinkedInIdentity,
       listMyLinkedEmails,
       unlinkEmail,
       signOut,
