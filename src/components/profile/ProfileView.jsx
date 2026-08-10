@@ -10,7 +10,7 @@ import { labelForTopic, labelForInterest, labelForActivity } from '../../data/pr
 //     expertiseOffered[], helpWanted[], personalInterests[], activities[],
 //     promptAskMe }
 // cta:   optional { label, onClick }  (e.g. "See why you match")
-export default function ProfileView({ profile = {}, cta, onBack, onMenu }) {
+export default function ProfileView({ profile = {}, cta, onBack, onMenu, embedded = false }) {
   const p = profile
   const expertise = resolve(p.expertiseOffered, labelForTopic)
   const exploring = resolve(p.helpWanted, labelForTopic)
@@ -20,12 +20,14 @@ export default function ProfileView({ profile = {}, cta, onBack, onMenu }) {
 
   return (
     <div style={{ background: C.card, minHeight: '100%', fontFamily: C.sans }}>
-      {/* Screen header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 18px' }}>
-        <button type="button" onClick={onBack} aria-label="Back" style={iconBtn}>←</button>
-        <span style={{ fontWeight: 700, color: C.ink }}>Profile</span>
-        <button type="button" onClick={onMenu} aria-label="More" style={iconBtn}>•••</button>
-      </div>
+      {/* Screen header — hidden when embedded inside another screen */}
+      {!embedded && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 18px' }}>
+          <button type="button" onClick={onBack} aria-label="Back" style={iconBtn}>←</button>
+          <span style={{ fontWeight: 700, color: C.ink }}>Profile</span>
+          <button type="button" onClick={onMenu} aria-label="More" style={iconBtn}>•••</button>
+        </div>
+      )}
 
       {/* Hero */}
       <div style={{ background: 'linear-gradient(180deg,#EDF1EC,#F7F4EE)', textAlign: 'center', padding: '20px 18px 22px' }}>

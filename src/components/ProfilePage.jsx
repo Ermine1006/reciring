@@ -5,6 +5,11 @@ import { useAuth } from '../context/AuthContext'
 import SettingsPage, { resolveAvatarSeed } from './SettingsPage'
 import SettingsTab from './SettingsTab'
 import AnonymousAvatar from './AnonymousAvatar'
+import ProfileView from './profile/ProfileView'
+import ProfileWizard from './profile/ProfileWizard'
+import { useProfileV3 } from './profile/useProfileV3'
+import { isProfileV3Enabled } from '../lib/featureFlags'
+import { rowToViewProps } from '../lib/profileV3'
 
 // Profile — landing in the shared Home visual language: a header with the
 // completion ring, a need/offer summary, then rows into the existing editors.
@@ -43,13 +48,22 @@ export default function ProfilePage({
   subTab, onSubTabChange, allMatches,
   onOpenAdminEmailTest, onOpenEventReview, onOpenEvent,
 }) {
-  const { profile, signOut } = useAuth()
+  const { profile, signOut, user, updateProfile } = useAuth()
   const me = profile || {}
-  // 'landing' | 'edit' | 'settings'
+  // 'landing' | 'edit' | 'settings' | 'v3edit'
   const [view, setView] = useState('landing')
   // Which section the edit screen opens on (and its title).
   const [edit, setEditState] = useState({ section: 'basic', title: 'Edit profile & interests' })
   const openEdit = (section, title) => { setEditState({ section, title }); setView('edit') }
+
+  // Redesigned Profile (flagged accounts only). Hook is inert when v3 is off,
+  // so a legacy account's row is never migrated or written.
+  const v3 = isProfileV3Enabled(user)
+  const { draft, onChange } = useProfileV3(v3)
+  const openV3Edit = () => {
+    if (me.profile_v3_reviewed === false) updateProfile?.({ profile_v3_reviewed: true })
+    setView('v3edit')
+  }
 
   const completeness = useMemo(() => {
     const f = [me.name, me.headline || me.program, me.industry_interests?.length,
@@ -79,6 +93,42 @@ export default function ProfilePage({
           <SettingsTab onOpenAdminEmailTest={onOpenAdminEmailTest} onOpenEventReview={onOpenEventReview} />
         </div>
       </SubScreen>
+    )
+  }
+
+  // ── Redesigned Profile (flagged accounts) ──
+  if (v3 && view === 'v3edit') {
+    return (
+      <SubScreen title="Edit profile" onBack={() => setView('landing')}>
+        <ProfileWizard value={draft} onChange={onChange} onFinish={() => setView('landing')} onBack={() => setView('landing')} />
+      </SubScreen>
+    )
+  }
+  if (v3) {
+    return (
+      <div className="flex-1 phone-scroll" style={{ background: C.ground }}>
+        <div style={{ maxWidth: 560, margin: '0 auto' }}>
+          {me.profile_v3_reviewed === false && (
+            <div style={{ margin: '12px 16px 0', background: C.goldSoft, border: `1px solid ${C.goldLine}`, borderRadius: 14, padding: '13px 15px', display: 'flex', gap: 10, alignItems: 'center' }}>
+              <span style={{ fontSize: 18 }}>✨</span>
+              <div style={{ flex: 1 }}>
+                <p style={{ margin: 0, fontSize: 13.5, fontWeight: 700, color: C.goldInk, fontFamily: 'Inter, system-ui, sans-serif' }}>We reorganized your profile</p>
+                <p style={{ margin: '2px 0 0', fontSize: 12.5, color: C.ink2, fontFamily: 'Inter, system-ui, sans-serif' }}>Take a look and add the topics you can help with.</p>
+              </div>
+              <button type="button" onClick={openV3Edit} style={{ flexShrink: 0, background: C.gold, color: '#fff', border: 'none', borderRadius: 10, padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>Review</button>
+            </div>
+          )}
+          <ProfileView embedded profile={rowToViewProps(me)} />
+          <div style={{ padding: '4px 16px 28px' }}>
+            <div style={{ border: `1px solid ${C.cardLine}`, borderRadius: 16, overflow: 'hidden' }}>
+              <Row icon={<Sparkle size={16} strokeWidth={1.8} />} label="Edit profile" onClick={openV3Edit} />
+              <Row icon={<Lock size={16} strokeWidth={1.8} />} label="Privacy" onClick={() => openEdit('privacy', 'Privacy')} />
+              <Row icon={<Settings size={16} strokeWidth={1.8} />} label="Account settings" onClick={() => setView('settings')} />
+              <Row icon={<LogOut size={16} strokeWidth={1.8} />} label="Sign out" danger onClick={() => signOut?.()} last />
+            </div>
+          </div>
+        </div>
+      </div>
     )
   }
 
