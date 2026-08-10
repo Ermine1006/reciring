@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { C } from './theme'
-import { TagPicker, CheckList } from './Pickers'
+import { TagSelect } from './TagSelect'
 import {
   TOPICS, INDUSTRIES, INTEREST_GROUPS, ACTIVITIES, HELPING_PREFS,
   PROGRAMS, GRAD_YEAR_MIN,
@@ -67,11 +67,11 @@ export default function ProfileWizard({ value = {}, onChange, onFinish, onBack }
             </Field>
             <Field label="Industries I know" hint="Where do you have meaningful experience or knowledge?"
               count={`${arr('industriesKnown').length} / 3`}>
-              <TagPicker options={INDUSTRIES} value={arr('industriesKnown')} onChange={x => set({ industriesKnown: x })} max={3} allowCustom />
+              <TagSelect options={INDUSTRIES} value={arr('industriesKnown')} onChange={x => set({ industriesKnown: x })} max={3} placeholder="Select industries or type your own…" />
             </Field>
             <Field label="Industries I'm exploring" hint="Where would you like to learn, contribute or build next?"
               count={`${arr('industriesExploring').length} / 3`}>
-              <TagPicker options={INDUSTRIES} value={arr('industriesExploring')} onChange={x => set({ industriesExploring: x })} max={3} allowCustom />
+              <TagSelect options={INDUSTRIES} value={arr('industriesExploring')} onChange={x => set({ industriesExploring: x })} max={3} placeholder="Select industries or type your own…" />
             </Field>
           </>)}
 
@@ -84,11 +84,11 @@ export default function ProfileWizard({ value = {}, onChange, onFinish, onBack }
             </Callout>
             <Field label="What I can help with" hint="What can someone genuinely come to you for?"
               count={`${arr('expertiseOffered').length} / 5`}>
-              <TagPicker options={TOPICS} value={arr('expertiseOffered')} onChange={x => set({ expertiseOffered: x })} max={5} allowCustom />
+              <TagSelect options={TOPICS} value={arr('expertiseOffered')} onChange={x => set({ expertiseOffered: x })} max={5} placeholder="Select topics or type your own…" />
             </Field>
             <Field label="What I'd like help with" hint="What are you currently trying to learn, solve or explore?"
               count={`${arr('helpWanted').length} / 5`}>
-              <TagPicker options={TOPICS} value={arr('helpWanted')} onChange={x => set({ helpWanted: x })} max={5} allowCustom />
+              <TagSelect options={TOPICS} value={arr('helpWanted')} onChange={x => set({ helpWanted: x })} max={5} placeholder="Select topics or type your own…" />
             </Field>
             <Field label="Ask me about…" hint="A memorable conversation starter — specific is better.">
               <Input value={v.promptAskMe || ''} onChange={x => set({ promptAskMe: x.slice(0, 240) })} placeholder="e.g. Building Mutu from 0 to 1" />
@@ -101,11 +101,11 @@ export default function ProfileWizard({ value = {}, onChange, onFinish, onBack }
             <div style={rule} />
             <Field label="Interests outside work" hint="What would you genuinely enjoy connecting over?"
               count={`${arr('interests').length} / 5`}>
-              <TagPicker grouped options={INTEREST_GROUPS} value={arr('interests')} onChange={x => set({ interests: x })} max={5} allowCustom />
+              <TagSelect grouped options={INTEREST_GROUPS} value={arr('interests')} onChange={x => set({ interests: x })} max={5} placeholder="Select interests or type your own…" />
             </Field>
             <Field label="Things I'd be up for" hint="Interests are passive; this tells people what you would actually do together."
               count={`${arr('activities').length} / 5`}>
-              <TagPicker options={ACTIVITIES} value={arr('activities')} onChange={x => set({ activities: x })} max={5} allowCustom />
+              <TagSelect options={ACTIVITIES} value={arr('activities')} onChange={x => set({ activities: x })} max={5} placeholder="Select activities or type your own…" />
             </Field>
             <Field label="Outside work, you'll usually find me…">
               <Input value={v.promptWeekend || ''} onChange={x => set({ promptWeekend: x.slice(0, 240) })} placeholder="e.g. On a volleyball court or at a comedy club" />
@@ -122,7 +122,7 @@ export default function ProfileWizard({ value = {}, onChange, onFinish, onBack }
             <p style={{ ...flabel, marginBottom: 4 }}>How I'm open to helping</p>
             <p style={fhint}>Choose the interactions you are comfortable offering — this is separate from your expertise.</p>
             <div style={{ marginTop: 8 }}>
-              <CheckList options={HELPING_PREFS} value={arr('helpingPreferences')} onChange={x => set({ helpingPreferences: x })} />
+              <TagSelect options={HELPING_PREFS} value={arr('helpingPreferences')} onChange={x => set({ helpingPreferences: x })} placeholder="Select how you're open to helping…" />
             </div>
             <div style={privacy}>
               <span style={{ color: C.gold, fontSize: 18, flexShrink: 0 }}>◉</span>

@@ -1,5 +1,5 @@
 import { C } from './theme'
-import { TagPicker } from './Pickers'
+import { TagSelect } from './TagSelect'
 import { TOPICS, INTEREST_GROUPS, PROGRAMS } from '../../data/profileTaxonomy'
 
 // ── Lean onboarding — one screen, only the fields that drive matching ──────
@@ -36,19 +36,19 @@ export default function ProfileQuickStart({ value = {}, onChange, onDone }) {
           <div style={field}>
             <p style={flabel}>What I can help with <Count n={arr('expertiseOffered').length} max={5} /></p>
             <p style={fhint}>What can someone genuinely come to you for?</p>
-            <TagPicker options={TOPICS} value={arr('expertiseOffered')} onChange={x => set({ expertiseOffered: x })} max={5} allowCustom />
+            <TagSelect options={TOPICS} value={arr('expertiseOffered')} onChange={x => set({ expertiseOffered: x })} max={5} placeholder="Select topics or type your own…" />
           </div>
 
           <div style={field}>
             <p style={flabel}>What I want help with <Count n={arr('helpWanted').length} max={5} /></p>
             <p style={fhint}>What are you trying to learn, solve or explore?</p>
-            <TagPicker options={TOPICS} value={arr('helpWanted')} onChange={x => set({ helpWanted: x })} max={5} allowCustom />
+            <TagSelect options={TOPICS} value={arr('helpWanted')} onChange={x => set({ helpWanted: x })} max={5} placeholder="Select topics or type your own…" />
           </div>
 
           <div style={field}>
             <p style={flabel}>Interests <Count n={arr('interests').length} max={5} /></p>
             <p style={fhint}>What would you genuinely enjoy connecting over?</p>
-            <TagPicker grouped options={INTEREST_GROUPS} value={arr('interests')} onChange={x => set({ interests: x })} max={5} allowCustom />
+            <TagSelect grouped options={INTEREST_GROUPS} value={arr('interests')} onChange={x => set({ interests: x })} max={5} placeholder="Select interests or type your own…" />
           </div>
 
           <button type="button" onClick={onDone} style={btnGreen}>Done →</button>
