@@ -16,6 +16,8 @@ import LinkAccountPrompt from './components/LinkAccountPrompt'
 import NotificationBell from './components/NotificationBell'
 import SettingsPage, { resolveAvatarSeed } from './components/SettingsPage'
 import OnboardingProfile from './components/OnboardingProfile'
+import ProfileOnboardingV3 from './components/profile/ProfileOnboardingV3'
+import { isProfileV3Enabled } from './lib/featureFlags'
 import AnonymousAvatar from './components/AnonymousAvatar'
 import MyPostsPage from './components/MyPostsPage'
 import AdminEmailTest from './components/AdminEmailTest'
@@ -1371,7 +1373,9 @@ function AppRoot() {
   // 5. Logged in but hasn't completed onboarding
   //    Only gate if the column exists (i.e. migration has been run).
   //    If onboarding_done is undefined, the column doesn't exist — skip.
-  if (profile && profile.onboarding_done === false) return <OnboardingProfile />
+  if (profile && profile.onboarding_done === false) {
+    return isProfileV3Enabled(session?.user) ? <ProfileOnboardingV3 /> : <OnboardingProfile />
+  }
 
   // 6. Fully onboarded
   return <AppShell />
