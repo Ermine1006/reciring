@@ -1,18 +1,25 @@
-import ProfileWizard from './ProfileWizard'
+import ProfileQuickStart from './ProfileQuickStart'
 import { useProfileV3 } from './useProfileV3'
 
-// First-run onboarding for flagged accounts — the 4-step wizard with real
-// persistence. Finishing marks onboarding_done + profile_v3_reviewed, which
-// re-renders the app into the main shell.
+// First-run onboarding for flagged accounts — the LEAN one-screen quick-start
+// (Program + can-help + want-help + interests). The full profile (role,
+// industries, activities, prompts, connection prefs) is filled later from
+// Edit profile. Finishing marks onboarding_done + profile_v3_reviewed.
 export default function ProfileOnboardingV3() {
   const { draft, onChange, saveNow } = useProfileV3(true)
-  const finish = () => { saveNow({ onboarding_done: true, profile_v3_reviewed: true }) }
-  // Rendered directly under #root (a fixed-height flex ROW), so this wrapper
-  // must own its own full-viewport height + scroll — flex-1 does nothing on the
-  // cross axis here and left the page unable to scroll.
+
+  const finish = () => {
+    const extra = { onboarding_done: true, profile_v3_reviewed: true }
+    // Default a single low-pressure connection preference so "you're both open
+    // to coffee" spark matching works even though onboarding no longer asks.
+    if (!(draft.helpingPreferences || []).length) extra.helping_preferences = ['coffee-chat']
+    saveNow(extra)
+  }
+
+  // Owns full-viewport height + scroll (rendered directly under #root's flex row).
   return (
     <div className="phone-scroll" style={{ width: '100%', height: '100dvh' }}>
-      <ProfileWizard value={draft} onChange={onChange} onFinish={finish} onBack={() => {}} />
+      <ProfileQuickStart value={draft} onChange={onChange} onDone={finish} />
     </div>
   )
 }
