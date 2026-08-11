@@ -6,6 +6,17 @@
 // legacy Profile. A localStorage override (`mutu_profile_v3` = 'on'|'off') lets
 // us flip it per-device while testing without a redeploy.
 
+// Master rollout switch for the Profile V3 redesign. Turned OFF so the whole
+// app runs on the LEGACY (v2) profile — this keeps the profile fields the
+// matching engines read (can_help_with / skills_to_learn / industry_interests)
+// consistent with what onboarding writes. V3 writes a different column family
+// (expertise_offered / help_wanted / industries_known…) that no matching engine
+// reads, so a V3 user would be invisible to matching. Flip back to `true` to
+// resume the V3 rollout once the engines read the v3 columns (Phase 2).
+// The localStorage override ('mutu_profile_v3' = 'on') still wins, so V3 can be
+// previewed per-device without a redeploy.
+const PROFILE_V3_ROLLOUT = false
+
 const PROFILE_V3_EMAILS = [
   'erminelyu@gmail.com',
   'hello@muturing.com',
@@ -26,6 +37,15 @@ function flag(user, key, allowlist) {
 }
 
 export function isProfileV3Enabled(user) {
+  // Rollout is off: legacy profile for everyone. A per-device localStorage
+  // override ('on') still forces V3 for previewing; the allowlist no longer
+  // auto-enables it while PROFILE_V3_ROLLOUT is false.
+  if (!PROFILE_V3_ROLLOUT) {
+    try {
+      if (typeof localStorage !== 'undefined' && localStorage.getItem('mutu_profile_v3') === 'on') return true
+    } catch { /* ignore */ }
+    return false
+  }
   return flag(user, 'mutu_profile_v3', PROFILE_V3_EMAILS)
 }
 
