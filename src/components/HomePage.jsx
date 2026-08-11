@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Clock, Users, UserPlus, CalendarDays, ArrowRight, MessageSquareText } from 'lucide-react'
 import AnonymousAvatar from './AnonymousAvatar'
+import SmartMatchSection from './SmartMatchSection'
 import { resolveAvatarSeed } from './SettingsPage'
 import { getMatchScore, DEFAULT_VIEWER_PROFILE } from '../data/matchRanking'
 import { fetchUpcomingEvents, fetchMyJoinedEventIds } from '../lib/events'
@@ -213,6 +214,9 @@ export default function HomePage({
             No suggestions yet — {needInterests ? 'add your interests' : 'check back soon'}.
           </p>
         )}
+
+        {/* ── People you should meet (Smart Match) ── */}
+        <SmartMatchSection />
 
         {/* ── Your network ── */}
         {net.length > 0 && (
