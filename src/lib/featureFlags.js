@@ -55,3 +55,12 @@ export function isProfileV3Enabled(user) {
 export function isLinkedInEnabled(user) {
   return flag(user, 'mutu_linkedin', PROFILE_V3_EMAILS)
 }
+
+// Luma events integration — a build-time flag (VITE_ENABLE_LUMA_INTEGRATION).
+// Also needs LUMA_API_KEY in Supabase secrets + the Edge Functions deployed
+// before it does anything; the UI stays hidden until the flag is 'true'.
+export function isLumaEnabled() {
+  try {
+    return String(import.meta.env?.VITE_ENABLE_LUMA_INTEGRATION || '').toLowerCase() === 'true'
+  } catch { return false }
+}
