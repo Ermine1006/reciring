@@ -1,10 +1,16 @@
 import { supabase, isSupabaseConfigured } from './supabase'
+import { fetchEventGoals } from './eventPrep'
 
 // v1 in-event matcher — rule-based, no AI cost. Ranks other attendees by how
 // well their stated need/offer complements the current user's, using keyword
 // overlap. This is the "先跑通" version: it proves people fill in intentions
 // and that a ranked "who to meet" list is useful, before spending on an LLM
 // semantic pass (v2). Scoring is intentionally simple and transparent.
+//
+// Phase 1.4: the viewer's own Prepare-page goal (event_goals, private) biases
+// the ranking — see goalWeights(). Goals are per-viewer only; we never read
+// other attendees' goals (they're private), so this personalizes MY list
+// without leaking anyone's intent.
 
 const STOP = new Set([
   'a','an','the','and','or','to','of','for','in','on','at','with','my','me','i',
@@ -27,6 +33,21 @@ function overlap(a, b) {
   let n = 0
   for (const t of a) if (b.has(t)) n++
   return n
+}
+
+// Turn the viewer's goal selection (event_goals.goals) into scoring weights.
+// No goals set → all-neutral, i.e. identical to the pre-1.4 behavior.
+//   • learn              → value "they can teach me" more (weight the theyHelpMe side)
+//   • find_collaborators → value two-way (mutual) fits more (bigger mutual bonus)
+//   • explore            → surface breadth: nudge single-direction fits up so the
+//                          list isn't dominated purely by the tightest mutual matches
+function goalWeights(goals) {
+  const g = new Set(goals || [])
+  return {
+    learnMult:    g.has('learn') ? 2 : 1,
+    mutualBonus:  g.has('find_collaborators') ? 6 : 3,
+    exploreNudge: g.has('explore') ? 1 : 0,
+  }
 }
 
 /**
@@ -70,12 +91,23 @@ export async function fetchEventMatches(eventId, meUserId) {
   const myNeed  = tokens(me.need_text)
   const myOffer = tokens(me.offer_text)
 
+  // The viewer's own event goal (private) tilts the ranking. Read only mine.
+  const { goals: myGoals } = await fetchEventGoals(eventId, meUserId)
+  const w = goalWeights(myGoals)
+
   const ranked = others.map(o => {
     const theyHelpMe = overlap(myNeed, tokens(o.offer_text))
     const iHelpThem  = overlap(myOffer, tokens(o.need_text))
     const mutual = theyHelpMe > 0 && iHelpThem > 0
-    // Mutual matches get a bonus so two-way intros float to the top.
-    const score = theyHelpMe + iHelpThem + (mutual ? 3 : 0)
+    // Goal-weighted score. Base is complementarity (they-help-me + i-help-them);
+    // a mutual two-way fit gets a bonus, amplified when the viewer's goal is to
+    // meet collaborators. "learn" up-weights the teach-me side; "explore" gives
+    // single-direction fits a small nudge so more people surface.
+    const score =
+      theyHelpMe * w.learnMult +
+      iHelpThem +
+      (mutual ? w.mutualBonus : 0) +
+      (!mutual && (theyHelpMe > 0 || iHelpThem > 0) ? w.exploreNudge : 0)
 
     const p = profById.get(o.user_id) || {}
     const isPublic = p.visibility === 'public' && p.name
