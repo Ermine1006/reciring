@@ -34,13 +34,25 @@ const qPrep = (title) => `I'm attending "${title}". Help me prepare — who shou
 
 // The three primary actions Ask Mutu opens to. `kind` drives the click handler.
 const ACTIONS = [
-  { kind: 'summary', icon: '📊', short: 'Summary',  title: 'Your networking summary', sub: 'Follow-ups due, who you met recently, next step' },
-  { kind: 'attend',  icon: '🧭', short: 'Attend',   title: 'What event should I attend?', sub: 'Best upcoming events for your goals' },
-  { kind: 'prep',    icon: '🤝', short: 'Prepare',  title: 'Prepare for an event', sub: 'Who to connect with there — and how to open' },
+  { kind: 'summary', short: 'Summary',  title: 'Your networking summary', sub: 'Follow-ups due, who you met recently, next step' },
+  { kind: 'attend',  short: 'Attend',   title: 'What event should I attend?', sub: 'Best upcoming events for your goals' },
+  { kind: 'prep',    short: 'Prepare',  title: 'Prepare for an event', sub: 'Who to connect with there — and how to open' },
 ]
 
 // Granola-style shortcut pill sitting in the row just above the composer.
 const rowChip = { display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0, padding: '8px 13px', borderRadius: 999, background: '#FFFFFF', border: '1px solid #E8D9A7', color: '#A6822A', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif', whiteSpace: 'nowrap' }
+
+// Clean monochrome line icons (no emoji) — same stroke language as the app.
+function ActionIcon({ kind }) {
+  const p = { width: 15, height: 15, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }
+  if (kind === 'summary') return <svg {...p}><path d="M3 20h18M6 20v-6M11 20V8M16 20v-9" /></svg>
+  if (kind === 'attend')  return <svg {...p}><circle cx="12" cy="12" r="9" /><path d="M15.5 8.5l-2.2 5-4.8 2.2 2.2-5 4.8-2.2z" /></svg>
+  if (kind === 'prep')    return <svg {...p}><path d="M21 12c0 4.2-4 7.5-9 7.5a10 10 0 01-4-.8L3 20l1.2-3.8A7.7 7.7 0 013 12c0-4.2 4-7.5 9-7.5s9 3.3 9 7.5z" /></svg>
+  return null
+}
+function SparkIcon() {
+  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C9A33B" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v5M12 16v5M3 12h5M16 12h5M6.3 6.3l2.5 2.5M15.2 15.2l2.5 2.5M17.7 6.3l-2.5 2.5M8.8 15.2l-2.5 2.5" /></svg>
+}
 
 /**
  * Ask Mutu — a lightweight networking assistant. Answers only from the user's
@@ -143,7 +155,7 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
             <div style={{ width: 36, height: 4, borderRadius: 99, background: '#D1D5DB' }} />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 20 }}>✨</span>
+            <SparkIcon />
             <div style={{ flex: 1 }}>
               <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: C.ink, fontFamily: 'Fraunces, Georgia, serif' }}>Ask Mutu</p>
               <p style={{ margin: 0, fontSize: 11.5, color: C.muted, fontFamily: 'Inter, system-ui, sans-serif' }}>About your own network · private to you</p>
@@ -233,7 +245,7 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
           <div className="phone-scroll" style={{ flexShrink: 0, display: 'flex', gap: 8, padding: '8px 14px 2px', overflowX: 'auto', background: '#F9F7F4' }}>
             {ACTIONS.map(a => (
               <button key={a.kind} type="button" onClick={() => onAction(a.kind)} style={rowChip}>
-                <span style={{ fontSize: 14 }}>{a.icon}</span>{a.short}
+                <ActionIcon kind={a.kind} />{a.short}
               </button>
             ))}
             {SUGGESTIONS.map(s => (
