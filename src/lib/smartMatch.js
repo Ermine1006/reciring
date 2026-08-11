@@ -37,6 +37,9 @@ export async function fetchPendingNudges() {
 
 // Move one of my nudges pending → 'interested' | 'skipped'. RLS lets a user
 // update only their own rows, and only the status (WITH CHECK on user_id).
+// Marking 'interested' may trigger the server-side handshake (see
+// scripts/migration-smart-match-handshake.sql): if the candidate already
+// marked me interested, a match is created for both of us.
 export async function setNudgeStatus(id, status) {
   if (!isSupabaseConfigured || !id) return { error: new Error('not configured') }
   const { error } = await supabase
@@ -44,4 +47,22 @@ export async function setNudgeStatus(id, status) {
     .update({ status })
     .eq('id', id)
   return { error }
+}
+
+// After marking interest, check whether the handshake produced a live match
+// with this candidate. RLS lets me read matches I'm part of, so the person
+// who completes the mutual interest sees the new connection immediately.
+export async function checkMutualMatch(candidateId) {
+  if (!isSupabaseConfigured || !candidateId) return { matched: false, matchId: null }
+  const { data: { session } } = await supabase.auth.getSession()
+  const me = session?.user?.id
+  if (!me) return { matched: false, matchId: null }
+  const { data } = await supabase
+    .from('matches')
+    .select('id, status')
+    .or(`and(requester_user_id.eq.${me},helper_user_id.eq.${candidateId}),and(requester_user_id.eq.${candidateId},helper_user_id.eq.${me})`)
+    .neq('status', 'unmatched')
+    .limit(1)
+  const row = data && data[0]
+  return { matched: Boolean(row), matchId: row ? row.id : null }
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import AnonymousAvatar from './AnonymousAvatar'
-import { generateSmartMatches, fetchPendingNudges, setNudgeStatus } from '../lib/smartMatch'
+import { generateSmartMatches, fetchPendingNudges, setNudgeStatus, checkMutualMatch } from '../lib/smartMatch'
 import { track } from '../lib/analytics'
 
 // ── Smart Match "People you should meet" (Phase 1.3) ─────────────────
@@ -26,6 +26,9 @@ export default function SmartMatchSection() {
   const [nudges, setNudges] = useState([])
   const [loading, setLoading] = useState(true)
   const [busyId, setBusyId] = useState(null)
+  // Nudge ids that turned into a live mutual match — shown with a celebratory
+  // state instead of being removed, so the user knows to head to Matches.
+  const [matchedIds, setMatchedIds] = useState(() => new Set())
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -56,11 +59,24 @@ export default function SmartMatchSection() {
     if (busyId) return
     setBusyId(nudge.id)
     const { error } = await setNudgeStatus(nudge.id, status)
-    setBusyId(null)
-    if (error) return
-    setNudges(prev => prev.filter(n => n.id !== nudge.id))
+    if (error) { setBusyId(null); return }
     track(status === 'interested' ? 'smart_match_interested' : 'smart_match_skipped',
       { candidate_id: nudge.candidate_id, score: nudge.score })
+
+    // If marking interest completed a mutual match, celebrate in place rather
+    // than removing the card. Otherwise the card resolves and drops out.
+    if (status === 'interested') {
+      const { matched } = await checkMutualMatch(nudge.candidate_id)
+      setBusyId(null)
+      if (matched) {
+        track('smart_match_mutual', { candidate_id: nudge.candidate_id })
+        setMatchedIds(prev => new Set(prev).add(nudge.id))
+        return
+      }
+    } else {
+      setBusyId(null)
+    }
+    setNudges(prev => prev.filter(n => n.id !== nudge.id))
   }, [busyId])
 
   // Render nothing until we know there's something to show — avoids an empty
@@ -96,16 +112,23 @@ export default function SmartMatchSection() {
               </span>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
-              <button type="button" onClick={() => act(n, 'interested')} disabled={busyId === n.id}
-                style={{ border: 'none', borderRadius: 99, padding: '7px 13px', background: C.goldBtn, color: C.goldBtnInk, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif', opacity: busyId === n.id ? 0.6 : 1 }}>
-                Interested
-              </button>
-              <button type="button" onClick={() => act(n, 'skipped')} disabled={busyId === n.id}
-                style={{ border: `1px solid ${C.line}`, borderRadius: 99, padding: '6px 13px', background: C.ground, color: C.ink3, fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
-                Skip
-              </button>
-            </div>
+            {matchedIds.has(n.id) ? (
+              <div style={{ flexShrink: 0, textAlign: 'center', maxWidth: 118 }}>
+                <span style={{ display: 'block', fontSize: 13, fontWeight: 800, color: C.goldBtnInk, fontFamily: 'Inter, system-ui, sans-serif' }}>🎉 It’s a match!</span>
+                <span style={{ display: 'block', fontSize: 11, color: C.ink2, marginTop: 2, fontFamily: 'Inter, system-ui, sans-serif' }}>Find them in Matches to say hi.</span>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
+                <button type="button" onClick={() => act(n, 'interested')} disabled={busyId === n.id}
+                  style={{ border: 'none', borderRadius: 99, padding: '7px 13px', background: C.goldBtn, color: C.goldBtnInk, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif', opacity: busyId === n.id ? 0.6 : 1 }}>
+                  Interested
+                </button>
+                <button type="button" onClick={() => act(n, 'skipped')} disabled={busyId === n.id}
+                  style={{ border: `1px solid ${C.line}`, borderRadius: 99, padding: '6px 13px', background: C.ground, color: C.ink3, fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
+                  Skip
+                </button>
+              </div>
+            )}
           </div>
         ))}
       </div>
