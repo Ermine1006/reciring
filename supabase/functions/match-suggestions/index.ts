@@ -194,6 +194,117 @@ function scoreCandidate(viewer, candidate) {
   return { score: total, reason, breakdown: buckets }
 }
 
+// ── Semantic scoring via Kimi (OpenRouter) ─────────────────
+// Reuses the same LLM the writing assistant uses (api/ai-rewrite.js). ONE batch
+// call per refresh: the viewer + all candidates go in a single prompt and Kimi
+// returns the top matches with a 0-100 score + short reasons. Understands
+// meaning ("growth marketing" ≈ "user acquisition") where the rule scorer only
+// sees literal token overlap. Falls back to scoreCandidate() whenever the key
+// is missing or the call fails/times out — so matching never goes dark.
+
+const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
+const MATCH_MODEL = Deno.env.get('MATCH_LLM_MODEL') || 'moonshotai/kimi-k2'
+const KIMI_CANDIDATE_CAP = 60  // keep the single prompt bounded
+
+function profileBlob(p) {
+  const parts = []
+  if (p.can_help_with?.length)      parts.push(`can help with: ${p.can_help_with.join(', ')}`)
+  if (p.skills_to_learn?.length)    parts.push(`wants to learn: ${p.skills_to_learn.join(', ')}`)
+  if (p.industry_interests?.length) parts.push(`industries: ${p.industry_interests.join(', ')}`)
+  if (p.headline)                   parts.push(`role: ${p.headline}`)
+  if (p.networking_intent?.length)  parts.push(`looking for: ${p.networking_intent.join(', ')}`)
+  if (p.prompt_ask_me)              parts.push(`interests: ${p.prompt_ask_me}`)
+  if (p.prompt_weekend)             parts.push(`activities: ${p.prompt_weekend}`)
+  if (p.program)                    parts.push(`program: ${p.program}`)
+  if (p.career_stage)               parts.push(`stage: ${p.career_stage}`)
+  return parts.join('; ') || '(no profile info)'
+}
+
+function stripFences(s) {
+  return String(s || '').replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim()
+}
+
+// Deterministic fallback: the existing rule scorer over every candidate.
+function ruleScoreAll(candidates, viewer) {
+  return candidates.map(c => {
+    const { score, reason } = scoreCandidate(viewer, c)
+    return { candidate_id: c.id, score, reason }
+  })
+}
+
+async function scoreWithKimi(viewer, candidates) {
+  const key = Deno.env.get('OPENROUTER_API_KEY')
+  if (!key) throw new Error('no OPENROUTER_API_KEY')
+
+  const pool = candidates.slice(0, KIMI_CANDIDATE_CAP)
+  const validIds = new Set(pool.map(c => c.id))
+  const lines = pool.map(c => `- ${c.id}: ${profileBlob(c)}`).join('\n')
+
+  const system =
+    'You are the matching engine for Mutu, a professional peer-networking app where ' +
+    'people help each other. Score how valuable meeting each candidate would be FOR ' +
+    'THE VIEWER, 0-100, based on: two-way complementarity (they can teach the viewer / ' +
+    'the viewer can teach them), shared or complementary goals and networking intent, ' +
+    'industry overlap, and shared interests. Judge by MEANING, not exact words ' +
+    '("growth marketing" ≈ "user acquisition"; "PM" ≈ "product manager"). Be strict — ' +
+    'most pairs are mediocre; reserve 80+ for genuinely strong two-way fits. Reply with JSON only.'
+
+  const user =
+    `VIEWER:\n${profileBlob(viewer)}\n\n` +
+    `CANDIDATES (id: profile):\n${lines}\n\n` +
+    `Return JSON: {"matches":[{"candidate_id":"<id>","score":<0-100>,"reasons":["<reason>"]}]}\n` +
+    `Include only candidates worth meeting (score > 0), best first, at most ${TOP_N}. ` +
+    `Give 2-3 reasons each: specific, identity-free, <= 8 words (e.g. "They can teach you fundraising"). ` +
+    `Use only candidate_id values from the list above.`
+
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 25000)
+  let resp
+  try {
+    resp = await fetch(OPENROUTER_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${key}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://muturing.com',
+        'X-Title': 'Mutu',
+      },
+      body: JSON.stringify({
+        model: MATCH_MODEL,
+        temperature: 0.2,
+        response_format: { type: 'json_object' },
+        messages: [
+          { role: 'system', content: system },
+          { role: 'user', content: user },
+        ],
+      }),
+      signal: controller.signal,
+    })
+  } finally {
+    clearTimeout(timer)
+  }
+  if (!resp.ok) throw new Error(`OpenRouter ${resp.status}`)
+
+  const data = await resp.json()
+  const content = data?.choices?.[0]?.message?.content || ''
+  const parsed = JSON.parse(stripFences(content))
+  const matches = Array.isArray(parsed) ? parsed : (parsed.matches || parsed.results || [])
+  if (!Array.isArray(matches)) throw new Error('unexpected LLM response shape')
+
+  const out = []
+  for (const m of matches) {
+    if (!m || !validIds.has(m.candidate_id)) continue  // ignore hallucinated ids
+    const score = Math.max(0, Math.min(100, Math.round(Number(m.score) || 0)))
+    const reasons = Array.isArray(m.reasons) ? m.reasons.filter(Boolean).map(String).slice(0, 3) : []
+    out.push({
+      candidate_id: m.candidate_id,
+      score,
+      reason: reasons.length ? reasons.join(' · ') : 'Suggested as a strong match',
+    })
+  }
+  return out
+}
+
 // ── HTTP handler ───────────────────────────────────────────
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
@@ -263,12 +374,17 @@ serve(async (req) => {
       return json({ ok: true, count: 0, suggestions: [] })
     }
 
-    // 6. Score, filter zeros, sort, top N
-    const scored = candidates
-      .map(c => {
-        const { score, reason, breakdown } = scoreCandidate(viewer, c)
-        return { candidate_id: c.id, score, reason, breakdown }
-      })
+    // 6. Score — semantic (Kimi) with a deterministic rule-based fallback.
+    let scoringMode = 'kimi'
+    let rawScored
+    try {
+      rawScored = await scoreWithKimi(viewer, candidates)
+    } catch (err) {
+      console.error('[match-suggestions] semantic scoring failed, using rules:', err?.message || err)
+      rawScored = ruleScoreAll(candidates, viewer)
+      scoringMode = 'rules'
+    }
+    const scored = rawScored
       .filter(s => s.score > 0)
       .sort((a, b) => b.score - a.score)
       .slice(0, TOP_N)
@@ -296,9 +412,8 @@ serve(async (req) => {
 
     return json({
       ok: true,
+      mode: scoringMode,   // 'kimi' (semantic) or 'rules' (fallback) — for debugging
       count: scored.length,
-      // `suggestions` keeps the breakdown for future debug overlays / analytics;
-      // the persisted `match_nudges` row only stores `reason` (the joined string).
       suggestions: scored,
     })
 
