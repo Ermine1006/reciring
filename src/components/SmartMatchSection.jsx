@@ -50,8 +50,10 @@ export default function SmartMatchSection() {
   const refresh = useCallback(async () => {
     setLoading(true)
     await generateSmartMatches()
-    const { nudges } = await fetchPendingNudges()
-    setNudges(nudges)
+    const { nudges: fresh } = await fetchPendingNudges()
+    // Keep the current suggestions if a refresh yielded nothing (all seen, or a
+    // transient failure) so the section never blanks out on Refresh.
+    setNudges(prev => (fresh.length > 0 ? fresh : prev))
     setLoading(false)
   }, [])
 

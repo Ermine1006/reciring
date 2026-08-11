@@ -374,14 +374,25 @@ serve(async (req) => {
       return json({ ok: true, count: 0, suggestions: [] })
     }
 
+    // Rotation: surface NEW people. Exclude anyone the viewer already has a
+    // nudge for (pending / skipped / interested) — read BEFORE we clear stale
+    // pending below — so a Refresh shows a different set instead of the same
+    // deterministic top-5. Fall back to the full set only once they've been
+    // shown everyone, so the section never empties out.
+    const { data: seenRows } = await admin
+      .from('match_nudges').select('candidate_id').eq('user_id', viewerId)
+    const seen = new Set((seenRows || []).map(r => r.candidate_id))
+    const freshPool = candidates.filter(c => !seen.has(c.id))
+    const pool = freshPool.length > 0 ? freshPool : candidates
+
     // 6. Score — semantic (Kimi) with a deterministic rule-based fallback.
     let scoringMode = 'kimi'
     let rawScored
     try {
-      rawScored = await scoreWithKimi(viewer, candidates)
+      rawScored = await scoreWithKimi(viewer, pool)
     } catch (err) {
       console.error('[match-suggestions] semantic scoring failed, using rules:', err?.message || err)
-      rawScored = ruleScoreAll(candidates, viewer)
+      rawScored = ruleScoreAll(pool, viewer)
       scoringMode = 'rules'
     }
     const scored = rawScored
