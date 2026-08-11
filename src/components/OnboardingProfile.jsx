@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { INDUSTRIES, HELP_TYPES } from '../data/requestOptions'
-import { PROGRAMS, CAREER_STAGES, NETWORKING_INTENTS } from '../data/onboardingOptions'
+import { PROGRAMS, CAREER_STAGES, NETWORKING_INTENTS, GRAD_YEARS, programCredential } from '../data/onboardingOptions'
 import { useAuth } from '../context/AuthContext'
 import ReciRingLogo from './ReciRingLogo'
 import Chip from './Chip'
@@ -83,6 +83,19 @@ export default function OnboardingProfile() {
   const [program, setProgram]         = useState('')
   const [headline, setHeadline] = useState('')
   const [careerStage, setCareerStage] = useState('')
+  const [graduationYear, setGraduationYear] = useState(null)
+
+  // Auto-fill the "MBA '26" prefix into Current role from program + grad year.
+  // The role stays user-typed — we only manage the prefix while the field is
+  // empty or still equals the last auto value, so we never clobber their text.
+  const gradPrefix = graduationYear && programCredential(program) ? `${programCredential(program)} '${String(graduationYear).slice(2)}` : ''
+  const lastAutoRef = useRef('')
+  useEffect(() => {
+    if (!gradPrefix) return
+    const prevAuto = lastAutoRef.current
+    lastAutoRef.current = gradPrefix
+    setHeadline(h => (h.trim() === '' || h === prevAuto) ? gradPrefix : h)
+  }, [gradPrefix])
 
   // Step 2
   const [industryInterests, setIndustryInterests] = useState([])
@@ -135,6 +148,7 @@ export default function OnboardingProfile() {
     const { error: err } = await updateProfile({
       name:               displayName.trim(),
       program,
+      graduation_year:    graduationYear,
       headline:           headline.trim(),
       career_stage:       careerStage,
       industry_interests: industryInterests,
@@ -256,8 +270,18 @@ export default function OnboardingProfile() {
                 </div>
 
                 <div>
+                  <label style={labelStyle}>Graduation year</label>
+                  <div className="flex flex-wrap gap-2">
+                    {GRAD_YEARS.map(y => (
+                      <Chip key={y} label={String(y)} active={graduationYear === y}
+                        onClick={() => setGraduationYear(graduationYear === y ? null : y)} />
+                    ))}
+                  </div>
+                </div>
+
+                <div>
                   <label style={labelStyle}>Current role</label>
-                  <p style={helperStyle}>What you're doing right now — student, role at Co.</p>
+                  <p style={helperStyle}>We fill in your program + year — just add your role after it.</p>
                   <input
                     type="text"
                     value={headline}

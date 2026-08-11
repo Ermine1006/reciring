@@ -12,6 +12,14 @@ export const CAREER_STAGES = [
   'Experienced professional',
 ]
 
+// Graduation-year chips (rolling window) + the "MBA '26"-style credential
+// prefix derived from a program, shared by onboarding and the profile editor.
+export const GRAD_YEARS = (() => { const y = new Date().getFullYear(); return Array.from({ length: 8 }, (_, i) => y - 2 + i) })()
+export function programCredential(program) {
+  if (!program || program === 'Other') return ''
+  return /MBA/i.test(program) ? 'MBA' : program // FT/PT/E/GEMBA → MBA; MMA/MFin/PhD as-is
+}
+
 // id = stored value in profiles.networking_intent (matches Edge Function scorer keys)
 // label = display string in chips
 export const NETWORKING_INTENTS = [

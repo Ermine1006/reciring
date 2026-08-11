@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { INDUSTRIES, HELP_TYPES } from '../data/requestOptions'
-import { PROGRAMS, CAREER_STAGES, NETWORKING_INTENTS } from '../data/onboardingOptions'
+import { PROGRAMS, CAREER_STAGES, NETWORKING_INTENTS, GRAD_YEARS, programCredential } from '../data/onboardingOptions'
 import AnonymousAvatar from './AnonymousAvatar'
 import Chip from './Chip'
 import PRESET_AVATARS from '../data/presetAvatars'
@@ -135,6 +135,18 @@ export default function SettingsPage({ section }) {
   const [program, setProgram]         = useState(profile?.program || '')
   const [headline, setHeadline]       = useState(profile?.headline || '')
   const [careerStage, setCareerStage] = useState(profile?.career_stage || '')
+  const [graduationYear, setGraduationYear] = useState(profile?.graduation_year || null)
+
+  // Auto-fill the "MBA '26" prefix into Current role from program + grad year
+  // (role stays user-typed; never clobbers what they've written).
+  const gradPrefix = graduationYear && programCredential(program) ? `${programCredential(program)} '${String(graduationYear).slice(2)}` : ''
+  const lastAutoRef = useRef('')
+  useEffect(() => {
+    if (!gradPrefix) return
+    const prevAuto = lastAutoRef.current
+    lastAutoRef.current = gradPrefix
+    setHeadline(h => (h.trim() === '' || h === prevAuto) ? gradPrefix : h)
+  }, [gradPrefix])
 
   // Professional
   const [industryInterests, setIndustryInterests] = useState(profile?.industry_interests || [])
@@ -181,6 +193,7 @@ export default function SettingsPage({ section }) {
       name:               name.trim() || 'Anonymous',
       avatar_url:         selectedKey ? `preset:${selectedKey}` : null,
       program,
+      graduation_year:    graduationYear,
       headline:           headline.trim(),
       career_stage:       careerStage,
       industry_interests: industryInterests,
@@ -286,7 +299,16 @@ export default function SettingsPage({ section }) {
             </div>
           </Field>
 
-          <Field label="Current role" helper="What you're doing right now — student, role at Co.">
+          <Field label="Graduation year">
+            <div className="flex flex-wrap gap-2">
+              {GRAD_YEARS.map(y => (
+                <Chip key={y} label={String(y)} active={graduationYear === y}
+                  onClick={() => setGraduationYear(graduationYear === y ? null : y)} />
+              ))}
+            </div>
+          </Field>
+
+          <Field label="Current role" helper="We fill in your program + year — just add your role after it.">
             <input
               value={headline}
               onChange={(e) => setHeadline(e.target.value.slice(0, 80))}
