@@ -2,8 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { fetchEncounters, buildAssistantContext, askMutu, fetchAskHistory, saveAskMessage, clearAskHistory } from '../lib/eventMemory'
 import { fetchConnections } from '../lib/relationships'
-import { fetchMyEvents } from '../lib/events'
-import { fetchEventMatches } from '../lib/eventMatch'
+import { fetchMyEvents, fetchUpcomingEvents } from '../lib/events'
+import { fetchEventPrepCandidates } from '../lib/eventMatch'
 import { useAuth } from '../context/AuthContext'
 
 // Render Mutu's answers as plain text: turn **bold** into real bold and strip
@@ -21,11 +21,22 @@ const C = {
   ink: '#14110C', sub: '#6B6152', muted: '#9C9789', white: '#FFFFFF', border: '#E5E7EB',
 }
 
+// Quick free-text prompts under the three primary actions.
 const SUGGESTIONS = [
   'Who did I meet looking for co-founders?',
   'What introductions did I promise?',
-  'Who should I follow up with first?',
-  'Summarize my networking this week.',
+]
+
+// Crafted questions behind the primary action cards.
+const Q_SUMMARY = 'Give me a quick summary of my network right now: any follow-ups due, who I met recently, and the single best next step I should take.'
+const Q_ATTEND  = 'Based on my profile and interests, which upcoming event should I attend, and why?'
+const qPrep = (title) => `I'm attending "${title}". Help me prepare — who should I connect with there, why each, and how should I open the conversation?`
+
+// The three primary actions Ask Mutu opens to. `kind` drives the click handler.
+const ACTIONS = [
+  { kind: 'summary', icon: '📊', title: 'Your networking summary', sub: 'Follow-ups due, who you met recently, next step' },
+  { kind: 'attend',  icon: '🧭', title: 'What event should I attend?', sub: 'Best upcoming events for your goals' },
+  { kind: 'prep',    icon: '🤝', title: 'Prepare for an event', sub: 'Who to connect with there — and how to open' },
 ]
 
 /**
@@ -39,36 +50,48 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
   const [msgs, setMsgs] = useState([])       // { role: 'user'|'mutu', text }
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
+  const [view, setView] = useState('home')   // 'home' | 'pickEvent' (for "Prepare for an event")
+  const [prepEvents, setPrepEvents] = useState([]) // future joined/hosted events we can prep for
   const bottomRef = useRef(null)
 
   useEffect(() => {
     if (!open) return
     setInput('')
+    setView('home')
     ;(async () => {
-      const [{ data: enc }, { data: hist }, { data: conns }, { data: myEvents }] = await Promise.all([
+      const [{ data: enc }, { data: hist }, { data: conns }, { data: myEvents }, { data: discover }] = await Promise.all([
         fetchEncounters(userId),
         fetchAskHistory(userId),
         fetchConnections(userId),
         fetchMyEvents(userId),
+        fetchUpcomingEvents(),
       ])
-      // Always include the user's own joined/hosted events (merged with any
-      // passed in), so Ask Mutu knows what they're registered for regardless of
-      // which screen opened the sheet.
+      // Merge: the user's own joined/hosted events (joined:true) plus discoverable
+      // upcoming events they have NOT joined (joined:false), so Ask Mutu can both
+      // recall what they're registered for AND recommend new events to attend.
       const byId = new Map()
-      for (const e of [...(events || []), ...(myEvents || [])]) if (e?.id) byId.set(e.id, e)
+      for (const e of [...(events || []), ...(myEvents || [])]) if (e?.id) byId.set(e.id, { ...e, joined: true })
+      for (const e of (discover || [])) if (e?.id && !byId.has(e.id)) byId.set(e.id, { ...e, joined: false })
       const allEvents = [...byId.values()]
 
-      // For upcoming events, pull the privacy-safe "who to meet" matching the
-      // Event Detail page uses: public attendees come back with a real name,
-      // private ones as "A peer" (need/offer only). Capped to keep it light.
+      // Compute the privacy-safe "who to meet" list for the user's JOINED
+      // upcoming events (where we can read attendees and match on their own
+      // intentions, falling back to profile priority). Public attendees come
+      // back named; private ones as "A peer". Capped to keep the payload light.
       const now = Date.now()
-      const upcoming = allEvents
-        .filter(e => e.start_at && new Date(e.start_at).getTime() >= now - 12 * 3600 * 1000)
+      const joinedUpcoming = allEvents
+        .filter(e => e.joined && e.start_at && new Date(e.start_at).getTime() >= now - 12 * 3600 * 1000)
         .slice(0, 5)
-      const lists = await Promise.all(upcoming.map(e => fetchEventMatches(e.id, userId).catch(() => ({ data: [] }))))
+      const lists = await Promise.all(
+        joinedUpcoming.map(e => fetchEventPrepCandidates(e.id, userId, profile).catch(() => ({ candidates: [], signal: 'none' })))
+      )
       const eventMatches = {}
-      upcoming.forEach((e, i) => { eventMatches[e.id] = lists[i] })
+      joinedUpcoming.forEach((e, i) => {
+        const r = lists[i] || {}
+        eventMatches[e.id] = { data: r.candidates || [], needsMyIntentions: r.signal === 'none' }
+      })
 
+      setPrepEvents(joinedUpcoming)
       setCtx(buildAssistantContext({ encounters: enc, events: allEvents, connections: conns, me: profile, eventMatches }))
       setMsgs((hist || []).map(m => ({ role: m.role, text: m.text })))
     })()
@@ -90,6 +113,20 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
     const reply = error ? (error.message || 'Sorry, try again.') : answer
     setMsgs(m => [...m, { role: 'mutu', text: reply }])
     if (!error) saveAskMessage(userId, 'mutu', reply)
+  }
+
+  // Primary action cards. "prep" opens an event picker; the others send a
+  // crafted question straight through.
+  const onAction = (kind) => {
+    if (busy) return
+    if (kind === 'summary') return send(Q_SUMMARY)
+    if (kind === 'attend')  return send(Q_ATTEND)
+    if (kind === 'prep')    return setView('pickEvent')
+  }
+
+  const onPickEvent = (ev) => {
+    setView('home')
+    send(qPrep(ev.title))
   }
 
   const empty = msgs.length === 0
@@ -120,15 +157,60 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
 
         {/* Conversation */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '16px 18px' }}>
-          {empty ? (
+          {view === 'pickEvent' ? (
             <div>
-              <p style={{ fontSize: 13.5, color: C.sub, lineHeight: 1.5, margin: '4px 0 16px', fontFamily: 'Inter, system-ui, sans-serif' }}>
-                I can recall who you met, what you promised, and help you follow up. Try:
+              <button type="button" onClick={() => setView('home')}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', color: C.muted, fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: '2px 0 12px', fontFamily: 'Inter, system-ui, sans-serif' }}>
+                ‹ Back
+              </button>
+              <p style={{ fontSize: 14, fontWeight: 700, color: C.ink, margin: '0 0 4px', fontFamily: 'Fraunces, Georgia, serif' }}>Which event are you preparing for?</p>
+              <p style={{ fontSize: 12.5, color: C.sub, lineHeight: 1.5, margin: '0 0 14px', fontFamily: 'Inter, system-ui, sans-serif' }}>
+                I'll suggest who to connect with there and how to open the conversation.
               </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {prepEvents.length === 0 ? (
+                <div style={{ padding: '14px', borderRadius: 12, background: C.white, border: `1px solid ${C.border}`, color: C.sub, fontSize: 13, lineHeight: 1.5, fontFamily: 'Inter, system-ui, sans-serif' }}>
+                  You haven't joined any upcoming events yet. Join one from the Events tab, then come back to prep for it.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {prepEvents.map(ev => (
+                    <button key={ev.id} type="button" onClick={() => onPickEvent(ev)}
+                      style={{ textAlign: 'left', padding: '12px 14px', borderRadius: 12, background: C.white, border: `1px solid ${C.goldLight}`, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
+                      <span style={{ display: 'block', fontSize: 13.5, fontWeight: 700, color: C.ink }}>{ev.title}</span>
+                      {ev.start_at && (
+                        <span style={{ display: 'block', fontSize: 11.5, color: C.muted, marginTop: 2 }}>
+                          {new Date(ev.start_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                          {typeof ev.attendee_count === 'number' ? ` · ${ev.attendee_count} attending` : ''}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : empty ? (
+            <div>
+              <p style={{ fontSize: 13.5, color: C.sub, lineHeight: 1.5, margin: '4px 0 14px', fontFamily: 'Inter, system-ui, sans-serif' }}>
+                I know your network — the people you've met, who you've connected with, and your events. Where do you want to start?
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {ACTIONS.map(a => (
+                  <button key={a.kind} type="button" onClick={() => onAction(a.kind)}
+                    style={{ display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left', padding: '13px 14px', borderRadius: 14, background: C.white, border: `1px solid ${C.goldLight}`, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
+                    <span style={{ fontSize: 22, flexShrink: 0, lineHeight: 1 }}>{a.icon}</span>
+                    <span style={{ flex: 1 }}>
+                      <span style={{ display: 'block', fontSize: 14, fontWeight: 700, color: C.ink }}>{a.title}</span>
+                      <span style={{ display: 'block', fontSize: 12, color: C.sub, marginTop: 2, lineHeight: 1.4 }}>{a.sub}</span>
+                    </span>
+                    <span style={{ color: C.goldDark, fontSize: 18, flexShrink: 0 }}>›</span>
+                  </button>
+                ))}
+              </div>
+              <p style={{ fontSize: 12, color: C.muted, margin: '18px 0 8px', fontWeight: 600, fontFamily: 'Inter, system-ui, sans-serif' }}>Or ask anything</p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {SUGGESTIONS.map(s => (
                   <button key={s} type="button" onClick={() => send(s)}
-                    style={{ textAlign: 'left', padding: '12px 14px', borderRadius: 12, background: C.white, border: `1px solid ${C.goldLight}`, color: C.goldDark, fontSize: 13.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
+                    style={{ textAlign: 'left', padding: '9px 12px', borderRadius: 999, background: C.goldBg, border: `1px solid ${C.goldLight}`, color: C.goldDark, fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
                     {s}
                   </button>
                 ))}

@@ -132,3 +132,103 @@ export async function fetchEventMatches(eventId, meUserId) {
 
   return { data: ranked, error: null }
 }
+
+// Build my need/offer token sets from profile priority — the FALLBACK signal
+// for Ask Mutu's "prepare for an event" when I haven't set per-event intentions.
+// Needs (what I'm looking for) come from my networking intent + skills to learn;
+// offers (what I bring) from what I can help with. Interests feed both sides.
+function profileTokens(profile) {
+  const p = profile || {}
+  const need = [
+    ...(p.networking_intent || []),
+    ...(p.skills_to_learn || []),
+    ...(p.industry_interests || []),
+  ].join(' ')
+  const offer = [
+    ...(p.can_help_with || []),
+    ...(p.industry_interests || []),
+  ].join(' ')
+  return { myNeed: tokens(need), myOffer: tokens(offer) }
+}
+
+/**
+ * Ask Mutu "prepare for an event" — rank the event's attendees for `meUserId`.
+ * Uses my per-event need/offer when I've set them ('event' signal); otherwise
+ * falls back to my profile priority ('profile' signal) so the briefing still
+ * works before I've filled in event intentions. Same complementarity ranking
+ * and privacy rules as fetchEventMatches (public profiles only show a name).
+ * Returns { candidates, signal: 'event'|'profile'|'none', error }, best first.
+ */
+export async function fetchEventPrepCandidates(eventId, meUserId, profile, { limit = 6 } = {}) {
+  if (!isSupabaseConfigured || !eventId || !meUserId) return { candidates: [], signal: 'none', error: null }
+
+  const { data: rows, error } = await supabase
+    .from('event_attendees')
+    .select('user_id, need_text, offer_text')
+    .eq('event_id', eventId)
+  if (error) return { candidates: [], signal: 'none', error }
+
+  const me = (rows || []).find(r => r.user_id === meUserId)
+  const hasEventIntent = me && (me.need_text || me.offer_text)
+
+  let myNeed, myOffer, signal
+  if (hasEventIntent) {
+    myNeed = tokens(me.need_text)
+    myOffer = tokens(me.offer_text)
+    signal = 'event'
+  } else {
+    const t = profileTokens(profile)
+    myNeed = t.myNeed
+    myOffer = t.myOffer
+    signal = 'profile'
+  }
+  // Neither event intentions nor a filled-in profile → nothing to rank on.
+  if (myNeed.size === 0 && myOffer.size === 0) return { candidates: [], signal: 'none', error: null }
+
+  const others = (rows || []).filter(r => r.user_id !== meUserId && (r.need_text || r.offer_text))
+  if (others.length === 0) return { candidates: [], signal, error: null }
+
+  const ids = others.map(o => o.user_id)
+  const { data: profs } = await supabase
+    .from('profiles')
+    .select('id, name, program, visibility')
+    .in('id', ids)
+  const profById = new Map((profs || []).map(p => [p.id, p]))
+
+  // My own private event goal biases the ranking, exactly like the Board matcher.
+  const { goals: myGoals } = await fetchEventGoals(eventId, meUserId)
+  const w = goalWeights(myGoals)
+
+  const ranked = others.map(o => {
+    const theyHelpMe = overlap(myNeed, tokens(o.offer_text))
+    const iHelpThem  = overlap(myOffer, tokens(o.need_text))
+    const mutual = theyHelpMe > 0 && iHelpThem > 0
+    const score =
+      theyHelpMe * w.learnMult +
+      iHelpThem +
+      (mutual ? w.mutualBonus : 0) +
+      (!mutual && (theyHelpMe > 0 || iHelpThem > 0) ? w.exploreNudge : 0)
+
+    const p = profById.get(o.user_id) || {}
+    const isPublic = p.visibility === 'public' && p.name
+    return {
+      name:    isPublic ? p.name : 'A peer',
+      program: isPublic ? (p.program || null) : null,
+      need:    o.need_text || '',
+      offer:   o.offer_text || '',
+      score,
+      reason:  mutual
+        ? 'Mutual fit — they can help you and you can help them'
+        : theyHelpMe > 0
+          ? 'They offer what you’re looking for'
+          : iHelpThem > 0
+            ? 'You can offer what they need'
+            : 'Also at this event',
+    }
+  })
+    .filter(m => m.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+
+  return { candidates: ranked, signal, error: null }
+}

@@ -266,6 +266,9 @@ export function buildAssistantContext({ encounters = [], events = [], connection
         date:     e.start_at ? new Date(e.start_at).toISOString().slice(0, 10) : null,
         category: e.category || null,
         attendees: typeof e.attendee_count === 'number' ? e.attendee_count : null,
+        // true = user already joined/hosts it; false = discoverable, not yet
+        // joined. Lets Mutu recommend NEW events to attend, not just registered ones.
+        joined:   e.joined === true ? true : e.joined === false ? false : null,
         // Privacy-safe attendee matches: a real "name" only for public
         // profiles; private ones come through as "A peer" (need/offer only).
         // `need_your_intentions` = the user hasn't posted their own looking-for/
