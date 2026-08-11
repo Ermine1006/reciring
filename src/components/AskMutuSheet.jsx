@@ -34,10 +34,13 @@ const qPrep = (title) => `I'm attending "${title}". Help me prepare — who shou
 
 // The three primary actions Ask Mutu opens to. `kind` drives the click handler.
 const ACTIONS = [
-  { kind: 'summary', icon: '📊', title: 'Your networking summary', sub: 'Follow-ups due, who you met recently, next step' },
-  { kind: 'attend',  icon: '🧭', title: 'What event should I attend?', sub: 'Best upcoming events for your goals' },
-  { kind: 'prep',    icon: '🤝', title: 'Prepare for an event', sub: 'Who to connect with there — and how to open' },
+  { kind: 'summary', icon: '📊', short: 'Summary',  title: 'Your networking summary', sub: 'Follow-ups due, who you met recently, next step' },
+  { kind: 'attend',  icon: '🧭', short: 'Attend',   title: 'What event should I attend?', sub: 'Best upcoming events for your goals' },
+  { kind: 'prep',    icon: '🤝', short: 'Prepare',  title: 'Prepare for an event', sub: 'Who to connect with there — and how to open' },
 ]
+
+// Granola-style shortcut pill sitting in the row just above the composer.
+const rowChip = { display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0, padding: '8px 13px', borderRadius: 999, background: '#FFFFFF', border: '1px solid #E8D9A7', color: '#A6822A', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif', whiteSpace: 'nowrap' }
 
 /**
  * Ask Mutu — a lightweight networking assistant. Answers only from the user's
@@ -189,32 +192,10 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
               )}
             </div>
           ) : empty ? (
-            <div>
-              <p style={{ fontSize: 13.5, color: C.sub, lineHeight: 1.5, margin: '4px 0 14px', fontFamily: 'Inter, system-ui, sans-serif' }}>
-                I know your network — the people you've met, who you've connected with, and your events. Where do you want to start?
+            <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center' }}>
+              <p style={{ fontSize: 14, color: C.sub, lineHeight: 1.6, textAlign: 'center', maxWidth: 320, fontFamily: 'Inter, system-ui, sans-serif' }}>
+                I know your network — the people you've met, who you've connected with, and your events. Pick a shortcut below, or ask me anything.
               </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {ACTIONS.map(a => (
-                  <button key={a.kind} type="button" onClick={() => onAction(a.kind)}
-                    style={{ display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left', padding: '13px 14px', borderRadius: 14, background: C.white, border: `1px solid ${C.goldLight}`, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
-                    <span style={{ fontSize: 22, flexShrink: 0, lineHeight: 1 }}>{a.icon}</span>
-                    <span style={{ flex: 1 }}>
-                      <span style={{ display: 'block', fontSize: 14, fontWeight: 700, color: C.ink }}>{a.title}</span>
-                      <span style={{ display: 'block', fontSize: 12, color: C.sub, marginTop: 2, lineHeight: 1.4 }}>{a.sub}</span>
-                    </span>
-                    <span style={{ color: C.goldDark, fontSize: 18, flexShrink: 0 }}>›</span>
-                  </button>
-                ))}
-              </div>
-              <p style={{ fontSize: 12, color: C.muted, margin: '18px 0 8px', fontWeight: 600, fontFamily: 'Inter, system-ui, sans-serif' }}>Or ask anything</p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                {SUGGESTIONS.map(s => (
-                  <button key={s} type="button" onClick={() => send(s)}
-                    style={{ textAlign: 'left', padding: '9px 12px', borderRadius: 999, background: C.goldBg, border: `1px solid ${C.goldLight}`, color: C.goldDark, fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
-                    {s}
-                  </button>
-                ))}
-              </div>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -244,6 +225,22 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
             </div>
           )}
         </div>
+
+        {/* Granola-style shortcut row — always sits just above the input, so the
+            actions never disappear and you can trigger any of them mid-chat
+            without clearing your history. */}
+        {view !== 'pickEvent' && (
+          <div className="phone-scroll" style={{ flexShrink: 0, display: 'flex', gap: 8, padding: '8px 14px 2px', overflowX: 'auto', background: '#F9F7F4' }}>
+            {ACTIONS.map(a => (
+              <button key={a.kind} type="button" onClick={() => onAction(a.kind)} style={rowChip}>
+                <span style={{ fontSize: 14 }}>{a.icon}</span>{a.short}
+              </button>
+            ))}
+            {SUGGESTIONS.map(s => (
+              <button key={s} type="button" onClick={() => send(s)} style={rowChip}>{s}</button>
+            ))}
+          </div>
+        )}
 
         {/* Composer */}
         <div style={{ flexShrink: 0, padding: '10px 16px calc(14px + env(safe-area-inset-bottom))', borderTop: `1px solid ${C.border}`, background: C.white, display: 'flex', gap: 8, alignItems: 'flex-end' }}>
