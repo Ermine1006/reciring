@@ -211,8 +211,20 @@ export async function clearAskHistory(userId) {
 
 // Build the compact, private grounding context for Ask Mutu from the user's
 // own encounters + events. Only fields the user already owns.
-export function buildAssistantContext({ encounters = [], events = [], connections = [] }) {
+export function buildAssistantContext({ encounters = [], events = [], connections = [], me = null }) {
   return {
+    // The user's OWN profile — lets Mutu reason about fit ("who should I
+    // connect with", "is this event worth attending") instead of punting.
+    me: me ? {
+      name:            me.name || null,
+      program:         me.program || null,
+      career_stage:    me.career_stage || null,
+      interests:       me.industry_interests || [],
+      can_help_with:   me.can_help_with || [],
+      wants_help_with: me.skills_to_learn || [],
+      looking_for:     me.networking_intent || [],
+      headline:        me.headline || null,
+    } : null,
     // People you know but have NOT met in person yet (Community match /
     // identity reveal / chat). Kept separate from `people` (met) so Mutu never
     // conflates a connection with someone you met. Identity-hidden ones omitted.
@@ -247,7 +259,12 @@ export function buildAssistantContext({ encounters = [], events = [], connection
         due:           e.due_at ? new Date(e.due_at).toISOString().slice(0, 10) : null,
       }
     }),
-    upcoming_events: events.map(e => e.title).filter(Boolean),
+    upcoming_events: events.map(e => ({
+      title:    e.title,
+      date:     e.start_at ? new Date(e.start_at).toISOString().slice(0, 10) : null,
+      category: e.category || null,
+      attendees: typeof e.attendee_count === 'number' ? e.attendee_count : null,
+    })).filter(e => e.title),
   }
 }
 

@@ -2,6 +2,17 @@ import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { fetchEncounters, buildAssistantContext, askMutu, fetchAskHistory, saveAskMessage, clearAskHistory } from '../lib/eventMemory'
 import { fetchConnections } from '../lib/relationships'
+import { useAuth } from '../context/AuthContext'
+
+// Render Mutu's answers as plain text: turn **bold** into real bold and strip
+// any stray markdown asterisks so they never show as literal characters.
+function renderText(text) {
+  return String(text || '').split(/(\*\*[^*]+\*\*)/g).map((p, i) =>
+    /^\*\*[^*]+\*\*$/.test(p)
+      ? <strong key={i}>{p.slice(2, -2)}</strong>
+      : <span key={i}>{p.replace(/\*/g, '')}</span>,
+  )
+}
 
 const C = {
   gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7', goldBg: '#F8F3E5',
@@ -21,6 +32,7 @@ const SUGGESTIONS = [
  * A sheet, not a full chat app.
  */
 export default function AskMutuSheet({ open, userId, events = [], onClose }) {
+  const { profile } = useAuth()
   const [ctx, setCtx] = useState(null)
   const [msgs, setMsgs] = useState([])       // { role: 'user'|'mutu', text }
   const [input, setInput] = useState('')
@@ -36,10 +48,10 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
         fetchAskHistory(userId),
         fetchConnections(userId),
       ])
-      setCtx(buildAssistantContext({ encounters: enc, events, connections: conns }))
+      setCtx(buildAssistantContext({ encounters: enc, events, connections: conns, me: profile }))
       setMsgs((hist || []).map(m => ({ role: m.role, text: m.text })))
     })()
-  }, [open, userId]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open, userId, profile]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [msgs, busy])
 
@@ -114,7 +126,7 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
                     borderBottomRightRadius: m.role === 'user' ? 4 : 16,
                     borderBottomLeftRadius: m.role === 'user' ? 16 : 4,
                   }}>
-                    {m.text}
+                    {renderText(m.text)}
                   </div>
                 </div>
               ))}
