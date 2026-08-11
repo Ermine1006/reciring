@@ -29,6 +29,13 @@ function joinNonEmpty(parts, sep = ' · ') {
   return parts.map(p => (p == null ? '' : String(p).trim())).filter(Boolean).join(sep)
 }
 
+// Program + graduation year → "PT-MBA '26" (year appended only when present).
+function programLabel(c) {
+  if (!c?.program) return ''
+  const yy = c.graduation_year ? ` '${String(c.graduation_year).slice(-2)}` : ''
+  return `${c.program}${yy}`
+}
+
 /**
  * Compute display info for a post's creator, given the post object
  * (which has an embedded `creator` profile slice from posts.js).
@@ -70,7 +77,7 @@ export function posterDisplay(post) {
     return {
       isPublic:  true,
       primary:   firstName(c.name),
-      secondary: joinNonEmpty([c.program, c.headline, c.industry_interests?.[0]]),
+      secondary: joinNonEmpty([programLabel(c), c.headline, c.industry_interests?.[0]]),
       useAvatar: Boolean(c.avatar_url),
       avatarUrl: c.avatar_url || null,
     }
@@ -79,7 +86,7 @@ export function posterDisplay(post) {
   // Private (default) — descriptive label, no name.
   // Primary line favours program (most universally meaningful);
   // secondary stacks role / industry / career stage.
-  const primary = c.program
+  const primary = programLabel(c)
     || c.career_stage
     || c.industry_interests?.[0]
     || 'Rotman peer'

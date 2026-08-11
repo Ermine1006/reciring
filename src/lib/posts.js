@@ -17,7 +17,7 @@ export async function fetchPosts() {
       *,
       creator:profiles (
         total_points, meetings_scheduled, meetings_completed,
-        visibility, name, program, headline, career_stage,
+        visibility, name, program, graduation_year, headline, career_stage,
         industry_interests, avatar_url, member_type
       )
     `)
@@ -131,6 +131,7 @@ export function rowToCard(row) {
       visibility:         creator.visibility || 'private',
       name:               creator.name || null,
       program:            creator.program || null,
+      graduation_year:    creator.graduation_year || null,
       headline:           creator.headline || null,
       career_stage:       creator.career_stage || null,
       industry_interests: creator.industry_interests || [],
