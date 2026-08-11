@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { fetchEncounters, buildAssistantContext, askMutu, fetchAskHistory, saveAskMessage, clearAskHistory } from '../lib/eventMemory'
 import { fetchConnections } from '../lib/relationships'
+import { fetchMyEvents } from '../lib/events'
 import { useAuth } from '../context/AuthContext'
 
 // Render Mutu's answers as plain text: turn **bold** into real bold and strip
@@ -43,12 +44,18 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
     if (!open) return
     setInput('')
     ;(async () => {
-      const [{ data: enc }, { data: hist }, { data: conns }] = await Promise.all([
+      const [{ data: enc }, { data: hist }, { data: conns }, { data: myEvents }] = await Promise.all([
         fetchEncounters(userId),
         fetchAskHistory(userId),
         fetchConnections(userId),
+        fetchMyEvents(userId),
       ])
-      setCtx(buildAssistantContext({ encounters: enc, events, connections: conns, me: profile }))
+      // Always include the user's own joined/hosted events (merged with any
+      // passed in), so Ask Mutu knows what they're registered for regardless of
+      // which screen opened the sheet.
+      const byId = new Map()
+      for (const e of [...(events || []), ...(myEvents || [])]) if (e?.id) byId.set(e.id, e)
+      setCtx(buildAssistantContext({ encounters: enc, events: [...byId.values()], connections: conns, me: profile }))
       setMsgs((hist || []).map(m => ({ role: m.role, text: m.text })))
     })()
   }, [open, userId, profile]) // eslint-disable-line react-hooks/exhaustive-deps
