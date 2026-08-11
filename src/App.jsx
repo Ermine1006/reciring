@@ -43,6 +43,7 @@ import { fetchMyJoinedEventIds } from './lib/events'
 import { createMatch, fetchMyMatches, fetchMatchedPostIds, fetchUnmatchedPostIds, unmatchMatch, matchToUI, requestIdentityReveal, acceptIdentityReveal, declineIdentityReveal, fetchPeerProfile } from './lib/matches'
 import { fetchUserInteractions, recordPostInteraction, clearSwipedLeft, unpassPost } from './lib/interactions'
 import { fetchCompletedMatchIds } from './lib/recognition'
+import { track } from './lib/analytics'
 import { notifyEventReview, notifyNewMatch } from './lib/email'
 import { fetchMessages, sendMessage, sendMeetingProposal, updateMeetingStatus, msgToUI, markMessagesRead } from './lib/messages'
 
@@ -795,6 +796,8 @@ function AppShell() {
     // Email the post author that someone connected — fire-and-forget so a
     // mail hiccup never affects the match that already succeeded.
     notifyNewMatch(data.id).catch(() => {})
+    // Funnel: the "matched" step.
+    track('match_created', { match_id: data.id, post_id: request.id })
     return { matchId: data.id, error: null }
   }
 
@@ -1083,10 +1086,10 @@ function AppShell() {
               eventPromos={eventPromos}
               unmatchedPostIds={unmatchedPostIds}
               interactionMap={interactionMap}
-              onSwipeRight={(r) => console.log('Helping:', r.id)}
+              onSwipeRight={(r) => track('discover_swipe_right', { post_id: r.id })}
               onSwipeLeft={(r) => recordInteraction(r.id, 'swiped_left')}
               onUnpass={unpassOne}
-              onCardViewed={(r) => recordInteraction(r.id, 'viewed')}
+              onCardViewed={(r) => { recordInteraction(r.id, 'viewed'); track('discover_card_opened', { post_id: r.id }) }}
               onMatchConfirm={handleMatchConfirm}
               onOpenChat={handleOpenChat}
               onScheduleChat={handleScheduleChat}

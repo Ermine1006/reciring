@@ -8,6 +8,7 @@ import MatchModal from './MatchModal'
 import { rankRequests, filterRequests, DEFAULT_VIEWER_PROFILE } from '../data/matchRanking'
 import { INDUSTRIES, HELP_TYPES, TIME_OPTIONS } from '../data/requestOptions'
 import { useAuth } from '../context/AuthContext'
+import { track } from '../lib/analytics'
 
 const C = {
   gold:      '#C9A33B',
@@ -244,6 +245,21 @@ export default function CardStack({ requests, eventPromos, unmatchedPostIds, int
     setImpressed(prev => new Set(prev).add(topRequest.id))
     onPromoImpression?.(topRequest)
   }, [topRequest, impressed, onPromoImpression])
+
+  // Funnel: fire a one-time exposure the first time each *non-promo* card
+  // reaches the top slot — the top of the matching funnel. Guarded by a
+  // session Set so scrolling back to a card doesn't double-count it.
+  const [exposed, setExposed] = useState(() => new Set())
+  useEffect(() => {
+    if (!topRequest || isPromo(topRequest)) return
+    if (exposed.has(topRequest.id)) return
+    setExposed(prev => new Set(prev).add(topRequest.id))
+    track('discover_card_exposed', {
+      post_id: topRequest.id,
+      score: topRequest._score,
+      tier: topRequest._tier,
+    })
+  }, [topRequest, exposed])
 
   /* ── Filter bar ───────────────────────────────────────────────── */
   const filterBar = (

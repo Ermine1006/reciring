@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from './supabase'
+import { track } from './analytics'
 
 // ── Recognition engine · client data layer (Slice 1 schema) ──────────
 //
@@ -15,6 +16,19 @@ export async function confirmExchange(matchId, userId) {
     .from('exchange_confirmations')
     .insert({ match_id: matchId, user_id: userId })
   if (error && error.code !== '23505') return { error }
+  // Funnel: only count a *fresh* tap. A 23505 is a re-tap, not a new signal.
+  if (!error) {
+    track('we_met_tapped', { match_id: matchId })
+    // If this tap is the one that makes the exchange mutual, it's complete.
+    // Reading the count right after our own insert means exactly ONE client
+    // (the second confirmer) sees it reach 2 and fires the completion event —
+    // so exchange_completed is logged once, not once per participant.
+    const { count } = await supabase
+      .from('exchange_confirmations')
+      .select('*', { count: 'exact', head: true })
+      .eq('match_id', matchId)
+    if (count === 2) track('exchange_completed', { match_id: matchId })
+  }
   return { error: null }
 }
 
