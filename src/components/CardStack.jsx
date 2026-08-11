@@ -446,7 +446,7 @@ export default function CardStack({ requests, eventPromos, unmatchedPostIds, int
           {nextRequest && (
             isPromo(nextRequest)
               ? <EventPreviewCard key={nextRequest.id} promo={nextRequest} isTop={false} />
-              : <RequestCard key={nextRequest.id} request={nextRequest} isTop={false} matchReason={nextRequest._reason} />
+              : <RequestCard key={nextRequest.id} request={nextRequest} isTop={false} matchReason={nextRequest._reason} matchReasons={nextRequest._reasons} />
           )}
 
           {/* Top card stays fully opaque while dragging. It used to fade to
@@ -471,6 +471,7 @@ export default function CardStack({ requests, eventPromos, unmatchedPostIds, int
                 request={topRequest}
                 isTop
                 matchReason={topRequest._reason}
+                matchReasons={topRequest._reasons}
                 onDrag={(x) => dragX.set(x)}
                 onSwipeLeft={() => handleSwipeLeft(topRequest)}
                 onSwipeRight={() => handleSwipeRight(topRequest)}
@@ -547,6 +548,7 @@ export default function CardStack({ requests, eventPromos, unmatchedPostIds, int
         <RequestDetailModal
           request={detailRequest}
           matchReason={detailRequest._reason}
+          matchReasons={detailRequest._reasons}
           onClose={() => setDetailRequest(null)}
           onMatch={(r) => handleSwipeRight(r)}
           onReport={onReport}

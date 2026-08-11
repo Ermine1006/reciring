@@ -45,7 +45,7 @@ function markSwipeHintSeen() {
   try { window.localStorage.setItem(SWIPE_HINT_KEY, '1') } catch {}
 }
 
-export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight, isTop, matchReason, onTap }) {
+export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight, isTop, matchReason, matchReasons, onTap }) {
   const [offset, setOffset] = useState(0)
   const [hasDragged, setHasDragged] = useState(false)
   const [dragging, setDragging] = useState(false)
@@ -486,20 +486,36 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
                 </span>
               )}
             </p>
-            {matchReason && (
-              <p style={{
-                fontSize: 11,
-                color: C.warm,
-                fontWeight: 500,
-                fontFamily: 'Inter, system-ui, sans-serif',
-                marginTop: 3,
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-              }}>
-                {matchReason}
-              </p>
-            )}
+            {/* Up to 3 match reasons as chips. Falls back to the single joined
+                string when only matchReason is provided (older callers). */}
+            {(() => {
+              const chips = (matchReasons && matchReasons.length)
+                ? matchReasons.slice(0, 3)
+                : (matchReason ? [matchReason] : [])
+              if (chips.length === 0) return null
+              return (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
+                  {chips.map((c, i) => (
+                    <span key={i} style={{
+                      fontSize: 10.5,
+                      color: C.warm,
+                      fontWeight: 600,
+                      fontFamily: 'Inter, system-ui, sans-serif',
+                      background: 'rgba(201,163,59,0.10)',
+                      border: '1px solid rgba(201,163,59,0.22)',
+                      borderRadius: 99,
+                      padding: '2px 8px',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      maxWidth: '100%',
+                    }}>
+                      {c}
+                    </span>
+                  ))}
+                </div>
+              )
+            })()}
             {/* Trust line (Slice 4) — quiet metadata row, below the reasoning.
                 No identity, no chip detail; only the floored recognizer count. */}
             {trustTier && (

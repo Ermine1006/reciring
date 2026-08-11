@@ -25,7 +25,7 @@ const URGENCY = {
   soon:   { label: 'This week', color: '#92400E', dot: '#F59E0B' },
 }
 
-export default function RequestDetailModal({ request, matchReason, onClose, onMatch, onPass, onReport, onBlock }) {
+export default function RequestDetailModal({ request, matchReason, matchReasons, onClose, onMatch, onPass, onReport, onBlock }) {
   const [showMenu, setShowMenu]     = useState(false)
   const [showReport, setShowReport] = useState(false)
 
@@ -228,14 +228,27 @@ export default function RequestDetailModal({ request, matchReason, onClose, onMa
                   </span>
                 )}
               </p>
-              {matchReason && (
-                <p style={{
-                  fontSize: 11, color: C.warm, fontWeight: 500,
-                  fontFamily: 'Inter, system-ui, sans-serif', marginTop: 3,
-                }}>
-                  {matchReason}
-                </p>
-              )}
+              {(() => {
+                const chips = (matchReasons && matchReasons.length)
+                  ? matchReasons.slice(0, 3)
+                  : (matchReason ? [matchReason] : [])
+                if (chips.length === 0) return null
+                return (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
+                    {chips.map((c, i) => (
+                      <span key={i} style={{
+                        fontSize: 10.5, color: C.warm, fontWeight: 600,
+                        fontFamily: 'Inter, system-ui, sans-serif',
+                        background: 'rgba(201,163,59,0.10)',
+                        border: '1px solid rgba(201,163,59,0.22)',
+                        borderRadius: 99, padding: '2px 8px',
+                      }}>
+                        {c}
+                      </span>
+                    ))}
+                  </div>
+                )
+              })()}
             </div>
 
             {/* ── Safety menu (…) ─────────────────────────── */}

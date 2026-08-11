@@ -148,8 +148,12 @@ export function getMatchScore(request, viewer = DEFAULT_VIEWER_PROFILE) {
 
 // ── Match reason (human-readable) ─────────────────────────────────
 
-export function getMatchReason(request, viewer = DEFAULT_VIEWER_PROFILE) {
+// Returns UP TO 3 distinct, human-readable reasons this post is a match,
+// ordered by importance (relevance → reciprocity → freshness → urgency).
+// Each is a short capitalized phrase meant to render as its own chip.
+export function getMatchReasons(request, viewer = DEFAULT_VIEWER_PROFILE) {
   const parts = []
+  const MAX = 3
 
   // Relevance — name the direction: can I help them, or can they help me?
   const tags = request.tags || []
@@ -172,34 +176,39 @@ export function getMatchReason(request, viewer = DEFAULT_VIEWER_PROFILE) {
 
   // Reciprocity signal
   const p = request.poster
-  if (p) {
+  if (p && parts.length < MAX) {
     const given = p.completed || 0
     const received = p.scheduled || 0
     if (given >= 3 && received >= 2) {
       const ratio = Math.round((Math.min(given, received) / Math.max(given, received)) * 100)
       if (ratio >= 80) parts.push('active reciprocator')
       else if (ratio >= 50) parts.push('balanced contributor')
-    } else if (given >= 3 && parts.length < 2) {
+    } else if (given >= 3) {
       parts.push('proven helper')
     }
   }
 
   // Freshness
   const createdStr = request.createdAtRaw || request.created_at
-  if (createdStr) {
+  if (createdStr && parts.length < MAX) {
     const ageHours = (Date.now() - new Date(createdStr).getTime()) / (1000 * 60 * 60)
-    if (ageHours < 2 && parts.length < 2) parts.push('just posted')
+    if (ageHours < 2) parts.push('just posted')
   }
 
   // Urgency
-  if (request.urgency === 'urgent' && parts.length < 2) {
+  if (request.urgency === 'urgent' && parts.length < MAX) {
     parts.push('urgent request')
   }
 
-  if (parts.length === 0) return 'Rotman peer'
+  if (parts.length === 0) return ['Rotman peer']
 
-  const first = parts[0].charAt(0).toUpperCase() + parts[0].slice(1)
-  return parts.length > 1 ? `${first} · ${parts.slice(1).join(' · ')}` : first
+  return parts.slice(0, MAX).map(s => s.charAt(0).toUpperCase() + s.slice(1))
+}
+
+// Back-compat single-string form (` · `-joined). Prefer getMatchReasons for
+// chip rendering.
+export function getMatchReason(request, viewer = DEFAULT_VIEWER_PROFILE) {
+  return getMatchReasons(request, viewer).join(' · ')
 }
 
 // ── Filter requests by active filters ─────────────────────────────
@@ -266,13 +275,16 @@ export function rankRequests(
     .map(r => {
       const rawScore = getMatchScore(r, viewer)
       const tier = computeTier(r.id, interactionMap, unmatchedSet)
-      const baseReason = getMatchReason(r, viewer)
+      const baseReasons = getMatchReasons(r, viewer)
       const prefix = TIER_REASON_PREFIX[tier]
-      const reason = prefix ? `${prefix} · ${baseReason}` : baseReason
+      // Tier prefix (e.g. "Previously skipped") leads as its own chip, then the
+      // top match reasons — capped at 3 total.
+      const reasons = (prefix ? [prefix, ...baseReasons] : baseReasons).slice(0, 3)
       return {
         ...r,
         _score: { ...rawScore, tier },
-        _reason: reason,
+        _reasons: reasons,
+        _reason: reasons.join(' · '),
         _tier: tier,
       }
     })
