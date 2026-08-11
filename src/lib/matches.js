@@ -205,6 +205,11 @@ export function matchToUI(row, currentUserId) {
     isHelper,
     status:          row.status,
     createdAt:       row.created_at,
+    // Match origin. 'smart_match' connections (Home "People you should meet")
+    // have no post/marketplace context — the UI shows a compatibility card
+    // instead of the needs/offers exchange.
+    source:          row.source || 'post',
+    isSmartMatch:    row.source === 'smart_match',
     // Marketplace-match context (null for ordinary peer-networking matches).
     isMarketplace:   Boolean(mkt),
     eventId:         row.event_id || null,

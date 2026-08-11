@@ -533,7 +533,26 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
               </p>
             )}
           </div>
-        ) : match?.request && (
+        ) : match?.isSmartMatch ? (
+          <div style={{
+            margin: '0 16px 16px', background: C.white, borderRadius: 16,
+            padding: '12px 16px', border: `1px solid ${C.goldLight}`,
+            boxShadow: '0 2px 8px rgba(201,163,59,0.08)',
+          }}>
+            <p style={{
+              fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase',
+              fontWeight: 600, color: C.gold, fontFamily: 'Inter, system-ui, sans-serif', marginBottom: 6,
+            }}>
+              Why you connected
+            </p>
+            <p style={{ fontSize: 14, fontWeight: 600, color: C.text, fontFamily: 'Inter, system-ui, sans-serif', lineHeight: 1.35, margin: 0 }}>
+              A Smart Match
+            </p>
+            <p style={{ fontSize: 12, color: C.textSub, fontFamily: 'Inter, system-ui, sans-serif', margin: '3px 0 0', lineHeight: 1.4 }}>
+              You were suggested as a strong match based on your profiles — and you both said you’re interested.
+            </p>
+          </div>
+        ) : (match?.request?.needs || match?.request?.offers) ? (
           <div style={{
             margin: '0 16px 16px',
             background: C.white, borderRadius: 16,
@@ -563,7 +582,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
               </p>
             </div>
           </div>
-        )}
+        ) : null}
 
         {/* ── Recognition (replaces the old rating flow) ── */}
         <div style={{ margin: '0 16px 16px' }}>
