@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { fetchEncounters, buildAssistantContext, askMutu, fetchAskHistory, saveAskMessage, clearAskHistory } from '../lib/eventMemory'
 import { fetchConnections } from '../lib/relationships'
 import { fetchMyEvents } from '../lib/events'
+import { fetchEventMatches } from '../lib/eventMatch'
 import { useAuth } from '../context/AuthContext'
 
 // Render Mutu's answers as plain text: turn **bold** into real bold and strip
@@ -55,7 +56,20 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
       // which screen opened the sheet.
       const byId = new Map()
       for (const e of [...(events || []), ...(myEvents || [])]) if (e?.id) byId.set(e.id, e)
-      setCtx(buildAssistantContext({ encounters: enc, events: [...byId.values()], connections: conns, me: profile }))
+      const allEvents = [...byId.values()]
+
+      // For upcoming events, pull the privacy-safe "who to meet" matching the
+      // Event Detail page uses: public attendees come back with a real name,
+      // private ones as "A peer" (need/offer only). Capped to keep it light.
+      const now = Date.now()
+      const upcoming = allEvents
+        .filter(e => e.start_at && new Date(e.start_at).getTime() >= now - 12 * 3600 * 1000)
+        .slice(0, 5)
+      const lists = await Promise.all(upcoming.map(e => fetchEventMatches(e.id, userId).catch(() => ({ data: [] }))))
+      const eventMatches = {}
+      upcoming.forEach((e, i) => { eventMatches[e.id] = lists[i] })
+
+      setCtx(buildAssistantContext({ encounters: enc, events: allEvents, connections: conns, me: profile, eventMatches }))
       setMsgs((hist || []).map(m => ({ role: m.role, text: m.text })))
     })()
   }, [open, userId, profile]) // eslint-disable-line react-hooks/exhaustive-deps

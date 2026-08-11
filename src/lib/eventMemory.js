@@ -211,7 +211,7 @@ export async function clearAskHistory(userId) {
 
 // Build the compact, private grounding context for Ask Mutu from the user's
 // own encounters + events. Only fields the user already owns.
-export function buildAssistantContext({ encounters = [], events = [], connections = [], me = null }) {
+export function buildAssistantContext({ encounters = [], events = [], connections = [], me = null, eventMatches = {} }) {
   return {
     // The user's OWN profile — lets Mutu reason about fit ("who should I
     // connect with", "is this event worth attending") instead of punting.
@@ -259,12 +259,28 @@ export function buildAssistantContext({ encounters = [], events = [], connection
         due:           e.due_at ? new Date(e.due_at).toISOString().slice(0, 10) : null,
       }
     }),
-    upcoming_events: events.map(e => ({
-      title:    e.title,
-      date:     e.start_at ? new Date(e.start_at).toISOString().slice(0, 10) : null,
-      category: e.category || null,
-      attendees: typeof e.attendee_count === 'number' ? e.attendee_count : null,
-    })).filter(e => e.title),
+    upcoming_events: events.map(e => {
+      const m = eventMatches[e.id] || {}
+      return {
+        title:    e.title,
+        date:     e.start_at ? new Date(e.start_at).toISOString().slice(0, 10) : null,
+        category: e.category || null,
+        attendees: typeof e.attendee_count === 'number' ? e.attendee_count : null,
+        // Privacy-safe attendee matches: a real "name" only for public
+        // profiles; private ones come through as "A peer" (need/offer only).
+        // `need_your_intentions` = the user hasn't posted their own looking-for/
+        // offer for this event, so no matches can be computed yet.
+        people_to_meet: (m.data || []).slice(0, 6).map(x => ({
+          name:        x.name,
+          named:       x.name && x.name !== 'A peer',
+          program:     x.program || null,
+          looking_for: x.need || '',
+          offers:      x.offer || '',
+          why:         x.reason || '',
+        })),
+        need_your_intentions: Boolean(m.needsMyIntentions),
+      }
+    }).filter(e => e.title),
   }
 }
 
