@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import AnonymousAvatar from './AnonymousAvatar'
+import PeerAvatar from './PeerAvatar'
 
 const C = {
   gold:      '#C9A33B',
@@ -128,7 +128,7 @@ export default function PeerProfileCard({ open, onClose, match, peerProfile }) {
                     borderRadius: '50%',
                     padding: 2,
                   }}>
-                    <AnonymousAvatar seed={avatarSeed} size={72} />
+                    <PeerAvatar name={peerProfile?.name || 'Peer'} seed={avatarSeed} size={72} />
                   </div>
                 </div>
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Pencil, MessageSquareText, XCircle } from 'lucide-react'
-import AnonymousAvatar from './AnonymousAvatar'
+import PeerAvatar from './PeerAvatar'
 import { resolveAvatarSeed } from './SettingsPage'
 import { fetchMarketplaceInterestStats, fetchMarketplaceFeed } from '../lib/marketplace'
 
@@ -78,7 +78,7 @@ export default function EventManagePage({ event, attendees = [], userId, onEdit,
           const seed = resolveAvatarSeed(a.avatar_url)
           return (
             <div key={a.user_id || i} style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '11px 13px', borderTop: i === 0 ? 'none' : `1px solid ${C.line2}` }}>
-              {seed ? <AnonymousAvatar seed={seed} size={34} /> : <span style={initialAv}>{initials(name)}</span>}
+              {seed ? <PeerAvatar name={name} seed={seed} size={34} /> : <span style={initialAv}>{initials(name)}</span>}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ margin: 0, fontSize: 13.5, fontWeight: 600, color: C.ink, fontFamily: 'Inter, system-ui, sans-serif' }}>{name}</p>
                 <p style={{ margin: '1px 0 0', fontSize: 11.5, color: C.ink3, fontFamily: 'Inter, system-ui, sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

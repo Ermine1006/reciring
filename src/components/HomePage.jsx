@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Clock, Users, UserPlus, CalendarDays, ArrowRight, MessageSquareText, ChevronRight, Sparkles } from 'lucide-react'
 import AnonymousAvatar from './AnonymousAvatar'
+import PeerAvatar from './PeerAvatar'
 import SmartMatchSection from './SmartMatchSection'
 import { resolveAvatarSeed } from './SettingsPage'
 import { getMatchScore, DEFAULT_VIEWER_PROFILE } from '../data/matchRanking'
@@ -378,13 +379,9 @@ function SuggCard({ lead, label, title, titleSize = 16, sub, subIsMeta, reason, 
 }
 
 function PersonAvatar({ post }) {
-  const seed = resolveAvatarSeed(post.creator?.avatar_url)
-  if (seed) return <AnonymousAvatar seed={seed} size={56} />
-  return (
-    <div style={{ width: 56, height: 56, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, fontWeight: 700, color: C.avatarInk, background: C.avatarBg, fontFamily: 'Inter, system-ui, sans-serif' }}>
-      {initials(post.creator?.name)}
-    </div>
-  )
+  // Community post author — mirrors the visible name: real name → initials
+  // monogram, anonymous → bean.
+  return <PeerAvatar name={post.creator?.name} seed={post.creator?.id || post.id} size={56} />
 }
 
 function EventThumb({ ev }) {

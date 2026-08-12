@@ -1,4 +1,4 @@
-import AnonymousAvatar from './AnonymousAvatar'
+import PeerAvatar from './PeerAvatar'
 import { matchaCta } from '../lib/matchaCta'
 
 const C = {
@@ -71,7 +71,7 @@ export default function MarketplacePostCard({
     }}>
       {/* Header: identity (anonymous) + type tag */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 11 }}>
-        {!mine && <AnonymousAvatar seed={seed} size={38} />}
+        {!mine && <PeerAvatar name={anonName(program)} seed={seed} size={38} />}
         <div style={{ flex: 1, minWidth: 0 }}>
           {mine ? (
             <p style={{ margin: 0, fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: C.gold, fontFamily: 'Inter, system-ui, sans-serif' }}>

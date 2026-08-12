@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { CalendarDays, MapPin, Users, ArrowRight } from 'lucide-react'
-import AnonymousAvatar from './AnonymousAvatar'
+import PeerAvatar from './PeerAvatar'
 import { matchaCta } from '../lib/matchaCta'
 
 // EventPreviewCard — a SIMPLIFIED promotional variant of a marketplace post,
@@ -216,7 +216,7 @@ export default function EventPreviewCard({ promo, isTop, onDrag, onSwipeLeft, on
 
         {/* Anonymised attendee identity */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 14 }}>
-          <AnonymousAvatar seed={promo.eventId + (promo.postId || '')} size={34} />
+          <PeerAvatar name={identity.primary} seed={promo.eventId + (promo.postId || '')} size={34} />
           <div style={{ minWidth: 0 }}>
             <p style={{ fontSize: 12.5, fontWeight: 600, color: C.ink, margin: 0, fontFamily: 'Inter, system-ui, sans-serif' }}>{identity.primary}</p>
             {identity.sub && <p style={{ fontSize: 11, color: C.muted, margin: 0, fontFamily: 'Inter, system-ui, sans-serif' }}>{identity.sub}</p>}

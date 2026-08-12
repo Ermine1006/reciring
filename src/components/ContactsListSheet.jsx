@@ -1,4 +1,5 @@
 import { createPortal } from 'react-dom'
+import PeerAvatar from './PeerAvatar'
 
 const C = {
   bg: '#F9F7F4', card: '#FFFFFF', ink: '#25231E', sub: '#6E675B', muted: '#9C9284',
@@ -33,9 +34,7 @@ export default function ContactsListSheet({ open, contacts = [], onOpenContact, 
             return (
               <button key={c.id} type="button" onClick={() => onOpenContact?.(c)}
                 style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', cursor: 'pointer', background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: '11px 14px' }}>
-                {c.avatar_url
-                  ? <img src={c.avatar_url} alt="" style={{ width: 42, height: 42, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
-                  : <span style={{ width: 42, height: 42, borderRadius: '50%', flexShrink: 0, display: 'grid', placeItems: 'center', color: '#fff', fontWeight: 700, fontSize: 14, background: `linear-gradient(135deg, ${a}, ${b})` }}>{initials(name)}</span>}
+                <PeerAvatar name={name} seed={c.id || name} size={42} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ margin: 0, fontSize: 14.5, fontWeight: 600, color: C.ink, fontFamily: 'Inter, system-ui, sans-serif' }}>{name}</p>
                   {sub && <p style={{ margin: '2px 0 0', fontSize: 12, color: C.sub, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'Inter, system-ui, sans-serif' }}>{sub}</p>}

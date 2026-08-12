@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import AnonymousAvatar from './AnonymousAvatar'
+import PeerAvatar from './PeerAvatar'
 import { resolveAvatarSeed } from './SettingsPage'
 import EventMemoryModal from './EventMemoryModal'
 import { recordEncounter, updateEncounter, deleteEncounter, requestConfirmation } from '../lib/eventEncounters'
@@ -118,7 +118,7 @@ export default function EventModeSection({
           display: 'flex', alignItems: 'center', gap: 10,
         }}
       >
-        <AnonymousAvatar seed={seed} size={36} />
+        <PeerAvatar name={a.name || 'Member'} seed={seed} size={36} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{
             fontSize: 14, fontWeight: 600, color: C.text, margin: 0,

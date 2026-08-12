@@ -16,7 +16,7 @@ import {
   subscribeEventMessages,
 } from '../lib/eventMessages'
 import { categoryEmoji } from '../data/eventCategories'
-import AnonymousAvatar from './AnonymousAvatar'
+import PeerAvatar from './PeerAvatar'
 import EventSharePoster from './EventSharePoster'
 import EventJoinIntentModal from './EventJoinIntentModal'
 import { resolveAvatarSeed } from './SettingsPage'
@@ -806,7 +806,7 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
                   return (
                     <li key={m.id} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                       <div style={{ flexShrink: 0, marginTop: 2 }}>
-                        <AnonymousAvatar seed={avatarSeed} size={28} />
+                        <PeerAvatar name={isMe ? 'Anonymous peer' : m.sender_name} seed={avatarSeed} size={28} />
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 2 }}>

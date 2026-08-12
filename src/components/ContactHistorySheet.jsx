@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { fetchPersonHistory, completeFollowup, dismissFollowup, addFollowup, reopenFollowup } from '../lib/eventMemory'
 import { openOrCreateDirectMatch } from '../lib/matches'
 import { fetchRelationshipTimeline } from '../lib/relationships'
+import PeerAvatar from './PeerAvatar'
 
 const C = {
   bg: '#F9F7F4', card: '#FFFFFF', ink: '#25231E', sub: '#6E675B', muted: '#9C9284',
@@ -83,9 +84,7 @@ export default function ContactHistorySheet({ open, person, userId, onOpenEventR
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '4px 22px 16px', flexShrink: 0 }}>
-          {person.avatar_url
-            ? <img src={person.avatar_url} alt="" style={{ width: 52, height: 52, borderRadius: '50%', objectFit: 'cover' }} />
-            : <span style={{ width: 52, height: 52, borderRadius: '50%', display: 'grid', placeItems: 'center', color: '#fff', fontWeight: 700, fontSize: 18, background: `linear-gradient(135deg, ${a}, ${b})` }}>{initials(name)}</span>}
+          <PeerAvatar name={name} seed={name} size={52} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <h2 style={{ margin: 0, fontSize: 21, fontWeight: 600, color: C.ink, fontFamily: 'Fraunces, Georgia, serif' }}>{name}</h2>
             {sub && <p style={{ margin: '2px 0 0', fontSize: 12.5, color: C.sub, fontFamily: 'Inter, system-ui, sans-serif' }}>{sub}</p>}

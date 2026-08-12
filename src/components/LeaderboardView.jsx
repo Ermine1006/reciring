@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import AnonymousAvatar from './AnonymousAvatar'
+import PeerAvatar from './PeerAvatar'
 import Certificate from './Certificate'
 import { MOCK_ME, MOCK_LEADERBOARD, getBadge, getNextBadge, getReliability } from '../data/reputationData'
 import { matchaCta } from '../lib/matchaCta'
@@ -291,7 +292,7 @@ export default function LeaderboardView() {
                 </div>
 
                 {/* Avatar */}
-                <AnonymousAvatar seed={entry.seed} size={36} />
+                <PeerAvatar name={entry.name} seed={entry.seed} size={36} />
 
                 {/* Name + badge + reliability */}
                 <div style={{ flex: 1, minWidth: 0 }}>

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
-import AnonymousAvatar from './AnonymousAvatar'
+import PeerAvatar from './PeerAvatar'
 import { resolveAvatarSeed } from './SettingsPage'
 import EventMemoryModal from './EventMemoryModal'
 import FollowUpModal from './FollowUpModal'
@@ -375,7 +375,7 @@ function EncounterCard({ encounter, them, themTopPost, rationale, onEdit, onFoll
       style={{ background: C.white, border: `1px solid ${C.border}` }}
     >
       <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-        <AnonymousAvatar seed={seed} size={44} />
+        <PeerAvatar name={them.name || encounter.person_name || 'Member'} seed={seed} size={44} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{
             fontSize: 15, fontWeight: 600, color: C.text, margin: 0,

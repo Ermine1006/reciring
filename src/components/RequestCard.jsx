@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { fetchTrustSignal } from '../lib/recognition'
 import { Handshake, X } from 'lucide-react'
-import AnonymousAvatar from './AnonymousAvatar'
+import PeerAvatar from './PeerAvatar'
 import { posterDisplay } from '../lib/visibility'
 import { resolveAvatarSeed } from './SettingsPage'
 
@@ -444,7 +444,7 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
             boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
             flexShrink: 0,
           }}>
-            <AnonymousAvatar seed={avatarSeed} size={36} />
+            <PeerAvatar name={display.primary} seed={avatarSeed} size={36} />
           </div>
 
           <div style={{ flex: 1, minWidth: 0 }}>

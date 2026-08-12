@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import AnonymousAvatar from './AnonymousAvatar'
+import PeerAvatar from './PeerAvatar'
 import { matchaCta } from '../lib/matchaCta'
 
 const C = {
@@ -70,7 +70,7 @@ export default function NewMatchModal({ open, match, onView, onDismiss }) {
                 }}
               >
                 <div style={{ background: C.white, borderRadius: '50%', padding: 2 }}>
-                  <AnonymousAvatar seed={match.peerId || match.id} size={72} />
+                  <PeerAvatar name="Anonymous peer" seed={match.peerId || match.id} size={72} />
                 </div>
               </div>
             </div>

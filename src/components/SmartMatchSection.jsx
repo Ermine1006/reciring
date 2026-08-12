@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import AnonymousAvatar from './AnonymousAvatar'
+import PeerAvatar from './PeerAvatar'
 import { generateSmartMatches, fetchPendingNudges, setNudgeStatus, checkMutualMatch } from '../lib/smartMatch'
 import { track } from '../lib/analytics'
 import { matchaCta, MATCHA_DEEP } from '../lib/matchaCta'
@@ -101,7 +101,7 @@ export default function SmartMatchSection() {
         {nudges.map((n, i) => (
           <div key={n.id}
             style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '13px 2px', borderTop: i === 0 ? 'none' : '1px solid #F1EEE7' }}>
-            <div style={{ flexShrink: 0 }}><AnonymousAvatar seed={n.candidate_id} size={40} /></div>
+            <div style={{ flexShrink: 0 }}><PeerAvatar name="Anonymous peer" seed={n.candidate_id} size={40} /></div>
 
             <div style={{ flex: 1, minWidth: 0 }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>

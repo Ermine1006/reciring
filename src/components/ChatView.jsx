@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, Fragment } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import AnonymousAvatar from './AnonymousAvatar'
+import PeerAvatar from './PeerAvatar'
 import CoffeeChatModal from './CoffeeChatModal'
 import ReportModal from './ReportModal'
 import IdentityRevealRequestModal from './IdentityRevealRequestModal'
@@ -332,7 +332,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
 
           const HeaderInner = (
             <>
-              <AnonymousAvatar seed={match?.id || 'chat'} size={36} />
+              <PeerAvatar name={displayName} seed={match?.id || 'chat'} size={36} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ fontSize: 14, fontWeight: 600, color: C.text, fontFamily: 'Inter, system-ui, sans-serif' }}>
                   {displayName}

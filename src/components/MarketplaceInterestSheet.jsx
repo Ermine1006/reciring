@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
-import AnonymousAvatar from './AnonymousAvatar'
+import PeerAvatar from './PeerAvatar'
 import { matchaCta } from '../lib/matchaCta'
 
 const C = {
@@ -68,7 +68,7 @@ export default function MarketplaceInterestSheet({ open, post, interests = [], b
         {pending.map(it => (
           <div key={it.id} style={rowStyle}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 11, marginBottom: 12 }}>
-              <AnonymousAvatar seed={it.id} size={38} />
+              <PeerAvatar name={anonName(it.requester_program)} seed={it.id} size={38} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: C.ink, fontFamily: 'Inter, system-ui, sans-serif' }}>
                   {anonName(it.requester_program)}
@@ -100,7 +100,7 @@ export default function MarketplaceInterestSheet({ open, post, interests = [], b
         {accepted.map(it => (
           <div key={it.id} style={{ ...rowStyle, background: C.greenBg, borderColor: C.greenBorder }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
-              <AnonymousAvatar seed={it.id} size={38} />
+              <PeerAvatar name="Anonymous peer" seed={it.id} size={38} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: C.ink, fontFamily: 'Inter, system-ui, sans-serif' }}>
                   Connected ✓

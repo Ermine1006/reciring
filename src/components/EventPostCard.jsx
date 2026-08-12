@@ -1,4 +1,4 @@
-import AnonymousAvatar from './AnonymousAvatar'
+import PeerAvatar from './PeerAvatar'
 import { matchaCta } from '../lib/matchaCta'
 
 // EventPostCard — ONE attendee's Event Post: their "Looking for" and
@@ -49,7 +49,7 @@ export default function EventPostCard({
     <div style={{ background: C.ground, border: `1px solid ${C.line}`, borderRadius: 14, padding: '13px 14px' }}>
       {/* Identity */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
-        {!mine && <AnonymousAvatar seed={userId || rep?.id || 'anon'} size={38} />}
+        {!mine && <PeerAvatar name={anonName(program)} seed={userId || rep?.id || 'anon'} size={38} />}
         <div style={{ flex: 1, minWidth: 0 }}>
           {mine ? (
             <p style={{ margin: 0, fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: C.gold, fontFamily: 'Inter, system-ui, sans-serif' }}>Your event post</p>

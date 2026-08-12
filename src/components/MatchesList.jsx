@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { useState } from 'react'
-import AnonymousAvatar from './AnonymousAvatar'
+import PeerAvatar from './PeerAvatar'
 
 // Matches — messages list in the shared Home visual language: warm-white
 // ground, charcoal text, restrained gold, compact rows. Active vs Past
@@ -57,9 +57,7 @@ export default function MatchesList({ matches = [], completedMatchIds = new Set(
           cursor: 'pointer', listStyle: 'none',
         }}
       >
-        {m.peerAvatarUrl
-          ? <img src={m.peerAvatarUrl} alt="" style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
-          : <AnonymousAvatar seed={m.id} size={44} />}
+        <PeerAvatar name={peerName(m)} seed={m.id} size={44} />
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ margin: 0, fontSize: 14, fontWeight: 650, color: C.ink, fontFamily: 'Inter, system-ui, sans-serif', display: 'flex', alignItems: 'center', gap: 7 }}>
