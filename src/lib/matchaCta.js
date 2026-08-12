@@ -10,12 +10,12 @@
 
 // Muted sage-olive green (matched to the reference avatar) — softer / greyer
 // than a vivid matcha, applied as a gentle light→dark diagonal.
-export const MATCHA       = '#727E53'  // primary fill (mid tone / fallback)
-export const MATCHA_LIGHT = '#7E8A5D'  // gradient light stop
-export const MATCHA_DARK  = '#63704A'  // gradient dark stop
-export const MATCHA_DEEP  = '#5C6A3E'  // pressed / deeper
-export const MATCHA_INK   = '#5C6A3E'  // sage text on light (Refresh, links, quiet pills)
-export const MATCHA_SOFT  = '#EEF0E6'  // faint tint (rare, for selected states)
+export const MATCHA       = '#8A9668'  // primary fill (mid tone / fallback)
+export const MATCHA_LIGHT = '#97A275'  // gradient light stop
+export const MATCHA_DARK  = '#78855A'  // gradient dark stop
+export const MATCHA_DEEP  = '#68764A'  // pressed / deeper; text on white stays legible
+export const MATCHA_INK   = '#68764A'  // sage text on light (Refresh, links, quiet pills)
+export const MATCHA_SOFT  = '#F0F2E8'  // faint tint (rare, for selected states)
 
 // Very subtle seigaiha (青海波) wave texture, baked in at 0.07 opacity so it
 // reads as a premium whisper — visible only on close inspection, never busy.
