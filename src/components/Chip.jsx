@@ -29,12 +29,12 @@ export default function Chip({ label, active, onClick, disabled = false }) {
         fontSize: 12, fontWeight: 600, fontFamily: 'Inter, system-ui, sans-serif',
         cursor: disabled ? 'not-allowed' : 'pointer',
         background: active
-          ? `linear-gradient(135deg, ${C.goldBg}, rgba(201,163,59,0.18))`
+          ? 'linear-gradient(135deg, #EEF1E6, rgba(120,133,90,0.18))'
           : C.white,
-        color: active ? C.goldDark : C.textSub,
-        border: `1.5px solid ${active ? C.gold : C.border}`,
+        color: active ? '#5C6A3E' : C.textSub,
+        border: `1.5px solid ${active ? '#8A9668' : C.border}`,
         boxShadow: active
-          ? '0 2px 10px rgba(201,163,59,0.25), inset 0 1px 0 rgba(255,255,255,0.6)'
+          ? '0 2px 10px rgba(120,133,90,0.22), inset 0 1px 0 rgba(255,255,255,0.6)'
           : '0 1px 2px rgba(0,0,0,0.04)',
         opacity: disabled ? 0.5 : 1,
       }}

@@ -46,6 +46,7 @@ import { fetchCompletedMatchIds } from './lib/recognition'
 import { track } from './lib/analytics'
 import { notifyEventReview, notifyNewMatch } from './lib/email'
 import { fetchMessages, sendMessage, sendMeetingProposal, updateMeetingStatus, msgToUI, markMessagesRead } from './lib/messages'
+import { MATCHA_DEEP, MATCHA_SOFT } from './lib/matchaCta'
 
 /* ─── Design tokens ─────────────────────────────────────────────── */
 const C = {
@@ -1262,15 +1263,15 @@ function AppShell() {
                 onClick={() => setTab(t.id)}
                 className="flex flex-col items-center gap-1 py-2 px-4 rounded-2xl transition-all duration-200 active:scale-95"
                 style={{
-                  color: active ? C.gold : C.textMuted,
-                  background: active ? C.goldBg : 'transparent',
+                  color: active ? MATCHA_DEEP : C.textMuted,
+                  background: active ? MATCHA_SOFT : 'transparent',
                   minWidth: 60,
                 }}
               >
                 {t.icon(active)}
                 <span
                   className="text-[9px] tracking-[0.12em] font-semibold uppercase"
-                  style={{ color: active ? C.gold : C.textMuted }}
+                  style={{ color: active ? MATCHA_DEEP : C.textMuted }}
                 >
                   {t.label}
                 </span>

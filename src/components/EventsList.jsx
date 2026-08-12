@@ -36,9 +36,9 @@ function isSameLocalDay(iso, ymd) {
 function filterChip(active) {
   return {
     padding: '6px 12px', borderRadius: 99, whiteSpace: 'nowrap', flexShrink: 0,
-    background: active ? `linear-gradient(135deg, ${C.gold}, ${C.goldDark})` : C.white,
+    background: active ? `linear-gradient(135deg, #97A275, #78855A)` : C.white,
     color: active ? '#fff' : C.textSub,
-    border: `1px solid ${active ? C.gold : C.border}`,
+    border: `1px solid ${active ? '#8A9668' : C.border}`,
     fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif',
   }
 }
@@ -303,14 +303,14 @@ export default function EventsList({ onCreateEvent, onOpenEvent, onPrepare, onOp
                 style={{
                   padding: '6px 14px',
                   borderRadius: 99,
-                  background: active ? `linear-gradient(135deg, ${C.gold}, ${C.goldDark})` : C.white,
+                  background: active ? `linear-gradient(135deg, #97A275, #78855A)` : C.white,
                   color: active ? '#fff' : C.textSub,
-                  border: `1px solid ${active ? C.gold : C.border}`,
+                  border: `1px solid ${active ? '#8A9668' : C.border}`,
                   fontSize: 12, fontWeight: 600,
                   letterSpacing: '0.04em',
                   fontFamily: 'Inter, system-ui, sans-serif',
                   cursor: 'pointer',
-                  boxShadow: active ? '0 2px 8px rgba(201,163,59,0.25)' : 'none',
+                  boxShadow: active ? '0 2px 8px rgba(120,133,90,0.25)' : 'none',
                   transition: 'all 0.15s',
                 }}
               >
@@ -660,9 +660,9 @@ function CancelEventModal({ open, event, busy, onCancel, onConfirm }) {
                     style={{
                       padding: '7px 12px',
                       borderRadius: 99,
-                      background: isSelected ? `linear-gradient(135deg, ${C.gold}, ${C.goldDark})` : C.white,
+                      background: isSelected ? `linear-gradient(135deg, #97A275, #78855A)` : C.white,
                       color: isSelected ? '#fff' : C.textSub,
-                      border: `1.5px solid ${isSelected ? C.gold : C.border}`,
+                      border: `1.5px solid ${isSelected ? '#8A9668' : C.border}`,
                       fontSize: 12, fontWeight: 600,
                       fontFamily: 'Inter, system-ui, sans-serif',
                       cursor: 'pointer',

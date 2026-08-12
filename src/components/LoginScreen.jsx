@@ -311,11 +311,11 @@ export default function LoginScreen() {
                   onClick={() => { setMode(t.id); setError(null); setInfo(null) }}
                   className="flex-1 py-2 text-xs font-semibold tracking-wide rounded-lg"
                   style={{
-                    background: active ? `linear-gradient(135deg, ${C.gold}, ${C.goldDark})` : 'transparent',
+                    background: active ? 'linear-gradient(135deg, #97A275, #78855A)' : 'transparent',
                     color: active ? '#fff' : C.textSub,
                     border: 'none',
                     cursor: 'pointer',
-                    boxShadow: active ? '0 2px 6px rgba(201,163,59,0.28)' : 'none',
+                    boxShadow: active ? '0 2px 6px rgba(120,133,90,0.28)' : 'none',
                     transition: 'all 0.18s',
                   }}
                 >

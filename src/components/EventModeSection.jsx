@@ -113,8 +113,8 @@ export default function EventModeSection({
         style={{
           padding: '10px 12px',
           borderRadius: 12,
-          background: met ? C.goldBg : '#FAFAFA',
-          border: `1px solid ${met ? C.goldLight : C.border}`,
+          background: met ? '#EEF1E6' : '#FAFAFA',
+          border: `1px solid ${met ? '#8A9668' : C.border}`,
           display: 'flex', alignItems: 'center', gap: 10,
         }}
       >

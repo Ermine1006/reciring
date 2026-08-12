@@ -136,14 +136,14 @@ export default function SettingsTab({ onOpenAdminEmailTest, onOpenEventReview })
               borderRadius: 99,
               border: 'none',
               background: emailSubscribed
-                ? `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`
+                ? '#8A9668'
                 : '#D1D5DB',
               position: 'relative',
               cursor: emailToggleSaving ? 'wait' : 'pointer',
               transition: 'background 0.2s ease',
               opacity: emailToggleSaving ? 0.7 : 1,
               boxShadow: emailSubscribed
-                ? '0 2px 8px rgba(201,163,59,0.3)'
+                ? '0 2px 8px rgba(120,133,90,0.3)'
                 : 'inset 0 1px 2px rgba(0,0,0,0.1)',
             }}
           >

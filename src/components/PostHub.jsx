@@ -76,7 +76,7 @@ export default function PostHub({
                   padding: '8px 6px',
                   borderRadius: 9,
                   background: active
-                    ? `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`
+                    ? 'linear-gradient(135deg, #97A275, #78855A)'
                     : 'transparent',
                   color: active ? '#fff' : C.textSub,
                   border: 'none',
@@ -85,7 +85,7 @@ export default function PostHub({
                   letterSpacing: '0.02em',
                   fontFamily: 'Inter, system-ui, sans-serif',
                   cursor: 'pointer',
-                  boxShadow: active ? '0 1px 4px rgba(201,163,59,0.35)' : 'none',
+                  boxShadow: active ? '0 1px 4px rgba(120,133,90,0.35)' : 'none',
                   transition: 'all 0.18s',
                   textAlign: 'center',
                   whiteSpace: 'nowrap',

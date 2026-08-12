@@ -124,10 +124,10 @@ function ChipGroup({ options, selected, onToggle, multi = false }) {
             onClick={() => onToggle(value)}
             className="px-3.5 py-[7px] rounded-full text-[12px] font-medium tracking-wide transition-all duration-200 active:scale-95"
             style={{
-              background: active ? C.goldBg   : C.white,
-              border:     active ? `1.5px solid ${C.gold}`   : `1.5px solid ${C.border}`,
-              color:      active ? C.goldDark  : C.textSub,
-              boxShadow:  active ? '0 2px 8px rgba(201,163,59,0.2)' : 'none',
+              background: active ? '#EEF1E6'   : C.white,
+              border:     active ? `1.5px solid #8A9668`   : `1.5px solid ${C.border}`,
+              color:      active ? '#5C6A3E'  : C.textSub,
+              boxShadow:  active ? '0 2px 8px rgba(138,150,104,0.2)' : 'none',
             }}
           >
             {label}
@@ -698,11 +698,11 @@ export default function SubmitRequest({ onSubmitted, prefill = null }) {
                 onClick={() => setIsAnonymous(opt.id)}
                 className="flex-1 py-2 text-xs font-semibold tracking-wide rounded-lg"
                 style={{
-                  background: active ? `linear-gradient(135deg, ${C.gold}, ${C.goldDark})` : 'transparent',
+                  background: active ? 'linear-gradient(135deg, #97A275, #78855A)' : 'transparent',
                   color: active ? '#fff' : C.textMuted,
                   border: 'none',
                   cursor: 'pointer',
-                  boxShadow: active ? '0 2px 6px rgba(201,163,59,0.28)' : 'none',
+                  boxShadow: active ? '0 2px 6px rgba(120,133,90,0.28)' : 'none',
                   transition: 'all 0.18s',
                 }}
               >

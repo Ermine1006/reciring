@@ -31,10 +31,10 @@ function FilterChip({ label, active, onClick }) {
         padding: '5px 12px', borderRadius: 99, whiteSpace: 'nowrap',
         fontSize: 11, fontWeight: 600, fontFamily: 'Inter, system-ui, sans-serif',
         cursor: 'pointer', transition: 'all 0.15s',
-        background: active ? `linear-gradient(135deg, ${C.gold}, ${C.goldDark})` : C.white,
+        background: active ? `linear-gradient(135deg, #97A275, #78855A)` : C.white,
         color: active ? '#fff' : C.textSub,
-        border: `1px solid ${active ? C.gold : '#E5E7EB'}`,
-        boxShadow: active ? '0 2px 8px rgba(201,163,59,0.25)' : 'none',
+        border: `1px solid ${active ? '#8A9668' : '#E5E7EB'}`,
+        boxShadow: active ? '0 2px 8px rgba(120,133,90,0.25)' : 'none',
       }}
     >
       {label}

@@ -164,13 +164,13 @@ export default function EventMemoryModal({
                       style={{
                         padding: '6px 12px',
                         borderRadius: 999,
-                        border: active ? `1.5px solid ${C.gold}` : `1.5px solid ${C.border}`,
-                        background: active ? C.goldBg : C.white,
-                        color: active ? C.goldDark : C.textSub,
+                        border: active ? `1.5px solid #8A9668` : `1.5px solid ${C.border}`,
+                        background: active ? '#EEF1E6' : C.white,
+                        color: active ? '#5C6A3E' : C.textSub,
                         fontSize: 12, fontWeight: 600,
                         fontFamily: 'Inter, system-ui, sans-serif',
                         cursor: 'pointer',
-                        boxShadow: active ? '0 2px 6px rgba(201,163,59,0.18)' : 'none',
+                        boxShadow: active ? '0 2px 6px rgba(120,133,90,0.18)' : 'none',
                       }}
                     >
                       {t}
