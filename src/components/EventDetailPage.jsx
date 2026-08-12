@@ -543,7 +543,14 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
         {viewMode !== 'recap' && viewMode !== 'marketplace' && viewMode !== 'manage' && viewMode !== 'discussion' && (
           <>
         {/* Cover — host's uploaded image, or a tasteful branded fallback */}
-        <EventCover event={event} radius={18} aspectRatio="16 / 9" style={{ marginBottom: 16 }} />
+        <EventCover event={event} radius={18} aspectRatio="16 / 9" style={{ marginBottom: 14 }} />
+
+        {/* Category tag (green) */}
+        {event.category && (
+          <span style={{ display: 'inline-block', fontSize: 10.5, fontWeight: 700, color: '#5C7355', background: '#E9F0E5', borderRadius: 7, padding: '4px 10px', marginBottom: 11, fontFamily: 'Inter, system-ui, sans-serif' }}>
+            {event.category}
+          </span>
+        )}
 
         {/* Title + share (editorial serif, no card) */}
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 14 }}>
