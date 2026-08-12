@@ -8,10 +8,14 @@
 // text, borders, the logo, or the active-nav state — matcha is an accent on
 // interactive elements only.
 
-export const MATCHA       = '#789A3D'  // primary matcha (CTA fill)
-export const MATCHA_DEEP  = '#6E8C38'  // pressed / deeper
-export const MATCHA_INK   = '#5F7A33'  // matcha text on light (Refresh, links, quiet pills)
-export const MATCHA_SOFT  = '#F0F2E6'  // faint matcha tint (rare, for selected states)
+// Muted sage-olive green (matched to the reference avatar) — softer / greyer
+// than a vivid matcha, applied as a gentle light→dark diagonal.
+export const MATCHA       = '#727E53'  // primary fill (mid tone / fallback)
+export const MATCHA_LIGHT = '#7E8A5D'  // gradient light stop
+export const MATCHA_DARK  = '#63704A'  // gradient dark stop
+export const MATCHA_DEEP  = '#5C6A3E'  // pressed / deeper
+export const MATCHA_INK   = '#5C6A3E'  // sage text on light (Refresh, links, quiet pills)
+export const MATCHA_SOFT  = '#EEF0E6'  // faint tint (rare, for selected states)
 
 // Very subtle seigaiha (青海波) wave texture, baked in at 0.07 opacity so it
 // reads as a premium whisper — visible only on close inspection, never busy.
@@ -26,17 +30,17 @@ const SEIGAIHA =
 export const matchaCta = {
   backgroundColor: MATCHA,
   backgroundImage:
-    `linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0) 46%, rgba(0,0,0,0.05)), ${SEIGAIHA}`,
-  backgroundRepeat: 'no-repeat, repeat',
-  backgroundSize: 'auto, 15px 7.5px',
+    `linear-gradient(180deg, rgba(255,255,255,0.09), rgba(255,255,255,0) 46%, rgba(0,0,0,0.06)), ${SEIGAIHA}, linear-gradient(145deg, ${MATCHA_LIGHT} 0%, ${MATCHA_DARK} 100%)`,
+  backgroundRepeat: 'no-repeat, repeat, no-repeat',
+  backgroundSize: 'auto, 15px 7.5px, auto',
   color: '#FFFFFF',
-  boxShadow: '0 2px 8px rgba(110,140,56,0.30), inset 0 1px 0 rgba(255,255,255,0.16)',
+  boxShadow: '0 2px 8px rgba(92,106,62,0.30), inset 0 1px 0 rgba(255,255,255,0.14)',
 }
 
-// Flat matcha (no texture) — for very small pills/toggles where texture would
+// Flat sage (no texture) — for very small pills/toggles where texture would
 // be invisible anyway.
 export const matchaFlat = {
-  background: MATCHA,
+  background: `linear-gradient(145deg, ${MATCHA_LIGHT} 0%, ${MATCHA_DARK} 100%)`,
   color: '#FFFFFF',
-  boxShadow: '0 2px 7px rgba(110,140,56,0.28)',
+  boxShadow: '0 2px 7px rgba(92,106,62,0.28)',
 }
