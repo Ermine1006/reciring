@@ -144,8 +144,41 @@ export default function HomePage({
           {greeting()}, {firstName(me.name)}
         </h1>
         <p style={{ fontSize: 13.5, color: C.ink2, margin: '3px 0 0', fontFamily: 'Inter, system-ui, sans-serif' }}>
-          Here's what's worth your attention today.
+          Here's your community at a glance.
         </p>
+
+        {/* ── My Networking hero (green) ── */}
+        {net.length > 0 && (
+          <div style={{ background: 'linear-gradient(140deg, #93A072 0%, #6C7A4E 100%)', borderRadius: 20, padding: '16px 17px 15px', color: '#fff', marginTop: 16, boxShadow: '0 12px 26px rgba(90,106,62,0.26)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <b style={{ fontSize: 13.5, fontWeight: 600 }}>My Networking</b>
+              <span style={{ fontSize: 11, fontWeight: 600, background: 'rgba(255,255,255,0.20)', borderRadius: 99, padding: '4px 11px' }}>This week</span>
+            </div>
+            <div style={{ display: 'flex', marginTop: 14 }}>
+              {net.map((cell) => (
+                <button key={cell.label} type="button" onClick={cell.onClick}
+                  style={{ flex: 1, background: 'none', border: 'none', textAlign: 'left', padding: 0, cursor: cell.onClick ? 'pointer' : 'default' }}>
+                  <div style={{ fontSize: 27, fontWeight: 700, lineHeight: 1, color: '#fff', letterSpacing: '-0.02em', fontFamily: 'Inter, system-ui, sans-serif' }}>{cell.n}</div>
+                  <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.85)', marginTop: 4, fontFamily: 'Inter, system-ui, sans-serif' }}>{cell.label}</div>
+                </button>
+              ))}
+            </div>
+            <button type="button" onClick={onOpenNetworking}
+              style={{ display: 'flex', alignItems: 'center', gap: 5, width: '100%', marginTop: 12, paddingTop: 12, border: 'none', borderTop: '1px solid rgba(255,255,255,0.22)', background: 'none', color: '#fff', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
+              View dashboard <ArrowRight size={13} strokeWidth={2.2} />
+            </button>
+          </div>
+        )}
+
+        {/* ── Ask Mutu (directly under the networking dashboard) ── */}
+        <button type="button" onClick={() => onAskMutu?.()}
+          style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, border: `1px solid ${C.line}`, borderRadius: 14, padding: '10px 10px 10px 13px', background: C.ground, cursor: 'pointer', textAlign: 'left', marginTop: 12 }}>
+          <MessageSquareText size={17} strokeWidth={1.7} color={C.ink3} />
+          <span style={{ flex: 1, fontSize: 13.5, color: C.ink3, fontFamily: 'Inter, system-ui, sans-serif' }}>Your lifelong networking assistant…</span>
+          <span style={{ width: 34, height: 34, borderRadius: '50%', border: `1px solid ${C.goldLine}`, color: C.gold, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <ArrowRight size={15} strokeWidth={2.1} />
+          </span>
+        </button>
 
         {/* ── Reminder: carry a past-event post into Discover ── */}
         {pastPosts.length > 0 && (
@@ -177,7 +210,7 @@ export default function HomePage({
         )}
 
         {(personRec || eventRec) && (
-          <div style={{ background: '#F2F4EC', border: '1px solid #E7ECDC', borderRadius: 18, padding: '2px 14px', boxShadow: '0 1px 3px rgba(70,80,45,0.03)' }}>
+          <div style={{ background: '#FFFFFF', border: '1px solid #EFEBE2', borderRadius: 18, padding: '2px 14px', boxShadow: '0 1px 3px rgba(60,45,10,0.03)' }}>
             {personRec && (
               <SuggCard
                 lead={<PersonAvatar post={personRec} />}
@@ -191,7 +224,7 @@ export default function HomePage({
               />
             )}
 
-            {personRec && eventRec && <div style={{ height: 1, background: '#E3E8D7' }} />}
+            {personRec && eventRec && <div style={{ height: 1, background: '#F1EEE7' }} />}
 
             {eventRec && (
               <SuggCard
@@ -224,36 +257,6 @@ export default function HomePage({
 
         {/* ── People you should meet (Smart Match) ── */}
         <SmartMatchSection />
-
-        {/* ── Your network ── */}
-        {net.length > 0 && (
-          <>
-            <div style={secHead}><h2 style={secTitle}>Your network</h2></div>
-            <div style={{ display: 'flex', border: `1px solid ${C.line}`, borderRadius: 14, overflow: 'hidden' }}>
-              {net.map((cell, i) => (
-                <button key={cell.label} type="button" onClick={cell.onClick}
-                  style={{ flex: 1, textAlign: 'left', background: C.ground, border: 'none', borderLeft: i === 0 ? 'none' : `1px solid ${C.line2}`, padding: '13px 10px', cursor: cell.onClick ? 'pointer' : 'default', fontFamily: 'Inter, system-ui, sans-serif' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                    {cell.icon}
-                    <span style={{ fontSize: 20, fontWeight: 700, color: C.ink, lineHeight: 1 }}>{cell.n}</span>
-                  </span>
-                  <span style={{ display: 'block', fontSize: 11.5, color: C.ink2, marginTop: 5 }}>{cell.label}</span>
-                </button>
-              ))}
-            </div>
-          </>
-        )}
-
-        {/* ── Ask Mutu ── */}
-        <div style={secHead}><h2 style={secTitle}>Ask Mutu</h2></div>
-        <button type="button" onClick={() => onAskMutu?.()}
-          style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, border: `1px solid ${C.line}`, borderRadius: 14, padding: '10px 10px 10px 13px', background: C.ground, cursor: 'pointer', textAlign: 'left' }}>
-          <MessageSquareText size={17} strokeWidth={1.7} color={C.ink3} />
-          <span style={{ flex: 1, fontSize: 13.5, color: C.ink3, fontFamily: 'Inter, system-ui, sans-serif' }}>Your lifelong networking assistant…</span>
-          <span style={{ width: 34, height: 34, borderRadius: '50%', border: `1px solid ${C.goldLine}`, color: C.gold, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <ArrowRight size={15} strokeWidth={2.1} />
-          </span>
-        </button>
       </div>
 
       <PastPostsSheet
