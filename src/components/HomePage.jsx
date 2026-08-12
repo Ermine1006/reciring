@@ -6,6 +6,7 @@ import SmartMatchSection from './SmartMatchSection'
 import { resolveAvatarSeed } from './SettingsPage'
 import { getMatchScore, DEFAULT_VIEWER_PROFILE } from '../data/matchRanking'
 import { fetchUpcomingEvents, fetchMyJoinedEventIds } from '../lib/events'
+import { matchaCta, MATCHA_DEEP } from '../lib/matchaCta'
 import { fetchFollowups, fetchEncounters, personKey } from '../lib/eventMemory'
 import { fetchConnections } from '../lib/relationships'
 import { fetchPastEventPostsToShare, dismissDiscoverSharePrompt } from '../lib/marketplace'
@@ -285,7 +286,7 @@ function PastPostsSheet({ open, posts, onShare, onDismiss, onClose }) {
               <p style={{ margin: '10px 0 0', fontSize: 11.5, color: C.ink3, fontFamily: 'Inter, system-ui, sans-serif' }}>from {item.eventTitle}</p>
               <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
                 <button type="button" onClick={() => onShare(item)}
-                  style={{ flex: 1, padding: '10px', borderRadius: 11, border: 'none', background: `linear-gradient(135deg, ${C.goldBtn}, ${C.gold})`, color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
+                  style={{ flex: 1, padding: '10px', borderRadius: 11, border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif', ...matchaCta }}>
                   Share in Discover
                 </button>
                 <button type="button" onClick={() => onDismiss(item)}
@@ -329,8 +330,8 @@ function eventReason(ev, me) {
 // ── Suggestion card ──
 function SuggCard({ lead, label, title, titleSize = 16, sub, subIsMeta, reason, actionLabel, actionStyle, onAction }) {
   const btn = actionStyle === 'gold'
-    ? { background: C.goldBtn, border: `1px solid ${C.goldBtn}`, color: C.goldBtnInk }
-    : { background: C.ground, border: `1px solid ${C.goldLine}`, color: C.gold }
+    ? { border: 'none', ...matchaCta }
+    : { background: C.ground, border: '1px solid #D7DEC6', color: MATCHA_DEEP }
   return (
     <div style={{ display: 'flex', gap: 12, alignItems: 'center', background: C.ground, border: `1px solid ${C.line}`, borderRadius: 14, padding: 12, marginBottom: 10 }}>
       {lead}

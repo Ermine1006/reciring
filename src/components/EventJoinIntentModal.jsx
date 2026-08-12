@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { matchaCta } from '../lib/matchaCta'
 
 // Join Event sheet — attendance only. Need/Offer are captured later in
 // Prepare, so joining is a single clear decision (no auto-created posts).
@@ -60,7 +61,7 @@ export default function EventJoinIntentModal({ open, eventTitle, eventWhen, iden
                 </div>
                 {error && <p style={{ color: '#B4453A', fontSize: 12.5, margin: '12px 0 0', textAlign: 'center', fontFamily: 'Inter, system-ui, sans-serif' }}>{error}</p>}
                 <button type="button" onClick={join} disabled={busy}
-                  style={{ width: '100%', marginTop: 16, padding: '13px', borderRadius: 12, border: 'none', background: C.goldBtn, color: C.goldBtnInk, fontSize: 14, fontWeight: 700, cursor: busy ? 'default' : 'pointer', opacity: busy ? 0.7 : 1, fontFamily: 'Inter, system-ui, sans-serif' }}>
+                  style={{ width: '100%', marginTop: 16, padding: '13px', borderRadius: 12, border: 'none', fontSize: 14, fontWeight: 700, cursor: busy ? 'default' : 'pointer', opacity: busy ? 0.7 : 1, fontFamily: 'Inter, system-ui, sans-serif', ...matchaCta }}>
                   {busy ? 'Joining…' : 'Join event'}
                 </button>
                 <button type="button" onClick={busy ? undefined : onClose}
@@ -78,7 +79,7 @@ export default function EventJoinIntentModal({ open, eventTitle, eventWhen, iden
                   Add what you're looking for and what you can offer so relevant attendees can find you.
                 </p>
                 <button type="button" onClick={() => { onClose?.(); onPrepare?.() }}
-                  style={{ width: '100%', marginTop: 16, padding: '13px', borderRadius: 12, border: 'none', background: C.goldBtn, color: C.goldBtnInk, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
+                  style={{ width: '100%', marginTop: 16, padding: '13px', borderRadius: 12, border: 'none', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif', ...matchaCta }}>
                   Prepare for event
                 </button>
                 <button type="button" onClick={onClose}

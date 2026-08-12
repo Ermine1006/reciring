@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { fetchEventById } from '../lib/events'
+import { matchaCta } from '../lib/matchaCta'
 import { GOAL_OPTIONS, fetchEventGoals, saveEventGoals } from '../lib/eventPrep'
 import { fetchMyMarketplacePosts, createMarketplacePost, updateMarketplacePost, deleteMarketplacePost } from '../lib/marketplace'
 import { rewriteText } from '../lib/aiRewrite'
@@ -125,7 +126,7 @@ export default function EventPreparePage({ eventId, userId, onBack, onSaved }) {
             const on = goals.includes(g.id)
             return (
               <button key={g.id} type="button" onClick={() => toggleGoal(g.id)}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 16px', borderRadius: 10, border: `1.5px solid ${on ? C.goldBtn : C.line}`, background: C.ground, color: on ? C.gold : C.ink2, fontSize: 13.5, fontWeight: on ? 700 : 600, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 16px', borderRadius: 10, border: `1.5px solid ${on ? '#8A9668' : C.line}`, background: on ? '#EEF1E6' : C.ground, color: on ? '#5C6A3E' : C.ink2, fontSize: 13.5, fontWeight: on ? 700 : 600, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
                 {g.label}{on && <span style={{ fontSize: 13, lineHeight: 1 }}>✓</span>}
               </button>
             )
@@ -172,7 +173,7 @@ export default function EventPreparePage({ eventId, userId, onBack, onSaved }) {
         {err && <p style={{ margin: '12px 2px 0', fontSize: 12.5, color: '#B4453A', fontFamily: 'Inter, system-ui, sans-serif' }}>{err}</p>}
 
         <button type="button" onClick={save} disabled={!canSave || saving}
-          style={{ width: '100%', marginTop: 18, padding: '15px', borderRadius: 14, border: 'none', cursor: canSave && !saving ? 'pointer' : 'default', background: canSave ? '#C39A2B' : '#E5E1D8', color: canSave ? '#FFFFFF' : '#9B9384', fontSize: 15, fontWeight: 700, fontFamily: 'Inter, system-ui, sans-serif', boxShadow: canSave ? '0 2px 8px rgba(195,154,43,0.22)' : 'none' }}>
+          style={{ width: '100%', marginTop: 18, padding: '15px', borderRadius: 14, border: 'none', cursor: canSave && !saving ? 'pointer' : 'default', fontSize: 15, fontWeight: 700, fontFamily: 'Inter, system-ui, sans-serif', ...(canSave ? matchaCta : { background: '#E5E1D8', color: '#9B9384', boxShadow: 'none' }) }}>
           {saving ? 'Saving…' : 'Save event post'}
         </button>
         <button type="button" onClick={onBack} style={{ width: '100%', marginTop: 8, padding: '11px', borderRadius: 12, background: 'transparent', border: 'none', color: C.ink2, fontSize: 13.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>

@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
 import EventCover from './EventCover'
+import { matchaCta } from '../lib/matchaCta'
 
 // Palette — warm ivory / charcoal / muted gold / soft sage. High contrast text.
 const C = {
@@ -111,11 +112,12 @@ export default function EventCard({ event, joined, isHost, onOpen }) {
           onClick={(e) => { e.stopPropagation(); onOpen?.(event.id) }}
           style={{
             width: '100%', marginTop: 15, padding: '13px', borderRadius: 13, border: 'none',
-            background: isCancelled ? '#EFEAE0' : `linear-gradient(180deg, ${C.gold}, ${C.goldDeep})`,
-            color: isCancelled ? C.sub : '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer',
+            fontSize: 14, fontWeight: 700, cursor: 'pointer',
             fontFamily: 'Inter, system-ui, sans-serif', letterSpacing: '0.01em',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-            boxShadow: isCancelled ? 'none' : '0 6px 16px -6px rgba(151,117,64,0.55)',
+            ...(isCancelled
+              ? { background: '#EFEAE0', color: C.sub, boxShadow: 'none' }
+              : matchaCta),
           }}
         >
           {joined ? 'View your event' : isHost ? 'Manage event' : 'View details'}

@@ -152,7 +152,7 @@ export default function EventPreviewCard({ promo, isTop, onDrag, onSwipeLeft, on
       <div style={{
         display: 'flex', alignItems: 'center', gap: 6,
         padding: '9px 16px',
-        background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
+        background: 'linear-gradient(135deg, #97A275, #78855A)',
         color: '#fff',
       }}>
         <CalendarDays size={13} strokeWidth={2.4} />
