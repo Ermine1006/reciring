@@ -242,19 +242,11 @@ export default function HomePage({
         <button type="button" onClick={() => onAskMutu?.()}
           style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, border: `1px solid ${C.line}`, borderRadius: 14, padding: '10px 10px 10px 13px', background: C.ground, cursor: 'pointer', textAlign: 'left' }}>
           <MessageSquareText size={17} strokeWidth={1.7} color={C.ink3} />
-          <span style={{ flex: 1, fontSize: 13.5, color: C.ink3, fontFamily: 'Inter, system-ui, sans-serif' }}>Ask about your network…</span>
+          <span style={{ flex: 1, fontSize: 13.5, color: C.ink3, fontFamily: 'Inter, system-ui, sans-serif' }}>Your lifelong networking assistant…</span>
           <span style={{ width: 34, height: 34, borderRadius: '50%', border: `1px solid ${C.goldLine}`, color: C.gold, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <ArrowRight size={15} strokeWidth={2.1} />
           </span>
         </button>
-        <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-          {['Who should I follow up with?', 'Who did I meet recently?'].map(q => (
-            <button key={q} type="button" onClick={() => onAskMutu?.(q)}
-              style={{ border: `1px solid ${C.line}`, borderRadius: 99, padding: '8px 13px', fontSize: 12, color: C.ink2, fontWeight: 500, background: C.ground, cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: 'Inter, system-ui, sans-serif' }}>
-              {q}
-            </button>
-          ))}
-        </div>
       </div>
 
       <PastPostsSheet
