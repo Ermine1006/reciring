@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mutu · Matcha accent — Home demo</title>
+<meta name="robots" content="noindex" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* 70% white / warm ivory */
+    --card:#FFFFFF; --ivory:#FBFAF5; --canvas:#F3F0E7;
+    /* 20% Mutu gold — brand / premium */
+    --gold:#C9A33B; --gold-deep:#A6822A; --gold-ink:#8A6E1E; --champagne:#EFE7D2;
+    /* 10% matcha — action / friendly */
+    --matcha:#789A3D; --matcha-deep:#6E8C38; --matcha-ink:#5F7A33; --matcha-soft:#F0F2E6;
+    /* neutrals */
+    --ink:#1A1712; --ink-2:#5F584D; --ink-3:#9A958B; --line:#F0EADD; --pill:#F5F1E7;
+    --font:'Inter',system-ui,-apple-system,sans-serif; --brand:'Fraunces',Georgia,serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+  body{font-family:var(--font);color:var(--ink);letter-spacing:-0.01em;
+    background:radial-gradient(1200px 620px at 50% -8%,#FAF7EE 0%,transparent 55%),var(--canvas);min-height:100vh}
+
+  .intro{max-width:900px;margin:0 auto;padding:38px 28px 4px;text-align:center}
+  .kick{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--matcha-ink);background:var(--matcha-soft);border:1px solid #DCE3C8;border-radius:99px;padding:5px 14px}
+  .intro h1{font-family:var(--brand);font-weight:600;font-size:25px;margin:14px 0 6px}
+  .intro p{color:var(--ink-2);font-size:13.5px;line-height:1.55;max-width:560px;margin:0 auto}
+  .mix{display:inline-flex;gap:0;margin:16px auto 0;border-radius:99px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(0,0,0,.05)}
+  .mix span{font-size:11px;font-weight:700;padding:6px 16px;color:#fff}
+  .mix .w{background:#FFFFFF;color:#8A857C}.mix .g{background:var(--gold)}.mix .m{background:var(--matcha)}
+
+  .stage{display:flex;justify-content:center;padding:26px 20px 60px}
+
+  /* ── phone ─────────────────────────────────────────── */
+  .phone{width:372px;background:var(--ivory);border-radius:44px;overflow:hidden;display:flex;flex-direction:column;
+    box-shadow:0 34px 70px rgba(60,45,10,.13),0 6px 18px rgba(0,0,0,.05),0 0 0 1px rgba(201,163,59,.10)}
+
+  .status{display:flex;align-items:center;justify-content:space-between;padding:15px 26px 4px}
+  .status .t{font-size:14px;font-weight:600;display:flex;align-items:center;gap:6px}
+  .status .sys{display:flex;align-items:center;gap:7px}
+
+  header.app{padding:8px 20px 12px;background:var(--ivory)}
+  .bar{display:flex;align-items:center;justify-content:space-between}
+  .logo{display:flex;align-items:center;gap:10px}
+  .logo .word{font-family:var(--brand);font-size:26px;font-weight:600;letter-spacing:.04em;
+    background:linear-gradient(135deg,#7A5E17,#C9A33B 45%,#D8B54B 60%,#8A6E1E);
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .actions{display:flex;align-items:center;gap:12px}
+  .bell{position:relative;color:var(--ink-2)}
+  .bell .badge{position:absolute;top:-5px;right:-6px;background:#C6553F;color:#fff;font-size:9px;font-weight:800;
+    border-radius:99px;padding:1px 5px;border:1.5px solid var(--ivory)}
+  .me{width:36px;height:36px;border-radius:50%;overflow:hidden;box-shadow:0 0 0 2px #fff,0 0 0 3px var(--champagne)}
+  .rule{height:1px;margin-top:11px;background:linear-gradient(90deg,transparent,rgba(201,163,59,.28) 20%,rgba(201,163,59,.42) 50%,rgba(201,163,59,.28) 80%,transparent)}
+
+  .scroll{padding:14px 18px 6px}
+
+  .seeall{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;background:var(--card);
+    border:1px solid var(--line);border-radius:14px;padding:13px;margin-bottom:22px;cursor:pointer;
+    box-shadow:0 1px 3px rgba(60,45,10,.03)}
+  .seeall b{font-size:14.5px;font-weight:700;color:var(--gold-deep)}
+  .seeall svg{color:var(--gold-deep)}
+
+  .sec{display:flex;align-items:baseline;justify-content:space-between;margin:0 2px 13px}
+  .sec h2{font-size:19px;font-weight:700;letter-spacing:-.02em}
+  .refresh{display:inline-flex;align-items:center;gap:5px;background:none;border:none;cursor:pointer;
+    color:var(--matcha-deep);font-weight:700;font-size:12.5px;font-family:var(--font)}
+
+  .cards{display:flex;flex-direction:column;gap:12px}
+  .card{display:flex;align-items:center;gap:11px;background:var(--card);border:1px solid var(--line);
+    border-radius:18px;padding:15px 14px;box-shadow:0 2px 11px rgba(60,45,10,.05)}
+  .ava{width:44px;height:44px;flex:none;border-radius:50%}
+  .info{flex:1;min-width:0}
+  .nl{display:flex;align-items:center;gap:7px}
+  .nl b{font-size:14px;font-weight:700;white-space:nowrap}
+  .pct{font-size:10.5px;font-weight:600;color:var(--matcha-ink);background:var(--pill);
+    border-radius:99px;padding:2px 8px;white-space:nowrap}
+  .reason{font-size:12.5px;color:var(--ink-2);line-height:1.4;margin-top:5px}
+  .btns{display:flex;flex-direction:column;gap:7px;flex:none;width:96px}
+  .interested{border:none;border-radius:11px;padding:9px 0;background:var(--matcha);color:#fff;
+    font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);
+    box-shadow:0 2px 7px rgba(120,154,61,.30)}
+  .skip{border:1px solid var(--line);border-radius:11px;padding:8px 0;background:var(--card);color:var(--ink-3);
+    font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)}
+
+  .foot-note{font-size:11.5px;color:var(--ink-3);margin:12px 2px 4px}
+
+  /* ── bottom nav ─────────────────────────────────────── */
+  nav.tab{display:flex;align-items:center;justify-content:space-between;padding:9px 20px 20px;background:var(--card);
+    border-top:1px solid var(--line);margin-top:14px}
+  .tab a{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;color:var(--ink-3);text-decoration:none}
+  .tab a span{font-size:10px;font-weight:600;letter-spacing:.02em}
+  .tab a.on{color:var(--gold-deep)}
+  .tab a.on .ico{background:#FAF3E2;border-radius:12px}
+  .ico{width:40px;height:30px;display:grid;place-items:center}
+
+  .cap{max-width:372px;margin:16px auto 0;text-align:center;color:var(--ink-3);font-size:12px;line-height:1.6}
+  .cap b{color:var(--ink-2)}
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <span class="kick">◆ Matcha accent · demo · Home only</span>
+  <h1>Mutu — Matcha meets Gold</h1>
+  <p>A visual-system refinement of the “People you should meet” screen. White stays the canvas, gold stays the brand, and a soft matcha green enters only on actions — <i>Interested</i> and <i>Refresh</i>. No layout, copy, or flow changes.</p>
+  <div class="mix"><span class="w">70% White</span><span class="g">20% Gold</span><span class="m">10% Matcha</span></div>
+</div>
+
+<div class="stage">
+<div>
+  <section class="phone">
+
+    <!-- status bar -->
+    <div class="status">
+      <span class="t">10:39 <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M3 11l18-8-8 18-2-8-8-2z"/></svg></span>
+      <span class="sys">
+        <svg width="18" height="12" viewBox="0 0 18 12" fill="none"><rect x="0" y="7" width="3" height="5" rx="1" fill="#1A1712"/><rect x="5" y="5" width="3" height="7" rx="1" fill="#1A1712"/><rect x="10" y="2.5" width="3" height="9.5" rx="1" fill="#1A1712"/><rect x="15" y="0" width="3" height="12" rx="1" fill="#1A1712"/></svg>
+        <svg width="17" height="12" viewBox="0 0 16 12" fill="none"><path d="M8 3c2.3 0 4.4.9 6 2.3M8 3C5.7 3 3.6 3.9 2 5.3M8 6.6c1.3 0 2.5.5 3.4 1.3M8 6.6c-1.3 0-2.5.5-3.4 1.3" stroke="#1A1712" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="10.4" r="1" fill="#1A1712"/></svg>
+        <span style="display:inline-flex;align-items:center"><svg width="27" height="13" viewBox="0 0 27 13" fill="none"><rect x="1" y="1" width="22" height="11" rx="3" stroke="#1A1712" stroke-opacity=".45" stroke-width="1"/><rect x="24.4" y="4.5" width="1.6" height="4" rx=".8" fill="#1A1712" fill-opacity=".45"/><rect x="2.6" y="2.6" width="17" height="7.8" rx="1.6" fill="#1A1712"/><text x="11" y="9.4" font-family="Inter" font-size="7" font-weight="700" fill="#fff" text-anchor="middle">80</text></svg></span>
+      </span>
+    </div>
+
+    <!-- app header — gold brand, no motifs -->
+    <header class="app">
+      <div class="bar">
+        <div class="logo">
+          <svg width="34" height="25" viewBox="0 0 44 32" aria-hidden="true">
+            <defs><linearGradient id="rg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#D8B54B"/><stop offset="1" stop-color="#A6822A"/></linearGradient></defs>
+            <circle cx="15" cy="16" r="11" fill="none" stroke="url(#rg)" stroke-width="2.8"/>
+            <circle cx="29" cy="16" r="11" fill="none" stroke="url(#rg)" stroke-width="2.8"/>
+          </svg>
+          <span class="word">Mutu</span>
+        </div>
+        <div class="actions">
+          <span class="bell">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span class="badge">9+</span>
+          </span>
+          <span class="me"><svg width="36" height="36" viewBox="0 0 64 64"><rect width="64" height="64" rx="32" fill="#D5E5F8"/><path d="M19 31Q19 17 32 17Q45 17 45 31 L45 41Q45 51 32 51Q19 51 19 41Z" fill="#BBCEFF"/><circle cx="26" cy="33" r="4.5" fill="#fff"/><circle cx="38" cy="33" r="4.5" fill="#fff"/><circle cx="26" cy="33" r="2.4" fill="#1A2640"/><circle cx="38" cy="33" r="2.4" fill="#1A2640"/><path d="M22 33h8M34 33h8" stroke="#1A2640" stroke-width="1.2" stroke-linecap="round"/><path d="M29 41q3 2.5 6 0" stroke="#1A2640" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg></span>
+        </div>
+      </div>
+      <div class="rule"></div>
+    </header>
+
+    <div class="scroll">
+
+      <!-- secondary link — quiet gold, no leaf -->
+      <button class="seeall"><b>See all suggestions</b><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+
+      <!-- section head — Refresh in matcha -->
+      <div class="sec">
+        <h2>People you should meet</h2>
+        <button class="refresh">Refresh <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 11a8 8 0 1 0-.9 4.5M20 5v6h-6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>
+
+      <div class="cards">
+
+        <!-- card 1 -->
+        <div class="card">
+          <svg class="ava" viewBox="0 0 64 64"><rect width="64" height="64" rx="32" fill="#E7DAF7"/><path d="M19 31Q19 17 32 17Q45 17 45 31 L45 41Q45 51 32 51Q19 51 19 41Z" fill="#D0BBFF"/><circle cx="26" cy="33" r="4.4" fill="#fff"/><circle cx="38" cy="33" r="4.4" fill="#fff"/><circle cx="26" cy="33" r="2.3" fill="#28184A"/><circle cx="38" cy="33" r="2.3" fill="#28184A"/><path d="M21.6 33h8.8M33.6 33h8.8" stroke="#28184A" stroke-width="1.1" stroke-linecap="round"/><path d="M23 40.5q2.2 1.6 4.4 0M36.6 40.5q2.2 1.6 4.4 0" stroke="#28184A" stroke-width="1.4" fill="none" stroke-linecap="round"/></svg>
+          <div class="info">
+            <div class="nl"><b>Anonymous peer</b><span class="pct">60% match</span></div>
+            <div class="reason">Both looking for a co-founder · Weekend vibe: both into yoga · Shared focus on Tech &amp; VC</div>
+          </div>
+          <div class="btns"><button class="interested">Interested</button><button class="skip">Skip</button></div>
+        </div>
+
+        <!-- card 2 -->
+        <div class="card">
+          <svg class="ava" viewBox="0 0 64 64"><rect width="64" height="64" rx="32" fill="#EAD9F5"/><path d="M19 31Q19 17 32 17Q45 17 45 31 L45 41Q45 51 32 51Q19 51 19 41Z" fill="#D8C0F0"/><g fill="#F49CC0"><ellipse cx="26" cy="15" rx="5" ry="2.8" transform="rotate(-28 26 15)"/><ellipse cx="38" cy="15" rx="5" ry="2.8" transform="rotate(28 38 15)"/><circle cx="32" cy="15" r="2.3"/></g><circle cx="26.5" cy="34" r="2.4" fill="#3A2450"/><circle cx="37.5" cy="34" r="2.4" fill="#3A2450"/><circle cx="23" cy="39" r="2.4" fill="#C88BD8" opacity=".5"/><circle cx="41" cy="39" r="2.4" fill="#C88BD8" opacity=".5"/><path d="M29 40q3 2.5 6 0" stroke="#3A2450" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+          <div class="info">
+            <div class="nl"><b>Anonymous peer</b><span class="pct">42% match</span></div>
+            <div class="reason">Both looking for a co-founder · Shared focus on Tech · Both in the FT-MBA program</div>
+          </div>
+          <div class="btns"><button class="interested">Interested</button><button class="skip">Skip</button></div>
+        </div>
+
+        <!-- card 3 -->
+        <div class="card">
+          <svg class="ava" viewBox="0 0 64 64"><rect width="64" height="64" rx="32" fill="#D7E7F6"/><path d="M19 31Q19 17 32 17Q45 17 45 31 L45 41Q45 51 32 51Q19 51 19 41Z" fill="#BBD3F2"/><g fill="#F49CC0"><ellipse cx="26" cy="15" rx="5" ry="2.8" transform="rotate(-28 26 15)"/><ellipse cx="38" cy="15" rx="5" ry="2.8" transform="rotate(28 38 15)"/><circle cx="32" cy="15" r="2.3"/></g><circle cx="26.5" cy="34" r="2.4" fill="#1A2640"/><circle cx="37.5" cy="34" r="2.4" fill="#1A2640"/><circle cx="23" cy="39" r="2.4" fill="#6E9BE0" opacity=".5"/><circle cx="41" cy="39" r="2.4" fill="#6E9BE0" opacity=".5"/><path d="M29 40q3 2.5 6 0" stroke="#1A2640" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+          <div class="info">
+            <div class="nl"><b>Anonymous peer</b><span class="pct">42% match</span></div>
+            <div class="reason">Both looking for a co-founder · Shared focus on VC · Both in the FT-MBA program</div>
+          </div>
+          <div class="btns"><button class="interested">Interested</button><button class="skip">Skip</button></div>
+        </div>
+
+        <!-- card 4 -->
+        <div class="card">
+          <svg class="ava" viewBox="0 0 64 64"><rect width="64" height="64" rx="32" fill="#D3E9F3"/><path d="M19 31Q19 17 32 17Q45 17 45 31 L45 41Q45 51 32 51Q19 51 19 41Z" fill="#AEDCEF"/><circle cx="26.5" cy="33" r="2.5" fill="#123240"/><circle cx="37.5" cy="33" r="2.5" fill="#123240"/><circle cx="23" cy="38.5" r="2.4" fill="#5FB4CC" opacity=".5"/><circle cx="41" cy="38.5" r="2.4" fill="#5FB4CC" opacity=".5"/><path d="M29 39.5q3 2.5 6 0" stroke="#123240" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M32 43.5l1.5 3 3.3.3-2.5 2.2.8 3.2L32 53.7l-2.9 1.5.8-3.2-2.5-2.2 3.3-.3z" fill="#C9A33B"/></svg>
+          <div class="info">
+            <div class="nl"><b>Anonymous peer</b><span class="pct">40% match</span></div>
+            <div class="reason">Both looking for a mentor · Shared focus on Tech · Similar background in Founder</div>
+          </div>
+          <div class="btns"><button class="interested">Interested</button><button class="skip">Skip</button></div>
+        </div>
+
+        <!-- card 5 -->
+        <div class="card">
+          <svg class="ava" viewBox="0 0 64 64"><rect width="64" height="64" rx="32" fill="#F6D9E4"/><path d="M19 31Q19 17 32 17Q45 17 45 31 L45 41Q45 51 32 51Q19 51 19 41Z" fill="#FBC2D4"/><g><circle cx="32" cy="13.5" r="2.6" fill="#F6C752"/><circle cx="28" cy="16" r="2.6" fill="#F6C752"/><circle cx="36" cy="16" r="2.6" fill="#F6C752"/><circle cx="32" cy="16" r="1.9" fill="#E88A2E"/></g><circle cx="26.5" cy="34" r="2.4" fill="#40202C"/><circle cx="37.5" cy="34" r="2.4" fill="#40202C"/><circle cx="23" cy="39" r="2.4" fill="#EE8FA8" opacity=".55"/><circle cx="41" cy="39" r="2.4" fill="#EE8FA8" opacity=".55"/><path d="M29 40q3 2.5 6 0" stroke="#40202C" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+          <div class="info">
+            <div class="nl"><b>Anonymous peer</b><span class="pct">40% match</span></div>
+            <div class="reason">Both looking for a mentor · Shared focus on VC · Weekend vibe: both into hiking</div>
+          </div>
+          <div class="btns"><button class="interested">Interested</button><button class="skip">Skip</button></div>
+        </div>
+
+      </div>
+
+      <p class="foot-note">Marking interest is private — we’ll only connect you if it’s mutual.</p>
+    </div>
+
+    <!-- bottom nav — HOME gold active, rest neutral -->
+    <nav class="tab">
+      <a class="on"><span class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 10.5L12 3l9 7.5M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>HOME</span></a>
+      <a><span class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z" stroke-linejoin="round"/></svg></span><span>DISCOVER</span></a>
+      <a><span class="ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg></span><span>POST</span></a>
+      <a><span class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M17 20h5v-2a3 3 0 0 0-5.36-1.86M17 20H7m10 0v-2c0-.66-.13-1.28-.36-1.86M7 20H2v-2a3 3 0 0 1 5.36-1.86M7 20v-2c0-.66.13-1.28.36-1.86m0 0a5 5 0 0 1 9.28 0M15 7a3 3 0 1 1-6 0 3 3 0 0 1 6 0z" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>MATCHES</span></a>
+      <a><span class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18" stroke-linecap="round"/></svg></span><span>EVENTS</span></a>
+    </nav>
+
+  </section>
+
+  <div class="cap"><b>Gold = brand / premium.</b> Matcha = action / friendly. White = canvas.<br>Match score sits in a quiet ivory pill so attention flows: person → why → Interested.</div>
+</div>
+</div>
+
+</body>
+</html>
