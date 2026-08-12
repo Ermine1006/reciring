@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Clock, Users, UserPlus, CalendarDays, ArrowRight, MessageSquareText, ChevronRight } from 'lucide-react'
+import { Clock, Users, UserPlus, CalendarDays, ArrowRight, MessageSquareText, ChevronRight, Sparkles } from 'lucide-react'
 import AnonymousAvatar from './AnonymousAvatar'
 import SmartMatchSection from './SmartMatchSection'
 import { resolveAvatarSeed } from './SettingsPage'
@@ -170,13 +170,25 @@ export default function HomePage({
           </div>
         )}
 
-        {/* ── Ask Mutu (directly under the networking dashboard) ── */}
+        {/* ── Ask Mutu — AI assistant (directly under the dashboard) ── */}
         <button type="button" onClick={() => onAskMutu?.()}
-          style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, border: `1px solid ${C.line}`, borderRadius: 14, padding: '10px 10px 10px 13px', background: C.ground, cursor: 'pointer', textAlign: 'left', marginTop: 12 }}>
-          <MessageSquareText size={17} strokeWidth={1.7} color={C.ink3} />
-          <span style={{ flex: 1, fontSize: 13.5, color: C.ink3, fontFamily: 'Inter, system-ui, sans-serif' }}>Your lifelong networking assistant…</span>
-          <span style={{ width: 34, height: 34, borderRadius: '50%', border: `1px solid ${C.goldLine}`, color: C.gold, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <ArrowRight size={15} strokeWidth={2.1} />
+          style={{ width: '100%', marginTop: 12, display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left', cursor: 'pointer',
+            background: 'linear-gradient(135deg, #FBF7EE 0%, #F6EFDD 100%)', border: '1px solid #ECDEBC', borderRadius: 16, padding: '13px 14px',
+            boxShadow: '0 2px 10px rgba(150,120,30,0.06)' }}>
+          <span style={{ width: 44, height: 44, borderRadius: '50%', flexShrink: 0, display: 'grid', placeItems: 'center',
+            background: 'linear-gradient(145deg, #D6B04A, #A6822A)', boxShadow: '0 4px 10px rgba(180,140,30,0.30)' }}>
+            <Sparkles size={20} color="#fff" strokeWidth={2} />
+          </span>
+          <span style={{ flex: 1, minWidth: 0 }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+              <b style={{ fontSize: 15.5, fontWeight: 700, color: C.ink, fontFamily: 'Inter, system-ui, sans-serif' }}>Ask Mutu</b>
+              <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.08em', color: '#8A6E1E', background: '#F3E7C4', borderRadius: 5, padding: '2px 6px', fontFamily: 'Inter, system-ui, sans-serif' }}>AI</span>
+            </span>
+            <span style={{ display: 'block', fontSize: 12, color: C.ink2, marginTop: 2, fontFamily: 'Inter, system-ui, sans-serif' }}>Your AI networking assistant — ask anything.</span>
+          </span>
+          <span style={{ width: 34, height: 34, borderRadius: '50%', flexShrink: 0, display: 'grid', placeItems: 'center',
+            background: 'linear-gradient(145deg, #97A275, #78855A)', boxShadow: '0 3px 9px rgba(92,106,62,0.28)' }}>
+            <ArrowRight size={15} color="#fff" strokeWidth={2.3} />
           </span>
         </button>
 
