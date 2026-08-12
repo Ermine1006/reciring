@@ -444,7 +444,7 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
             boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
             flexShrink: 0,
           }}>
-            <PeerAvatar name={display.primary} seed={avatarSeed} size={36} />
+            <PeerAvatar name={display.primary} anonymous={!display.isPublic} seed={avatarSeed} size={36} />
           </div>
 
           <div style={{ flex: 1, minWidth: 0 }}>

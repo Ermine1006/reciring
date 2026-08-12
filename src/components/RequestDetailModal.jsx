@@ -209,7 +209,7 @@ export default function RequestDetailModal({ request, matchReason, matchReasons,
             style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.05)', marginBottom: 8 }}
           >
             <div style={{ borderRadius: '50%', boxShadow: '0 2px 8px rgba(0,0,0,0.12)', flexShrink: 0 }}>
-              <PeerAvatar name={display.primary} seed={avatarSeed} size={36} />
+              <PeerAvatar name={display.primary} anonymous={!display.isPublic} seed={avatarSeed} size={36} />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <p style={{
