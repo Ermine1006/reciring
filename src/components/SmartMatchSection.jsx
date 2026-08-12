@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import AnonymousAvatar from './AnonymousAvatar'
 import { generateSmartMatches, fetchPendingNudges, setNudgeStatus, checkMutualMatch } from '../lib/smartMatch'
 import { track } from '../lib/analytics'
-import { matchaCta, MATCHA_DEEP, MATCHA_INK } from '../lib/matchaCta'
+import { matchaCta, MATCHA_DEEP } from '../lib/matchaCta'
 
 // ── Smart Match "People you should meet" (Phase 1.3) ─────────────────
 //
@@ -106,7 +106,7 @@ export default function SmartMatchSection() {
             <div style={{ flex: 1, minWidth: 0 }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                 <span style={{ fontSize: 14, fontWeight: 700, color: C.ink, fontFamily: 'Inter, system-ui, sans-serif' }}>Anonymous peer</span>
-                <span style={{ fontSize: 11, fontWeight: 600, color: MATCHA_INK, background: '#F5F1E7', borderRadius: 99, padding: '2px 8px', fontFamily: 'Inter, system-ui, sans-serif' }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: '#8A6E1E', background: '#F6EFDD', border: '1px solid #EFE3C4', borderRadius: 99, padding: '2px 8px', fontFamily: 'Inter, system-ui, sans-serif' }}>
                   {n.score}% match
                 </span>
               </span>
