@@ -97,10 +97,10 @@ export default function SmartMatchSection() {
         </button>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
-        {nudges.map(n => (
+      <div style={{ background: '#F2F4EC', border: '1px solid #E7ECDC', borderRadius: 18, padding: '2px 14px', boxShadow: '0 1px 3px rgba(70,80,45,0.03)' }}>
+        {nudges.map((n, i) => (
           <div key={n.id}
-            style={{ display: 'flex', alignItems: 'center', gap: 11, border: `1px solid ${C.line}`, borderRadius: 14, padding: '11px 12px', background: C.ground }}>
+            style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '13px 2px', borderTop: i === 0 ? 'none' : '1px solid #E3E8D7' }}>
             <div style={{ flexShrink: 0 }}><AnonymousAvatar seed={n.candidate_id} size={40} /></div>
 
             <div style={{ flex: 1, minWidth: 0 }}>

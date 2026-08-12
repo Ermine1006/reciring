@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Clock, Users, UserPlus, CalendarDays, ArrowRight, MessageSquareText } from 'lucide-react'
+import { Clock, Users, UserPlus, CalendarDays, ArrowRight, MessageSquareText, ChevronRight } from 'lucide-react'
 import AnonymousAvatar from './AnonymousAvatar'
 import SmartMatchSection from './SmartMatchSection'
 import { resolveAvatarSeed } from './SettingsPage'
@@ -176,32 +176,38 @@ export default function HomePage({
           </div>
         )}
 
-        {personRec && (
-          <SuggCard
-            lead={<PersonAvatar post={personRec} />}
-            label="Person"
-            title={personRec.creator?.name}
-            sub={[personRec.creator?.headline, personRec.creator?.program].filter(Boolean).join(' · ') || 'Community member'}
-            reason={titleOf(personRec.needs || personRec.offers)}
-            actionLabel="View"
-            actionStyle="out"
-            onAction={() => onOpenPost?.(personRec)}
-          />
-        )}
+        {(personRec || eventRec) && (
+          <div style={{ background: '#F2F4EC', border: '1px solid #E7ECDC', borderRadius: 18, padding: '2px 14px', boxShadow: '0 1px 3px rgba(70,80,45,0.03)' }}>
+            {personRec && (
+              <SuggCard
+                lead={<PersonAvatar post={personRec} />}
+                label="Person"
+                title={personRec.creator?.name}
+                sub={[personRec.creator?.headline, personRec.creator?.program].filter(Boolean).join(' · ') || 'Community member'}
+                reason={titleOf(personRec.needs || personRec.offers)}
+                actionLabel="View"
+                actionStyle="chevron"
+                onAction={() => onOpenPost?.(personRec)}
+              />
+            )}
 
-        {eventRec && (
-          <SuggCard
-            lead={<EventThumb ev={eventRec} />}
-            label="Event"
-            title={eventRec.title}
-            titleSize={15}
-            sub={[fmtEventDate(eventRec.start_at), eventRec.location].filter(Boolean).join(' · ')}
-            subIsMeta
-            reason={eventReason(eventRec, me)}
-            actionLabel="View event"
-            actionStyle="gold"
-            onAction={() => onOpenEvent?.(eventRec.id)}
-          />
+            {personRec && eventRec && <div style={{ height: 1, background: '#E3E8D7' }} />}
+
+            {eventRec && (
+              <SuggCard
+                lead={<EventThumb ev={eventRec} />}
+                label="Event"
+                title={eventRec.title}
+                titleSize={15}
+                sub={[fmtEventDate(eventRec.start_at), eventRec.location].filter(Boolean).join(' · ')}
+                subIsMeta
+                reason={eventReason(eventRec, me)}
+                actionLabel="View event"
+                actionStyle="gold"
+                onAction={() => onOpenEvent?.(eventRec.id)}
+              />
+            )}
+          </div>
         )}
 
         {(personRec || eventRec) && (
@@ -333,7 +339,7 @@ function SuggCard({ lead, label, title, titleSize = 16, sub, subIsMeta, reason, 
     ? { border: 'none', ...matchaCta }
     : { background: C.ground, border: '1px solid #D7DEC6', color: MATCHA_DEEP }
   return (
-    <div style={{ display: 'flex', gap: 12, alignItems: 'center', background: C.ground, border: `1px solid ${C.line}`, borderRadius: 14, padding: 12, marginBottom: 10 }}>
+    <div style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '14px 4px' }}>
       {lead}
       <div style={{ flex: 1, minWidth: 0 }}>
         <span style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: C.ink3, fontFamily: 'Inter, system-ui, sans-serif' }}>{label}</span>
@@ -341,10 +347,17 @@ function SuggCard({ lead, label, title, titleSize = 16, sub, subIsMeta, reason, 
         <p style={{ fontSize: subIsMeta ? 12 : 12.5, color: C.ink3, margin: '1px 0 0', fontFamily: 'Inter, system-ui, sans-serif' }}>{sub}</p>
         {reason && <p style={{ fontSize: 12.5, color: C.ink2, margin: '4px 0 0', lineHeight: 1.35, fontFamily: 'Inter, system-ui, sans-serif' }}>{reason}</p>}
       </div>
-      <button type="button" onClick={onAction} className="active:scale-[0.98]"
-        style={{ flexShrink: 0, alignSelf: 'center', padding: '8px 15px', borderRadius: 10, fontSize: 12.5, fontWeight: 650, whiteSpace: 'nowrap', cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif', ...btn }}>
-        {actionLabel}
-      </button>
+      {actionStyle === 'chevron' ? (
+        <button type="button" onClick={onAction} aria-label={actionLabel} className="active:scale-95"
+          style={{ flexShrink: 0, alignSelf: 'center', background: 'none', border: 'none', padding: 6, cursor: 'pointer', color: C.ink3, display: 'flex' }}>
+          <ChevronRight size={22} strokeWidth={2} />
+        </button>
+      ) : (
+        <button type="button" onClick={onAction} className="active:scale-[0.98]"
+          style={{ flexShrink: 0, alignSelf: 'center', padding: '8px 15px', borderRadius: 10, fontSize: 12.5, fontWeight: 650, whiteSpace: 'nowrap', cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif', ...btn }}>
+          {actionLabel}
+        </button>
+      )}
     </div>
   )
 }
