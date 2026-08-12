@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { generateFollowUp } from '../lib/followUp'
 import { saveMessageDraft, markMessageSent } from '../lib/eventMemory'
+import { matchaCta } from '../lib/matchaCta'
 
 const C = {
   gold:      '#C9A33B',
@@ -216,12 +217,11 @@ export default function FollowUpModal({
                 onClick={handleCopy}
                 className="w-full py-3.5 rounded-xl text-sm font-semibold tracking-wide active:scale-[0.98]"
                 style={{
-                  background: copied
-                    ? `linear-gradient(135deg, ${C.ok}, #047857)`
-                    : `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
-                  color: '#fff', border: 'none',
-                  boxShadow: '0 6px 20px rgba(201,163,59,0.28)',
+                  border: 'none',
                   cursor: 'pointer',
+                  ...(copied
+                    ? { background: `linear-gradient(135deg, ${C.ok}, #047857)`, color: '#fff', boxShadow: '0 6px 20px rgba(5,150,105,0.28)' }
+                    : matchaCta),
                 }}
               >
                 {copied ? '✓ Copied to clipboard' : 'Copy message'}
@@ -241,7 +241,7 @@ export default function FollowUpModal({
                   onClick={handleMarkSent}
                   disabled={marking || encounter?.message_status === 'sent'}
                   className="flex-1 py-2.5 rounded-xl text-sm font-semibold"
-                  style={{ background: encounter?.message_status === 'sent' ? C.white : `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`, color: encounter?.message_status === 'sent' ? C.textMuted : '#fff', border: encounter?.message_status === 'sent' ? `1.5px solid ${C.goldLight}` : 'none', cursor: marking ? 'default' : 'pointer', opacity: marking ? 0.6 : 1, fontFamily: 'Inter, system-ui, sans-serif' }}
+                  style={{ cursor: marking ? 'default' : 'pointer', opacity: marking ? 0.6 : 1, fontFamily: 'Inter, system-ui, sans-serif', ...(encounter?.message_status === 'sent' ? { background: C.white, color: C.textMuted, border: `1.5px solid ${C.goldLight}` } : { border: 'none', ...matchaCta }) }}
                 >
                   {encounter?.message_status === 'sent' ? '✓ Sent' : (marking ? 'Saving…' : 'Mark as sent')}
                 </button>

@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { setMyEmailSubscription } from '../lib/email'
 import { isAdmin } from '../data/adminEmails'
 import LinkedAccountsSection from './LinkedAccountsSection'
+import { matchaCta } from '../lib/matchaCta'
 
 const C = {
   gold:      '#C9A33B',
@@ -374,10 +375,10 @@ export default function SettingsTab({ onOpenAdminEmailTest, onOpenEventReview })
                 rel="noopener noreferrer"
                 className="w-full py-3 rounded-xl text-sm font-semibold active:scale-[0.98] flex items-center justify-center gap-2"
                 style={{
-                  background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
-                  color: '#fff', textDecoration: 'none', display: 'flex',
-                  border: 'none', boxShadow: '0 4px 14px rgba(201,163,59,0.30)',
+                  textDecoration: 'none', display: 'flex',
+                  border: 'none',
                   marginBottom: 6,
+                  ...matchaCta,
                 }}
               >
                 <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>

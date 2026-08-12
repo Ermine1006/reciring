@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { isInstitutionalEmail } from '../config/auth'
+import { matchaCta } from '../lib/matchaCta'
 
 const C = {
   gold:      '#C9A33B',
@@ -148,13 +149,12 @@ export default function LinkAccountPrompt() {
             style={{
               width: '100%', padding: '13px 16px',
               borderRadius: 14, border: 'none',
-              background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
-              color: '#fff', fontSize: 14, fontWeight: 600,
+              fontSize: 14, fontWeight: 600,
               fontFamily: 'Inter, system-ui, sans-serif',
               cursor: linking ? 'default' : 'pointer',
-              boxShadow: '0 6px 18px rgba(201,163,59,0.32)',
               opacity: linking ? 0.6 : 1,
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              ...matchaCta,
             }}
           >
             <svg width="16" height="16" viewBox="0 0 24 24">

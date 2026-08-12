@@ -3,6 +3,7 @@ import AnonymousAvatar from './AnonymousAvatar'
 import { resolveAvatarSeed } from './SettingsPage'
 import EventMemoryModal from './EventMemoryModal'
 import { recordEncounter, updateEncounter, deleteEncounter, requestConfirmation } from '../lib/eventEncounters'
+import { matchaCta } from '../lib/matchaCta'
 
 const C = {
   gold:      '#C9A33B',
@@ -203,12 +204,11 @@ export default function EventModeSection({
             style={{
               padding: '8px 12px',
               borderRadius: 999,
-              background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
-              color: '#fff', border: 'none',
+              border: 'none',
               fontSize: 12, fontWeight: 700, letterSpacing: '0.04em',
               fontFamily: 'Inter, system-ui, sans-serif',
-              boxShadow: '0 4px 12px rgba(201,163,59,0.32)',
               cursor: 'pointer', whiteSpace: 'nowrap',
+              ...matchaCta,
             }}
           >
             I met this person

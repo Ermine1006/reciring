@@ -1,4 +1,5 @@
 import AnonymousAvatar from './AnonymousAvatar'
+import { matchaCta } from '../lib/matchaCta'
 
 const C = {
   gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7', goldBg: '#F8F3E5',
@@ -144,10 +145,9 @@ export default function MarketplacePostCard({
 
 const primaryBtn = {
   flex: 1, padding: '11px 14px', borderRadius: 12, border: 'none',
-  background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`, color: C.white,
   fontSize: 13.5, fontWeight: 700, cursor: 'pointer',
-  boxShadow: '0 2px 8px rgba(201,163,59,0.32)',
   fontFamily: 'Inter, system-ui, sans-serif',
+  ...matchaCta,
 }
 
 const ghostBtn = {

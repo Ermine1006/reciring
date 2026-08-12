@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import AnonymousAvatar from './AnonymousAvatar'
 import { generateSmartMatches, fetchPendingNudges, setNudgeStatus, checkMutualMatch } from '../lib/smartMatch'
 import { track } from '../lib/analytics'
+import { matchaCta, MATCHA_DEEP, MATCHA_INK } from '../lib/matchaCta'
 
 // ── Smart Match "People you should meet" (Phase 1.3) ─────────────────
 //
@@ -91,7 +92,7 @@ export default function SmartMatchSection() {
       <div style={{ ...secHead, display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
         <h2 style={secTitle}>People you should meet</h2>
         <button type="button" onClick={refresh} disabled={loading}
-          style={{ background: 'none', border: 'none', padding: 0, cursor: loading ? 'default' : 'pointer', color: C.gold, fontWeight: 700, fontSize: 12.5, fontFamily: 'Inter, system-ui, sans-serif', opacity: loading ? 0.5 : 1 }}>
+          style={{ background: 'none', border: 'none', padding: 0, cursor: loading ? 'default' : 'pointer', color: MATCHA_DEEP, fontWeight: 700, fontSize: 12.5, fontFamily: 'Inter, system-ui, sans-serif', opacity: loading ? 0.5 : 1 }}>
           Refresh
         </button>
       </div>
@@ -105,7 +106,7 @@ export default function SmartMatchSection() {
             <div style={{ flex: 1, minWidth: 0 }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                 <span style={{ fontSize: 14, fontWeight: 700, color: C.ink, fontFamily: 'Inter, system-ui, sans-serif' }}>Anonymous peer</span>
-                <span style={{ fontSize: 11, fontWeight: 700, color: C.goldBtnInk, background: C.goldSoft, border: `1px solid ${C.goldLine}`, borderRadius: 99, padding: '1px 7px', fontFamily: 'Inter, system-ui, sans-serif' }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: MATCHA_INK, background: '#F5F1E7', borderRadius: 99, padding: '2px 8px', fontFamily: 'Inter, system-ui, sans-serif' }}>
                   {n.score}% match
                 </span>
               </span>
@@ -122,7 +123,7 @@ export default function SmartMatchSection() {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
                 <button type="button" onClick={() => act(n, 'interested')} disabled={busyId === n.id}
-                  style={{ border: 'none', borderRadius: 99, padding: '7px 13px', background: C.goldBtn, color: C.goldBtnInk, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif', opacity: busyId === n.id ? 0.6 : 1 }}>
+                  style={{ border: 'none', borderRadius: 99, padding: '8px 15px', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif', opacity: busyId === n.id ? 0.6 : 1, ...matchaCta }}>
                   Interested
                 </button>
                 <button type="button" onClick={() => act(n, 'skipped')} disabled={busyId === n.id}

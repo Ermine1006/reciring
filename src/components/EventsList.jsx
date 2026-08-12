@@ -7,6 +7,7 @@ import EventJoinIntentModal from './EventJoinIntentModal'
 import AppScreen from './AppScreen'
 import MyNetworkingDashboard from './MyNetworkingDashboard'
 import { EVENT_CATEGORIES } from '../data/eventCategories'
+import { matchaCta } from '../lib/matchaCta'
 
 // Date-range filters ("by time"). Presets are rolling (relative to now).
 const DATE_PRESETS = [
@@ -280,8 +281,7 @@ export default function EventsList({ onCreateEvent, onOpenEvent, onPrepare, onOp
           </div>
           <button type="button" onClick={onCreateEvent} aria-label="Create event"
             style={{ flexShrink: 0, width: 40, height: 40, borderRadius: '50%', border: 'none', cursor: 'pointer',
-              background: `linear-gradient(180deg, ${C.gold}, ${C.goldDark})`, color: '#fff',
-              display: 'grid', placeItems: 'center', boxShadow: '0 6px 16px -6px rgba(151,117,64,0.6)' }}>
+              display: 'grid', placeItems: 'center', ...matchaCta }}>
             <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
           </button>
         </div>
@@ -532,13 +532,13 @@ function ConfirmModal({ open, title, body, confirmLabel, confirmIntent, busy, on
                 style={{
                   width: '100%', padding: '13px 0',
                   borderRadius: 12, border: 'none',
-                  background: confirmIntent === 'danger' ? '#DC2626' : `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
-                  color: '#fff',
                   fontSize: 14, fontWeight: 600,
                   fontFamily: 'Inter, system-ui, sans-serif',
                   cursor: busy ? 'default' : 'pointer',
                   opacity: busy ? 0.7 : 1,
-                  boxShadow: confirmIntent === 'danger' ? '0 4px 14px rgba(220,38,38,0.32)' : '0 4px 14px rgba(201,163,59,0.32)',
+                  ...(confirmIntent === 'danger'
+                    ? { background: '#DC2626', color: '#fff', boxShadow: '0 4px 14px rgba(220,38,38,0.32)' }
+                    : matchaCta),
                 }}
               >
                 {confirmLabel}
@@ -882,13 +882,12 @@ function EmptyState({ filter, onCreateEvent }) {
           maxWidth: 320, margin: '0 auto',
           padding: '14px 0',
           borderRadius: 14,
-          background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
-          color: '#fff', border: 'none', cursor: 'pointer',
+          border: 'none', cursor: 'pointer',
           fontSize: 14, fontWeight: 700,
           letterSpacing: '0.08em', textTransform: 'uppercase',
           fontFamily: 'Inter, system-ui, sans-serif',
-          boxShadow: '0 8px 24px rgba(201,163,59,0.40)',
           transition: 'transform 0.12s ease',
+          ...matchaCta,
         }}
       >
         Host the first event

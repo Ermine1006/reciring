@@ -11,6 +11,7 @@ import {
 } from '../lib/marketplace'
 import { notifyNewMatch } from '../lib/email'
 import EventMatchList from './EventMatchList'
+import { matchaCta } from '../lib/matchaCta'
 
 const C = {
   gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7', goldBg: '#F8F3E5',
@@ -210,7 +211,7 @@ export default function EventMarketplace({ eventId, userId, isHost = false, allo
             Let attendees know what you're looking for or can offer.
           </p>
           <button type="button" onClick={() => (onPrepare ? onPrepare() : setComposer({ mode: 'create', type: 'need' }))}
-            style={{ width: '100%', marginTop: 12, padding: '12px', borderRadius: 11, border: 'none', background: 'linear-gradient(135deg,#C9A33B,#A6822A)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
+            style={{ width: '100%', marginTop: 12, padding: '12px', borderRadius: 11, border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif', ...matchaCta }}>
             Create event post
           </button>
         </div>

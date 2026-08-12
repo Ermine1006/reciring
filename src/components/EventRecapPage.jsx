@@ -13,6 +13,7 @@ import {
 import { openOrCreateDirectMatch } from '../lib/matches'
 import { addFollowup } from '../lib/eventMemory'
 import { whyThisConnectionMayMatter, rankByConnectionValue } from '../lib/opportunityMatch'
+import { matchaCta, MATCHA_DEEP } from '../lib/matchaCta'
 
 const C = {
   gold:      '#C9A33B',
@@ -176,7 +177,7 @@ export default function EventRecapPage({
             </p>
             {onAddPeople && (
               <button type="button" onClick={onAddPeople}
-                style={{ marginTop: 14, padding: '11px 18px', borderRadius: 11, border: 'none', background: '#C9A33B', color: '#2E2405', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
+                style={{ marginTop: 14, padding: '11px 18px', borderRadius: 11, border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif', ...matchaCta }}>
                 Choose from attendees
               </button>
             )}
@@ -220,7 +221,7 @@ export default function EventRecapPage({
 
         {entries.length > 0 && onAddPeople && (
           <button type="button" onClick={onAddPeople}
-            style={{ display: 'block', width: '100%', textAlign: 'center', background: 'none', border: 'none', padding: '4px 0 6px', cursor: 'pointer', fontSize: 12.5, fontWeight: 600, color: C.goldDark, fontFamily: 'Inter, system-ui, sans-serif' }}>
+            style={{ display: 'block', width: '100%', textAlign: 'center', background: 'none', border: 'none', padding: '4px 0 6px', cursor: 'pointer', fontSize: 12.5, fontWeight: 600, color: MATCHA_DEEP, fontFamily: 'Inter, system-ui, sans-serif' }}>
             + Add someone I met
           </button>
         )}
@@ -342,7 +343,7 @@ function NextActionModal({ open, onClose, person, encounter, onSave }) {
           <button type="button" onClick={onClose} style={{ flex: 1, padding: '12px', borderRadius: 12, background: C.white, color: C.textSub, border: `1.5px solid ${C.border}`, fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
             Cancel
           </button>
-          <button type="button" onClick={handleSave} disabled={saving || !action.trim()} style={{ flex: 2, padding: '12px', borderRadius: 12, background: !action.trim() ? '#E5E7EB' : `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`, color: !action.trim() ? C.textMuted : '#fff', border: 'none', fontSize: 14, fontWeight: 700, cursor: saving || !action.trim() ? 'default' : 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
+          <button type="button" onClick={handleSave} disabled={saving || !action.trim()} style={{ flex: 2, padding: '12px', borderRadius: 12, border: 'none', fontSize: 14, fontWeight: 700, cursor: saving || !action.trim() ? 'default' : 'pointer', fontFamily: 'Inter, system-ui, sans-serif', ...(!action.trim() ? { background: '#E5E7EB', color: C.textMuted } : matchaCta) }}>
             {saving ? 'Saving…' : 'Save next action'}
           </button>
         </div>
@@ -473,7 +474,7 @@ function EncounterCard({ encounter, them, themTopPost, rationale, onEdit, onFoll
       {/* One primary action + a ••• overflow — not four equal buttons. */}
       <div style={{ position: 'relative', display: 'flex', gap: 8, marginTop: 12, alignItems: 'stretch' }}>
         <button type="button" onClick={onFollowUp} className="active:scale-[0.98]"
-          style={{ flex: 1, padding: '10px 12px', borderRadius: 10, background: '#C9A33B', color: '#2E2405', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
+          style={{ flex: 1, padding: '10px 12px', borderRadius: 10, border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif', ...matchaCta }}>
           Follow up
         </button>
         <button type="button" onClick={() => setMenuOpen(o => !o)} aria-label="More options"

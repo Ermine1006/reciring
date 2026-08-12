@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { matchaCta } from '../lib/matchaCta'
 
 const C = {
   gold:      '#C9A33B',
@@ -184,11 +185,10 @@ export default function CoffeeChatModal({ onConfirm, onClose, initialValues }) {
             onClick={handleConfirm}
             style={{
               width: '100%', padding: '15px 0', borderRadius: 16,
-              background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
-              color: '#fff', fontSize: 15, fontWeight: 600,
+              fontSize: 15, fontWeight: 600,
               fontFamily: 'Inter, system-ui, sans-serif',
               letterSpacing: '0.04em', border: 'none', cursor: 'pointer',
-              boxShadow: '0 8px 24px rgba(201,163,59,0.35)',
+              ...matchaCta,
             }}
           >
             Send Suggestion

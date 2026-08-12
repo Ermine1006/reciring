@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
+import { matchaCta } from '../lib/matchaCta'
 
 const C = {
   gold:      '#C9A33B',
@@ -109,11 +110,7 @@ export default function MatchModal({ match, onClose, onConfirm, onSchedule }) {
               type="button"
               onClick={() => onSchedule?.(match, 'coffee_chat')}
               className="w-full py-4 rounded-[16px] text-sm font-semibold tracking-[0.12em] uppercase transition-all duration-200 active:scale-[0.98]"
-              style={{
-                background: `linear-gradient(135deg, ${C.gold} 0%, ${C.goldDark} 100%)`,
-                color: '#fff',
-                boxShadow: '0 8px 24px rgba(201,163,59,0.35)',
-              }}
+              style={{ ...matchaCta }}
             >
               ☕ Schedule coffee chat
             </button>

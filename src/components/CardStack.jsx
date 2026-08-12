@@ -9,6 +9,7 @@ import { rankRequests, filterRequests, DEFAULT_VIEWER_PROFILE } from '../data/ma
 import { INDUSTRIES, HELP_TYPES, TIME_OPTIONS } from '../data/requestOptions'
 import { useAuth } from '../context/AuthContext'
 import { track } from '../lib/analytics'
+import { matchaCta } from '../lib/matchaCta'
 
 const C = {
   gold:      '#C9A33B',
@@ -532,14 +533,13 @@ export default function CardStack({ requests, eventPromos, unmatchedPostIds, int
             className="flex items-center justify-center transition-all duration-200 active:scale-90"
             style={{
               width: 68, height: 68, borderRadius: '50%',
-              background: 'linear-gradient(135deg, #C9A33B 0%, #E8D9A7 100%)',
-              boxShadow: '0 8px 28px rgba(201,163,59,0.45), 0 2px 8px rgba(201,163,59,0.2)',
               border: `1px solid ${C.goldLight}`,
+              ...matchaCta,
             }}
             aria-label="Match if you can help and want what they offer"
             title="Match if you can help and want what they offer"
           >
-            <Handshake size={26} stroke="#5C3D11" strokeWidth={1.7} />
+            <Handshake size={26} stroke="#FFFFFF" strokeWidth={1.7} />
           </button>
         </div>
       </div>

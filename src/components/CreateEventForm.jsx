@@ -5,6 +5,7 @@ import { createEvent } from '../lib/events'
 import { EVENT_CATEGORIES } from '../data/eventCategories'
 import Chip from './Chip'
 import PosterUpload from './PosterUpload'
+import { matchaCta } from '../lib/matchaCta'
 
 const C = {
   gold:      '#C9A33B',
@@ -458,17 +459,13 @@ export default function CreateEventForm({ onCreated, onClose }) {
             style={{
               width: '100%', padding: '14px 0',
               borderRadius: 14,
-              background: canSubmit
-                ? `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`
-                : '#F3F4F6',
-              color: canSubmit ? '#fff' : C.textMuted,
               border: 'none',
-              boxShadow: canSubmit ? '0 6px 20px rgba(201,163,59,0.35)' : 'none',
               fontSize: 14, fontWeight: 700,
               letterSpacing: '0.08em', textTransform: 'uppercase',
               fontFamily: 'Inter, system-ui, sans-serif',
               cursor: canSubmit ? 'pointer' : 'default',
               transition: 'all 0.18s',
+              ...(canSubmit ? matchaCta : { background: '#F3F4F6', color: C.textMuted, boxShadow: 'none' }),
             }}
           >
             {saving ? 'Creating…' : 'Create event'}

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { createEncounter, updateEncounter } from '../lib/eventMemory'
 import { extractCapture } from '../lib/eventMemory'
+import { matchaCta } from '../lib/matchaCta'
 
 const C = {
   gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7', goldBg: '#F8F3E5',
@@ -171,5 +172,5 @@ const input = { width: '100%', padding: '11px 13px', borderRadius: 12, border: `
 const errStyle = { margin: '12px 0 0', fontSize: 13, color: C.danger }
 const ghost = { width: '100%', marginTop: 8, padding: '12px', borderRadius: 14, background: 'transparent', border: 'none', color: C.sub, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }
 function primary(disabled) {
-  return { width: '100%', marginTop: 16, padding: '15px', borderRadius: 14, border: 'none', background: disabled ? '#E5E1D8' : `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`, color: disabled ? '#9B9384' : '#fff', fontSize: 15, fontWeight: 700, cursor: disabled ? 'default' : 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }
+  return { width: '100%', marginTop: 16, padding: '15px', borderRadius: 14, border: 'none', fontSize: 15, fontWeight: 700, cursor: disabled ? 'default' : 'pointer', fontFamily: 'Inter, system-ui, sans-serif', ...(disabled ? { background: '#E5E1D8', color: '#9B9384' } : matchaCta) }
 }

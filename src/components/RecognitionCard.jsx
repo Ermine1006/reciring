@@ -4,6 +4,7 @@ import Chip from './Chip'
 import {
   confirmExchange, fetchExchangeStatus, hasRecognized, submitRecognition,
 } from '../lib/recognition'
+import { matchaCta } from '../lib/matchaCta'
 
 const C = {
   gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7', goldBg: '#F8F3E5',
@@ -206,9 +207,9 @@ function PrimaryButton({ children, onClick, busy, disabled, style }) {
         width: '100%', padding: 14, borderRadius: 14, border: 'none',
         fontSize: 14.5, fontWeight: 700, letterSpacing: '0.02em', cursor: off ? 'default' : 'pointer',
         fontFamily: 'Inter, system-ui, sans-serif', transition: 'all 0.18s',
-        background: off ? '#EEE9DE' : 'linear-gradient(135deg, #C9A33B, #A6822A)',
-        color: off ? '#B4AC9C' : '#fff',
-        boxShadow: off ? 'none' : '0 8px 22px rgba(201,163,59,0.4)',
+        ...(off
+          ? { background: '#EEE9DE', color: '#B4AC9C', boxShadow: 'none' }
+          : matchaCta),
         ...style,
       }}
     >

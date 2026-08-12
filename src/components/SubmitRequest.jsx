@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { HELP_TYPES, INDUSTRIES, TIME_OPTIONS } from '../data/requestOptions'
 import { rewriteText } from '../lib/aiRewrite'
+import { matchaCta } from '../lib/matchaCta'
 
 /* ── Design tokens ──────────────────────────────────────────────── */
 const C = {
@@ -725,10 +726,10 @@ export default function SubmitRequest({ onSubmitted, prefill = null }) {
           disabled={!canSubmit || submitting}
           className="w-full py-4 rounded-[16px] text-sm font-semibold tracking-[0.12em] uppercase transition-all duration-200 active:scale-[0.98]"
           style={{
-            background: canSubmit ? `linear-gradient(135deg, ${C.gold} 0%, ${C.goldDark} 100%)` : '#F3F4F6',
-            color:      canSubmit ? '#fff' : C.textMuted,
-            boxShadow:  canSubmit ? '0 8px 24px rgba(201,163,59,0.35)' : 'none',
             opacity:    submitting ? 0.6 : 1,
+            ...(canSubmit
+              ? matchaCta
+              : { background: '#F3F4F6', color: C.textMuted, boxShadow: 'none' }),
           }}
         >
           {submitting

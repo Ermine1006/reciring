@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import {
   listPendingConfirmations, acceptConfirmation, declineConfirmation,
 } from '../lib/eventEncounters'
+import { matchaCta } from '../lib/matchaCta'
 
 const C = {
   gold:      '#C9A33B',
@@ -138,11 +139,11 @@ export default function PendingConfirmationsBanner({ eventId, onAcceptedOrDeclin
                 disabled={busy === req.id}
                 style={{
                   padding: '5px 12px', borderRadius: 8,
-                  background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
-                  color: '#fff', border: 'none',
+                  border: 'none',
                   fontSize: 11, fontWeight: 700, letterSpacing: '0.04em',
                   cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif',
                   opacity: busy === req.id ? 0.6 : 1,
+                  ...matchaCta,
                 }}
               >
                 Confirm

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import AnonymousAvatar from './AnonymousAvatar'
 import Certificate from './Certificate'
 import { MOCK_ME, MOCK_LEADERBOARD, getBadge, getNextBadge, getReliability } from '../data/reputationData'
+import { matchaCta } from '../lib/matchaCta'
 
 const C = {
   gold:      '#C9A33B',
@@ -199,11 +200,10 @@ export default function LeaderboardView() {
               onClick={() => setShowCert(true)}
               style={{
                 padding: '8px 16px', borderRadius: 99, flexShrink: 0,
-                background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
-                color: '#fff', fontSize: 12, fontWeight: 600,
+                fontSize: 12, fontWeight: 600,
                 fontFamily: 'Inter, system-ui, sans-serif',
                 border: 'none', cursor: 'pointer',
-                boxShadow: '0 4px 12px rgba(201,163,59,0.3)',
+                ...matchaCta,
               }}
             >
               View

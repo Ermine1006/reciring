@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { matchaCta } from '../lib/matchaCta'
 
 const C = {
   gold:      '#C9A33B',
@@ -140,13 +141,11 @@ export default function IdentityRevealRequestModal({ open, onAccept, onDecline, 
                 style={{
                   width: '100%', padding: '14px 16px',
                   borderRadius: 14, border: 'none',
-                  background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
-                  color: '#fff',
                   fontSize: 14, fontWeight: 600,
                   fontFamily: 'Inter, system-ui, sans-serif',
                   cursor: busy ? 'default' : 'pointer',
-                  boxShadow: '0 6px 18px rgba(201,163,59,0.32)',
                   opacity: busy === 'decline' ? 0.5 : 1,
+                  ...matchaCta,
                 }}
               >
                 {busy === 'accept' ? 'Accepting…' : 'Accept — reveal identities'}

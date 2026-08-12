@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { HELP_TYPES, INDUSTRIES, TIME_OPTIONS } from '../data/requestOptions'
+import { matchaCta } from '../lib/matchaCta'
 
 const C = {
   gold:      '#C9A33B',
@@ -263,11 +264,11 @@ function EditPostModal({ post, onSave, onClose }) {
             disabled={!canSave || saving}
             className="w-full py-3.5 rounded-xl text-sm font-semibold active:scale-[0.98]"
             style={{
-              background: canSave ? `linear-gradient(135deg, ${C.gold}, ${C.goldDark})` : '#F3F4F6',
-              color: canSave ? '#fff' : C.textMuted,
               border: 'none',
               opacity: saving ? 0.6 : 1,
-              boxShadow: canSave ? '0 6px 20px rgba(201,163,59,0.35)' : 'none',
+              ...(canSave
+                ? matchaCta
+                : { background: '#F3F4F6', color: C.textMuted, boxShadow: 'none' }),
             }}
           >
             {saving ? 'Saving & republishing…' : 'Save & republish'}

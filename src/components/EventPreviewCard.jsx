@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { CalendarDays, MapPin, Users, ArrowRight } from 'lucide-react'
 import AnonymousAvatar from './AnonymousAvatar'
+import { matchaCta } from '../lib/matchaCta'
 
 // EventPreviewCard — a SIMPLIFIED promotional variant of a marketplace post,
 // shown in the Discover deck to drive event acquisition. It is deliberately
@@ -233,11 +234,10 @@ export default function EventPreviewCard({ promo, isTop, onDrag, onSwipeLeft, on
           className="active:scale-[0.98]"
           style={{
             width: '100%', marginTop: 14, padding: '12px', borderRadius: 12,
-            background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
-            color: '#fff', border: 'none', cursor: 'pointer',
+            border: 'none', cursor: 'pointer',
             fontSize: 14, fontWeight: 700, fontFamily: 'Inter, system-ui, sans-serif',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-            boxShadow: '0 6px 20px rgba(201,163,59,0.28)',
+            ...matchaCta,
           }}
         >
           {ctaLabel} <ArrowRight size={16} />

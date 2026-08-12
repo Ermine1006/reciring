@@ -5,6 +5,7 @@ import AnonymousAvatar from './AnonymousAvatar'
 import ReportModal from './ReportModal'
 import { posterDisplay } from '../lib/visibility'
 import { resolveAvatarSeed } from './SettingsPage'
+import { matchaCta } from '../lib/matchaCta'
 
 const C = {
   gold:       '#C9A33B',
@@ -348,13 +349,12 @@ export default function RequestDetailModal({ request, matchReason, matchReasons,
               style={{
                 flex: onPass ? 2 : 1, padding: '14px 0',
                 borderRadius: 99, border: 'none', cursor: 'pointer',
-                background: `linear-gradient(135deg, ${C.gold} 0%, ${C.goldDark} 100%)`,
-                boxShadow: '0 6px 24px rgba(201,163,59,0.4)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-                fontSize: 15, fontWeight: 700, color: '#FFFFFF',
+                fontSize: 15, fontWeight: 700,
                 fontFamily: 'Inter, system-ui, sans-serif',
                 letterSpacing: '0.02em',
                 transition: 'transform 0.15s, box-shadow 0.15s',
+                ...matchaCta,
               }}
               onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.97)' }}
               onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)' }}

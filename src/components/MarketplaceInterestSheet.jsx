@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import AnonymousAvatar from './AnonymousAvatar'
+import { matchaCta } from '../lib/matchaCta'
 
 const C = {
   gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7', goldBg: '#F8F3E5',
@@ -133,8 +134,8 @@ const rowStyle = {
 }
 const acceptBtn = {
   flex: 1, padding: '10px', borderRadius: 11, border: 'none',
-  background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`, color: C.white,
   fontSize: 13.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif',
+  ...matchaCta,
 }
 const declineBtn = {
   padding: '10px 16px', borderRadius: 11, background: C.white,

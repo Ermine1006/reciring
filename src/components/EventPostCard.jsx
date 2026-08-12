@@ -1,4 +1,5 @@
 import AnonymousAvatar from './AnonymousAvatar'
+import { matchaCta } from '../lib/matchaCta'
 
 // EventPostCard — ONE attendee's Event Post: their "Looking for" and
 // "Can offer" shown together (grouped by user_id in the parent), never as
@@ -80,15 +81,15 @@ export default function EventPostCard({
       {/* One action */}
       <div style={{ marginTop: 12 }}>
         {mine ? (
-          <button type="button" onClick={onManage} style={{ ...primary, background: C.ivory, color: C.ink, border: `1px solid ${C.line}` }}>
+          <button type="button" onClick={onManage} style={{ ...primary, background: C.ivory, color: C.ink, border: `1px solid ${C.line}`, boxShadow: 'none' }}>
             {pendingCount > 0 ? `Review interest · ${pendingCount}` : `Interest · ${interestCount}`}
           </button>
         ) : myInterest?.status === 'accepted' && myInterest.match_id ? (
           <button type="button" onClick={() => onOpenChat?.(myInterest.match_id)} style={primary}>Open chat</button>
         ) : myInterest?.status === 'pending' ? (
-          <button type="button" disabled style={{ ...primary, background: C.ivory, color: C.ink3, cursor: 'default' }}>✓ Interest sent</button>
+          <button type="button" disabled style={{ ...primary, background: C.ivory, color: C.ink3, cursor: 'default', boxShadow: 'none' }}>✓ Interest sent</button>
         ) : myInterest?.status === 'declined' ? (
-          <button type="button" disabled style={{ ...primary, background: C.ivory, color: C.ink3, cursor: 'default' }}>Not this time</button>
+          <button type="button" disabled style={{ ...primary, background: C.ivory, color: C.ink3, cursor: 'default', boxShadow: 'none' }}>Not this time</button>
         ) : (
           <button type="button" onClick={() => onInterested?.(rep)} style={primary}>I'm interested</button>
         )}
@@ -99,6 +100,6 @@ export default function EventPostCard({
 
 const primary = {
   width: '100%', padding: '10px 14px', borderRadius: 10, border: 'none',
-  background: 'linear-gradient(135deg,#C9A33B,#A6822A)', color: '#fff',
   fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif',
+  ...matchaCta,
 }

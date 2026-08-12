@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import ReciRingLogo from './ReciRingLogo'
 import Chip from './Chip'
 import { VISIBILITY_OPTIONS, VISIBILITY_PRIVATE } from '../lib/visibility'
+import { matchaCta } from '../lib/matchaCta'
 
 const C = {
   gold:      '#C9A33B',
@@ -473,15 +474,11 @@ export default function OnboardingProfile() {
             className="flex-1 rounded-xl text-sm font-semibold tracking-wide transition-all duration-200 active:scale-[0.98]"
             style={{
               padding: '13px 0',
-              background: (saving || (step < 3 && !canAdvance))
-                ? '#F3F4F6'
-                : `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
-              color: (saving || (step < 3 && !canAdvance)) ? C.textMuted : '#fff',
-              boxShadow: (saving || (step < 3 && !canAdvance))
-                ? 'none'
-                : '0 6px 20px rgba(201,163,59,0.35)',
               border: 'none',
               cursor: (saving || (step < 3 && !canAdvance)) ? 'default' : 'pointer',
+              ...((saving || (step < 3 && !canAdvance))
+                ? { background: '#F3F4F6', color: C.textMuted, boxShadow: 'none' }
+                : matchaCta),
             }}
           >
             {step < 3 ? 'Continue' : (saving ? 'Saving…' : 'Start discovering')}

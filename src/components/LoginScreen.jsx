@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { isInstitutionalEmail, isGmailEmail } from '../config/auth'
 import { checkAccessCode, accessCodeReasonLabel } from '../lib/accessCodes'
 import ReciRingLogo from './ReciRingLogo'
+import { matchaCta, MATCHA_DEEP } from '../lib/matchaCta'
 
 const C = {
   gold:      '#C9A33B',
@@ -395,7 +396,7 @@ export default function LoginScreen() {
                     onClick={() => { setMode('forgot'); setForgotStep('request'); setError(null); setInfo(null) }}
                     style={{
                       background: 'none', border: 'none', cursor: 'pointer',
-                      fontSize: 12, fontWeight: 500, color: C.goldDark,
+                      fontSize: 12, fontWeight: 500, color: MATCHA_DEEP,
                       padding: 0,
                     }}
                   >
@@ -431,12 +432,10 @@ export default function LoginScreen() {
                   disabled={loading}
                   className="w-full py-3.5 rounded-xl text-sm font-semibold tracking-wide transition-all duration-200 active:scale-[0.98]"
                   style={{
-                    background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
-                    color: '#fff',
-                    boxShadow: '0 6px 20px rgba(201,163,59,0.35)',
                     border: 'none',
                     cursor: loading ? 'default' : 'pointer',
                     opacity: loading ? 0.6 : 1,
+                    ...matchaCta,
                   }}
                 >
                   {loading
@@ -547,12 +546,10 @@ export default function LoginScreen() {
                   disabled={loading}
                   className="w-full py-3.5 rounded-xl text-sm font-semibold tracking-wide transition-all duration-200 active:scale-[0.98]"
                   style={{
-                    background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
-                    color: '#fff',
-                    boxShadow: '0 6px 20px rgba(201,163,59,0.35)',
                     border: 'none',
                     cursor: loading ? 'default' : 'pointer',
                     opacity: loading ? 0.6 : 1,
+                    ...matchaCta,
                   }}
                 >
                   {forgotStep === 'verify'

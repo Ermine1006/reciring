@@ -30,6 +30,7 @@ import PendingConfirmationsBanner from './PendingConfirmationsBanner'
 import { listEncountersForEvent } from '../lib/eventEncounters'
 import { fetchConnections } from '../lib/relationships'
 import { fetchMarketplaceFeed, fetchMyMarketplacePosts } from '../lib/marketplace'
+import { matchaCta } from '../lib/matchaCta'
 
 const C = {
   gold:      '#C9A33B',
@@ -628,9 +629,9 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
 
         {/* ── Primary lifecycle CTA — exactly one, prominent ────── */}
         {!isCancelled && (() => {
-          const goldBtn = { width: '100%', padding: '16px 0', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif', background: '#C39A2B', color: '#fff', border: 'none', boxShadow: '0 2px 8px rgba(195,154,43,0.22)' }
+          const goldBtn = { width: '100%', padding: '16px 0', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif', border: 'none', ...matchaCta }
           const outlineBtn = { flex: 1, padding: '15px 0', borderRadius: 14, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif', background: '#fff', color: C.goldDark, border: `1px solid ${C.goldLight}` }
-          const goldFlex = { ...outlineBtn, background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`, color: '#fff', border: 'none' }
+          const goldFlex = { ...outlineBtn, border: 'none', ...matchaCta }
           if (!joined && !isHost) {
             if (isCompleted) return null
             return (
@@ -870,11 +871,10 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
                 style={{
                   flexShrink: 0,
                   width: 44, height: 44, borderRadius: 12,
-                  background: chatInput.trim() ? `linear-gradient(135deg, ${C.gold}, ${C.goldDark})` : '#E5E7EB',
-                  color: chatInput.trim() ? '#fff' : C.textMuted,
                   border: 'none',
                   cursor: chatInput.trim() ? 'pointer' : 'default',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  ...(chatInput.trim() ? matchaCta : { background: '#E5E7EB', color: C.textMuted }),
                 }}
                 aria-label="Send"
               >

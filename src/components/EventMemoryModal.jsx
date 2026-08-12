@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { TOPIC_CHIPS } from '../lib/eventEncounters'
+import { matchaCta } from '../lib/matchaCta'
 
 const C = {
   gold:      '#C9A33B',
@@ -231,12 +232,10 @@ export default function EventMemoryModal({
                 disabled={saving}
                 className="w-full py-3.5 rounded-xl text-sm font-semibold tracking-wide active:scale-[0.98]"
                 style={{
-                  background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
-                  color: '#fff',
                   border: 'none',
-                  boxShadow: '0 6px 20px rgba(201,163,59,0.32)',
                   cursor: saving ? 'default' : 'pointer',
                   opacity: saving ? 0.6 : 1,
+                  ...matchaCta,
                 }}
               >
                 {saving ? 'Saving…' : 'Save memory'}

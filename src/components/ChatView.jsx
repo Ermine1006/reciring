@@ -6,6 +6,7 @@ import ReportModal from './ReportModal'
 import IdentityRevealRequestModal from './IdentityRevealRequestModal'
 import PeerProfileCard from './PeerProfileCard'
 import RecognitionCard from './RecognitionCard'
+import { matchaCta } from '../lib/matchaCta'
 
 const C = {
   gold:      '#C9A33B',
@@ -119,10 +120,10 @@ function MeetingCard({ msg, onConfirm, onSuggestAnother, onReschedule }) {
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={onConfirm} style={{
               flex: 1, padding: '8px 0', borderRadius: 10,
-              background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
-              color: '#fff', fontSize: 12, fontWeight: 600,
+              fontSize: 12, fontWeight: 600,
               fontFamily: 'Inter, system-ui, sans-serif',
               border: 'none', cursor: 'pointer',
+              ...matchaCta,
             }}>
               Confirm
             </button>
@@ -632,10 +633,10 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
                   onClick={() => setShowRevealModal(true)}
                   style={{
                     flex: 1, padding: '8px 0', borderRadius: 10,
-                    background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
-                    color: '#fff', fontSize: 12, fontWeight: 600,
+                    fontSize: 12, fontWeight: 600,
                     fontFamily: 'Inter, system-ui, sans-serif',
                     border: 'none', cursor: 'pointer',
+                    ...matchaCta,
                   }}
                 >
                   Review
@@ -831,10 +832,10 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
                 onClick={() => setShowCoffee(true)}
                 style={{
                   padding: '5px 12px', borderRadius: 10,
-                  background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
-                  color: '#fff', fontSize: 11, fontWeight: 600,
+                  fontSize: 11, fontWeight: 600,
                   fontFamily: 'Inter, system-ui, sans-serif',
                   border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
+                  ...matchaCta,
                 }}
               >
                 Schedule ☕
@@ -885,11 +886,10 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
                   onClick={() => setShowFollowUp(false)}
                   style={{
                     flex: 1, padding: '9px 0', borderRadius: 12,
-                    background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
-                    color: '#fff', fontSize: 13, fontWeight: 600,
+                    fontSize: 13, fontWeight: 600,
                     fontFamily: 'Inter, system-ui, sans-serif',
                     border: 'none', cursor: 'pointer',
-                    boxShadow: '0 4px 12px rgba(201,163,59,0.3)',
+                    ...matchaCta,
                   }}
                 >
                   Yes — leave a review
@@ -972,14 +972,11 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
           disabled={!input.trim()}
           style={{
             width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
-            background: input.trim()
-              ? `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`
-              : '#E5E7EB',
             border: 'none',
             cursor: input.trim() ? 'pointer' : 'default',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             transition: 'all 0.2s',
-            boxShadow: input.trim() ? '0 4px 12px rgba(201,163,59,0.3)' : 'none',
+            ...(input.trim() ? matchaCta : { background: '#E5E7EB', boxShadow: 'none' }),
           }}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill={input.trim() ? 'white' : '#9CA3AF'}>

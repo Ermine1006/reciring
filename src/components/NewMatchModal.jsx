@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import AnonymousAvatar from './AnonymousAvatar'
+import { matchaCta } from '../lib/matchaCta'
 
 const C = {
   gold:      '#C9A33B',
@@ -113,11 +114,9 @@ export default function NewMatchModal({ open, match, onView, onDismiss }) {
                 onClick={onView}
                 className="w-full py-3.5 rounded-xl text-sm font-semibold tracking-wide transition-all duration-200 active:scale-[0.98]"
                 style={{
-                  background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
-                  color: '#fff',
                   border: 'none',
-                  boxShadow: '0 6px 20px rgba(201,163,59,0.38)',
                   cursor: 'pointer',
+                  ...matchaCta,
                 }}
               >
                 View match

@@ -5,6 +5,7 @@ import { fetchConnections } from '../lib/relationships'
 import { fetchMyEvents, fetchUpcomingEvents } from '../lib/events'
 import { fetchEventPrepCandidates } from '../lib/eventMatch'
 import { useAuth } from '../context/AuthContext'
+import { matchaCta } from '../lib/matchaCta'
 
 // Render Mutu's answers as plain text: turn **bold** into real bold and strip
 // any stray markdown asterisks so they never show as literal characters.
@@ -265,7 +266,7 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
             style={{ flex: 1, resize: 'none', maxHeight: 100, padding: '11px 13px', borderRadius: 14, border: `1.5px solid ${C.border}`, background: '#F9F7F4', fontSize: 14.5, color: C.ink, fontFamily: 'Inter, system-ui, sans-serif', outline: 'none' }}
           />
           <button type="button" onClick={() => send()} disabled={!input.trim() || busy}
-            style={{ width: 44, height: 44, borderRadius: 13, border: 'none', flexShrink: 0, background: !input.trim() || busy ? '#E5E1D8' : `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`, color: '#fff', display: 'grid', placeItems: 'center', cursor: !input.trim() || busy ? 'default' : 'pointer' }}>
+            style={{ width: 44, height: 44, borderRadius: 13, border: 'none', flexShrink: 0, display: 'grid', placeItems: 'center', cursor: !input.trim() || busy ? 'default' : 'pointer', ...(!input.trim() || busy ? { background: '#E5E1D8', color: '#fff' } : matchaCta) }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M5 12h14M13 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </button>
         </div>

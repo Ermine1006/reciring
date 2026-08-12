@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { rewriteText } from '../lib/aiRewrite'
+import { matchaCta } from '../lib/matchaCta'
 
 const C = {
   gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7', goldBg: '#F8F3E5',
@@ -215,10 +216,11 @@ export default function MarketplacePostComposer({ open, mode = 'create', type = 
           disabled={!title.trim() || busy}
           style={{
             width: '100%', marginTop: 18, padding: '15px', borderRadius: 14, border: 'none',
-            background: !title.trim() || busy ? '#E5E1D8' : `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
-            color: !title.trim() || busy ? '#9B9384' : C.white,
             fontSize: 15, fontWeight: 700, cursor: !title.trim() || busy ? 'default' : 'pointer',
             fontFamily: 'Inter, system-ui, sans-serif',
+            ...(!title.trim() || busy
+              ? { background: '#E5E1D8', color: '#9B9384' }
+              : matchaCta),
           }}
         >
           {busy ? 'Saving…' : mode === 'edit' ? 'Save changes' : 'Post to marketplace'}

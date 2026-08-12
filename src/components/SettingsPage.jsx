@@ -8,6 +8,7 @@ import Chip from './Chip'
 import PRESET_AVATARS from '../data/presetAvatars'
 import { VISIBILITY_OPTIONS, VISIBILITY_PRIVATE } from '../lib/visibility'
 import { writeProfilePrompt } from '../lib/aiRewrite'
+import { matchaCta } from '../lib/matchaCta'
 
 const C = {
   gold:      '#C9A33B',
@@ -457,12 +458,10 @@ export default function SettingsPage({ section }) {
             disabled={saving}
             className="w-full py-3.5 rounded-xl text-sm font-semibold tracking-wide active:scale-[0.98]"
             style={{
-              background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
-              color: '#fff',
               border: 'none',
               opacity: saving ? 0.6 : 1,
-              boxShadow: '0 6px 20px rgba(201,163,59,0.35)',
               cursor: saving ? 'wait' : 'pointer',
+              ...matchaCta,
             }}
           >
             {saving ? 'Saving…' : 'Save changes'}
