@@ -705,6 +705,74 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
           )
         })()}
 
+        {/* ── Attendees — who's going. Honors attendee_visibility:
+              public (or host) → avatars + first names; private + non-host
+              → count only. Emails are never shown here (fetchEventAttendees
+              only returns them to the host). Visible to browsers too, per
+              the "attendees + browsers can see each other" setting. ──── */}
+        {!isCancelled && (() => {
+          const canSeeNames = isHost || event.attendee_visibility !== 'private'
+          const going = attendees.length || event.attendee_count || 0
+          const CAP = 8
+          const shown = attendees.slice(0, CAP)
+          const extra = Math.max(0, going - shown.length)
+          const firstName = n => String(n || 'Member').trim().split(/\s+/)[0]
+          const initialsOf = n => {
+            const p = String(n || 'M').trim().split(/\s+/)
+            return ((p[0]?.[0] || '') + (p[1]?.[0] || '')).toUpperCase() || 'M'
+          }
+          return (
+            <div style={cardStyle}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: canSeeNames && shown.length ? 12 : 0 }}>
+                <span style={{ fontSize: 15, fontWeight: 700, color: C.text, fontFamily: 'Inter, system-ui, sans-serif' }}>
+                  Attendees{going ? ` (${going})` : ''}
+                </span>
+                {isHost && (
+                  <button type="button" onClick={() => setViewMode('manage')}
+                    style={{ fontSize: 13, fontWeight: 700, color: C.goldDark, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
+                    Manage →
+                  </button>
+                )}
+              </div>
+
+              {!canSeeNames ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: C.textSub, fontFamily: 'Inter, system-ui, sans-serif' }}>
+                  <svg width="15" height="15" fill="none" stroke={C.textMuted} strokeWidth={1.8} viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                  The host has kept the guest list private.
+                </div>
+              ) : shown.length === 0 ? (
+                <div style={{ fontSize: 13, color: C.textSub, fontFamily: 'Inter, system-ui, sans-serif' }}>
+                  No one has joined yet — be the first.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {shown.map(a => {
+                    const seed = resolveAvatarSeed(a.avatar_url)
+                    const isHostRow = a.user_id === event.host_user_id
+                    return (
+                      <div key={a.user_id} style={{ display: 'flex', alignItems: 'center', gap: 7, background: '#FAF8F2', border: `1px solid ${C.border}`, borderRadius: 999, padding: '5px 11px 5px 5px' }}>
+                        {seed
+                          ? <PeerAvatar name={a.name || 'Member'} seed={seed} size={26} />
+                          : <span style={{ width: 26, height: 26, borderRadius: '50%', background: C.goldLight, color: C.goldDark, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 10.5, fontWeight: 700, fontFamily: 'Inter, system-ui, sans-serif' }}>{initialsOf(a.name)}</span>}
+                        <span style={{ fontSize: 12.5, fontWeight: 600, color: C.text, fontFamily: 'Inter, system-ui, sans-serif' }}>
+                          {firstName(a.name)}{isHostRow ? ' · Host' : ''}
+                        </span>
+                      </div>
+                    )
+                  })}
+                  {extra > 0 && (
+                    <div style={{ display: 'flex', alignItems: 'center', fontSize: 12.5, fontWeight: 700, color: C.goldDark, padding: '5px 6px', fontFamily: 'Inter, system-ui, sans-serif' }}>
+                      +{extra} more
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        })()}
+
         {/* ── Discussion — bordered card row ────────────────────── */}
         {!isCancelled && (
           <button type="button" onClick={() => setViewMode('discussion')}
