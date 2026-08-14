@@ -711,7 +711,11 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
               only returns them to the host). Visible to browsers too, per
               the "attendees + browsers can see each other" setting. ──── */}
         {!isCancelled && (() => {
-          const canSeeNames = isHost || event.attendee_visibility !== 'private'
+          const isPublicList = event.attendee_visibility !== 'private'
+          // Names are a perk of registering: the host always sees them; other
+          // people see them only after they join AND the list is public.
+          // Browsers (not joined) and private lists get the count only.
+          const canSeeNames = isHost || (joined && isPublicList)
           const going = attendees.length || event.attendee_count || 0
           const CAP = 8
           const shown = attendees.slice(0, CAP)
@@ -740,7 +744,7 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
                   <svg width="15" height="15" fill="none" stroke={C.textMuted} strokeWidth={1.8} viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
-                  The host has kept the guest list private.
+                  {isPublicList ? "Join the event to see who's going." : "The host has kept the guest list private."}
                 </div>
               ) : shown.length === 0 ? (
                 <div style={{ fontSize: 13, color: C.textSub, fontFamily: 'Inter, system-ui, sans-serif' }}>
