@@ -73,6 +73,10 @@ function EditPostModal({ post, onSave, onClose }) {
   const [time, setTime]             = useState(post.time || '15 min')
   const [urgency, setUrgency]       = useState(post.urgency || null)
   const [expiresOn, setExpiresOn]   = useState(post.expiresAt ? new Date(post.expiresAt).toISOString().slice(0, 10) : '')
+  // Seeded from the post so editing preserves how it was published. This used
+  // to be hard-coded to `true` on save, which silently re-anonymised any
+  // real-name post the moment its author touched anything else.
+  const [isAnonymous, setIsAnonymous] = useState(post.isAnonymous !== false)
   const [saving, setSaving]         = useState(false)
   const [error, setError]           = useState(null)
 
@@ -96,7 +100,7 @@ function EditPostModal({ post, onSave, onClose }) {
       time_commitment: time,
       urgency,
       expiresAt:       expiresOn ? new Date(`${expiresOn}T23:59:59`).toISOString() : null,
-      is_anonymous:    true,
+      is_anonymous:    isAnonymous,
     })
     setSaving(false)
     if (err) setError(err.message || 'Failed to save.')
@@ -191,6 +195,44 @@ function EditPostModal({ post, onSave, onClose }) {
               <p className="text-[11px] tracking-[0.14em] uppercase font-semibold mb-2" style={{ color: C.textSub }}>Urgency</p>
               <ChipGroup options={URGENCY_OPTIONS} selected={urgency} onToggle={setUrgency} />
             </div>
+          </div>
+
+          {/* Anonymous / real-name (mirrors the composer) */}
+          <div style={{ marginBottom: 14 }}>
+            <p className="text-[11px] tracking-[0.14em] uppercase font-semibold mb-2" style={{ color: C.textSub }}>Shown as</p>
+            <div role="tablist" className="flex rounded-xl overflow-hidden" style={{ background: '#F5F0E5', padding: 3, gap: 2 }}>
+              {[
+                { id: true,  label: '🔒 Anonymous' },
+                { id: false, label: '👤 Real name' },
+              ].map(opt => {
+                const active = isAnonymous === opt.id
+                return (
+                  <button
+                    key={String(opt.id)}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    onClick={() => setIsAnonymous(opt.id)}
+                    className="flex-1 py-2 text-xs font-semibold tracking-wide rounded-lg"
+                    style={{
+                      background: active ? 'linear-gradient(135deg, #97A275, #78855A)' : 'transparent',
+                      color: active ? '#fff' : C.textMuted,
+                      border: 'none',
+                      cursor: 'pointer',
+                      boxShadow: active ? '0 2px 6px rgba(120,133,90,0.28)' : 'none',
+                      transition: 'all 0.18s',
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                )
+              })}
+            </div>
+            <p className="text-[11px] mt-1.5" style={{ color: C.textMuted }}>
+              {isAnonymous
+                ? 'Members see your program & interests, not your name.'
+                : 'Members see your first name, avatar, and program.'}
+            </p>
           </div>
 
           {/* Expiry */}

@@ -5,22 +5,39 @@ import { supabase, isSupabaseConfigured } from './supabase'
  * Returns objects shaped for the existing card UI:
  *   { id, created_by, needs, offers, category, tags, time, urgency, createdAt, poster }
  */
+// Select list that pulls ranking data AND the fields the visibility helper
+// needs (name, program, headline, career_stage, industry_interests,
+// avatar_url, visibility). Shared by fetch/create/update so every card
+// reaches the UI with the same creator slice.
+const POST_WITH_CREATOR = `
+  *,
+  creator:profiles (
+    total_points, meetings_scheduled, meetings_completed,
+    visibility, name, program, graduation_year, headline, career_stage,
+    industry_interests, avatar_url, member_type
+  )
+`
+
+// Re-read a just-written row with the creator embed. Insert/update
+// `.select()` returns the bare row, so without this the card handed straight
+// to the deck has no creator and renders as an anonymous "Rotman peer" even
+// when the author posted under their real name. Falls back to the bare row.
+async function withCreator(row) {
+  if (!row?.id) return row
+  const { data, error } = await supabase
+    .from('posts')
+    .select(POST_WITH_CREATOR)
+    .eq('id', row.id)
+    .single()
+  return (error || !data) ? row : data
+}
+
 export async function fetchPosts() {
   if (!isSupabaseConfigured) return { data: null, error: null }
 
-  // Try with profile join — pulls ranking data AND the fields the
-  // visibility helper needs (name, program, headline, career_stage,
-  // industry_interests, avatar_url, visibility).
   const { data, error } = await supabase
     .from('posts')
-    .select(`
-      *,
-      creator:profiles (
-        total_points, meetings_scheduled, meetings_completed,
-        visibility, name, program, graduation_year, headline, career_stage,
-        industry_interests, avatar_url, member_type
-      )
-    `)
+    .select(POST_WITH_CREATOR)
     .order('created_at', { ascending: false })
 
   // If the join fails (no FK relationship), fall back to plain select
@@ -64,7 +81,7 @@ export async function createPost(userId, fields) {
 
   if (error) return { data: null, error }
 
-  return { data: rowToCard(data), error: null }
+  return { data: rowToCard(await withCreator(data)), error: null }
 }
 
 /**
@@ -95,7 +112,7 @@ export async function updatePost(postId, userId, fields) {
     .single()
 
   if (error) return { data: null, error }
-  return { data: rowToCard(data), error: null }
+  return { data: rowToCard(await withCreator(data)), error: null }
 }
 
 /**

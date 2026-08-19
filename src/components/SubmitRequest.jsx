@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { HELP_TYPES, INDUSTRIES, TIME_OPTIONS } from '../data/requestOptions'
 import { rewriteText } from '../lib/aiRewrite'
 import { matchaCta } from '../lib/matchaCta'
+import { useAuth } from '../context/AuthContext'
+import { VISIBILITY_PUBLIC } from '../lib/visibility'
 
 /* ── Design tokens ──────────────────────────────────────────────── */
 const C = {
@@ -202,10 +204,22 @@ export default function SubmitRequest({ onSubmitted, prefill = null }) {
   const [time,     setTime]     = useState('15 min')
   const [urgency,  setUrgency]  = useState(null)
   const [expiresOn, setExpiresOn] = useState('')   // 'YYYY-MM-DD' or '' (never expires)
-  // Default true — matches the previous always-anonymous behaviour so
-  // existing users don't accidentally out themselves on first post
-  // after the update ships.
-  const [isAnonymous, setIsAnonymous] = useState(true)
+  // Default follows the profile-level visibility setting: a Public profile
+  // posts under its real name (that is what the user asked for when they
+  // chose Public), a Private profile stays anonymous. Hard-coding `true`
+  // here meant Public-profile users silently posted as an anonymous peer
+  // and never saw their profile on their own card. The toggle below still
+  // wins per post; once touched we stop following the profile.
+  const { profile } = useAuth()
+  const profileWantsRealName =
+    profile?.visibility === VISIBILITY_PUBLIC && Boolean(profile?.name)
+  const [anonTouched, setAnonTouched]   = useState(false)
+  const [isAnonymous, setIsAnonymous]   = useState(!profileWantsRealName)
+  // Profile can arrive after this mounts (auth still loading) — adopt it
+  // as long as the user hasn't picked a side themselves.
+  useEffect(() => {
+    if (!anonTouched) setIsAnonymous(!profileWantsRealName)
+  }, [profileWantsRealName, anonTouched])
 
   /* ── Derived state ── */
   const tags = [...helpType, ...industry]
@@ -695,7 +709,7 @@ export default function SubmitRequest({ onSubmitted, prefill = null }) {
                 type="button"
                 role="tab"
                 aria-selected={active}
-                onClick={() => setIsAnonymous(opt.id)}
+                onClick={() => { setAnonTouched(true); setIsAnonymous(opt.id) }}
                 className="flex-1 py-2 text-xs font-semibold tracking-wide rounded-lg"
                 style={{
                   background: active ? 'linear-gradient(135deg, #97A275, #78855A)' : 'transparent',
