@@ -48,27 +48,29 @@ body {
   .app-header {
     padding-top: max(1.25rem, env(safe-area-inset-top));
   }
+}
 
-  /* Every screen that centres a single card in the full viewport — sign-in,
-     onboarding, reset-password, the post-confirmation and error screens.
-     Two problems on a phone, both fixed here:
+/* Every screen that centres a single card in the full viewport — sign-in,
+   onboarding, reset-password, the post-confirmation and error screens.
+   Two problems, both fixed here:
 
-       • items-center clips an overflowing child at BOTH ends, so a card
-         taller than the viewport loses its top under the Dynamic Island.
-         This is what buried the sign-in logo. Anchor to the top and scroll.
-       • A card can be short enough to fit until the keyboard opens and
-         halves the viewport, at which point the same clipping starts.
+     • items-center clips an overflowing child at BOTH ends, so a card
+       taller than the viewport loses its top under the Dynamic Island.
+       This is what buried the sign-in logo. Anchor to the top and scroll.
+     • A card can be short enough to fit until the keyboard opens and
+       halves the viewport, at which point the same clipping starts.
 
-     The 2rem floor matches the largest base padding any of these screens
-     sets (py-8), so none of them loses spacing. env() is 0 in a desktop
-     browser, and the sm breakpoint keeps the desktop phone-frame mock
-     centred as before. */
-  .safe-screen {
-    align-items: flex-start;
-    overflow-y: auto;
-    padding-top: max(2rem, env(safe-area-inset-top));
-    padding-bottom: max(2rem, env(safe-area-inset-bottom));
-  }
+   Applied at ALL widths (not just <640px): an iPhone-only app still runs
+   on iPad in compatibility mode, where the viewport is wider than the sm
+   breakpoint. App Review rejected 1.0(19) because the login/registration
+   screen could not be scrolled on iPad Air 11" (iPadOS 26) — the scoped
+   fix never reached it. The 2rem floor matches the largest base padding
+   any of these screens sets (py-8); env() is 0 in a desktop browser. */
+.safe-screen {
+  align-items: flex-start;
+  overflow-y: auto;
+  padding-top: max(2rem, env(safe-area-inset-top));
+  padding-bottom: max(2rem, env(safe-area-inset-bottom));
 }
 
 ::placeholder {
