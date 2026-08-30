@@ -63,7 +63,7 @@ export function isLinkedInEnabled(user) {
 // This flag only decides whether the UI is shown. Ship dark with
 // `false`; the localStorage override ('mutu_practice' = 'on'|'off')
 // lets us test per-device without a redeploy; flip to `true` to launch.
-const PRACTICE_ROLLOUT = false
+const PRACTICE_ROLLOUT = true
 
 export function isPracticeEnabled() {
   try {
@@ -81,7 +81,7 @@ export function isPracticeEnabled() {
 // CommunityNetworkGraph. Ships dark with `false`; the localStorage
 // override ('mutu_home_graph' = 'on'|'off') lets us preview per-device
 // without a redeploy; flip to `true` to launch.
-const HOME_GRAPH_ROLLOUT = false
+const HOME_GRAPH_ROLLOUT = true
 
 export function isHomeGraphEnabled() {
   try {
