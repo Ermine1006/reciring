@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
-import { INDUSTRIES, HELP_TYPES } from '../data/requestOptions'
+import { HELP_TYPES } from '../data/requestOptions'
+import { broadLabelsOf } from '../data/careerFocus'
 import { PROGRAMS, CAREER_STAGES, NETWORKING_INTENTS, GRAD_YEARS, programCredential } from '../data/onboardingOptions'
 import AnonymousAvatar from './AnonymousAvatar'
 import Chip from './Chip'
+import CareerFocusPicker from './profile/CareerFocusPicker'
 import PRESET_AVATARS from '../data/presetAvatars'
 import { VISIBILITY_OPTIONS, VISIBILITY_PRIVATE } from '../lib/visibility'
 import { writeProfilePrompt } from '../lib/aiRewrite'
@@ -176,7 +178,7 @@ export default function SettingsPage({ section }) {
     const current = which === 'ask_me' ? promptAskMe : promptWeekend
     const { text, error } = await writeProfilePrompt({
       which, text: current,
-      context: { program, headline: headline.trim(), industries: industryInterests },
+      context: { program, headline: headline.trim(), industries: broadLabelsOf(industryInterests) },
     })
     setPromptBusy(null)
     if (error || !text) { setPromptErr(error?.message || 'Could not write that.'); return }
@@ -364,17 +366,8 @@ export default function SettingsPage({ section }) {
 
         {/* ── 2. Professional Matching ────────────────────────── */}
         <Section title="Professional matching" sectionRef={refs.skills} flash={flash === 'skills'}>
-          <Field label="Industry focus" helper="Pick up to 3 — surfaces the right requests for you.">
-            <div className="flex flex-wrap gap-2">
-              {INDUSTRIES.map(ind => (
-                <Chip
-                  key={ind}
-                  label={ind}
-                  active={industryInterests.includes(ind)}
-                  onClick={makeToggle(setIndustryInterests, 3)}
-                />
-              ))}
-            </div>
+          <Field label="Career focus" helper="Pick up to 3 broad areas — surfaces the right requests for you.">
+            <CareerFocusPicker value={industryInterests} onChange={setIndustryInterests} />
           </Field>
 
           <Field label="Skills I offer" helper="Up to 5 — what peers can come to you for.">

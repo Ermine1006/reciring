@@ -142,7 +142,7 @@ export default function RequestDetailModal({ request, matchReason, matchReasons,
                 fontSize: 10, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase',
                 color: '#8A6E1E', fontFamily: 'Inter, system-ui, sans-serif',
               }}>
-                What they need
+                Looking for
               </span>
             </div>
             <p style={{
@@ -178,24 +178,26 @@ export default function RequestDetailModal({ request, matchReason, matchReasons,
             background: 'linear-gradient(90deg, rgba(201,163,59,0.25), rgba(139,111,71,0.1), transparent)',
           }} />
 
-          {/* ── WHAT THEY OFFER (full) ────────────────────── */}
+          {/* ── ALSO HAPPY TO HELP WITH (secondary context) ── */}
+          {Boolean(request.offers?.trim()) && (
           <div style={{ marginBottom: 24 }}>
-            <div className="flex items-center" style={{ marginBottom: 10 }}>
+            <div className="flex items-center" style={{ marginBottom: 8 }}>
               <div style={{ width: 2.5, height: 14, background: C.warm, borderRadius: 99, marginRight: 10, flexShrink: 0 }} />
               <span style={{
                 fontSize: 10, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase',
                 color: C.warmDark, fontFamily: 'Inter, system-ui, sans-serif',
               }}>
-                What they offer
+                Also happy to help with
               </span>
             </div>
             <p style={{
-              fontSize: 16, lineHeight: 1.55, fontWeight: 600, color: '#333333',
+              fontSize: 14, lineHeight: 1.55, fontWeight: 500, color: '#5C5449',
               fontFamily: 'Inter, system-ui, sans-serif', paddingLeft: 13,
             }}>
               {request.offers}
             </p>
           </div>
+          )}
 
           {/* ── Footer identity ───────────────────────────── */}
           {(() => {

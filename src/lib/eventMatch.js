@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from './supabase'
+import { broadLabelsOf } from '../data/careerFocus'
 import { fetchEventGoals } from './eventPrep'
 
 // v1 in-event matcher — rule-based, no AI cost. Ranks other attendees by how
@@ -142,11 +143,11 @@ function profileTokens(profile) {
   const need = [
     ...(p.networking_intent || []),
     ...(p.skills_to_learn || []),
-    ...(p.industry_interests || []),
+    ...broadLabelsOf(p.industry_interests || []),
   ].join(' ')
   const offer = [
     ...(p.can_help_with || []),
-    ...(p.industry_interests || []),
+    ...broadLabelsOf(p.industry_interests || []),
   ].join(' ')
   return { myNeed: tokens(need), myOffer: tokens(offer) }
 }

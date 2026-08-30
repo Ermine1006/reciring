@@ -330,7 +330,7 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
                 fontFamily: 'Inter, system-ui, sans-serif',
               }}
             >
-              What they need
+              Looking for
             </span>
           </div>
           <p
@@ -376,7 +376,10 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
           </div>
         )}
 
-        {/* Divider */}
+        {/* Divider + secondary block render only when the poster shared
+            a standing contribution — an ask alone is a complete card. */}
+        {Boolean(request.offers?.trim()) && (
+        <>
         <div
           style={{
             height: 1,
@@ -385,9 +388,11 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
           }}
         />
 
-        {/* ── WHAT THEY OFFER ────────────────────────────── */}
+        {/* ── ALSO HAPPY TO HELP WITH — warmer, secondary context:
+            a standing community contribution, never the "price" of
+            the ask above, so it reads smaller and softer. ── */}
         <div style={{ marginBottom: 18 }}>
-          <div className="flex items-center" style={{ marginBottom: 10 }}>
+          <div className="flex items-center" style={{ marginBottom: 8 }}>
             <div style={{ width: 2.5, height: 14, background: C.warm, borderRadius: 99, marginRight: 10, flexShrink: 0 }} />
             <span
               style={{
@@ -399,23 +404,22 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
                 fontFamily: 'Inter, system-ui, sans-serif',
               }}
             >
-              What they offer
+              Also happy to help with
             </span>
           </div>
           <p
             style={{
-              // Matches the needs block above: 15px / 3 lines (fb9).
-              fontSize: 15,
-              lineHeight: 1.45,
-              fontWeight: 700,
-              letterSpacing: '-0.01em',
-              color: '#333333',
+              // Secondary to the ask above: smaller, lighter, 2 lines.
+              fontSize: 13,
+              lineHeight: 1.5,
+              fontWeight: 500,
+              color: '#5C5449',
               fontFamily: 'Inter, system-ui, sans-serif',
               paddingLeft: 13,
               wordWrap: 'break-word',
               overflowWrap: 'break-word',
               display: '-webkit-box',
-              WebkitLineClamp: 3,
+              WebkitLineClamp: 2,
               WebkitBoxOrient: 'vertical',
               overflow: 'hidden',
             }}
@@ -423,6 +427,8 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
             {request.offers}
           </p>
         </div>
+        </>
+        )}
 
         {/* Footer */}
         {(() => {

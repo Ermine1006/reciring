@@ -56,7 +56,7 @@ const C = {
   border:    '#ECE6DB',
 }
 
-export default function EventsList({ onCreateEvent, onOpenEvent, onPrepare, onOpenMatch, onAskMutu, onOpenEventRecap, topView: topViewProp, onTopViewChange, filter: filterProp, onFilterChange }) {
+export default function EventsList({ onCreateEvent, onOpenEvent, onPrepare, onOpenMatch, onAskMutu, onOpenEventRecap, topView: topViewProp, onTopViewChange, filter: filterProp, onFilterChange, onBack, backLabel }) {
   const { user } = useAuth()
 
   const [events, setEvents]         = useState([])
@@ -228,6 +228,23 @@ export default function EventsList({ onCreateEvent, onOpenEvent, onPrepare, onOp
         className="px-5 pt-6 pb-10"
         style={{ background: C.bg, minHeight: '100%' }}
       >
+        {/* Back to wherever the member came from. Only rendered when
+            they arrived from another surface, so the tab's own landing
+            state is unchanged. */}
+        {onBack && (
+          <button type="button" onClick={onBack}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              minHeight: 44, marginBottom: 6, padding: '0 10px 0 0',
+              border: 'none', background: 'none', cursor: 'pointer',
+              fontSize: 13.5, fontWeight: 650, color: '#68764A',
+              fontFamily: 'Inter, system-ui, sans-serif',
+            }}>
+            <span aria-hidden="true" style={{ fontSize: 17, lineHeight: 1 }}>‹</span>
+            {backLabel || 'Back'}
+          </button>
+        )}
+
         {/* Segmented view switch */}
         <div role="tablist" style={{ display: 'flex', background: '#EDE7DB', borderRadius: 13, padding: 4, gap: 3, marginBottom: 18 }}>
           {[

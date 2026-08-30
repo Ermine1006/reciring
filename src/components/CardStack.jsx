@@ -309,12 +309,12 @@ export default function CardStack({ requests, eventPromos, unmatchedPostIds, int
           transition={{ duration: 0.2 }}
           style={{ overflow: 'hidden', padding: '8px 16px 12px' }}
         >
-          {/* Industry */}
+          {/* Career focus */}
           <p style={{
             fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase',
             color: C.textMuted, fontFamily: 'Inter, system-ui, sans-serif', marginBottom: 6,
           }}>
-            Industry
+            Career focus
           </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
             {INDUSTRIES.map(ind => (
@@ -536,8 +536,8 @@ export default function CardStack({ requests, eventPromos, unmatchedPostIds, int
               border: `1px solid ${C.goldLight}`,
               ...matchaCta,
             }}
-            aria-label="Match if you can help and want what they offer"
-            title="Match if you can help and want what they offer"
+            aria-label="Match if you'd like to help"
+            title="Match if you'd like to help"
           >
             <Handshake size={26} stroke="#FFFFFF" strokeWidth={1.7} />
           </button>

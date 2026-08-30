@@ -6,6 +6,7 @@ import { rewriteText } from '../lib/aiRewrite'
 import { matchaCta } from '../lib/matchaCta'
 import { useAuth } from '../context/AuthContext'
 import { VISIBILITY_PUBLIC } from '../lib/visibility'
+import { labelForTopic } from '../data/profileTaxonomy'
 
 /* ── Design tokens ──────────────────────────────────────────────── */
 const C = {
@@ -48,17 +49,15 @@ function getTitlePlaceholder(helpType, industry) {
   const h   = helpType[0] || ''
   const ind = industry[0] || ''
 
-  // Help Type × Industry combos (most specific first)
+  // Help Type × Career Focus combos (canonical broad labels only)
   if (h === 'Referral'       && ind === 'Consulting')         return 'e.g. Bain referral or coffee chat'
-  if (h === 'Referral'       && ind === 'Investment Banking') return 'e.g. Goldman Sachs referral for SA recruiting'
-  if (h === 'Referral'       && ind === 'Tech')               return 'e.g. Google PM referral via Rotman alum'
-  if (h === 'Referral'       && ind === 'Private Equity')     return 'e.g. PE fund intro for summer recruiting'
-  if (h === 'Referral'       && ind === 'VC')                 return 'e.g. VC intro for fundraising'
+  if (h === 'Referral'       && ind === 'Finance')            return 'e.g. Goldman Sachs referral for SA recruiting'
+  if (h === 'Referral'       && ind === 'Technology')         return 'e.g. Google PM referral via Rotman alum'
   if (h === 'Referral'       && ind)                          return `e.g. ${ind} referral or warm intro`
   if (h === 'Coffee Chat'    && ind === 'Consulting')         return 'e.g. 15-min chat about MBB recruiting'
   if (h === 'Coffee Chat'    && ind)                          return `e.g. Coffee chat with someone in ${ind}`
-  if (h === 'Advice'         && ind === 'VC')                 return 'e.g. Fundraising advice from VC-backed founder'
-  if (h === 'Advice'         && ind === 'Tech')               return 'e.g. Breaking into tech PM from MBA'
+  if (h === 'Advice'         && ind === 'Entrepreneurship')   return 'e.g. Fundraising advice from a VC-backed founder'
+  if (h === 'Advice'         && ind === 'Technology')         return 'e.g. Breaking into tech PM from MBA'
   if (h === 'Advice'         && ind)                          return `e.g. Career advice for ${ind}`
   if (h === 'Resume Review'  && ind)                          return `e.g. Resume review for ${ind} recruiting`
   if (h === 'Mock Interview' && ind)                          return `e.g. Mock interview prep for ${ind}`
@@ -91,7 +90,7 @@ function getDetailsPlaceholder(helpType) {
 const OFFER_PRESETS = [
   { label: '☕ Coffee chat',       text: 'Happy to chat over coffee and share my experience.' },
   { label: '📄 Resume feedback',   text: 'Can review your resume and provide detailed feedback.' },
-  { label: '🔁 Referral exchange', text: 'Open to exchanging referrals where relevant.' },
+  { label: '🤝 Referrals', text: 'Happy to refer people where relevant.' },
   { label: '📚 Study support',     text: 'Happy to help with coursework or study sessions.' },
   { label: '💡 Industry insights', text: 'Can share insights from my professional background.' },
 ]
@@ -101,12 +100,12 @@ function getMicroFeedback(title, details, offers, helpType) {
   if (helpType.length === 0)                         return null
   if (!title.trim())                                 return null
   if (title.trim() && !offers.trim() && !details.trim())
-    return { text: 'Good title — add an offer to make it matchable', icon: '✓' }
+    return { text: 'Good title. Sharing what you can help with warms up your post', icon: '✓' }
   if (title.trim() && offers.trim() && details.trim())
-    return { text: 'Looks great — ready to post', icon: '✓' }
+    return { text: 'Looks great. Ready to post', icon: '✓' }
   if (title.trim() && offers.trim())
-    return { text: 'Looking good — details are optional but help', icon: '✓' }
-  return null
+    return { text: 'Looking good. Details are optional but help', icon: '✓' }
+  return { text: 'Ready to post', icon: '✓' }
 }
 
 /* ── Chip selector (reusable) ───────────────────────────────────── */
@@ -221,10 +220,27 @@ export default function SubmitRequest({ onSubmitted, prefill = null }) {
     if (!anonTouched) setIsAnonymous(!profileWantsRealName)
   }, [profileWantsRealName, anonTouched])
 
+  // Seed "happy to help with" from the profile's standing expertise, so
+  // people don't have to invent a new contribution for every post. Seeds
+  // at most once, never overwrites anything the user typed, and stays
+  // fully editable/clearable.
+  const [offersSeeded, setOffersSeeded] = useState(Boolean(prefill?.offers))
+  const profileHelp = (profile?.expertise_offered || []).slice(0, 2)
+  useEffect(() => {
+    if (offersSeeded || profileHelp.length === 0) return
+    setOffers((prev) => {
+      if (prev.trim()) return prev
+      return `Happy to help with ${profileHelp.map((t) => labelForTopic(t).toLowerCase()).join(' and ')}.`
+    })
+    setOffersSeeded(true)
+  }, [offersSeeded, profileHelp])
+
   /* ── Derived state ── */
   const tags = [...helpType, ...industry]
   const needsText = [title, details].filter(Boolean).join(' — ')
-  const canSubmit = title.trim().length > 0 && offers.trim().length > 0 && helpType.length > 0
+  // Helping is a community contribution, never the price of asking:
+  // the ask alone is enough to publish.
+  const canSubmit = title.trim().length > 0 && helpType.length > 0
 
   /* ── Multi-select toggle ── */
   const toggleMulti = (_list, setList, max = 3) => (val) => {
@@ -253,7 +269,7 @@ export default function SubmitRequest({ onSubmitted, prefill = null }) {
     setSubmitError(null)
     const isDetails = field === 'details'
     // Details: rewrite the description (expand the title if it's empty).
-    // Offer: rewrite what they give in return.
+    // Offer: rewrite what they're happy to help with.
     const source = isDetails ? (details.trim() || title.trim()) : offers.trim()
     const { text, error } = await rewriteText({
       kind: isDetails ? 'post' : 'post_offer',
@@ -385,7 +401,7 @@ export default function SubmitRequest({ onSubmitted, prefill = null }) {
           Post a request
         </h2>
         <p className="text-sm mt-1 leading-relaxed" style={{ color: C.textSub }}>
-          Structured requests get 3× more matches.
+          Ask when you need support. Help when you can.
         </p>
         <p className="text-[11px] mt-2 flex items-center gap-1.5" style={{ color: C.textMuted }}>
           <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
@@ -420,10 +436,10 @@ export default function SubmitRequest({ onSubmitted, prefill = null }) {
           />
         </div>
 
-        {/* ── Industry (multi, optional) ──────────────── */}
+        {/* ── Career focus (multi, optional) ──────────────── */}
         <div>
           <p className="text-[11px] tracking-[0.16em] uppercase font-semibold mb-2.5" style={{ color: C.textSub }}>
-            Industry
+            Career focus
             <span className="normal-case tracking-normal font-normal ml-1" style={{ color: C.textMuted }}>optional, up to 2</span>
           </p>
           <ChipGroup
@@ -481,12 +497,12 @@ export default function SubmitRequest({ onSubmitted, prefill = null }) {
           accentColor={`linear-gradient(90deg, ${C.gold}, ${C.goldLight})`}
           accentBorder={C.goldLight}
           labelBg={C.goldBg}
-          label="Your ask"
+          label="Ask for support"
           labelColor={C.goldDark}
           labelBorder={C.goldLight}
         >
           <label htmlFor="title" className="block text-[13px] font-semibold mb-2" style={{ color: C.text }}>
-            Title <span style={{ color: '#EF4444' }}>*</span>
+            What would you like help with? <span style={{ color: '#EF4444' }}>*</span>
           </label>
           <CountedInput
             id="title"
@@ -524,13 +540,16 @@ export default function SubmitRequest({ onSubmitted, prefill = null }) {
           accentColor={`linear-gradient(90deg, ${C.warm}, ${C.warmLight})`}
           accentBorder={C.warmBorder}
           labelBg={C.warmBg}
-          label="Your offer"
+          label="Offer support"
           labelColor={C.warmDark}
           labelBorder={C.warmBorder}
         >
-          <label htmlFor="offers" className="block text-[13px] font-semibold mb-2" style={{ color: C.text }}>
-            What can you offer in return? <span style={{ color: '#EF4444' }}>*</span>
+          <label htmlFor="offers" className="block text-[13px] font-semibold mb-1" style={{ color: C.text }}>
+            What would you be happy to help someone with?
           </label>
+          <p className="mb-2" style={{ fontSize: 11, color: C.textMuted, lineHeight: 1.4 }}>
+            Optional. This doesn't have to relate to your request.
+          </p>
 
           {/* Quick-fill chips */}
           <div className="flex flex-wrap gap-1.5 mb-2.5">
@@ -684,9 +703,9 @@ export default function SubmitRequest({ onSubmitted, prefill = null }) {
                 display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
               }}>
                 <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase', color: offers.trim() ? C.warmDark : '#D1D5DB', marginRight: 6 }}>
-                  Offering:
+                  Also happy to help with:
                 </span>
-                {offers.trim() || 'What you offer in return'}
+                {offers.trim() || "Anything you'd enjoy helping with (optional)"}
               </p>
             </div>
           </div>
@@ -779,7 +798,7 @@ export default function SubmitRequest({ onSubmitted, prefill = null }) {
                 <span style={{ color: C.goldLight, fontSize: 15, lineHeight: 1 }}>✓</span>
                 <span style={{ flex: 1, fontSize: 13, lineHeight: 1.4 }}>
                   {rewriteUndo?.field === 'offer'
-                    ? 'Your offer is now clearer and easier to say yes to.'
+                    ? 'Your help note is now clearer and easier to say yes to.'
                     : 'Your request is now clearer and easier to help with.'}
                 </span>
                 <button

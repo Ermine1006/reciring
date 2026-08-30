@@ -56,6 +56,44 @@ export function isLinkedInEnabled(user) {
   return flag(user, 'mutu_linkedin', PROFILE_V3_EMAILS)
 }
 
+// Reciprocal Practice (Rotman consulting pilot) — a plain rollout
+// switch, deliberately NOT an allowlist: eligibility lives in the DB
+// (active Mutu access + Rotman community membership; see
+// practice_is_community_eligible in migration-practice-reciprocal.sql).
+// This flag only decides whether the UI is shown. Ship dark with
+// `false`; the localStorage override ('mutu_practice' = 'on'|'off')
+// lets us test per-device without a redeploy; flip to `true` to launch.
+const PRACTICE_ROLLOUT = false
+
+export function isPracticeEnabled() {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const o = localStorage.getItem('mutu_practice')
+      if (o === 'on') return true
+      if (o === 'off') return false
+    }
+  } catch { /* ignore */ }
+  return PRACTICE_ROLLOUT
+}
+
+// Home community-network visualization (relationship capital on Home).
+// Replaces ONLY the green "My Networking" card with the animated
+// CommunityNetworkGraph. Ships dark with `false`; the localStorage
+// override ('mutu_home_graph' = 'on'|'off') lets us preview per-device
+// without a redeploy; flip to `true` to launch.
+const HOME_GRAPH_ROLLOUT = false
+
+export function isHomeGraphEnabled() {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const o = localStorage.getItem('mutu_home_graph')
+      if (o === 'on') return true
+      if (o === 'off') return false
+    }
+  } catch { /* ignore */ }
+  return HOME_GRAPH_ROLLOUT
+}
+
 // Luma events integration — a build-time flag (VITE_ENABLE_LUMA_INTEGRATION).
 // Also needs LUMA_API_KEY in Supabase secrets + the Edge Functions deployed
 // before it does anything; the UI stays hidden until the flag is 'true'.

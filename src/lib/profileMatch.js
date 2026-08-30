@@ -111,13 +111,13 @@ export function buildExplanation(viewer, candidate) {
 }
 
 // A grounded opener built only from visible data (never fabricated claims).
-// Mirrors the approved demo: reference THEIR expertise, offer to trade MINE.
+// Mirrors the approved demo: reference THEIR expertise, offer to share MINE.
 function buildOpener({ s, otherName }) {
   const iOffer = s.youHelpThem[0]     // a topic I can help them with
   const theirs = s.theyHelpYou[0]     // a topic they can help me with
   const coffee = s.bothOpenToCoffee ? ' — maybe over coffee?' : '?'
   if (theirs && iOffer) {
-    return `${otherName}, I saw you're deep in ${label(theirs, labelForTopic).toLowerCase()}. I'd love to trade what I know about ${label(iOffer, labelForTopic).toLowerCase()} for your perspective${coffee}`
+    return `${otherName}, I saw you're deep in ${label(theirs, labelForTopic).toLowerCase()}. I'd love to hear your perspective, and I'm happy to share what I know about ${label(iOffer, labelForTopic).toLowerCase()} too${coffee}`
   }
   if (iOffer) {
     return `${otherName}, happy to share anything on ${label(iOffer, labelForTopic).toLowerCase()} if it's useful${coffee}`

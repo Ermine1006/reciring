@@ -102,7 +102,7 @@ export default function MarketplacePostComposer({ open, mode = 'create', type = 
           {need ? 'Looking for' : 'Offering'}
         </p>
         <h2 style={{ margin: '4px 0 16px', fontSize: 20, fontWeight: 700, color: C.ink, fontFamily: 'Fraunces, Georgia, serif' }}>
-          {mode === 'edit' ? 'Edit your post' : need ? 'What are you looking for?' : 'What can you offer?'}
+          {mode === 'edit' ? 'Edit your post' : need ? 'What are you looking for?' : 'What would you be happy to help with?'}
         </h2>
 
         <label style={labelStyle}>{need ? 'Looking for' : 'Offering'} <span style={{ color: C.danger }}>*</span></label>

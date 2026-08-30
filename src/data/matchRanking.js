@@ -16,6 +16,7 @@
 //   - Freshness prevents early adopters from permanently dominating the feed
 
 import { normalizeIndustry } from './requestOptions'
+import { normalizeCareerFocus, getCareerFocusLabel, getCareerSpecializationLabel } from './careerFocus'
 
 // ── Default viewer profile (fallback when signed out / empty) ────
 // `strengths` = help I can give (can_help_with), `learn` = help I want
@@ -62,9 +63,19 @@ function relevanceScore(request, viewer) {
   ).length
   const revScore = learn.length > 0 ? (revHits / learn.length) * 14 : 0
 
-  // Industry overlap (0–10).
-  const indHits = industries.filter(ind => topicSignals.some(sig => fuzzyMatch(sig, ind))).length
-  const indScore = industries.length > 0 ? (indHits / industries.length) * 10 : 0
+  // Career Focus overlap (0–10): BROAD category overlap is the
+  // meaningful signal (Finance meets Finance even when one side says
+  // VC and the other Private Equity); shared specializations add a
+  // precision bonus on top, but are never required.
+  const mine = normalizeCareerFocus(industries)
+  const theirs = normalizeCareerFocus(topicSignals)
+  const broadHits = mine.focus.filter((k) => theirs.focus.includes(k))
+  const mySpecs = Object.values(mine.specializations).flat()
+  const theirSpecs = Object.values(theirs.specializations).flat()
+  const specHit = mySpecs.some((k) => theirSpecs.includes(k))
+  // Must clear the no-signal neutral floor (8) below, so broad overlap
+  // is always worth more than no overlap at all.
+  const indScore = broadHits.length > 0 ? (specHit ? 10 : 9) : 0
 
   // Neutral floor so a non-overlapping post isn't zeroed out for thin profiles.
   const raw = fwdScore + revScore + indScore
@@ -148,6 +159,27 @@ export function getMatchScore(request, viewer = DEFAULT_VIEWER_PROFILE) {
 
 // ── Match reason (human-readable) ─────────────────────────────────
 
+// ── Career Focus explanation (shared copy for match surfaces) ────
+// Broad overlap is always credited; different specializations inside
+// the same broad area are framed as complementary, never as "no
+// professional-focus overlap".
+export function getCareerFocusExplanation(viewerValues = [], otherValues = []) {
+  const mine = normalizeCareerFocus(viewerValues)
+  const theirs = normalizeCareerFocus(otherValues)
+  const shared = mine.focus.filter((k) => theirs.focus.includes(k))
+  if (shared.length === 0) return null
+  const area = getCareerFocusLabel(shared[0])
+  let out = `You are both interested in ${area}.`
+  const mySpec = (mine.specializations[shared[0]] || [])[0]
+  const theirSpec = (theirs.specializations[shared[0]] || [])[0]
+  if (mySpec && theirSpec && mySpec !== theirSpec) {
+    out += ` You focus on ${getCareerSpecializationLabel(mySpec)}, while they have ${getCareerSpecializationLabel(theirSpec)} experience.`
+  } else if (mySpec && theirSpec) {
+    out += ` You both focus on ${getCareerSpecializationLabel(mySpec)}.`
+  }
+  return out
+}
+
 // Returns UP TO 3 distinct, human-readable reasons this post is a match,
 // ordered by importance (relevance → reciprocity → freshness → urgency).
 // Each is a short capitalized phrase meant to render as its own chip.
@@ -174,6 +206,17 @@ export function getMatchReasons(request, viewer = DEFAULT_VIEWER_PROFILE) {
     }
   }
 
+  // Shared Career Focus — broad overlap counts even when the two
+  // sides picked different specializations of the same area.
+  if (parts.length < MAX) {
+    const topicSignals = [...tags, request.category || ''].filter(Boolean)
+    const shared = normalizeCareerFocus(viewer.industries || []).focus
+      .filter((k) => normalizeCareerFocus(topicSignals).focus.includes(k))
+    if (shared.length > 0) {
+      parts.push(`you are both interested in ${getCareerFocusLabel(shared[0])}`)
+    }
+  }
+
   // Reciprocity signal
   const p = request.poster
   if (p && parts.length < MAX) {
@@ -181,8 +224,8 @@ export function getMatchReasons(request, viewer = DEFAULT_VIEWER_PROFILE) {
     const received = p.scheduled || 0
     if (given >= 3 && received >= 2) {
       const ratio = Math.round((Math.min(given, received) / Math.max(given, received)) * 100)
-      if (ratio >= 80) parts.push('active reciprocator')
-      else if (ratio >= 50) parts.push('balanced contributor')
+      if (ratio >= 80) parts.push('active helper')
+      else if (ratio >= 50) parts.push('regular contributor')
     } else if (given >= 3) {
       parts.push('proven helper')
     }
@@ -221,8 +264,9 @@ export function filterRequests(requests, filters) {
     const tags = r.tags || []
     const signals = [...tags, r.category || ''].filter(Boolean)
 
+    const requestBroad = normalizeCareerFocus(signals).focus
     const industryMatch = industries.length === 0 || industries.some(ind =>
-      signals.some(s => fuzzyMatch(s, ind))
+      requestBroad.includes(normalizeCareerFocus([ind]).focus[0])
     )
     const helpMatch = helpTypes.length === 0 || helpTypes.some(ht =>
       tags.some(t => fuzzyMatch(t, ht))

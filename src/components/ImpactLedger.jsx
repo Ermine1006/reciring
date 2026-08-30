@@ -101,7 +101,7 @@ export default function ImpactLedger() {
       {empty ? (
         <div style={{ ...card, padding: '22px 18px', textAlign: 'center' }}>
           <p style={{ fontSize: 13.5, color: C.textSub, lineHeight: 1.6, margin: 0, fontFamily: 'Inter, system-ui, sans-serif' }}>
-            Complete your first exchange and this is where the community's recognition will live.
+            Help someone for the first time and this is where the community's recognition will live.
           </p>
         </div>
       ) : (
@@ -110,7 +110,7 @@ export default function ImpactLedger() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 9 }}>
             <Tile n={data.peopleHelped}  label="people helped" />
             <Tile n={data.introductions} label="introductions" />
-            <Tile n={data.exchanges}     label="exchanges completed" />
+            <Tile n={data.exchanges}     label="meetings completed" />
           </div>
 
           <p style={{ fontSize: 12, color: C.textMuted, lineHeight: 1.55, margin: '12px 2px 0', fontFamily: 'Inter, system-ui, sans-serif' }}>

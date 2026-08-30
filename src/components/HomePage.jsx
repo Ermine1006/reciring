@@ -11,6 +11,9 @@ import { matchaCta, MATCHA_DEEP } from '../lib/matchaCta'
 import { fetchFollowups, fetchEncounters, personKey } from '../lib/eventMemory'
 import { fetchConnections } from '../lib/relationships'
 import { fetchPastEventPostsToShare, dismissDiscoverSharePrompt } from '../lib/marketplace'
+import { isHomeGraphEnabled } from '../lib/featureFlags'
+import CommunityNetworkGraph from './CommunityNetworkGraph'
+import { broadLabelsOf } from '../data/careerFocus'
 
 // ── Home ──────────────────────────────────────────────────────────────
 // Default landing screen: "Suggested for you" + a real "Your network"
@@ -148,8 +151,12 @@ export default function HomePage({
           Here's your community at a glance.
         </p>
 
-        {/* ── My Networking hero (green) ── */}
-        {net.length > 0 && (
+        {/* ── Community network (flag on) OR My Networking hero (green) ──
+            The flag swaps ONLY this card. The dashboard route/component
+            stays intact and reachable elsewhere. */}
+        {isHomeGraphEnabled() ? (
+          <CommunityNetworkGraph userId={userId} userName={me.name} communityName="Rotman" />
+        ) : net.length > 0 && (
           <div style={{ background: 'linear-gradient(140deg, #93A072 0%, #6C7A4E 100%)', borderRadius: 20, padding: '16px 17px 15px', color: '#fff', marginTop: 16, boxShadow: '0 12px 26px rgba(90,106,62,0.26)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <b style={{ fontSize: 13.5, fontWeight: 600 }}>My Networking</b>
@@ -334,7 +341,7 @@ function PastPostSide({ kind, post, spaced }) {
   return (
     <div style={{ marginTop: spaced ? 10 : 0 }}>
       <span style={{ display: 'inline-block', fontSize: 9.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', padding: '3px 9px', borderRadius: 99, marginBottom: 6, color: isOffer ? '#047857' : '#4F46E5', background: isOffer ? '#ECFDF5' : '#EEF2FF', border: `1px solid ${isOffer ? '#A7F3D0' : '#C7D2FE'}` }}>
-        {isOffer ? 'Offering' : 'Looking for'}
+        {isOffer ? 'Happy to help with' : 'Looking for'}
       </span>
       <p style={{ margin: 0, fontSize: 14.5, fontWeight: 650, color: C.ink, lineHeight: 1.3, fontFamily: 'Inter, system-ui, sans-serif' }}>{post.title}</p>
     </div>
@@ -342,7 +349,7 @@ function PastPostSide({ kind, post, spaced }) {
 }
 
 function eventReason(ev, me) {
-  const interests = (me?.industry_interests || []).map(s => String(s).toLowerCase())
+  const interests = broadLabelsOf(me?.industry_interests || []).map(s => s.toLowerCase())
   if (ev.category && interests.includes(String(ev.category).toLowerCase())) return `Relevant to your interest in ${ev.category}.`
   const n = ev.attendee_count || 0
   if (n >= 3) return `${n} people are going — near you.`

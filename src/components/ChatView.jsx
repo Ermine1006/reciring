@@ -6,6 +6,7 @@ import ReportModal from './ReportModal'
 import IdentityRevealRequestModal from './IdentityRevealRequestModal'
 import PeerProfileCard from './PeerProfileCard'
 import RecognitionCard from './RecognitionCard'
+import ExchangeNextStep from './practice/ExchangeNextStep'
 import { matchaCta } from '../lib/matchaCta'
 
 const C = {
@@ -177,7 +178,7 @@ function MeetingCard({ msg, onConfirm, onSuggestAnother, onReschedule }) {
           <div style={{ display: 'flex', gap: 8 }}>
             <button
               onClick={() => {
-                const title = encodeURIComponent('Coffee Chat — Mutu')
+                const title = encodeURIComponent('Coffee Chat · Mutu')
                 const dtStart = new Date(meeting.datetime).toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '')
                 const dtEnd = new Date(new Date(meeting.datetime).getTime() + 30 * 60000).toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '')
                 const loc = encodeURIComponent(meeting.location)
@@ -228,7 +229,7 @@ function shouldRevealIdentity(messages) {
   return false
 }
 
-export default function ChatView({ match, messages, onSend, onProposeMeeting, onMeetingResponse, onBack, autoOpenSchedule, onScheduleOpened, scheduleFeedback, currentUserId, onSeeImpact, peerProfile, onReport, onBlock, onUnmatch, onRequestReveal, onAcceptReveal, onDeclineReveal }) {
+export default function ChatView({ match, messages, onSend, onProposeMeeting, onMeetingResponse, onBack, autoOpenSchedule, onScheduleOpened, scheduleFeedback, currentUserId, onSeeImpact, peerProfile, onReport, onBlock, onUnmatch, onRequestReveal, onAcceptReveal, onDeclineReveal, onOpenPractice }) {
   const [input, setInput]               = useState('')
   const [showCoffee, setShowCoffee]     = useState(false)
   const [showFollowUp, setShowFollowUp] = useState(false)
@@ -334,8 +335,13 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
             <>
               <PeerAvatar name={displayName} seed={match?.id || 'chat'} size={36} />
               <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: 14, fontWeight: 600, color: C.text, fontFamily: 'Inter, system-ui, sans-serif' }}>
-                  {displayName}
+                <p style={{ fontSize: 14, fontWeight: 600, color: C.text, fontFamily: 'Inter, system-ui, sans-serif', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</span>
+                  {match?.isPractice && (
+                    <span style={{ flexShrink: 0, fontSize: 9, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: C.goldDark, background: C.goldBg, border: `1px solid ${C.goldLight}`, borderRadius: 5, padding: '1px 6px' }}>
+                      Mock interview
+                    </span>
+                  )}
                 </p>
                 <p style={{ fontSize: 11, color: subtitleColor, fontFamily: 'Inter, system-ui, sans-serif', display: 'flex', alignItems: 'center', gap: 4 }}>
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: subtitleColor, display: 'inline-block' }} />
@@ -513,7 +519,36 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
 
         {/* Context card. Marketplace connections show "Connected about: <the
             opportunity>"; ordinary peer matches show the needs/offers exchange. */}
-        {match?.isMarketplace ? (
+        {match?.isPractice ? (
+          <>
+          <div style={{
+            margin: '0 16px 16px', background: C.white, borderRadius: 16,
+            padding: '12px 16px', border: `1px solid ${C.goldLight}`,
+            boxShadow: '0 2px 8px rgba(201,163,59,0.08)',
+          }}>
+            <p style={{
+              fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase',
+              fontWeight: 600, color: C.gold, fontFamily: 'Inter, system-ui, sans-serif', marginBottom: 6,
+            }}>
+              Mock interview partners
+            </p>
+            <p style={{ fontSize: 14, fontWeight: 600, color: C.text, fontFamily: 'Inter, system-ui, sans-serif', lineHeight: 1.35, margin: 0 }}>
+              Both people practise. Both people help.
+            </p>
+            <p style={{ fontSize: 12, color: C.textSub, fontFamily: 'Inter, system-ui, sans-serif', margin: '3px 0 0', lineHeight: 1.4 }}>
+              Chat freely here. Your next step always shows just below.
+            </p>
+          </div>
+          {/* The ONE state-driven action card — reads/writes through the
+              existing Practice data layer, no duplicated state. */}
+          <ExchangeNextStep
+            matchId={match.id}
+            currentUserId={currentUserId}
+            peerName={peerProfile?.name || peerProfile?.first_name || null}
+            onOpenDetails={onOpenPractice}
+          />
+          </>
+        ) : match?.isMarketplace ? (
           <div style={{
             margin: '0 16px 16px', background: C.white, borderRadius: 16,
             padding: '12px 16px', border: `1px solid ${C.goldLight}`,
@@ -550,7 +585,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
               A Smart Match
             </p>
             <p style={{ fontSize: 12, color: C.textSub, fontFamily: 'Inter, system-ui, sans-serif', margin: '3px 0 0', lineHeight: 1.4 }}>
-              You were suggested as a strong match based on your profiles — and you both said you’re interested.
+              You were suggested as a strong match based on your profiles, and you both said you’re interested.
             </p>
           </div>
         ) : (match?.request?.needs || match?.request?.offers) ? (
@@ -566,26 +601,32 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
               fontWeight: 600, color: C.gold,
               fontFamily: 'Inter, system-ui, sans-serif', marginBottom: 8,
             }}>
-              The Exchange
+              Your connection
             </p>
             <div style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
               <div style={{ width: 3, borderRadius: 99, background: C.gold, flexShrink: 0 }} />
               <p style={{ fontSize: 12, color: C.textSub, fontFamily: 'Inter, system-ui, sans-serif', lineHeight: 1.5 }}>
-                <strong style={{ color: C.goldDark }}>Needs: </strong>
+                <strong style={{ color: C.goldDark }}>Looking for: </strong>
                 {match.request.needs?.slice(0, 90)}{match.request.needs?.length > 90 ? '…' : ''}
               </p>
             </div>
+            {Boolean(match.request.offers?.trim?.() || match.request.offers) && (
             <div style={{ display: 'flex', gap: 8 }}>
               <div style={{ width: 3, borderRadius: 99, background: '#8B7355', flexShrink: 0 }} />
               <p style={{ fontSize: 12, color: C.textSub, fontFamily: 'Inter, system-ui, sans-serif', lineHeight: 1.5 }}>
-                <strong style={{ color: '#5C4A2A' }}>Offers: </strong>
+                <strong style={{ color: '#5C4A2A' }}>Happy to help with: </strong>
                 {match.request.offers?.slice(0, 90)}{match.request.offers?.length > 90 ? '…' : ''}
               </p>
             </div>
+            )}
           </div>
         ) : null}
 
-        {/* ── Recognition (replaces the old rating flow) ── */}
+        {/* ── Recognition (replaces the old rating flow) ──
+            Hidden for Practice chats: Practice has its own two-sided
+            session confirmation; showing "We met" here would run a
+            second, conflicting completion flow. */}
+        {!match?.isPractice && (
         <div style={{ margin: '0 16px 16px' }}>
           <RecognitionCard
             matchId={match?.id}
@@ -595,6 +636,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
             onSeeImpact={onSeeImpact}
           />
         </div>
+        )}
 
         {/* ── Identity reveal banners ───────────────────── */}
         {isPendingForMe && (
@@ -672,7 +714,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
               fontSize: 12, color: C.textSub, lineHeight: 1.45,
               fontFamily: 'Inter, system-ui, sans-serif', margin: 0,
             }}>
-              Reveal request sent — waiting for your peer's response.
+              Reveal request sent. Waiting for your peer's response.
             </p>
           </div>
         )}
@@ -810,7 +852,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
           )
         })}
         {/* ── Smart nudges ── */}
-        {!hasMeeting && totalMessages >= 3 && (
+        {!hasMeeting && !match?.isPractice && totalMessages >= 3 && (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -826,7 +868,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
               <p style={{ fontSize: 12, color: C.goldDark, fontFamily: 'Inter, system-ui, sans-serif', fontWeight: 500 }}>
                 {totalMessages >= 6
                   ? 'Still interested? Lock in a time'
-                  : 'Looks like a good match — schedule a chat?'}
+                  : 'Looks like a good match. Schedule a chat?'}
               </p>
               <button
                 onClick={() => setShowCoffee(true)}
@@ -856,7 +898,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
               borderRadius: 16, padding: '12px 20px', textAlign: 'center',
             }}>
               <p style={{ fontSize: 14, fontWeight: 600, color: '#214E3A', fontFamily: 'Inter, system-ui, sans-serif' }}>
-                Nice — your chat is set 🎉
+                Nice! Your chat is set 🎉
               </p>
               <p style={{ fontSize: 11, color: '#2E6B4F', fontFamily: 'Inter, system-ui, sans-serif', marginTop: 4 }}>
                 +10 points after completion
@@ -892,7 +934,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
                     ...matchaCta,
                   }}
                 >
-                  Yes — leave a review
+                  Yes, leave a review
                 </button>
                 <button
                   onClick={() => setShowFollowUp(false)}
@@ -914,8 +956,12 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
         <div ref={bottomRef} />
       </div>
 
-      {/* ── Coffee chat quick-action ── */}
-      {!hasMeeting && (
+      {/* ── Coffee chat quick-action ──
+          Hidden for Practice chats: scheduling there is the Practice
+          tab's propose→confirm flow, and a coffee-chat proposal here
+          would live in this chat only — invisible to the Practice
+          session state (the exact confusion this replaces). */}
+      {!hasMeeting && !match?.isPractice && (
         <div style={{
           padding: '8px 16px 4px',
           background: C.white,

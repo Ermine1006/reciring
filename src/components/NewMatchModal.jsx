@@ -82,7 +82,7 @@ export default function NewMatchModal({ open, match, onView, onDismiss }) {
               You have a new match
             </h2>
             <p style={{ fontSize: 13, color: C.textSub, lineHeight: 1.5, marginBottom: 22 }}>
-              Someone just picked up your request. Say hello to start the exchange.
+              Someone just picked up your request. Say hello and get the conversation going.
             </p>
 
             {match.request?.needs && (

@@ -14,10 +14,12 @@ import ResetPasswordPage from './components/ResetPasswordPage'
 import NewMatchModal from './components/NewMatchModal'
 import LinkAccountPrompt from './components/LinkAccountPrompt'
 import NotificationBell from './components/NotificationBell'
+import { markRead as markNotificationRead } from './lib/notifications'
 import SettingsPage, { resolveAvatarSeed } from './components/SettingsPage'
 import OnboardingProfile from './components/OnboardingProfile'
 import ProfileOnboardingV3 from './components/profile/ProfileOnboardingV3'
-import { isProfileV3Enabled } from './lib/featureFlags'
+import { isProfileV3Enabled, isPracticeEnabled } from './lib/featureFlags'
+import PracticeHub from './components/practice/PracticeHub'
 import AnonymousAvatar from './components/AnonymousAvatar'
 import MyPostsPage from './components/MyPostsPage'
 import AdminEmailTest from './components/AdminEmailTest'
@@ -46,7 +48,7 @@ import { fetchCompletedMatchIds } from './lib/recognition'
 import { track } from './lib/analytics'
 import { notifyEventReview, notifyNewMatch } from './lib/email'
 import { fetchMessages, sendMessage, sendMeetingProposal, updateMeetingStatus, msgToUI, markMessagesRead } from './lib/messages'
-import { MATCHA_DEEP, MATCHA_SOFT } from './lib/matchaCta'
+import { MATCHA_DEEP, MATCHA_SOFT, matchaCta } from './lib/matchaCta'
 
 /* ─── Design tokens ─────────────────────────────────────────────── */
 const C = {
@@ -118,6 +120,23 @@ const TABS = [
     ),
   },
   {
+    // The unified Exchange tab (internal id stays 'practice' — do not
+    // rename routes/flags). Shown INSTEAD of Post and Events when the
+    // flag is on: Post creation moves to a "+" inside Discover, and
+    // Events surface inside the Exchange feed (the events screens stay
+    // reachable off-nav, like Profile).
+    // Icon = the Mutu interlocking rings: collaboration, not exchange arrows.
+    id: 'practice',
+    label: 'Together',
+    practiceOnly: true,
+    icon: (active) => (
+      <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={active ? 2 : 1.5}>
+        <circle cx="9" cy="12" r="6" />
+        <circle cx="15" cy="12" r="6" />
+      </svg>
+    ),
+  },
+  {
     id: 'matches',
     label: 'Matches',
     icon: (active) => (
@@ -148,6 +167,36 @@ function AppShell() {
   // form open so CreateEventForm mounts and repopulates from it immediately.
   const resumingEventDraft = hasFreshEventDraft()
   const [tab, setTab]             = useState(resumingEventDraft ? 'events' : 'home')
+  // Practice pilot flag: when ON, the bottom bar shows Practice instead
+  // of Post (Post creation moves to a "+" inside Discover — the 'post'
+  // screen itself stays reachable, like Profile). When OFF, nothing
+  // Practice-related renders anywhere.
+  const practiceOn = isPracticeEnabled()
+  const navTabs = useMemo(
+    () => TABS.filter(t => (practiceOn ? t.id !== 'post' && t.id !== 'events' : !t.practiceOnly)),
+    [practiceOn]
+  )
+  // Deep-link from a Practice chat straight into its pairing detail:
+  // PracticeHub resolves this match id to the pairing and opens it.
+  const [practiceFocusMatchId, setPracticeFocusMatchId] = useState(null)
+  // Same idea, keyed by pairing id (notification payloads carry it).
+  const [practiceFocusPairingId, setPracticeFocusPairingId] = useState(null)
+  // In-app toast for realtime Exchange notifications: the bell badge
+  // alone is too quiet for time-sensitive moments like an acceptance.
+  const [practiceToast, setPracticeToast] = useState(null)
+  const handleIncomingNotification = useCallback((row) => {
+    if (isPracticeEnabled() && String(row?.type || '').startsWith('practice_')) {
+      setPracticeToast(row)
+    }
+  }, [])
+  useEffect(() => {
+    if (!practiceToast) return
+    const t = setTimeout(() => setPracticeToast(null), 4000)
+    return () => clearTimeout(t)
+  }, [practiceToast])
+  // When an event was opened FROM the Exchange feed, Back on the event
+  // detail returns to Exchange instead of dropping into the Events area.
+  const [eventReturnTab, setEventReturnTab] = useState(null)
   // Transient banner, currently just the "first event is pending review" notice.
   const [banner, setBanner] = useState(null)
   // Profile sub-tab is lifted to App so that chat→review deep-links can
@@ -168,6 +217,9 @@ function AppShell() {
   // Events tab's Events-vs-My-Networking toggle. Held here so it survives
   // EventsList being remounted (key bump) when returning from an event.
   const [eventsTopView, setEventsTopView] = useState('discover')
+  // Which surface sent the member to the Events tab, so it can offer a
+  // way back instead of leaving the bottom bar as the only exit.
+  const [eventsCameFrom, setEventsCameFrom] = useState(null)
   // Events tab's Upcoming-vs-My-events (past) filter. Also held here for the
   // same reason — otherwise opening a past event and pressing Back snapped the
   // list back to Upcoming instead of the "My events" list it came from.
@@ -324,7 +376,7 @@ function AppShell() {
       let changed = false
       if (ev) { sessionStorage.setItem('mutu_pending_event', ev); params.delete('event'); changed = true }
       if (tabParam) {
-        if (['home', 'discover', 'post', 'matches', 'events'].includes(tabParam)) {
+        if (['home', 'discover', 'post', 'matches', 'events', ...(isPracticeEnabled() ? ['practice'] : [])].includes(tabParam)) {
           sessionStorage.setItem('mutu_pending_tab', tabParam)
         }
         params.delete('tab'); changed = true
@@ -631,6 +683,23 @@ function AppShell() {
         setEditingEventId(null)
         if (eventId) setViewingEventId(eventId)
         else         setViewingEventId(null)
+        break
+      }
+      case 'practice_invitation':
+      case 'practice_invitation_accepted':
+      case 'practice_session_proposed':
+      case 'practice_session_scheduled':
+      case 'practice_session_cancelled':
+      case 'practice_partner_confirmed':
+      case 'practice_session_verified':
+      case 'practice_partnership_ended': {
+        // Land inside Exchange, focused on the pairing this notification
+        // is about (PracticeHub resolves the id to the right view).
+        if (isPracticeEnabled()) {
+          setPracticeFocusPairingId(n.payload?.pairing_id || null)
+          setChatMatchId(null)
+          setTab('practice')
+        }
         break
       }
       default:
@@ -992,6 +1061,7 @@ function AppShell() {
                 <NotificationBell
                   userId={user.id}
                   onOpenNotification={handleNotificationOpen}
+                  onIncoming={handleIncomingNotification}
                 />
               )}
 
@@ -1059,7 +1129,7 @@ function AppShell() {
         )}
 
         {/* ── Main content ──────────────────────────────────── */}
-        <main className="flex-1 flex flex-col min-h-0" style={{ background: '#F9F7F4' }}>
+        <main className="flex-1 flex flex-col min-h-0" style={{ background: '#F9F7F4', position: 'relative' }}>
           {showAdminEmailTest && session && isAdmin(user?.email) ? (
             <AdminEmailTest onClose={() => setShowAdminEmailTest(false)} />
           ) : showEventReview && session && isAdmin(user?.email) ? (
@@ -1072,7 +1142,7 @@ function AppShell() {
               userId={user?.id}
               requests={requests}
               onOpenDiscover={() => setTab('discover')}
-              onOpenEvent={(id) => { setEventInitialView(null); setViewingEventId(id); setTab('events') }}
+              onOpenEvent={(id) => { setEventReturnTab(null); setEventInitialView(null); setViewingEventId(id); setTab('events') }}
               onOpenProfile={() => { setProfileSubTab('profile'); setTab('profile') }}
               onOpenPost={(post) => setHomePostDetail(post)}
               onOpenNetworking={() => { setEventsTopView('networking'); setViewingEventId(null); setTab('events') }}
@@ -1100,11 +1170,44 @@ function AppShell() {
               onPromoImpression={(p) => { if (user) logPromoEvent(user.id, { eventId: p.eventId, postId: p.postId, kind: 'preview_impression' }) }}
               onOpenEventPromo={(p) => {
                 if (user) logPromoEvent(user.id, { eventId: p.eventId, postId: p.postId, kind: 'detail_open' })
+                setEventReturnTab(null)
                 setPromoOriginEventId(p.eventId)
                 setEventInitialView(null)
                 setViewingEventId(p.eventId)
                 setTab('events')
               }}
+            />
+          )}
+          {/* Post creation entry inside Discover when Practice occupies the
+              old Post slot in the bottom bar. The 'post' screen itself still
+              renders below — it's just no longer a nav tab (like Profile). */}
+          {tab === 'discover' && practiceOn && (
+            <button
+              type="button"
+              onClick={() => setTab('post')}
+              aria-label="Create a post"
+              className="active:scale-95 transition-all"
+              style={{
+                position: 'absolute', right: 18, bottom: 18, zIndex: 30,
+                width: 52, height: 52, borderRadius: '50%', border: 'none',
+                display: 'grid', placeItems: 'center', cursor: 'pointer',
+                ...matchaCta,
+              }}
+            >
+              <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14M5 12h14" />
+              </svg>
+            </button>
+          )}
+          {tab === 'practice' && practiceOn && (
+            <PracticeHub
+              userId={user?.id}
+              focusMatchId={practiceFocusMatchId}
+              focusPairingId={practiceFocusPairingId}
+              onFocusHandled={() => { setPracticeFocusMatchId(null); setPracticeFocusPairingId(null) }}
+              onOpenChat={(matchId) => { loadMatches(); setTab('matches'); setChatMatchId(matchId) }}
+              onOpenEvent={(id) => { setEventReturnTab('practice'); setEventInitialView(null); setViewingEventId(id); setTab('events') }}
+              onOpenEventsList={() => { setEventsCameFrom('practice'); setEventsTopView('discover'); setViewingEventId(null); setTab('events') }}
             />
           )}
           {tab === 'post' && (
@@ -1151,6 +1254,11 @@ function AppShell() {
                 onRequestReveal={() => handleRequestReveal(chatMatchId)}
                 onAcceptReveal={() => handleAcceptReveal(chatMatchId)}
                 onDeclineReveal={() => handleDeclineReveal(chatMatchId)}
+                onOpenPractice={practiceOn ? () => {
+                  setPracticeFocusMatchId(chatMatchId)
+                  setChatMatchId(null)
+                  setTab('practice')
+                } : undefined}
               />
             </div>
           )}
@@ -1165,6 +1273,7 @@ function AppShell() {
                 // Deep-link from Profile → Memory into an event's detail
                 // page. Switching tab AND setting viewingEventId in one
                 // shot keeps the transition smooth.
+                setEventReturnTab(null)
                 setViewingEventId(id)
                 setTab('events')
               }}
@@ -1200,7 +1309,11 @@ function AppShell() {
                   logPromoEvent(user.id, { eventId: viewingEventId, kind: 'join_conversion' })
                 }
               }}
-              onBack={() => { setViewingEventId(null); setEventInitialView(null); setPromoOriginEventId(null); setEventsRefreshKey(k => k + 1) }}
+              onBack={() => {
+                setViewingEventId(null); setEventInitialView(null); setPromoOriginEventId(null); setEventsRefreshKey(k => k + 1)
+                // Return to Exchange when that's where this event was opened from.
+                if (eventReturnTab) { setTab(eventReturnTab); setEventReturnTab(null) }
+              }}
               onEdit={(id) => setEditingEventId(id)}
               // Keep viewingEventId set so tapping Back on the Prepare page
               // returns to THIS event's detail page (where they came from),
@@ -1212,13 +1325,15 @@ function AppShell() {
           {tab === 'events' && !preparingEventId && !editingEventId && !viewingEventId && !showCreateEvent && (
             <EventsList
               key={eventsRefreshKey}
+              onBack={eventsCameFrom === 'practice' ? () => { setEventsCameFrom(null); setTab('practice') } : null}
+              backLabel="Together"
               topView={eventsTopView}
               onTopViewChange={setEventsTopView}
               filter={eventsFilter}
               onFilterChange={setEventsFilter}
               onCreateEvent={() => setShowCreateEvent(true)}
-              onOpenEvent={(id) => { setEventInitialView(null); setViewingEventId(id) }}
-              onOpenEventRecap={(id) => { setEventInitialView('recap'); setViewingEventId(id) }}
+              onOpenEvent={(id) => { setEventReturnTab(null); setEventInitialView(null); setViewingEventId(id) }}
+              onOpenEventRecap={(id) => { setEventReturnTab(null); setEventInitialView('recap'); setViewingEventId(id) }}
               onPrepare={(id) => { setViewingEventId(null); setPreparingEventId(id) }}
               onOpenMatch={(matchId) => { loadMatches(); setTab("matches"); setChatMatchId(matchId) }}
               onAskMutu={() => setBanner('Ask Mutu — your networking assistant — is coming soon. For now, prepare for events and connect on the Opportunity Board inside each event.')}
@@ -1254,7 +1369,7 @@ function AppShell() {
             paddingBottom: 'max(8px, env(safe-area-inset-bottom))',
           }}
         >
-          {TABS.map((t) => {
+          {navTabs.map((t) => {
             const active = tab === t.id
             return (
               <button
@@ -1289,6 +1404,57 @@ function AppShell() {
         >
           <div style={{ width: 134, height: 5, borderRadius: 99, background: 'rgba(0,0,0,0.18)' }} />
         </div>
+
+        {/* ── Exchange toast: realtime, tap to open, auto-dismisses ── */}
+        {practiceToast && (
+          <div
+            style={{
+              position: 'fixed', top: 14, left: '50%', transform: 'translateX(-50%)',
+              width: 'min(400px, calc(100vw - 28px))', zIndex: 120,
+              animation: 'mutuToastIn 0.35s cubic-bezier(0.2, 0.9, 0.3, 1)',
+            }}
+          >
+            <style>{'@keyframes mutuToastIn{from{opacity:0;transform:translate(-50%,-14px)}to{opacity:1;transform:translate(-50%,0)}}'}</style>
+            <div
+              role="button"
+              onClick={() => {
+                const n = practiceToast
+                setPracticeToast(null)
+                if (!n.read_at) markNotificationRead(n.id)
+                handleNotificationOpen(n)
+              }}
+              style={{
+                display: 'flex', alignItems: 'flex-start', gap: 11, cursor: 'pointer',
+                background: '#FFFFFF', border: '1px solid #E8D9A7', borderRadius: 16,
+                padding: '12px 14px', boxShadow: '0 10px 32px rgba(24,22,15,0.18)',
+              }}
+            >
+              <svg width="26" height="19" viewBox="0 0 44 32" fill="none" style={{ flexShrink: 0, marginTop: 2 }}>
+                <circle cx="15" cy="16" r="11" stroke="#A6822A" strokeWidth="3.4" />
+                <circle cx="29" cy="16" r="11" stroke="#C9A33B" strokeWidth="3.4" />
+              </svg>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ margin: 0, fontSize: 13.5, fontWeight: 700, color: '#18160F', fontFamily: 'Inter, system-ui, sans-serif' }}>
+                  {practiceToast.title}
+                </p>
+                <p style={{ margin: '2px 0 0', fontSize: 12, color: '#6E6A61', lineHeight: 1.45, fontFamily: 'Inter, system-ui, sans-serif' }}>
+                  {practiceToast.body}
+                </p>
+                <p style={{ margin: '4px 0 0', fontSize: 11.5, fontWeight: 700, color: '#68764A', fontFamily: 'Inter, system-ui, sans-serif' }}>
+                  Tap to view →
+                </p>
+              </div>
+              <button
+                type="button"
+                aria-label="Dismiss"
+                onClick={(e) => { e.stopPropagation(); setPracticeToast(null) }}
+                style={{ border: 'none', background: 'none', color: '#9A958B', fontSize: 16, cursor: 'pointer', padding: '0 2px', flexShrink: 0 }}
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* ── New Match popup ─────────────────────────────────── */}
         <NewMatchModal

@@ -113,3 +113,23 @@ export async function submitRecognition({ matchId, giverId, receiverId, chips, f
   }
   return { error: null }
 }
+
+/**
+ * Batch: which of these matches have BOTH participants confirmed
+ * "We met"? (RLS lets participants read their own matches' rows.)
+ * Returns { data: Set<matchId>, error }.
+ */
+export async function fetchBothConfirmedMatchIds(matchIds = []) {
+  if (!isSupabaseConfigured || matchIds.length === 0) return { data: new Set(), error: null }
+  const { data, error } = await supabase
+    .from('exchange_confirmations')
+    .select('match_id, user_id')
+    .in('match_id', [...new Set(matchIds)])
+  if (error) return { data: new Set(), error }
+  const users = new Map()
+  for (const r of data || []) {
+    if (!users.has(r.match_id)) users.set(r.match_id, new Set())
+    users.get(r.match_id).add(r.user_id)
+  }
+  return { data: new Set([...users.entries()].filter(([, u]) => u.size >= 2).map(([id]) => id)), error: null }
+}

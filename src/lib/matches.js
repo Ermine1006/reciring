@@ -210,6 +210,9 @@ export function matchToUI(row, currentUserId) {
     // instead of the needs/offers exchange.
     source:          row.source || 'post',
     isSmartMatch:    row.source === 'smart_match',
+    // Practice chats are created by accept_practice_pairing() — born
+    // identity-revealed, badged "Practice" in Matches + ChatView.
+    isPractice:      row.source === 'practice',
     // Marketplace-match context (null for ordinary peer-networking matches).
     isMarketplace:   Boolean(mkt),
     eventId:         row.event_id || null,

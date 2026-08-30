@@ -2,7 +2,7 @@
 //
 // Data model:
 //   needs    — what the poster is asking for (headline)
-//   offers   — what they give in return (revealed prominently on card)
+//   offers   — what they are happy to help with (secondary context on card)
 //   category — broad bucket (Networking, Advice, etc.)
 //   tags     — specific, filterable skill/context tags
 //   time     — estimated time commitment for the helper
@@ -30,18 +30,18 @@ export const MOCK_REQUESTS = [
     time:      '1 hr',
     urgency:   null,
     createdAt: '5h ago',
-    poster:    { points: 45, scheduled: 2, completed: 2, industries: ['Investment Banking', 'Private Equity'] },
+    poster:    { points: 45, scheduled: 2, completed: 2, industries: ['Finance'] },
   },
   {
     id: 'req-3',
     needs:     'Advice from someone who\'s done a PE fund internship — how did you prepare for the interviews and what was the culture like?',
     offers:    'I interned at McKinsey and can share case prep frameworks, materials, and do mock interviews with you.',
     category:  'Advice',
-    tags:      ['Private Equity', 'Mock Interview', 'Career Advice'],
+    tags:      ['Finance', 'Mock Interview', 'Career Advice'],
     time:      '30 min',
     urgency:   'urgent',
     createdAt: '1d ago',
-    poster:    { points: 340, scheduled: 12, completed: 11, industries: ['Consulting', 'Private Equity'] },
+    poster:    { points: 340, scheduled: 12, completed: 11, industries: ['Consulting', 'Finance'] },
   },
   {
     id: 'req-4',

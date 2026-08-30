@@ -62,6 +62,7 @@ export default function MatchesList({ matches = [], completedMatchIds = new Set(
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ margin: 0, fontSize: 14, fontWeight: 650, color: C.ink, fontFamily: 'Inter, system-ui, sans-serif', display: 'flex', alignItems: 'center', gap: 7 }}>
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{peerName(m)}</span>
+            {m.isPractice && <span style={{ flexShrink: 0, fontSize: 9, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: C.gold, background: '#F8F3E5', border: '1px solid #E8D9A7', borderRadius: 5, padding: '2px 6px' }}>Mock interview</span>}
             {isNew && <span style={{ flexShrink: 0, fontSize: 9, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: C.sage, background: C.sageBg, borderRadius: 5, padding: '2px 6px' }}>New</span>}
           </p>
           <p style={{ margin: '2px 0 0', fontSize: 12.5, color: C.ink3, fontFamily: 'Inter, system-ui, sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -99,12 +100,12 @@ export default function MatchesList({ matches = [], completedMatchIds = new Set(
         {list.length === 0 ? (
           <div style={{ padding: '40px 8px', textAlign: 'center' }}>
             <p style={{ fontSize: 14.5, fontWeight: 650, color: C.ink, margin: 0, fontFamily: 'Inter, system-ui, sans-serif' }}>
-              {view === 'active' ? 'No conversations yet' : 'No past exchanges yet'}
+              {view === 'active' ? 'No conversations yet' : 'No past connections yet'}
             </p>
             <p style={{ fontSize: 13, color: C.ink3, margin: '5px 0 0', lineHeight: 1.5, fontFamily: 'Inter, system-ui, sans-serif' }}>
               {view === 'active'
                 ? 'Connect with someone on Discover or in an event to start a conversation.'
-                : 'Exchanges move here once you and the other person both mark “We met”.'}
+                : 'Connections move here once you and the other person both mark “We met”.'}
             </p>
           </div>
         ) : (

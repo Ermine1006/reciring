@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { INDUSTRIES, HELP_TYPES } from '../data/requestOptions'
+import { HELP_TYPES } from '../data/requestOptions'
 import { PROGRAMS, CAREER_STAGES, NETWORKING_INTENTS, GRAD_YEARS, programCredential } from '../data/onboardingOptions'
 import { useAuth } from '../context/AuthContext'
 import ReciRingLogo from './ReciRingLogo'
 import Chip from './Chip'
+import CareerFocusPicker from './profile/CareerFocusPicker'
 import { VISIBILITY_OPTIONS, VISIBILITY_PRIVATE } from '../lib/visibility'
 import { matchaCta } from '../lib/matchaCta'
 
@@ -306,18 +307,9 @@ export default function OnboardingProfile() {
             {step === 2 && (
               <>
                 <div>
-                  <label style={labelStyle}>Industry focus</label>
-                  <p style={helperStyle}>Pick up to 3 — surfaces the right requests for you.</p>
-                  <div className="flex flex-wrap gap-2">
-                    {INDUSTRIES.map(ind => (
-                      <Chip
-                        key={ind}
-                        label={ind}
-                        active={industryInterests.includes(ind)}
-                        onClick={toggleList(setIndustryInterests, 3)}
-                      />
-                    ))}
-                  </div>
+                  <label style={labelStyle}>Career focus</label>
+                  <p style={helperStyle}>Pick up to 3 broad areas — surfaces the right requests for you.</p>
+                  <CareerFocusPicker value={industryInterests} onChange={setIndustryInterests} />
                 </div>
 
                 <div>

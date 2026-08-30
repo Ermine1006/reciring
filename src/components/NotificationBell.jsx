@@ -30,7 +30,7 @@ const TYPE_ICONS = {
   review_received:   '✨',
 }
 
-export default function NotificationBell({ userId, onOpenNotification }) {
+export default function NotificationBell({ userId, onOpenNotification, onIncoming }) {
   const [open, setOpen]               = useState(false)
   const [items, setItems]             = useState([])
   const [unreadCount, setUnreadCount] = useState(0)
@@ -55,6 +55,8 @@ export default function NotificationBell({ userId, onOpenNotification }) {
         // If dropdown is open, prepend; otherwise mark items stale for next open
         setItems(prev => open ? [row, ...prev] : prev)
         if (!open) dirtyRef.current = true
+        // Let the shell surface an in-app toast for time-sensitive types.
+        onIncoming?.(row)
       },
       onUpdate: (row) => {
         // Reflect read_at changes (e.g. mark-all from another tab)
@@ -63,7 +65,7 @@ export default function NotificationBell({ userId, onOpenNotification }) {
       },
     })
     return () => { if (channel) channel.unsubscribe() }
-  }, [userId, open, refreshCount])
+  }, [userId, open, refreshCount, onIncoming])
 
   // Open the dropdown — fetch items if stale or empty
   const handleToggle = async () => {

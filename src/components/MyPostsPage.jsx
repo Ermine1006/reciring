@@ -80,7 +80,7 @@ function EditPostModal({ post, onSave, onClose }) {
   const [saving, setSaving]         = useState(false)
   const [error, setError]           = useState(null)
 
-  const canSave = needText.trim().length > 0 && offerText.trim().length > 0 && helpType.length > 0
+  const canSave = needText.trim().length > 0 && helpType.length > 0
 
   const toggleMulti = (list, setList, max) => (val) => {
     setList(prev => prev.includes(val)
@@ -277,11 +277,14 @@ function EditPostModal({ post, onSave, onClose }) {
             </div>
           </div>
 
-          {/* What you offer */}
+          {/* Standing contribution (optional) */}
           <div style={{ marginBottom: 14 }}>
-            <label className="block text-[11px] tracking-[0.14em] uppercase font-semibold mb-2" style={{ color: C.textSub }}>
-              What you offer <span style={{ color: '#EF4444' }}>*</span>
+            <label className="block text-[11px] tracking-[0.14em] uppercase font-semibold mb-1" style={{ color: C.textSub }}>
+              Happy to help with
             </label>
+            <p className="mb-2" style={{ fontSize: 11, color: C.textMuted, lineHeight: 1.4 }}>
+              Optional. This doesn't have to relate to your request.
+            </p>
             <textarea
               value={offerText}
               onChange={e => setOfferText(e.target.value.slice(0, 200))}
@@ -466,16 +469,18 @@ export default function MyPostsPage({
                     {post.needs}
                   </p>
 
-                  {/* Offer */}
+                  {/* Standing contribution (optional) */}
+                  {Boolean(post.offers?.trim()) && (
                   <p style={{
                     fontSize: 12, color: C.textSub, lineHeight: 1.5, marginBottom: 8,
                     display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
                   }}>
                     <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.warmDark, marginRight: 5 }}>
-                      Offering:
+                      Also happy to help with:
                     </span>
                     {post.offers}
                   </p>
+                  )}
 
                   {/* Tags */}
                   {post.tags?.length > 0 && (

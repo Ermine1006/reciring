@@ -24,7 +24,7 @@ export default function ProfileWizard({ value = {}, onChange, onFinish, onBack }
   const set = (patch) => onChange({ ...v, ...patch })
   const arr = (k) => Array.isArray(v[k]) ? v[k] : []
 
-  const STEPS = ['Professional', 'Exchange', 'Beyond work', 'Preferences']
+  const STEPS = ['Professional', 'Support', 'Beyond work', 'Preferences']
   const years = Array.from({ length: 9 }, (_, i) => GRAD_YEAR_MIN + i + 2) // 2022…2030-ish window
 
   const next = () => step < 3 ? setStep(step + 1) : onFinish?.()
