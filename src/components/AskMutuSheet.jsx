@@ -4,6 +4,14 @@ import { fetchEncounters, buildAssistantContext, askMutu, fetchAskHistory, saveA
 import { fetchConnections } from '../lib/relationships'
 import { fetchMyEvents, fetchUpcomingEvents } from '../lib/events'
 import { fetchEventPrepCandidates } from '../lib/eventMatch'
+import {
+  fetchMyPracticeRequest, fetchMyAvailabilityWindows, fetchMyPairings, fetchMySessions,
+  fetchMyExchangeTokens, fetchMyPracticeConfirmations, fetchProfilesByIds,
+  fetchFeedbackSupport, fetchMyPracticeFeedback, fetchCommunityBySlug,
+} from '../lib/practice'
+import { computePassport } from '../lib/practicePassport'
+import { buildPracticeContext } from '../lib/askMutuPractice'
+import { isPracticeEnabled } from '../lib/featureFlags'
 import { useAuth } from '../context/AuthContext'
 import { matchaCta } from '../lib/matchaCta'
 
@@ -108,7 +116,42 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
       })
 
       setPrepEvents(joinedUpcoming)
-      setCtx(buildAssistantContext({ encounters: enc, events: allEvents, connections: conns, me: profile, eventMatches }))
+      // Mock interview grounding. Only gathered when the pilot is on
+      // for this member, and assembled by the same canonical layers the
+      // Passport uses so the assistant and the app cannot disagree.
+      let practice = null
+      if (isPracticeEnabled()) {
+        try {
+          const { data: comm } = await fetchCommunityBySlug('rotman')
+          const [reqRes, prsRes, { data: sess }, tokRes, confRes, fbSupport] = await Promise.all([
+            fetchMyPracticeRequest(userId, comm?.id),
+            fetchMyPairings(),
+            fetchMySessions(),
+            fetchMyExchangeTokens(),
+            fetchMyPracticeConfirmations(),
+            fetchFeedbackSupport(),
+          ])
+          const myRequest = reqRes?.data || null
+          const pairings = prsRes?.data || []
+          const [{ data: wins }, { data: profs }, fbRes] = await Promise.all([
+            myRequest ? fetchMyAvailabilityWindows(myRequest.id) : Promise.resolve({ data: [] }),
+            fetchProfilesByIds(pairings.map(p => p.counterpart_user_id).filter(Boolean)),
+            fbSupport?.supported ? fetchMyPracticeFeedback() : Promise.resolve({ data: [] }),
+          ])
+          const namesById = Object.fromEntries(
+            Object.entries(profs || {}).map(([id, p]) => [id, p?.name || null])
+          )
+          practice = buildPracticeContext({
+            myRequest, myWindows: wins || [], pairings, sessions: sess || [],
+            passport: computePassport({
+              userId, communityId: comm?.id, sessions: sess || [],
+              confirmations: confRes?.data || [], tokens: tokRes?.data || [], namesById,
+            }),
+            feedback: fbRes?.data || [], namesById, userId,
+          })
+        } catch { practice = null }
+      }
+      setCtx(buildAssistantContext({ encounters: enc, events: allEvents, connections: conns, me: profile, eventMatches, practice }))
       setMsgs((hist || []).map(m => ({ role: m.role, text: m.text })))
     })()
   }, [open, userId, profile]) // eslint-disable-line react-hooks/exhaustive-deps

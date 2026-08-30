@@ -211,7 +211,7 @@ export async function clearAskHistory(userId) {
 
 // Build the compact, private grounding context for Ask Mutu from the user's
 // own encounters + events. Only fields the user already owns.
-export function buildAssistantContext({ encounters = [], events = [], connections = [], me = null, eventMatches = {} }) {
+export function buildAssistantContext({ encounters = [], events = [], connections = [], me = null, eventMatches = {}, practice = null }) {
   return {
     // The user's OWN profile — lets Mutu reason about fit ("who should I
     // connect with", "is this event worth attending") instead of punting.
@@ -284,6 +284,12 @@ export function buildAssistantContext({ encounters = [], events = [], connection
         need_your_intentions: Boolean(m.needsMyIntentions),
       }
     }).filter(e => e.title),
+    // Mock interview: the pilot's own record. Built by
+    // lib/askMutuPractice.js, which excludes meeting links and the
+    // text of private feedback by construction. Omitted entirely for
+    // members who have never practised, so the assistant is not handed
+    // zeroes to misread.
+    ...(practice ? { practice } : {}),
   }
 }
 
