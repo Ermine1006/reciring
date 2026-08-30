@@ -178,7 +178,14 @@ export function computePassport({
   ).size
 
   return {
+    // the caller who owns these numbers, so presentation layers can
+    // work out which participant is the partner without guessing
+    userId,
     verified: eligible.size,
+    // the same session set the counts are built from, exposed so the
+    // Token list cannot drift from the numbers above it. Read-only:
+    // no calculation depends on it.
+    eligibleSessionIds: new Set(eligible.keys()),
     partners: partnerIds.size,
     partnerIds: [...partnerIds],
     // callers pass either id → 'Name' or id → profile row

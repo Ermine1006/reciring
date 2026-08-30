@@ -11,7 +11,7 @@ import CompletedExchanges from './CompletedExchanges'
 import ExchangeEventCard from './ExchangeEventCard'
 import ImpactSheet from './ImpactSheet'
 import { PassportCard, PassportDetail } from './PracticePassport'
-import TokenUnlockModal from './TokenUnlockModal'
+import TokenReveal from './TokenReveal'
 import { isSupabaseConfigured } from '../../lib/supabase'
 import {
   fetchCommunityBySlug, fetchMyCommunityMembership,
@@ -25,7 +25,7 @@ import {
   withdrawPracticeSession, cancelPracticeSession,
   fetchSessionConfirmations, submitPracticeConfirmation, fetchMyPracticeConfirmations,
   fetchMyExchangeTokens, fetchProfilesByIds, endPracticePairing, fetchSessionModeSupport,
-  fetchFeedbackSupport, fetchMyPracticeFeedback, reportPracticeFeedback,
+  fetchFeedbackSupport, fetchMyPracticeFeedback, reportPracticeFeedback, fetchMyPracticeEdges,
 } from '../../lib/practice'
 import { fetchUpcomingEvents, fetchMyJoinedEventIds } from '../../lib/events'
 import { deriveDisplayState, formatSessionTime, mutualFit } from '../../lib/practiceMatching'
@@ -38,6 +38,7 @@ import { track } from '../../lib/analytics'
 import { ActivitySummary, ConnectionCards, MatchingStatus, TogetherStyles, TOGETHER_CLASS } from './TogetherSections'
 import { matchingState } from '../../lib/togetherSummary'
 import { PAGE } from '../../data/togetherContent'
+import { revealState, tokenForSession, hasAcknowledged } from '../../lib/practiceToken'
 
 // ── PracticeHub — the EXCHANGE tab root ──────────────────────────
 // (Internal name kept per constraint; user-facing label is Exchange.)
@@ -251,6 +252,7 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
   const [feedbackSupported, setFeedbackSupported] = useState(false)
   const [myFeedback, setMyFeedback] = useState([])
   const [tokenModal, setTokenModal] = useState(null)
+  const [edges, setEdges] = useState([])
 
   const fail = (error) => { if (error) setBanner(practiceErrorMessage(error)); return Boolean(error) }
   const flashInline = (text) => {
@@ -285,13 +287,14 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
     const { data: comm } = await fetchCommunityBySlug('rotman')
     setCommunity(comm || null)
     if (!comm) { setLoading(false); return }
-    const [{ data: member }, reqRes, prsRes, { data: sess }, tokRes, { data: evs }, { data: joined }, confRes, modeSupport, fbSupport] =
+    const [{ data: member }, reqRes, prsRes, { data: sess }, tokRes, edgeRes, { data: evs }, { data: joined }, confRes, modeSupport, fbSupport] =
       await Promise.all([
         fetchMyCommunityMembership(comm.id, userId),
         fetchMyPracticeRequest(userId, comm.id),
         fetchMyPairings(),
         fetchMySessions(),
         fetchMyExchangeTokens(),
+        fetchMyPracticeEdges(),
         fetchUpcomingEvents(),
         fetchMyJoinedEventIds(userId),
         fetchMyPracticeConfirmations(),
@@ -322,6 +325,7 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
     } else setMyFeedback([])
     setTokens(tokRes.data || [])
     setTokensFailed(Boolean(tokRes.error))
+    setEdges(edgeRes?.data || [])
     setEvents(evs || [])
     setJoinedEventIds(joined instanceof Set ? joined : new Set(joined || []))
     if (req) {
@@ -655,17 +659,38 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
       flashInline("You've left that partnership. Your Tokens and chat are safe.")
     }
   )
+  // Re-read the authoritative rows, then reveal only a Token the
+  // server actually returned for this session.
+  const openRevealForSession = async (sessionId, partnerId) => {
+    if (!sessionId) return
+    const [{ data: tok }, edgeRes] = await Promise.all([
+      fetchMyExchangeTokens(), fetchMyPracticeEdges(),
+    ])
+    setTokens(tok || [])
+    setEdges(edgeRes?.data || [])
+    const t = tokenForSession(tok || [], sessionId)
+    if (!t) { track('practice_token_reveal_unavailable', { community_id: community?.id }); return }
+    track('practice_token_reveal_available', { community_id: community?.id })
+    track('practice_token_reveal_opened', { community_id: community?.id })
+    setTokenModal({
+      token: t,
+      sessionId,
+      partnerId: partnerId || null,
+      startAt: hasAcknowledged(userId, t.id) ? 'token' : 'verification',
+    })
+  }
+
   const submitConfirmation = withDetailBusy(
     (form) => submitPracticeConfirmation({ sessionId: detailSession?.id, ...form }),
     (data) => {
       track('practice_confirmation_submitted', { community_id: community?.id })
       if (data?.status === 'verified') {
         track('practice_session_verified', { community_id: community?.id })
-        track('practice_exchange_token_minted', { community_id: community?.id })
-        setTokenModal({
-          partnerName: namesById[detailPairing?.counterpart_user_id] || 'your partner',
-          matchId: detailPairing?.match_id || null,
-        })
+        // The Token was minted by the RPC, in the same transaction that
+        // set the status. Read it back before revealing anything: if it
+        // cannot be retrieved we show the verified state without a
+        // Token rather than inventing one.
+        openRevealForSession(detailSession?.id, detailPairing?.counterpart_user_id)
       }
       if (data?.status === 'disputed') track('practice_session_disputed', { community_id: community?.id })
     }
@@ -759,16 +784,24 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
   // ── Overlays ───────────────────────────────────────────────────
   const overlays = (
     <>
-      <TokenUnlockModal
+      <TokenReveal
         open={Boolean(tokenModal)}
-        partnerName={tokenModal?.partnerName}
-        verifiedCount={reputation.verifiedCount}
-        onPractiseAgain={() => setTokenModal(null)}
-        onSendThanks={tokenModal?.matchId && onOpenChat ? () => {
-          const id = tokenModal.matchId
-          setTokenModal(null)
-          onOpenChat(id)
-        } : undefined}
+        token={tokenModal?.token}
+        session={sessions.find((x) => x.id === tokenModal?.sessionId) || null}
+        edges={edges}
+        userId={demoMode ? 'demo-user' : userId}
+        partnerId={tokenModal?.partnerId}
+        partnerName={namesById[tokenModal?.partnerId]}
+        partnerUnlocked={Boolean(tokenModal?.partnerId)}
+        communityId={community?.id}
+        startAt={tokenModal?.startAt || 'verification'}
+        onEvent={(name) => track(name, { community_id: community?.id })}
+        onPractiseAgain={() => {
+          // returns to the EXISTING flow; it never recreates a session,
+          // re-invites the partner, or reuses a meeting link
+          setTokenModal(null); setDetailId(null); setView('explore'); setPathwayOpen(true)
+        }}
+        onViewPassport={() => { setTokenModal(null); setPassportOpen(true); track('passport_opened') }}
         onClose={() => setTokenModal(null)}
       />
       <AnimatePresence>
@@ -793,6 +826,15 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
               <PassportDetail
                 passport={passport}
                 sessionById={Object.fromEntries(sessions.map((x) => [x.id, x]))}
+                tokens={tokens}
+                namesById={namesById}
+                onOpenToken={(t, sess, partnerId) => {
+                  // reopening never replays the reveal: it lands on the
+                  // Token itself
+                  setPassportOpen(false)
+                  track('practice_token_detail_viewed', { community_id: community?.id })
+                  setTokenModal({ token: t, sessionId: sess?.id || t.session_id, partnerId, startAt: 'token' })
+                }}
                 onReportFeedback={async (f) => {
                   await reportPracticeFeedback(f.id)
                   const { data: fb } = await fetchMyPracticeFeedback()
@@ -896,7 +938,8 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
                   state={poolState}
                   myRequest={myRequest}
                   myWindows={myWindows}
-                  onPrimary={() => setSetupOpen(1)} />
+                  onPrimary={() => setSetupOpen(1)}
+                  onLeavePool={withdrawRequest} />
 
                 {myWindowsStale && (
                   <div style={{
@@ -1204,25 +1247,6 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
                 </>
               )}
 
-              {/* Small preferences control — never a big "My post" block */}
-              {myRequest && (
-                <div style={{
-                  margin: '20px 16px 0', display: 'flex', alignItems: 'center', gap: 10,
-                  borderTop: `1px solid ${C.line}`, paddingTop: 14,
-                }}>
-                  <p style={{ margin: 0, flex: 1, fontSize: 12.5, color: C.ink2, fontFamily: FONT }}>
-                    Mock interview preferences · {myRequest.want_types.join(', ')} + {myRequest.help_types.join(', ')}
-                  </p>
-                  <button type="button" onClick={() => setSetupOpen(1)}
-                    style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 12.5, fontWeight: 650, color: MATCHA_DEEP, fontFamily: FONT }}>
-                    Edit
-                  </button>
-                  <button type="button" onClick={withdrawRequest}
-                    style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 12.5, fontWeight: 650, color: C.ink3, fontFamily: FONT }}>
-                    Leave pool
-                  </button>
-                </div>
-              )}
             </>
           )
         )}

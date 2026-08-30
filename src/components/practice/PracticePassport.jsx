@@ -2,8 +2,10 @@ import { useMemo, useState } from 'react'
 import {
   evaluateMilestones, recommendNext, coverageLabel, MILESTONES,
 } from '../../lib/practicePassport'
-import { SESSION_MODES, INTERVIEW_CATEGORIES } from '../../data/practiceModes'
+import { SESSION_MODES, INTERVIEW_CATEGORIES, describeSession } from '../../data/practiceModes'
 import { suggestionLabelAnywhere } from '../../data/practiceFeedback'
+import { passportTokens } from '../../lib/practiceToken'
+import { MATCHA_DEEP } from '../../lib/matchaCta'
 
 // ── Practice Passport ───────────────────────────────────────────────
 // A private record of verified live practice: how much, with how many
@@ -125,7 +127,7 @@ const Row = ({ label, value, dim }) => (
 )
 
 /** The detailed Passport: five sections, private to this user. */
-export function PassportDetail({ passport, onClose, onCta, sessionById = {}, onReportFeedback }) {
+export function PassportDetail({ passport, onClose, onCta, sessionById = {}, onReportFeedback, tokens = [], namesById = {}, onOpenToken }) {
   const [showAllFeedback, setShowAllFeedback] = useState(false)
   const p = passport
   const rec = useMemo(() => recommendNext(p), [p])
@@ -228,6 +230,58 @@ export function PassportDetail({ passport, onClose, onCta, sessionById = {}, onR
           </div>
         ))}
       </Section>
+
+      {/* ── Shared practice Tokens ── */}
+      {(() => {
+        const rows = passportTokens({
+          tokens, sessionById, eligibleSessionIds: p.eligibleSessionIds,
+        })
+        if (rows.length === 0) return null
+        return (
+          <Section title="Shared practice Tokens"
+            note="One Token per verified practice, shared with your partner. Created by Mutu only after you both confirmed.">
+            <div style={{ display: 'grid', gap: 8 }}>
+              {rows.map(({ token, session }) => {
+                const d = describeSession(session || {})
+                const partnerId = session
+                  ? (session.participant_a_user_id === p.userId
+                      ? session.participant_b_user_id : session.participant_a_user_id)
+                  : null
+                const name = partnerId ? namesById[partnerId] : null
+                const when = token.verified_at
+                  ? new Intl.DateTimeFormat('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })
+                      .format(new Date(token.verified_at))
+                  : null
+                return (
+                  <button key={token.id} type="button" onClick={() => onOpenToken?.(token, session, partnerId)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 11, width: '100%', textAlign: 'left',
+                      minHeight: 44, background: C.white, border: `1px solid ${C.line}`,
+                      borderRadius: 14, padding: '11px 13px', cursor: 'pointer',
+                    }}>
+                    <svg width="26" height="18" viewBox="0 0 44 32" fill="none" aria-hidden="true" style={{ flexShrink: 0 }}>
+                      <circle cx="15" cy="16" r="11" stroke="#A6822A" strokeWidth="3.4" />
+                      <circle cx="29" cy="16" r="11" stroke="#C9A33B" strokeWidth="3.4" />
+                    </svg>
+                    <span style={{ flex: 1, minWidth: 0 }}>
+                      <span style={{ display: 'block', fontSize: 13, fontWeight: 700, color: C.ink, fontFamily: FONT }}>
+                        {name || 'Practice partner'}
+                      </span>
+                      <span style={{ display: 'block', fontSize: 11.5, color: C.ink2, fontFamily: FONT, marginTop: 2 }}>
+                        {[d.structured ? d.title : null, d.structured ? d.categoryLabel : null, when]
+                          .filter(Boolean).join(' · ')}
+                      </span>
+                    </span>
+                    <span style={{ flexShrink: 0, fontSize: 12, fontWeight: 650, color: MATCHA_DEEP, fontFamily: FONT }}>
+                      View Token
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </Section>
+        )
+      })()}
 
       {/* ── Recommended next mock interview ── */}
       <Section title="Recommended next mock interview">

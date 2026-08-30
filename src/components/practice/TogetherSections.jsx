@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { T, FONT, MIN_TAP, PAGE, CONNECTION_CARDS, EMPTY_EVENT, MATCHING_COPY, ART_BOX } from '../../data/togetherContent'
 import { preferenceChips, nextMilestoneProgress, eventMeta } from '../../lib/togetherSummary'
+import { PRACTICE_TYPE_LABELS } from '../../data/practiceOptions'
+import { formatWindow } from '../../lib/practiceMatching'
 
 // ── The Together "For You" surface ───────────────────────────────
 // Presentation only. Every number, chip and event comes from data the
@@ -308,9 +310,107 @@ export function ConnectionCards({ onSelect, selectedId }) {
 
 /* ── 3. Matching status ─────────────────────────────────────────── */
 
-export function MatchingStatus({ state, myRequest, myWindows, onPrimary }) {
+const typeList = (types = []) => (types || [])
+  .map((t) => PRACTICE_TYPE_LABELS[t] || t).join(', ')
+
+/**
+ * What the member actually posted, in their own words, plus the way
+ * out. Being in a pool that you cannot inspect or leave is not a
+ * pool anyone should be asked to join, so both live here rather than
+ * at the bottom of another tab.
+ */
+function YourListing({ myRequest, myWindows = [], onLeave }) {
+  const [confirmLeave, setConfirmLeave] = useState(false)
+  const live = (myWindows || []).filter((w) => w?.starts_at && new Date(w.starts_at) > new Date())
+  const tz = myRequest?.timezone
+  return (
+    <div style={{ marginTop: 11, borderTop: `1px solid ${T.border}`, paddingTop: 10 }}>
+      <p style={{
+        margin: '0 0 4px', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase',
+        fontWeight: 700, color: T.ink3, fontFamily: FONT,
+      }}>
+        What you posted
+      </p>
+      <dl style={{ margin: 0 }}>
+        <ListRow label="You want to practise"
+          value={[typeList(myRequest?.want_types), myRequest?.want_focus].filter(Boolean).join(' \u00b7 ')} />
+        <ListRow label="You can help with"
+          value={[typeList(myRequest?.help_types), myRequest?.help_focus].filter(Boolean).join(' \u00b7 ')} />
+        <ListRow label="Your background" value={myRequest?.help_context} />
+        <ListRow label="Session length"
+          value={myRequest?.duration_minutes ? `About ${myRequest.duration_minutes} min` : null} />
+        <ListRow label="Times you offered" value={live.length === 0 ? 'None listed' : (
+          <span style={{ display: 'grid', gap: 3 }}>
+            {live.map((w) => (
+              <span key={w.starts_at}>{formatWindow(w.starts_at, w.ends_at, tz)}</span>
+            ))}
+          </span>
+        )} />
+      </dl>
+      <p style={{ margin: '8px 0 0', fontSize: 11.5, color: T.ink3, lineHeight: 1.5, fontFamily: FONT }}>
+        Partners see this without your name until you both accept.
+      </p>
+
+      {/* Leaving is as easy to find as joining was. */}
+      {!confirmLeave ? (
+        <button type="button" onClick={() => setConfirmLeave(true)}
+          style={{
+            minHeight: MIN_TAP, marginTop: 2, border: 'none', background: 'none',
+            padding: 0, cursor: 'pointer', fontSize: 12.5, fontWeight: 650,
+            color: T.ink2, fontFamily: FONT, textDecoration: 'underline',
+            textUnderlineOffset: 3, ...focusable,
+          }}>
+          Leave the pool
+        </button>
+      ) : (
+        <div style={{
+          marginTop: 8, background: T.page, border: `1px solid ${T.border}`,
+          borderRadius: 13, padding: '11px 13px',
+        }}>
+          <p style={{ margin: 0, fontSize: 12.5, color: T.ink, lineHeight: 1.5, fontFamily: FONT }}>
+            Leave the pool? New partners will not find you. Your Tokens, your
+            Passport and any booked session all stay. You can rejoin whenever
+            you like.
+          </p>
+          <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+            <button type="button" onClick={() => { setConfirmLeave(false); onLeave?.() }}
+              style={{
+                flex: 1, minHeight: MIN_TAP, border: `1px solid ${T.border}`,
+                borderRadius: 11, background: T.surface, cursor: 'pointer',
+                fontSize: 12.5, fontWeight: 700, color: '#B4232A', fontFamily: FONT, ...focusable,
+              }}>
+              Yes, leave
+            </button>
+            <button type="button" onClick={() => setConfirmLeave(false)}
+              style={{
+                flex: 1, minHeight: MIN_TAP, border: 'none', borderRadius: 11,
+                background: T.matchaDeep, color: '#FFFFFF', cursor: 'pointer',
+                fontSize: 12.5, fontWeight: 700, fontFamily: FONT, ...focusable,
+              }}>
+              Stay in the pool
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ListRow({ label, value }) {
+  if (!value) return null
+  return (
+    <div style={{ display: 'flex', gap: 10, padding: '5px 0' }}>
+      <dt style={{ flex: '0 0 44%', margin: 0, fontSize: 12, color: T.ink3, fontFamily: FONT }}>{label}</dt>
+      <dd style={{ flex: 1, margin: 0, fontSize: 12, color: T.ink, fontFamily: FONT, lineHeight: 1.45 }}>{value}</dd>
+    </div>
+  )
+}
+
+export function MatchingStatus({ state, myRequest, myWindows, onPrimary, onLeavePool }) {
   const copy = MATCHING_COPY[state] || MATCHING_COPY.searching
   const chips = preferenceChips(myRequest, myWindows)
+  // in the pool → show the listing itself, not a summary of it
+  const showListing = Boolean(myRequest && onLeavePool)
   return (
     // bottom padding is small because the action's own 44px tap area
     // supplies the rest; otherwise the card ends in a band of nothing
@@ -342,9 +442,9 @@ export function MatchingStatus({ state, myRequest, myWindows, onPrimary }) {
           way to change them belong together, and the card stays short */}
       <div style={{
         display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 7,
-        marginTop: chips.length > 0 ? 11 : 2,
+        marginTop: showListing || chips.length === 0 ? 2 : 11,
       }}>
-        {chips.map((c) => <Chip key={c.id}>{c.label}</Chip>)}
+        {!showListing && chips.map((c) => <Chip key={c.id}>{c.label}</Chip>)}
         <span style={{ flex: 1 }} />
         <button type="button" onClick={onPrimary}
           style={{
@@ -356,6 +456,11 @@ export function MatchingStatus({ state, myRequest, myWindows, onPrimary }) {
           {copy.cta}
         </button>
       </div>
+
+      {/* Members in the pool can read their own listing and leave it. */}
+      {showListing && (
+        <YourListing myRequest={myRequest} myWindows={myWindows} onLeave={onLeavePool} />
+      )}
     </section>
   )
 }
