@@ -821,6 +821,24 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
     </>
   )
 
+  // The setup flow takes over the screen, so it is checked before
+  // any page that could otherwise keep rendering in its place.
+  // (It used to sit after the Mock Interview page, which made
+  // Update preferences look dead: the state changed, the page
+  // did not.)
+  if (setupOpen) {
+    return (
+      <PracticeSetupFlow
+        existing={myRequest}
+        existingWindows={myWindows}
+        initialStep={typeof setupOpen === 'number' ? setupOpen : 1}
+        saving={saving}
+        onSave={saveRequest}
+        onCancel={() => setSetupOpen(null)}
+      />
+    )
+  }
+
   // ── Mock Interview: a page of its own ───────────────────────────
   if (pathwayOpen && view === 'explore') {
     return (
@@ -923,18 +941,6 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
     )
   }
 
-  if (setupOpen) {
-    return (
-      <PracticeSetupFlow
-        existing={myRequest}
-        existingWindows={myWindows}
-        initialStep={typeof setupOpen === 'number' ? setupOpen : 1}
-        saving={saving}
-        onSave={saveRequest}
-        onCancel={() => setSetupOpen(null)}
-      />
-    )
-  }
   if (detailPairing && ['accepted'].includes(detailPairing.status)) {
     return (
       <>
