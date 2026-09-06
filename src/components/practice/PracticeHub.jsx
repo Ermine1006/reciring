@@ -79,6 +79,7 @@ const DEMO_ROWS = [
     ],
   },
 ]
+
 const DEMO_EVENTS = [
   { id: 'demo-e1', title: 'Consulting Coffee & Cases', start_at: new Date(Date.now() + 4 * 864e5).toISOString(), location: 'Rotman · L2 Commons', category: 'Networking', attendee_count: 12, image_url: '/email-assets/2a337c25-faf9-4ccf-b2af-a7d56295da44.png' },
 ]
@@ -614,13 +615,23 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
     if (fail(error)) return
     track('practice_invitation_declined', { community_id: community?.id })
     await loadAll()
+    // Declining is silent to the other person BY DESIGN, and it starts a
+    // 30-day cooldown that hides the pair from each other in browse and
+    // blocks a re-invite. An action with a month-long consequence has to
+    // say so; without this the row simply vanished and neither person
+    // could tell what had happened.
+    flashInline('Invitation declined. They are not notified, and you two will not see each other in the pool for 30 days.')
   }
 
   const withdraw = async (p) => {
     setBusyId(p.id)
     const { error } = await withdrawPracticeInvitation(p.id)
     setBusyId(null)
-    if (!fail(error)) await loadAll()
+    if (fail(error)) return
+    await loadAll()
+    // Withdrawing carries no cooldown, so say that too: the member
+    // stays available and the invitation can go out again.
+    flashInline('Invitation withdrawn. You can send it again whenever you like.')
   }
 
   const withDetailBusy = (fn, after) => async (...args) => {
@@ -1091,6 +1102,19 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
             }}>
             {banner}
           </div>
+        )}
+
+        {/* Confirmation of what just happened, in BOTH tabs. It used to
+            render only inside the Mock Interview page, so an action
+            taken in My Sessions (declining or withdrawing an
+            invitation) confirmed itself to an empty screen. */}
+        {inlineNote && (
+          <p role="status" style={{
+            margin: '10px 16px 0', fontSize: 12.5, fontWeight: 650,
+            color: MATCHA_DEEP, lineHeight: 1.5, fontFamily: FONT,
+          }}>
+            ✓ {inlineNote}
+          </p>
         )}
 
         {/* ═══ EXPLORE ═══ */}
