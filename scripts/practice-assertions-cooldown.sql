@@ -56,8 +56,8 @@ BEGIN
   ON CONFLICT (id) DO UPDATE SET access_status = EXCLUDED.access_status;
   INSERT INTO public.communities (id, slug, name) VALUES (cid,'cooltest','Cool Test')
   ON CONFLICT (id) DO NOTHING;
-  INSERT INTO public.community_members (community_id, user_id, status) VALUES
-    (cid,uA,'member'),(cid,uB,'member')
+  INSERT INTO public.community_members (community_id, user_id, status, source) VALUES
+    (cid,uA,'member','admin'),(cid,uB,'member','admin')
   ON CONFLICT (community_id, user_id) DO UPDATE SET status = EXCLUDED.status;
 
   -- reciprocal fit both ways, so nothing else can block the invite
