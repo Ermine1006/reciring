@@ -11,6 +11,14 @@ import { MATCHA_DEEP, MATCHA_SOFT } from '../../lib/matchaCta'
 //   no usable times   → "Invite to practise" (choose a time together)
 // Anonymity is stated exactly once (the lock line). Turn-taking, not
 // trading: two rounds, one for each person.
+//
+// One card can also carry `previously_declined`: the server saying
+// "you turned down an invitation from this member". Since declining
+// no longer hides them from you, the pool would otherwise let you
+// invite the very person you just said no to, with no way to tell.
+// It reports YOUR OWN action back to you, so it reveals nothing new,
+// and it is never set the other way round — being declined stays
+// private to the person who declined.
 
 const C = {
   gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7', goldBg: '#F8F3E5',
@@ -124,6 +132,27 @@ export default function PartnerCard({ row, myRequest, onInvite, busy }) {
         </svg>
         Complete both rounds · Unlock a Mutu Token together
       </p>
+
+      {/* Your own past decline, said plainly and without judgement.
+          It sits directly above the CTA because that is the moment
+          it changes a decision. Absent on an un-migrated server, and
+          the card simply reads as it always did. */}
+      {row.previously_declined === true && (
+        <p style={{
+          margin: '0 0 12px', padding: '9px 11px', background: '#F7F5F0',
+          borderRadius: 10, fontSize: 12.5, lineHeight: 1.45, color: C.ink2,
+          fontFamily: FONT, display: 'flex', alignItems: 'flex-start', gap: 8,
+        }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={C.ink3}
+            strokeWidth={2} strokeLinecap="round" style={{ flexShrink: 0, marginTop: 2 }}>
+            <circle cx="12" cy="12" r="9" /><path d="M12 8v5" /><path d="M12 16h.01" />
+          </svg>
+          <span>
+            You declined an invitation from this member before. You can still
+            invite them if you would like to.
+          </span>
+        </p>
+      )}
 
       {/* One dominant CTA */}
       <button type="button" disabled={busy}
