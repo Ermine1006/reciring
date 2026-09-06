@@ -107,7 +107,10 @@ export const MATCHING_COPY = {
   },
   invitation_pending: {
     title: 'Your invitation is waiting',
-    body: 'You have sent an invitation. You will hear back once they respond.',
+    // Says WHY the sender cannot see who they invited. Without this the
+    // silence reads as a fault: you chose a request, not a person, and
+    // the owner stays anonymous until you both accept.
+    body: 'It went to the member whose request you chose. They stay anonymous until you both accept.',
     cta: 'Update preferences',
   },
   invitation_received: {

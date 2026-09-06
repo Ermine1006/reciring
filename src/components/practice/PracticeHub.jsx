@@ -974,6 +974,29 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
               </>
             )}
 
+            {/* What the sender has outstanding. It existed only in a
+                collapsed group on the other tab, so an invitation
+                sent from here disappeared into silence. Identity
+                stays hidden until both accept, so this shows the
+                state and the way out, never the person. */}
+            {outgoing.length > 0 && (
+              <>
+                <SectionTitle>
+                  {outgoing.length === 1
+                      ? 'Invitation you sent'
+                      : `Invitations you sent · ${outgoing.length}`}
+                </SectionTitle>
+                <InvitationsList pairings={pairings} busyId={busyId} only="outgoing"
+                  onAccept={accept} onDecline={decline} onWithdraw={withdraw} />
+                <p style={{
+                  margin: '0 16px', fontSize: 11.5, color: C.ink3,
+                  lineHeight: 1.5, fontFamily: FONT,
+                }}>
+                  You will hear back when they respond, or the invitation expires on its own.
+                </p>
+              </>
+            )}
+
             {/* The partner list stays behind the Mock Interview
                 pathway, exactly as before. */}
             {category === 'one_on_one' && myRequest && fitRows.length > 0 && (
