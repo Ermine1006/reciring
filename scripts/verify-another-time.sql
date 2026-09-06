@@ -41,12 +41,17 @@ SELECT 'W3 accept untouched',
        'accept_practice_pairing still books a slot-bound invitation itself'
 
 UNION ALL
--- ── SEPARATE FINDING, not part of this migration ──────────────
--- scripts/migration-practice-notification-copy.sql set this line to
--- "Your invitation was accepted! ...". A later CREATE OR REPLACE in
--- migration-practice-slot-invites.sql rewrote the same function and
--- carried the older wording back in, dashes included. If this reads
--- REVERTED, that copy fix is currently undone in the live database.
+-- ── Regression watch, not part of this migration ──────────────
+-- migration-practice-notification-copy.sql set this line to "Your
+-- invitation was accepted! ...". migration-practice-slot-invites.sql
+-- rewrites the same function with the older wording, dashes included,
+-- so whichever ran last wins.
+--
+-- CHECKED 2026-09-06 against production: "copy fix is live". Nothing
+-- to repair. The local sandbox reads REVERTED because it applied the
+-- two files in the opposite order, so trust this check and not the
+-- sandbox. Left in place because any future CREATE OR REPLACE on
+-- accept_practice_pairing can undo it again.
 SELECT 'W4 copy finding',
        CASE WHEN (SELECT def FROM old) LIKE '%Your invitation was accepted!%'
             THEN 'copy fix is live'
