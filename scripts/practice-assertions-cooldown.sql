@@ -40,6 +40,7 @@ BEGIN
    WHERE requester_user_id IN (uA,uB) OR addressee_user_id IN (uA,uB);
   DELETE FROM public.blocks
    WHERE blocker_id IN (uA,uB) OR blocked_user_id IN (uA,uB);
+  DELETE FROM public.practice_requests WHERE user_id IN (uA,uB);
   DELETE FROM public.communities WHERE id = cid;
   DELETE FROM public.profiles    WHERE id IN (uA,uB);
   DELETE FROM auth.users         WHERE id IN (uA,uB);
@@ -47,12 +48,17 @@ BEGIN
   INSERT INTO auth.users (id, email) VALUES
     (uA,'cool-a@test.local'),(uB,'cool-b@test.local')
   ON CONFLICT (id) DO NOTHING;
+  -- auth.users carries a trigger that creates the profile for us, so
+  -- these have to be idempotent rather than plain inserts.
   INSERT INTO public.profiles (id, email, name, access_status) VALUES
     (uA,'cool-a@test.local','Ada Cool','active'),
-    (uB,'cool-b@test.local','Bo Cool','active');
-  INSERT INTO public.communities (id, slug, name) VALUES (cid,'cooltest','Cool Test');
+    (uB,'cool-b@test.local','Bo Cool','active')
+  ON CONFLICT (id) DO UPDATE SET access_status = EXCLUDED.access_status;
+  INSERT INTO public.communities (id, slug, name) VALUES (cid,'cooltest','Cool Test')
+  ON CONFLICT (id) DO NOTHING;
   INSERT INTO public.community_members (community_id, user_id, status) VALUES
-    (cid,uA,'member'),(cid,uB,'member');
+    (cid,uA,'member'),(cid,uB,'member')
+  ON CONFLICT (community_id, user_id) DO UPDATE SET status = EXCLUDED.status;
 
   -- reciprocal fit both ways, so nothing else can block the invite
   INSERT INTO public.practice_requests
