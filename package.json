@@ -36,6 +36,9 @@
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",
+    "@electric-sql/pglite": "^0.5.8",
+    "@testing-library/react": "^16.3.3",
+    "jsdom": "^30.0.1",
     "vitest": "^4.1.11"
   }
 }
