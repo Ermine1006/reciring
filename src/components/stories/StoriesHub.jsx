@@ -4,7 +4,9 @@ import AppScreen from '../AppScreen'
 import * as storyApi from '../../lib/stories'
 import { newStoryDraft, newStoryReply, storyReplySnapshot, storyDraftSnapshot, storyErrorMessage, STORY_TOPICS,
   STORY_TOPIC_LABELS, STORY_REACTIONS, STORY_REPORT_REASONS, STORY_LIMITS } from '../../data/storiesContent'
+import { STORY_EXAMPLES } from '../../data/storyExamples'
 import StoryGardenArt from './StoryGardenArt'
+import StoryExampleReader from './StoryExampleReader'
 import StoryEditor from './StoryEditor'
 import StoryReplies from './StoryReplies'
 import StoryDialog from './StoryDialog'
@@ -25,6 +27,8 @@ export default function StoriesHub({ community, onBack, registerNavigationGuard,
   const [topic, setTopic] = useState('')
   const [cursors, setCursors] = useState([null])
   const [page, setPage] = useState(emptyPage)
+  const [gardenSource, setGardenSource] = useState('auto')
+  const [exampleId, setExampleId] = useState(null)
   const [notebookView, setNotebookView] = useState('mine')
   const [readerId, setReaderId] = useState(null)
   const [story, setStory] = useState(null)
@@ -49,6 +53,13 @@ export default function StoriesHub({ community, onBack, registerNavigationGuard,
   const dirtyRef = useRef(false)
   dirtyRef.current = dirty
   const refresh = useCallback(() => setReload(n => n + 1), [])
+  // Only a successfully loaded, empty first page suggests examples. Loading
+  // and access failures remain visible instead of being filled with fixtures.
+  const showingExamples = gardenSource === 'examples' ||
+    (gardenSource === 'auto' && cursors.length === 1 && page.items.length === 0 && !page.next_cursor)
+  const examplesInCorner = STORY_EXAMPLES.filter(s => !topic || s.topic === topic)
+  const gardenPages = showingExamples ? examplesInCorner : page.items
+  const example = STORY_EXAMPLES.find(s => s.id === exampleId)
 
   useEffect(() => {
     alive.current = true
@@ -130,7 +141,7 @@ export default function StoriesHub({ community, onBack, registerNavigationGuard,
     return () => window.removeEventListener('beforeunload', unload)
   }, [])
 
-  const focusKey = `${screen}:${readerId}:${topic}:${notebookView}:${cursors[cursors.length - 1]?.id || ''}`
+  const focusKey = `${screen}:${readerId}:${exampleId}:${topic}:${notebookView}:${cursors[cursors.length - 1]?.id || ''}`
   useEffect(() => {
     if (loading || lastFocused.current === focusKey) return
     lastFocused.current = focusKey
@@ -168,6 +179,8 @@ export default function StoriesHub({ community, onBack, registerNavigationGuard,
   })
   const garden = () => navigate('garden')
   const openStory = id => requestLeave(() => { setReaderId(id); setScreen('read'); setNotice(''); setReport(null) })
+  const openExample = id => requestLeave(() => { setExampleId(id); setScreen('example'); setNotice(''); setReport(null) })
+  const chooseGardenSource = source => { setGardenSource(source); setCursors([null]) }
   const startWriting = source => requestLeave(() => {
     const next = source || newStoryDraft()
     setDraft(next); setSavedSnapshot(storyDraftSnapshot(next)); setSavedLabel(next.version ? 'Saved in your private notebook.' : '')
@@ -179,7 +192,7 @@ export default function StoriesHub({ community, onBack, registerNavigationGuard,
   })
   const publish = pledge => perform(() => api.saveStory({ communityId: community.id, draft, publish: true, pledge }), data => {
     setDraft(data); setSavedSnapshot(storyDraftSnapshot(data)); setReaderId(data.id)
-    setScreen('finished'); setSavedLabel('')
+    setGardenSource('community'); setScreen('finished'); setSavedLabel('')
   })
   const takeBack = () => setConfirm({ title: 'Take your page back?', text: 'It will leave the garden and stay in your private notebook. Readers will no longer see the page or its replies.', label: 'Take back to my notebook', action: () => perform(() => api.withdrawStory(story), data => {
     setConfirm(null); setDraft(data); setSavedSnapshot(storyDraftSnapshot(data)); setSavedLabel('Saved in your private notebook.'); setScreen('write')
@@ -251,17 +264,23 @@ export default function StoriesHub({ community, onBack, registerNavigationGuard,
         {screen === 'garden' && <>
           <header className="g-intro"><div className="g-eyebrow">Together, as we are</div><h1 tabIndex={-1} ref={heading}>The Story Garden</h1>
             <p>A quiet place to be a work in progress.</p><p className="g-small">Your words. Your pace. Typos welcome.</p></header>
+          <div className="g-source-switch" role="group" aria-label="Choose pages to read">
+            <button type="button" aria-pressed={!showingExamples} onClick={() => chooseGardenSource('community')}>Community pages</button>
+            <button type="button" aria-pressed={showingExamples} onClick={() => chooseGardenSource('examples')}>Example pages</button>
+          </div>
           <div className="g-filter"><label htmlFor="garden-topic">Wander through</label><select id="garden-topic" value={topic} onChange={e => { setTopic(e.target.value); setCursors([null]) }}>
             <option value="">Every corner</option>{STORY_TOPICS.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}</select></div>
-          <section className="g-scene" aria-label="Pages in the garden"><StoryGardenArt />
-            {page.items.map(s => <button type="button" key={s.id} className="g-note" onClick={() => openStory(s.id)} aria-label={`Open page: ${pageTitle(s)}`}>
+          {showingExamples && <p className="g-example-intro">Made up writers and stories. A few ways to find your own beginning.</p>}
+          <section className={`g-scene${showingExamples ? ' g-scene-examples' : ''}`} aria-label={showingExamples ? 'Fictional example pages' : 'Pages in the garden'}><StoryGardenArt />
+            {gardenPages.map(s => <button type="button" key={s.id} className="g-note" onClick={() => showingExamples ? openExample(s.id) : openStory(s.id)} aria-label={`${showingExamples ? 'Open example' : 'Open page'}: ${pageTitle(s)}`}>
+              {showingExamples && <span className="g-example-stamp">Fictional example</span>}
               <span className="g-note-topic">{STORY_TOPIC_LABELS[s.topic]}</span><span className="g-note-words">{pageTitle(s)}</span><span className="g-note-open">Unfold page ↗</span></button>)}
-            {page.items.length ? <div className="g-scene-caption">Nothing here needs to bloom on schedule.</div> : <div className="g-empty-garden"><Leaf size={28} aria-hidden="true" />
+            {gardenPages.length ? <div className="g-scene-caption">Nothing here needs to bloom on schedule.</div> : <div className="g-empty-garden"><Leaf size={28} aria-hidden="true" />
               <h2>There is room for your story.</h2><p>{topic ? 'This corner is quiet for now.' : 'A small moment, an unfinished thought, a lesson learned along the way.'}</p></div>}
           </section>
           <div className="g-garden-actions"><div className="g-line">
-            {cursors.length > 1 && <button type="button" className="g-link" onClick={() => setCursors(c => c.slice(0, -1))}>A few steps back</button>}
-            {page.next_cursor && <button type="button" className="g-link" onClick={() => setCursors(c => [...c, page.next_cursor])}>Wander a little further →</button>}</div>
+            {!showingExamples && cursors.length > 1 && <button type="button" className="g-link" onClick={() => setCursors(c => c.slice(0, -1))}>A few steps back</button>}
+            {!showingExamples && page.next_cursor && <button type="button" className="g-link" onClick={() => setCursors(c => [...c, page.next_cursor])}>Wander a little further →</button>}</div>
             <button type="button" className="g-primary" onClick={() => startWriting()}>Leave a little of your story</button>
             <p className="g-small">Write a few lines or take a whole page.</p>
             {access.can_moderate && <button type="button" className="g-link" onClick={() => navigate('moderate')}>Community care</button>}
@@ -283,6 +302,9 @@ export default function StoriesHub({ community, onBack, registerNavigationGuard,
             <button type="button" className="g-link" disabled={busy} onClick={() => setConfirm({ title: 'Clear your hidden writers?', text: 'Their available pages and replies can appear in your garden again.', label: 'Clear hidden writers', action: () => perform(api.clearStoryMutes, () => { setConfirm(null); setNotice('Your hidden writers have been cleared.') }) })}>Clear hidden writers</button></details>
         </section>}
         {screen === 'read' && renderReader()}
+        {screen === 'example' && example && <StoryExampleReader example={example} headingRef={heading} onBack={garden}
+          onWrite={() => startWriting()}
+          onNext={examplesInCorner.length > 1 ? () => openExample(examplesInCorner[(examplesInCorner.findIndex(s => s.id === exampleId) + 1) % examplesInCorner.length].id) : undefined} />}
         {screen === 'finished' && <section className="g-finished"><div className="g-envelope" aria-hidden="true" /><div className="g-eyebrow">A page, gently placed</div>
           <h1 tabIndex={-1} ref={heading}>Your words have a place here.</h1><p>You can come back and change them.<br />Growing is allowed.</p>
           <button type="button" className="g-primary" onClick={garden}>Back to the garden</button><br />

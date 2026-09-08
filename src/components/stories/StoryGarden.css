@@ -122,3 +122,18 @@
 .mutu-story-garden.g-dialog-host { display: contents; }
 .mutu-story-garden.g-dialog-fallback { display: flex; position: fixed; inset: 0; z-index: 10000; align-items: center; justify-content: center; max-width: none; background: #30382965; }
 .mutu-story-garden.g-dialog-fallback .g-dialog[open] { display: block; position: relative; }
+
+.mutu-story-garden .g-source-switch { display: flex; justify-content: center; gap: 4px; margin: 14px 22px 4px; }
+.mutu-story-garden .g-source-switch button { border-radius: 0; border-bottom: 2px solid transparent; color: #6C6D5D; }
+.mutu-story-garden .g-source-switch button[aria-pressed=true] { border-bottom-color: #68764A; color: #405332; }
+.mutu-story-garden .g-example-intro { margin: 8px 26px 18px; text-align: center; font-size: 12px; }
+.mutu-story-garden .g-example-stamp { color: #77632D; font-size: 10px; line-height: 1.3; flex-shrink: 0; }
+.mutu-story-garden .g-example-label { color: #77632D; font-size: 12px; margin: 0 0 16px; }
+.mutu-story-garden .g-example-writer-note { font-style: italic; }
+.mutu-story-garden .g-scene-examples { height: 510px; }
+.mutu-story-garden .g-scene-examples .g-note { height: 166px; gap: 5px; }
+.mutu-story-garden .g-scene-examples .g-note:nth-of-type(1) { top: 44px; }
+.mutu-story-garden .g-scene-examples .g-note:nth-of-type(2) { top: 66px; }
+.mutu-story-garden .g-scene-examples .g-note:nth-of-type(3) { top: 280px; }
+.mutu-story-garden .g-scene-examples .g-note:nth-of-type(4) { top: 302px; }
+.mutu-story-garden .g-scene-examples .g-scene-caption { top: 246px; }

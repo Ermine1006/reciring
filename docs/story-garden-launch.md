@@ -9,7 +9,7 @@ Together 新增 The Story Garden，保留已选定的花园纸页与翻开手记
 | 入口或行为 | 实际行为 |
 | --- | --- |
 | Together → For You | 原有两张活动卡片下方新增 Story Garden 入口 |
-| 花园 | 每次四张真实纸页，可按主题漫步，可前进或返回；没有无限滚动、热门榜或虚构示例 |
+| 花园 | 社区每次最多四张真实纸页，可按主题漫步，可前进或返回；空花园会展示明确标注的虚构示例，也可主动切换 Community pages / Example pages |
 | 阅读 | 点击纸页打开手记；保留作者换行与文字，按纯文本显示 |
 | 写作 | 标题可选，正文最多 20,000 字符；固定起笔提示只改变占位文字 |
 | Fold & preview my page | 预览原文，选择署名和回应方式，明确社区受众，再主动勾选本人写作承诺 |
@@ -40,7 +40,7 @@ localStorage.setItem('mutu_stories', 'on')
 location.reload()
 ```
 
-入口位于 Together 的 For You 页。没有 Supabase 配置时不会伪造保存结果或预填社区故事。缺少迁移时显示尚未准备好。
+入口位于 Together 的 For You 页。没有 Supabase 配置、缺少迁移或加载失败时显示实际错误，不用示例掩盖故障。示例仅在社区资格和列表读取成功后显示。
 
 关闭该设备入口：
 
@@ -50,6 +50,25 @@ location.reload()
 ```
 
 新功能默认开关为 `false`。现有 Together、Home Community Map 等开关值保持不变。这个开关仅控制界面可见性；数据库资格才是权限边界。关闭界面不会撤销已经授予的 RPC 权限，不删除已有故事。
+
+## 虚构人物与示例文章
+
+Founder 要求每个主题各有一个样本，便于看到花园有内容时的阅读效果。四位虚构人物和完整文章保存在 `src/data/storyExamples.js`：
+
+| 主题 | 虚构人物 | 文章 |
+|---|---|---|
+| At work | Maya，MBA alum | I sent the wrong file |
+| MBA moments | Jonah，MBA student | The question I didn’t ask |
+| Between people | Leila，MBA student | An ordinary coffee chat |
+| Still becoming | Rin，MBA alum | Still figuring it out |
+
+- 社区当前主题的第一页为空时，先展示该主题的示例；有真实文章时优先展示社区文章。Community pages 和 Example pages 允许随时选择，社区分页不会混入样例。
+- 每张纸笺和全文均标注 `Fictional example`，人物署名标注 `Fictional writer`。它们是为 demo 创作的内容，没有真人投稿、本人口述或不用 AI 写作的声明。
+- 点击纸笺展开全文；Every corner 中可用 `Another example` 看下一篇。`Begin my own page` 打开空白编辑器，发布仍需主动勾选本人写作承诺。成功发表后切回 Community pages。
+- 示例使用独立只读阅读组件，没有回复、收藏、举报、隐藏作者或文章编辑操作，不创建 Auth 用户、profile、社区成员或数据库故事记录，不产生互动数量或匹配资料。无需新增 SQL。
+- 真实草稿、收藏、匿名性、社区资格、错误恢复和退出保护沿用现有流程。失去资格时示例入口也会隐藏。
+
+本次小改动的 UX 目标是帮助读者理解“可以不完美地写”，降低空白页压力。沿用 curiosity、agency、ease 三个动机视角：主题纸笺 → 展开一篇 → 理解分享尺度 → 自愿从空白开始 → 返回自己的手记。层级是花园说明、内容来源与主题、纸笺、主要写作动作；抹茶与奶白视觉、有限翻页和 reduced-motion 行为延续原有设计。成功看用户是否能分辨样例、找到适合自己的主题并保留自己的表达，不以假活跃或浏览时长衡量。空社区可选择样例，加载与错误仍真实呈现，发表完成才显示保存成功。实现仅涉及前端示例、阅读分支、样式和相应说明与验证；数据库权限、rollout 默认值、Together 其他模块和真人写作规范保持现有行为。
 
 ## 指定 moderator
 
@@ -93,6 +112,8 @@ Moderator 会在花园看到 Community care。举报保留提交当时的内容�
 - v1 提供文章撤回与回复删除，没有永久删除已保存文章的用户界面。举报快照保留以供审核；账号删除沿用现有 profiles 级联规则。
 
 ## 验证
+
+虚构示例更新：StoriesHub 的 19 项交互测试通过，生产构建通过。覆盖每个主题的示例、阅读切换、从空白开始写作，以及示例不调用真实故事的写入接口。本轮未进行浏览器或真机视觉验收。
 
 本轮检查结果：15 个测试文件、324 项测试全部通过，其中 44 项覆盖故事模块；完整生产构建通过。`git diff --check` 无空白错误。现有依赖版本未升级，新增的三个包仅用于开发测试。
 

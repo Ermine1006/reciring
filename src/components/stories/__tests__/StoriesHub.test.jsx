@@ -5,7 +5,8 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testi
 import StoriesHub from '../StoriesHub'
 import StoryDialog from '../StoryDialog'
 import useGuardedTab from '../../../lib/useGuardedTab'
-import { STORY_PLEDGE } from '../../../data/storiesContent'
+import { STORY_PLEDGE, STORY_TOPICS } from '../../../data/storiesContent'
+import { STORY_EXAMPLES, STORY_EXAMPLE_WRITERS } from '../../../data/storyExamples'
 
 const community = { id: 'community-test', name: 'Rotman' }
 const page = {
@@ -63,11 +64,16 @@ async function openReader(api = mockApi([page])) {
 }
 
 describe('Real garden states and privacy', () => {
-  it('shows an honest empty garden with no invented stories or popularity', async () => {
+  it('labels the four examples and lets readers choose the actual empty community', async () => {
     const { container } = await openGarden()
-    expect(screen.getByText('There is room for your story.')).toBeTruthy()
-    expect(container.querySelectorAll('.g-note')).toHaveLength(0)
+    expect(container.querySelectorAll('.g-note')).toHaveLength(4)
+    expect(screen.getAllByText('Fictional example')).toHaveLength(4)
+    expect(screen.getByRole('button', { name: 'Example pages' }).getAttribute('aria-pressed')).toBe('true')
     expect(screen.queryByRole('button', { name: 'Community care' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Community pages' }))
+    await screen.findByText('There is room for your story.')
+    expect(container.querySelectorAll('.g-note')).toHaveLength(0)
+    expect(screen.getByRole('button', { name: 'Community pages' }).getAttribute('aria-pressed')).toBe('true')
   })
   it('fails closed when the migration is unavailable', async () => {
     const api = mockApi([page])
@@ -76,6 +82,7 @@ describe('Real garden states and privacy', () => {
     await screen.findByText('The Story Garden is not ready yet. Please check back soon.')
     expect(api.fetchStories).not.toHaveBeenCalled()
     expect(screen.queryByText(page.title)).toBeNull()
+    expect(screen.queryByText('Fictional example')).toBeNull()
   })
   it('renders story text literally and only shows a bookmark after server confirmation', async () => {
     const api = mockApi([page])
@@ -105,6 +112,93 @@ describe('Real garden states and privacy', () => {
     await screen.findByRole('alert')
     expect(screen.queryByText(page.body)).toBeNull()
     expect(screen.queryByRole('heading', { name: page.title })).toBeNull()
+  })
+})
+
+describe('Fictional examples and member writing stay separate', () => {
+  it('opens one fictional writer per corner without calling real story or mutation APIs', async () => {
+    const { api, container } = await openGarden()
+    for (const topic of STORY_TOPICS) {
+      fireEvent.change(screen.getByLabelText('Wander through'), { target: { value: topic.id } })
+      const examples = STORY_EXAMPLES.filter(s => s.topic === topic.id)
+      expect(examples).toHaveLength(1)
+      const example = examples[0]
+      fireEvent.click(await screen.findByRole('button', { name: `Open example: ${example.title}` }))
+      await screen.findByRole('heading', { name: example.title })
+      expect(screen.getByText(STORY_EXAMPLE_WRITERS[example.writer].name)).toBeTruthy()
+      expect(screen.getByText('Fictional example')).toBeTruthy()
+      expect(container.querySelector('.g-body').textContent).toBe(example.body)
+      for (const name of ['Keep this page', 'This stayed with me', 'Report page', 'Hide this writer', 'Edit my page']) {
+        expect(screen.queryByRole('button', { name })).toBeNull()
+      }
+      fireEvent.click(screen.getByRole('button', { name: /Back to the garden/ }))
+      await screen.findByRole('heading', { name: 'The Story Garden' })
+    }
+    for (const method of ['fetchStory', 'fetchStoryReplies', 'saveStory', 'saveStoryReply', 'setStoryBookmark', 'setStoryReaction', 'reportStory', 'muteStoryWriter']) {
+      expect(api[method]).not.toHaveBeenCalled()
+    }
+  })
+  it('keeps real pages first, retains community pagination, and never puts examples in a notebook', async () => {
+    const api = mockApi([page])
+    api.fetchStories.mockImplementation(({ view }) => Promise.resolve(ok(view === 'garden'
+      ? { items: [page], next_cursor: { id: 'next-page' } }
+      : { items: [], next_cursor: null })))
+    const { container } = await openGarden(api)
+    expect(screen.getByRole('button', { name: `Open page: ${page.title}` })).toBeTruthy()
+    expect(screen.queryByText('Fictional example')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Example pages' }))
+    await screen.findByRole('region', { name: 'Fictional example pages' })
+    expect(container.querySelectorAll('.g-note')).toHaveLength(4)
+    expect(screen.queryByRole('button', { name: /Wander a little further/ })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Community pages' }))
+    await screen.findByRole('button', { name: `Open page: ${page.title}` })
+    expect(screen.getByRole('button', { name: /Wander a little further/ })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'My notebook' }))
+    await screen.findByRole('heading', { name: 'My notebook' })
+    expect(container.querySelectorAll('.g-saved-page')).toHaveLength(0)
+    fireEvent.click(screen.getByRole('button', { name: 'Kept pages' }))
+    await screen.findByText('A page that stays with you can stay here.')
+    expect(container.querySelectorAll('.g-saved-page')).toHaveLength(0)
+    expect(screen.queryByText('Fictional example')).toBeNull()
+  })
+  it('starts an empty draft from an example and shows community pages after a real publish', async () => {
+    const { api } = await openGarden()
+    fireEvent.click(screen.getByRole('button', { name: `Open example: ${STORY_EXAMPLES[0].title}` }))
+    await screen.findByRole('heading', { name: STORY_EXAMPLES[0].title })
+    fireEvent.click(screen.getByRole('button', { name: 'Another example →' }))
+    expect(screen.getByRole('heading', { name: STORY_EXAMPLES[1].title })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Begin my own page' }))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Save for later' }).disabled).toBe(false))
+    expect(screen.getByLabelText('Your page').value).toBe('')
+    fireEvent.change(screen.getByLabelText('Your page'), { target: { value: 'My own words.\n  My own beginning.' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Fold & preview my page' }))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Place in the garden' }).disabled).toBe(false))
+    expect(screen.getByLabelText(STORY_PLEDGE).checked).toBe(false)
+    fireEvent.click(screen.getByLabelText(STORY_PLEDGE))
+    fireEvent.click(screen.getByRole('button', { name: 'Place in the garden' }))
+    await screen.findByRole('heading', { name: 'Your words have a place here.' })
+    const published = { ...api.saveStory.mock.calls[0][0].draft, status: 'published', is_mine: true }
+    expect(published.body).toBe('My own words.\n  My own beginning.')
+    expect(published.id.startsWith('example-')).toBe(false)
+    api.fetchStories.mockResolvedValue(ok({ items: [published], next_cursor: null }))
+    fireEvent.click(screen.getByRole('button', { name: 'Back to the garden' }))
+    await screen.findByRole('heading', { name: 'The Story Garden' })
+    expect(screen.getByRole('button', { name: 'Community pages' }).getAttribute('aria-pressed')).toBe('true')
+    expect(screen.queryByText('Fictional example')).toBeNull()
+  })
+  it('does not turn a failed community read into a demo or retain examples after access is lost', async () => {
+    const api = mockApi()
+    api.fetchStories.mockResolvedValueOnce(error())
+    render(<StoriesHub api={api} community={community} onBack={vi.fn()} />)
+    await screen.findByRole('alert')
+    expect(screen.queryByText('Fictional example')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Check again' }))
+    fireEvent.click(await screen.findByRole('button', { name: `Open example: ${STORY_EXAMPLES[0].title}` }))
+    await screen.findByRole('heading', { name: STORY_EXAMPLES[0].title })
+    api.fetchStoryAccess.mockResolvedValue(error('STORY_ACCESS', '42501'))
+    fireEvent.focus(window)
+    await screen.findByRole('alert')
+    expect(screen.queryByRole('heading', { name: STORY_EXAMPLES[0].title })).toBeNull()
   })
 })
 
