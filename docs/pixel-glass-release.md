@@ -23,3 +23,11 @@ Focus indicators remain visible. Existing graph reduced-motion, visibility and o
 - Browser connection did not respond in this environment. Phone visual comparison, authenticated end-to-end checks and physical iOS acceptance remain unverified; this is not a claim of pixel-perfect parity with all design boards.
 
 Deployment uses the existing Vercel project connected to main. Reverting this release commit restores the prior UI without a database rollback.
+
+## Together and notification follow-up
+
+Together entries now use full-width horizontal rows, with square artwork on the left and the existing description and action on the right. Each scene preserves the source sprite's square aspect ratio rather than stretching into a wide rectangle.
+
+Notifications render through a document-body portal above the phone shell. This avoids the stacking context introduced by the glass header's backdrop filter. The opaque panel is bounded by viewport width and height, with a scrollable list, backdrop dismissal, close button, Escape, keyboard navigation and focus restoration. Notification data, read state and destination handlers are retained.
+
+Production build and 339 tests pass, including portal placement, dismissal/focus restoration and keyboard message selection. These DOM checks do not claim physical-phone visual verification. Avatar sources remain unchanged.

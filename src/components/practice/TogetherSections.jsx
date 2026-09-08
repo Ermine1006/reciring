@@ -239,7 +239,7 @@ export function ConnectionCards({ onSelect, selectedId }) {
         {PAGE.connectHeading}
       </h2>
       <div style={{
-        display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, padding: '0 16px',
+        display: 'grid', gridTemplateColumns: '1fr', gap: 12, padding: '0 16px',
         alignItems: 'stretch',
       }}>
         {CONNECTION_CARDS.map((c) => {

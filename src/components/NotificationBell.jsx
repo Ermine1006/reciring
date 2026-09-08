@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   fetchNotifications,
@@ -35,6 +36,23 @@ export default function NotificationBell({ userId, onOpenNotification, onIncomin
   const [items, setItems]             = useState([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [hovered, setHovered]         = useState(false)
+  const bellRef = useRef(null)
+  const panelRef = useRef(null)
+  useEffect(() => {
+    if (!open) return
+    const panel = panelRef.current
+    panel?.querySelector('[aria-label="Close notifications"]')?.focus()
+    const key = (event) => {
+      if (event.key === 'Escape') { event.preventDefault(); setOpen(false); return }
+      if (event.key !== 'Tab') return
+      const controls = Array.from(panel?.querySelectorAll('button:not(:disabled),[tabindex="0"]') || [])
+      const first = controls[0], last = controls[controls.length - 1]
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus() }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus() }
+    }
+    document.addEventListener('keydown', key)
+    return () => { document.removeEventListener('keydown', key); bellRef.current?.focus() }
+  }, [open])
   const dirtyRef = useRef(false) // true when items list is stale and needs refetch on next open
 
   // Initial load: just the unread count for the badge
@@ -106,6 +124,8 @@ export default function NotificationBell({ userId, onOpenNotification, onIncomin
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         onClick={handleToggle}
+        ref={bellRef}
+        aria-expanded={open}
         aria-label="Notifications"
         className="active:scale-95"
         style={{
@@ -140,28 +160,28 @@ export default function NotificationBell({ userId, onOpenNotification, onIncomin
       </button>
 
       {/* Dropdown panel */}
-      <AnimatePresence>
+      {createPortal(<AnimatePresence>
         {open && (
           <>
             {/* Backdrop */}
             <div
               onClick={() => setOpen(false)}
-              style={{ position: 'fixed', inset: 0, zIndex: 39 }}
+              style={{ position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(30,35,25,.24)' }}
             />
             <motion.div
-              initial={{ opacity: 0, y: -8, scale: 0.96 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -8, scale: 0.96 }}
+              ref={panelRef}
+              className="mutu-notification-panel"
+              role="dialog" aria-modal="true" aria-label="Notifications"
+              initial={{ opacity: 0, x: '-50%', y: -8, scale: 0.96 }}
+              animate={{ opacity: 1, x: '-50%', y: 0, scale: 1 }}
+              exit={{ opacity: 0, x: '-50%', y: -8, scale: 0.96 }}
               transition={{ duration: 0.16 }}
               style={{
-                position: 'absolute', right: 0, top: 48, zIndex: 40,
                 background: '#FFFFFF',
                 borderRadius: 18,
                 boxShadow: '0 12px 40px rgba(0,0,0,0.16), 0 2px 8px rgba(0,0,0,0.06)',
                 border: `1px solid ${C.border}`,
                 overflow: 'hidden',
-                width: 340,
-                maxHeight: 460,
                 display: 'flex', flexDirection: 'column',
               }}
             >
@@ -174,6 +194,8 @@ export default function NotificationBell({ userId, onOpenNotification, onIncomin
                 <p style={{ fontSize: 14, fontWeight: 600, color: C.text, fontFamily: 'Inter, system-ui, sans-serif' }}>
                   Notifications
                 </p>
+                <button type="button" aria-label="Close notifications" onClick={() => setOpen(false)}
+                  style={{ minWidth:44, minHeight:44, border:0, background:'transparent', color:C.text, fontSize:24, cursor:'pointer', order:2 }}>×</button>
                 {unreadCount > 0 && (
                   <button
                     type="button"
@@ -190,7 +212,7 @@ export default function NotificationBell({ userId, onOpenNotification, onIncomin
               </div>
 
               {/* List */}
-              <div style={{ flex: 1, overflowY: 'auto' }}>
+              <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain' }}>
                 {items.length === 0 ? (
                   <div style={{ padding: '36px 24px', textAlign: 'center' }}>
                     <div style={{
@@ -210,6 +232,8 @@ export default function NotificationBell({ userId, onOpenNotification, onIncomin
                     {items.map(n => (
                       <li
                         key={n.id}
+                        role="button" tabIndex={0}
+                        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClickItem(n) } }}
                         onClick={() => handleClickItem(n)}
                         style={{
                           padding: '12px 18px',
@@ -276,7 +300,7 @@ export default function NotificationBell({ userId, onOpenNotification, onIncomin
             </motion.div>
           </>
         )}
-      </AnimatePresence>
+      </AnimatePresence>, document.body)}
     </div>
   )
 }

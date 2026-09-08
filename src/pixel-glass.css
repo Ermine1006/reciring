@@ -87,3 +87,20 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]),textarea,select {
 .mutu-connection-card[data-tone=gold] button { background:linear-gradient(170deg,#c8ae70,#8c6b2f 70%,#ab8d4b) !important; }
 
 .mutu-shell .app-header,.mutu-shell > nav { -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px); }
+
+/* Full-width rows keep each square scene at its native aspect ratio. */
+.mutu-connection-card {
+  display:grid !important;
+  grid-template-columns: minmax(92px, 34%) minmax(0, 1fr);
+  grid-template-rows:auto auto auto;
+  column-gap:12px;
+  padding:12px !important;
+  align-items:start;
+}
+.mutu-connection-card > span { grid-column:1; grid-row:1 / 4; margin:0 !important; align-self:center; }
+.mutu-connection-card > h3 { grid-column:2; margin:0 !important; }
+.mutu-connection-card > p { grid-column:2; margin:6px 0 10px !important; }
+.mutu-connection-card > button { grid-column:2; padding:10px 8px !important; }
+.mutu-connection-art { height:auto; aspect-ratio:1 / 1; background-size:200% 100%; }
+.mutu-notification-panel { position:fixed; z-index:10001; top:max(16px, env(safe-area-inset-top)); left:50%; width:min(360px, calc(100vw - 24px)); max-height:calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
+@supports not (height:100dvh) { .mutu-notification-panel { max-height:calc(100vh - 64px); } }
