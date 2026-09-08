@@ -137,3 +137,23 @@
 .mutu-story-garden .g-scene-examples .g-note:nth-of-type(3) { top: 280px; }
 .mutu-story-garden .g-scene-examples .g-note:nth-of-type(4) { top: 302px; }
 .mutu-story-garden .g-scene-examples .g-scene-caption { top: 246px; }
+
+.mutu-story-garden .g-collection { margin: 24px auto 16px; padding: 34px 24px 30px 34px; max-width: 340px; border-radius: 3px 18px 18px 3px; border-left: 10px solid #788760; box-shadow: 5px 7px 0 #f3efe4, 7px 9px 0 #ddd8c7, 0 15px 30px #38412612; text-align: center; overflow-wrap: anywhere; }
+.mutu-story-garden .g-collection-matcha { background: #e7ecda; }
+.mutu-story-garden .g-collection-cream { background: #f4ecd8; border-left-color: #ad9362; }
+.mutu-story-garden .g-collection-lilac { background: #ece7f0; border-left-color: #8b7f9b; }
+.mutu-story-garden .g-cover-stamp { display: block; margin: 24px auto; color: #677450; }
+.mutu-story-garden .g-collection h2 { font: 400 29px/1.3 Georgia, serif; }
+.mutu-story-garden .g-cover-options { margin: 20px 0 28px; }
+.mutu-story-garden .g-cover-options fieldset { border: 0; padding: 0; margin: 16px 0; min-width: 0; }
+.mutu-story-garden .g-cover-options legend { font-size: 13px; }
+.mutu-story-garden .g-cover-options input { width: 100%; box-sizing: border-box; border: 1px solid #d6d9cc; border-radius: 8px; padding: 12px; margin: 8px 0 14px; background: #fffef9; font: inherit; }
+.mutu-story-garden .g-cover-options button { min-height: 44px; min-width: 44px; }
+.mutu-story-garden .g-pressed-flower { background: #f2efdf; border-radius: 4px 14px 14px 4px; padding: 14px; margin: 18px 0; border-left: 2px solid #b4a66d; }
+.mutu-story-garden .g-pressed-flower summary { display: flex; align-items: center; gap: 12px; cursor: pointer; min-height: 44px; }
+.mutu-story-garden .g-pressed-flower summary svg { flex-shrink: 0; color: #897537; }
+.mutu-story-garden .g-pressed-flower[open] summary svg { animation: g-flower-press 300ms ease-out; }
+.mutu-story-garden .g-pressed-flower small { display: block; font-size: 11px; margin-top: 5px; }
+.mutu-story-garden .g-reading-invitation { margin: 24px 0; padding: 18px 20px; background: #f2f3e8; border-radius: 2px 16px 16px 2px; }
+.mutu-story-garden .g-reading-invitation p { font: 400 20px/1.5 Georgia, serif; }
+.mutu-story-garden .g-author-page { margin: 24px auto; padding: 24px; max-width: 290px; background: #fffdf5; border: 1px solid #e7deca; border-radius: 3px; box-shadow: 0 8px 22px #38412612; overflow-wrap: anywhere; animation: g-page-open 360ms ease-out; }

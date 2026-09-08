@@ -1,5 +1,7 @@
 # Story Garden v1
 
+个人故事集、作者压花与轻提示的后续升级见 [story-garden-pride.md](story-garden-pride.md)。它需要在原安装脚本之后手动运行 `scripts/migration-story-garden-notebook.sql`。
+
 Together 新增 The Story Garden，保留已选定的花园纸页与翻开手记的体验。学生和校友可以分享工作、MBA、人与人之间的经历，以及仍在摸索的事情。
 
 本次基于 `35b1e680819aa1d526c587bf2ae1e4bf1fac52e3` 构建。代码已接入现有 React / Supabase 项目，通过独立功能分支提交审阅。数据库脚本只在独立 PGlite PostgreSQL 测试环境运行过，未连接 Supabase，未修改线上数据。

@@ -24,6 +24,8 @@ function NavigationHarness({ api, onDismiss }) {
 }
 function mockApi(items = []) {
   return {
+    fetchStoryNotebook: vi.fn().mockResolvedValue(ok({ color: 'matcha', stamp: 'leaf', pen_name: '', version: 0 })),
+    saveStoryNotebook: vi.fn((id, cover) => Promise.resolve(ok({ ...cover, version: cover.version + 1 }))),
     fetchStoryAccess: vi.fn().mockResolvedValue(ok({ schema_version: 1, can_moderate: false, my_name: 'My name' })),
     fetchStories: vi.fn().mockResolvedValue(ok({ items, next_cursor: null })),
     fetchStory: vi.fn().mockResolvedValue(ok(page)),
@@ -181,7 +183,7 @@ describe('Fictional examples and member writing stay separate', () => {
     expect(published.body).toBe('My own words.\n  My own beginning.')
     expect(published.id.startsWith('example-')).toBe(false)
     api.fetchStories.mockResolvedValue(ok({ items: [published], next_cursor: null }))
-    fireEvent.click(screen.getByRole('button', { name: 'Back to the garden' }))
+    fireEvent.click(screen.getByRole('button', { name: /Back to the garden/ }))
     await screen.findByRole('heading', { name: 'The Story Garden' })
     expect(screen.getByRole('button', { name: 'Community pages' }).getAttribute('aria-pressed')).toBe('true')
     expect(screen.queryByText('Fictional example')).toBeNull()
@@ -339,5 +341,56 @@ describe('Replies and care controls', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Hide this writer' }))
     await screen.findByRole('heading', { name: 'The Story Garden' })
     expect(api.muteStoryWriter).toHaveBeenCalledWith(page.id, null)
+  })
+})
+
+
+describe('Private author pride nudges', () => {
+  it('shows a flower only to the author and unfolds the server count', async () => {
+    const api = mockApi([page])
+    api.fetchStory.mockResolvedValue(ok({ ...page, is_mine: true, received_reactions: ['warmth'], received_reader_count: 2 }))
+    await openReader(api)
+    const summary = screen.getByText('Your words stayed with someone.')
+    fireEvent.click(summary)
+    expect(screen.getByText('2 readers left a little warmth.')).toBeTruthy()
+    expect(screen.getByText('Only you can see this note.')).toBeTruthy()
+    cleanup()
+    api.fetchStory.mockResolvedValue(ok({ ...page, received_reactions: ['warmth'], received_reader_count: 2 }))
+    await openReader(api)
+    expect(screen.queryByText('Your words stayed with someone.')).toBeNull()
+  })
+  it('does not invent warmth when an author has no responses', async () => {
+    const api = mockApi([page])
+    api.fetchStory.mockResolvedValue(ok({ ...page, is_mine: true, received_reactions: [], received_reader_count: 0 }))
+    await openReader(api)
+    expect(screen.queryByText('Your words stayed with someone.')).toBeNull()
+  })
+  it('keeps a failed cover save editable and guards leaving', async () => {
+    const api = mockApi()
+    await openGarden(api)
+    fireEvent.click(screen.getByRole('button', { name: 'My notebook' }))
+    await screen.findByRole('heading', { name: 'Pages by My name' })
+    fireEvent.click(screen.getByText('Make this cover yours'))
+    fireEvent.change(screen.getByLabelText('Private cover pen name'), { target: { value: 'Quiet gardener' } })
+    api.saveStoryNotebook.mockResolvedValueOnce(error())
+    fireEvent.click(screen.getByRole('button', { name: 'Save my cover' }))
+    await screen.findByRole('alert')
+    expect(screen.getByLabelText('Private cover pen name').value).toBe('Quiet gardener')
+    expect(screen.queryByText('Your private cover is saved.')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: /Back to the garden/ }))
+    await screen.findByRole('dialog')
+    fireEvent.click(screen.getByRole('button', { name: 'Save cover and leave' }))
+    await screen.findByRole('heading', { name: 'The Story Garden' })
+    expect(api.saveStoryNotebook).toHaveBeenLastCalledWith(community.id, expect.objectContaining({ pen_name: 'Quiet gardener' }))
+    expect(api.saveStory).not.toHaveBeenCalled()
+  })
+  it('keeps notebook pages available when the cover migration is missing', async () => {
+    const api = mockApi()
+    api.fetchStoryNotebook.mockResolvedValue(error('Missing function', 'PGRST202'))
+    await openGarden(api)
+    fireEvent.click(screen.getByRole('button', { name: 'My notebook' }))
+    await screen.findByRole('heading', { name: 'My notebook' })
+    expect(screen.getByRole('button', { name: 'Begin a page' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Save my cover' })).toBeNull()
   })
 })

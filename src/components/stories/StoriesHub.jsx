@@ -8,6 +8,8 @@ import { STORY_EXAMPLES } from '../../data/storyExamples'
 import StoryGardenArt from './StoryGardenArt'
 import StoryExampleReader from './StoryExampleReader'
 import StoryEditor from './StoryEditor'
+import StoryNotebookCover, { DEFAULT_COVER } from './StoryNotebookCover'
+import StoryWarmth from './StoryWarmth'
 import StoryReplies from './StoryReplies'
 import StoryDialog from './StoryDialog'
 import './StoryGarden.css'
@@ -17,7 +19,14 @@ const pageTitle = s => s.title || s.excerpt || 'A little piece of my story'
 const privateLabel = s => ({ draft: 'Private draft', withdrawn: 'Back in your notebook', removed: 'Removed by the community team', published: 'In the garden' }[s.status])
 
 export default function StoriesHub({ community, onBack, registerNavigationGuard, api = storyApi }) {
+  const [cover, setCover] = useState(DEFAULT_COVER)
+  const [coverSnapshot, setCoverSnapshot] = useState(JSON.stringify(DEFAULT_COVER))
+  const [coverReady, setCoverReady] = useState(false)
+  const [coverError, setCoverError] = useState('')
   const [screen, setScreen] = useState('garden')
+  const coverDirty = screen === 'notebook' && JSON.stringify(cover) !== coverSnapshot
+  const coverDirtyRef = useRef(false)
+  coverDirtyRef.current = coverDirty
   const [access, setAccess] = useState(null)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
@@ -49,7 +58,7 @@ export default function StoriesHub({ community, onBack, registerNavigationGuard,
   const readingEpoch = useRef(0)
   const editing = screen === 'write' || screen === 'review'
   const replyDirty = screen === 'read' && storyReplySnapshot(replyDraft) !== replyOriginal
-  const dirty = (editing && draft && storyDraftSnapshot(draft) !== savedSnapshot) || replyDirty
+  const dirty = (editing && draft && storyDraftSnapshot(draft) !== savedSnapshot) || replyDirty || coverDirty
   const dirtyRef = useRef(false)
   dirtyRef.current = dirty
   const refresh = useCallback(() => setReload(n => n + 1), [])
@@ -90,6 +99,17 @@ export default function StoriesHub({ community, onBack, registerNavigationGuard,
           if (!current()) return
           if (result.error) throw result.error
           setPage(result.data)
+          if (screen === 'notebook' && !coverDirtyRef.current) {
+            setCoverReady(false)
+            const settings = await api.fetchStoryNotebook(community.id)
+            if (!current()) return
+            if (settings.error) {
+              setCoverError('Your cover settings could not be loaded. Your pages are still available.')
+            } else {
+              setCover(settings.data); setCoverSnapshot(JSON.stringify(settings.data))
+              setCoverReady(true); setCoverError('')
+            }
+          }
         } else if (screen === 'read') {
           const result = await api.fetchStory(readerId)
           if (!current()) return
@@ -186,6 +206,10 @@ export default function StoriesHub({ community, onBack, registerNavigationGuard,
     setDraft(next); setSavedSnapshot(storyDraftSnapshot(next)); setSavedLabel(next.version ? 'Saved in your private notebook.' : '')
     setNotice(''); setScreen('write')
   })
+  const saveCover = () => perform(() => api.saveStoryNotebook(community.id, cover), data => {
+    setCover(data); setCoverSnapshot(JSON.stringify(data)); setCoverError('')
+    setNotice('Your private cover is saved.')
+  })
   const saveDraft = () => perform(() => api.saveStory({ communityId: community.id, draft }), data => {
     setDraft(data); setSavedSnapshot(storyDraftSnapshot(data)); setSavedLabel('Saved in your private notebook.')
     setNotice('Your private draft is saved.')
@@ -225,8 +249,7 @@ export default function StoriesHub({ community, onBack, registerNavigationGuard,
         {!story.is_mine && <div className="g-reactions">{STORY_REACTIONS.map((r, i) => <button type="button" key={r.id} disabled={busy}
           aria-pressed={story.my_reactions.includes(r.id)} onClick={() => react(r.id)}>
           {i ? <Heart aria-hidden="true" /> : <Flower2 aria-hidden="true" />}{r.label}</button>)}</div>}
-        {story.is_mine && story.received_reactions?.length > 0 && <div className="g-feedback">A reader left a little warmth.
-          {STORY_REACTIONS.filter(r => story.received_reactions.includes(r.id)).map(r => <p key={r.id} className="g-small">“{r.label}”</p>)}</div>}
+        <StoryWarmth key={story.id} story={story} />
         {(!story.is_mine || story.status === 'published') && <button type="button" className="g-link g-bookmark" disabled={busy}
           aria-pressed={story.bookmarked} onClick={toggleBookmark}><Bookmark size={16} aria-hidden="true" />{story.bookmarked ? 'Kept in my notebook' : 'Keep this page'}</button>}
       </div>
@@ -239,6 +262,8 @@ export default function StoriesHub({ community, onBack, registerNavigationGuard,
       <button type="button" className="g-link" disabled={busy} onClick={() => beginReport(null)}>Report page</button>
       <button type="button" className="g-link" disabled={busy} onClick={() => requestLeave(() => hideWriter(null))}>Hide this writer</button>
     </div></details>}
+    {!story.is_mine && <aside className="g-reading-invitation"><p>There’s a version of this only you can tell.</p>
+      <button type="button" className="g-link" onClick={() => startWriting()}>Begin my own page</button></aside>}
     <StoryReplies key={story.id} story={story} replies={replies.items} cursor={replies.next_cursor} busy={busy}
       draft={replyDraft} setDraft={setReplyDraft} original={replyOriginal} setOriginal={setReplyOriginal}
       onMore={() => perform(() => api.fetchStoryReplies(story.id, replies.next_cursor), data => setReplies(p => ({ ...data, items: [...p.items, ...data.items.filter(r => !p.items.some(old => old.id === r.id))] })))}
@@ -288,6 +313,8 @@ export default function StoriesHub({ community, onBack, registerNavigationGuard,
         </>}
         {screen === 'notebook' && <section className="g-page"><button type="button" className="g-back" onClick={garden}>← Back to the garden</button>
           <h1 tabIndex={-1} ref={heading}>My notebook</h1><p>A place for your drafts and pages you want to keep.</p>
+          <StoryNotebookCover cover={cover} name={access.my_name} onChange={setCover} onSave={saveCover}
+            busy={busy} ready={coverReady} dirty={coverDirty} error={coverError} onRetry={refresh} />
           <div className="g-line"><button type="button" className="g-outline" aria-pressed={notebookView === 'mine'} onClick={() => { setNotebookView('mine'); setCursors([null]) }}>My pages</button>
             <button type="button" className="g-outline" aria-pressed={notebookView === 'bookmarks'} onClick={() => { setNotebookView('bookmarks'); setCursors([null]) }}>Kept pages</button></div>
           <p className="g-small">{notebookView === 'mine' ? 'Only pages marked In the garden are shared.' : 'Your saved pages are private. A page may disappear if it is taken back or no longer available to you.'}</p>
@@ -306,7 +333,11 @@ export default function StoriesHub({ community, onBack, registerNavigationGuard,
           onWrite={() => startWriting()}
           onNext={examplesInCorner.length > 1 ? () => openExample(examplesInCorner[(examplesInCorner.findIndex(s => s.id === exampleId) + 1) % examplesInCorner.length].id) : undefined} />}
         {screen === 'finished' && <section className="g-finished"><div className="g-envelope" aria-hidden="true" /><div className="g-eyebrow">A page, gently placed</div>
-          <h1 tabIndex={-1} ref={heading}>Your words have a place here.</h1><p>You can come back and change them.<br />Growing is allowed.</p>
+          <h1 tabIndex={-1} ref={heading}>Your words have a place here.</h1>
+          <div className="g-author-page"><Leaf size={28} aria-hidden="true" /><h2>{pageTitle(draft)}</h2>
+            <p>{draft.identity_mode === 'named' ? (draft.author_name || access.my_name) : 'A community member'}</p>
+            <span className="g-small">{draft.identity_mode === 'named' ? 'Shared with your chosen name' : 'Shared anonymously'}</span></div>
+          <p>There’s a little more you in the garden now.</p><p>You can come back and change them.<br />Growing is allowed.</p>
           <button type="button" className="g-primary" onClick={garden}>Back to the garden</button><br />
           <button type="button" className="g-link" onClick={() => openStory(readerId)}>Read my page</button></section>}
         {screen === 'moderate' && <section className="g-page"><button type="button" className="g-back" onClick={garden}>← Back to the garden</button>
@@ -326,13 +357,16 @@ export default function StoriesHub({ community, onBack, registerNavigationGuard,
         onChange={e => setReplyDraft(p => ({ ...p, body: e.target.value }))} />
     </section>}
     {confirm && <StoryDialog title={confirm.type === 'leave' ? 'Keep your words safe?' : confirm.title} onClose={() => !busy && setConfirm(null)}>
-      <p>{confirm.type === 'leave' ? 'You have words that are not saved yet.' : confirm.text}</p>
+      <p>{confirm.type === 'leave' ? 'You have changes that are not saved yet.' : confirm.text}</p>
       <div className="g-dialog-actions"><button type="button" className="g-outline" disabled={busy} onClick={() => setConfirm(null)}>{confirm.type === 'leave' ? 'Keep writing' : 'Cancel'}</button>
+        {confirm.type === 'leave' && coverDirty && <button type="button" className="g-primary" disabled={busy || !access || !coverReady} onClick={async () => {
+          if (await saveCover()) { dirtyRef.current = false; setConfirm(null); confirm.action() }
+        }}>Save cover and leave</button>}
         {confirm.type === 'leave' && editing && draft?.status !== 'published' && <button type="button" className="g-primary" disabled={busy || !access} onClick={async () => {
           if (await saveDraft()) { dirtyRef.current = false; setConfirm(null); confirm.action() }
         }}>Save privately and leave</button>}
         <button type="button" className="g-link" disabled={busy} onClick={() => {
-          if (confirm.type === 'leave') { dirtyRef.current = false; setSavedSnapshot(draft ? storyDraftSnapshot(draft) : ''); setConfirm(null); confirm.action() }
+          if (confirm.type === 'leave') { setCover(JSON.parse(coverSnapshot)); dirtyRef.current = false; setSavedSnapshot(draft ? storyDraftSnapshot(draft) : ''); setConfirm(null); confirm.action() }
           else confirm.action()
         }}>{busy ? 'Saving…' : confirm.type === 'leave' ? 'Discard changes and leave' : confirm.label}</button>
       </div>

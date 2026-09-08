@@ -12,6 +12,11 @@ async function rpc(name, args = {}) {
   }
 }
 export const fetchStoryAccess = communityId => rpc('story_access', { p_community_id: communityId })
+export const fetchStoryNotebook = communityId => rpc('story_notebook_get', { p_community_id: communityId })
+export const saveStoryNotebook = (communityId, cover) => rpc('story_notebook_save', {
+  p_community_id: communityId, p_color: cover.color, p_stamp: cover.stamp,
+  p_pen_name: cover.pen_name, p_expected_version: cover.version,
+})
 export const fetchStories = ({ communityId, view = 'garden', topic = null, cursor = null, limit = 4 }) =>
   rpc('story_list', { p_community_id: communityId, p_view: view, p_topic: topic,
     p_before: cursor?.at || null, p_before_id: cursor?.id || null, p_limit: limit })
