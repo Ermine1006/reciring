@@ -19,6 +19,7 @@ import SettingsPage, { resolveAvatarSeed } from './components/SettingsPage'
 import OnboardingProfile from './components/OnboardingProfile'
 import ProfileOnboardingV3 from './components/profile/ProfileOnboardingV3'
 import { isProfileV3Enabled, isPracticeEnabled } from './lib/featureFlags'
+import useGuardedTab from './lib/useGuardedTab'
 import PracticeHub from './components/practice/PracticeHub'
 import AnonymousAvatar from './components/AnonymousAvatar'
 import MyPostsPage from './components/MyPostsPage'
@@ -166,7 +167,7 @@ function AppShell() {
   // they'd have to navigate to. If a draft exists, start on Events with the
   // form open so CreateEventForm mounts and repopulates from it immediately.
   const resumingEventDraft = hasFreshEventDraft()
-  const [tab, setTab]             = useState(resumingEventDraft ? 'events' : 'home')
+  const [tab, setTab, registerNavigationGuard] = useGuardedTab(resumingEventDraft ? 'events' : 'home')
   // Practice pilot flag: when ON, the bottom bar shows Practice instead
   // of Post (Post creation moves to a "+" inside Discover — the 'post'
   // screen itself stays reachable, like Profile). When OFF, nothing
@@ -1201,7 +1202,9 @@ function AppShell() {
           )}
           {tab === 'practice' && practiceOn && (
             <PracticeHub
+              key={user?.id || 'demo'}
               userId={user?.id}
+              registerNavigationGuard={registerNavigationGuard}
               focusMatchId={practiceFocusMatchId}
               focusPairingId={practiceFocusPairingId}
               onFocusHandled={() => { setPracticeFocusMatchId(null); setPracticeFocusPairingId(null) }}

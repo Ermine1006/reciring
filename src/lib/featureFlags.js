@@ -102,3 +102,15 @@ export function isLumaEnabled() {
     return String(import.meta.env?.VITE_ENABLE_LUMA_INTEGRATION || '').toLowerCase() === 'true'
   } catch { return false }
 }
+
+// Story Garden is independent of the existing Together rollout. SQL and
+// community access are checked separately; the flag is never an auth boundary.
+const STORIES_ROLLOUT = false
+export function isStoriesEnabled() {
+  try {
+    const override = localStorage.getItem('mutu_stories')
+    if (override === 'on') return true
+    if (override === 'off') return false
+  } catch { /* storage can be unavailable */ }
+  return STORIES_ROLLOUT
+}

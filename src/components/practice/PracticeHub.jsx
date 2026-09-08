@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import AppScreen from '../AppScreen'
 import PeerAvatar from '../PeerAvatar'
@@ -39,6 +39,10 @@ import { ActivitySummary, ConnectionCards, MatchingStatus, TogetherStyles, TOGET
 import { matchingState } from '../../lib/togetherSummary'
 import { PAGE } from '../../data/togetherContent'
 import { revealState, tokenForSession, hasAcknowledged } from '../../lib/practiceToken'
+import { isStoriesEnabled } from '../../lib/featureFlags'
+import StoryGardenEntry from '../stories/StoryGardenEntry'
+
+const StoriesHub = lazy(() => import('../stories/StoriesHub'))
 
 // ── PracticeHub — the EXCHANGE tab root ──────────────────────────
 // (Internal name kept per constraint; user-facing label is Exchange.)
@@ -204,7 +208,7 @@ function SectionTitle({ children, right }) {
   )
 }
 
-export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEventsList, focusMatchId = null, focusPairingId = null, onFocusHandled }) {
+export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEventsList, focusMatchId = null, focusPairingId = null, onFocusHandled, registerNavigationGuard }) {
   const demoMode = !isSupabaseConfigured
   const [loading, setLoading] = useState(true)
   const [community, setCommunity] = useState(null)
@@ -220,6 +224,16 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
   const [tokensFailed, setTokensFailed] = useState(false)
   const [namesById, setNamesById] = useState({})
   const [view, setView] = useState('explore')            // 'explore' | 'mine'
+  const [storiesOpen, setStoriesOpen] = useState(false)
+  const storiesNavigation = useRef(null)
+  const registerStoriesNavigation = useCallback(handler => {
+    storiesNavigation.current = handler
+    const unregister = registerNavigationGuard?.(handler)
+    return () => {
+      if (storiesNavigation.current === handler) storiesNavigation.current = null
+      unregister?.()
+    }
+  }, [registerNavigationGuard])
   // How the user wants to connect: with one partner, or with a group.
   // A frontend classification only (Practice and Events stay separate
   // models); remembered for the current session.
@@ -481,10 +495,17 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
   useEffect(() => {
     if ((!focusMatchId && !focusPairingId) || pairings.length === 0) return
     const p = pairings.find((x) => x.match_id === focusMatchId || x.id === focusPairingId)
-    setView('mine')
-    if (p && p.status === 'accepted') setDetailId(p.id)
+    const openFocus = () => {
+      setStoriesOpen(false)
+      setView('mine')
+      if (p && p.status === 'accepted') setDetailId(p.id)
+    }
+    // Notification deep links can stay inside Together. They need the same
+    // authored-text protection as a change to another app tab.
+    if (storiesOpen && storiesNavigation.current) storiesNavigation.current(openFocus)
+    else openFocus()
     onFocusHandled?.()
-  }, [focusMatchId, focusPairingId, pairings, onFocusHandled])
+  }, [focusMatchId, focusPairingId, pairings, onFocusHandled, storiesOpen])
 
   useEffect(() => {
     if (!detailId || demoMode) return
@@ -874,6 +895,12 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
     </>
   )
 
+  if (storiesOpen && isStoriesEnabled()) {
+    return <Suspense fallback={<AppScreen><p role="status" style={{ padding: 24 }}>Opening the garden…</p></AppScreen>}>
+      <StoriesHub key={`${community.id}:${userId || 'demo'}`} community={community} onBack={() => setStoriesOpen(false)} registerNavigationGuard={registerStoriesNavigation} />
+    </Suspense>
+  }
+
   // The setup flow takes over the screen, so it is checked before
   // any page that could otherwise keep rendering in its place.
   // (It used to sit after the Mock Interview page, which made
@@ -1148,6 +1175,7 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
                 Events is the wider community pathway and is never
                 presented as secondary or as consulting-specific. */}
             <ConnectionCards selectedId={null} onSelect={chooseConnection} />
+            {isStoriesEnabled() && <StoryGardenEntry onOpen={() => setStoriesOpen(true)} />}
 
             {/* ── Groups & Events ── */}
             <div ref={groupsRef} aria-hidden="true" style={{ height: 1, scrollMarginTop: 14 }} />
