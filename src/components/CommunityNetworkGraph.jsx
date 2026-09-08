@@ -499,7 +499,7 @@ export default function CommunityNetworkGraph({ userId, userName, communityName 
         ? (demoMode ? `${summary.members} example members`
             : registrationCount === undefined ? 'Loading Mutu registration total…'
             : registrationCount === null ? 'Mutu registration total temporarily unavailable'
-            : `${registrationCount.toLocaleString()} members in community`)
+            : `${registrationCount.toLocaleString()} members you can turn to for help`)
           + (summary.strengthened30d > 0
               ? ` · ${summary.strengthened30d} relationship${summary.strengthened30d === 1 ? '' : 's'} strengthened this month in this community`
               : (summary.verifiedTotal != null
