@@ -4,7 +4,7 @@ Founder requested all Mutu registered users instead of the viewer-filtered Rotma
 
 The new metric is the count of current non-anonymous Supabase Auth accounts across all communities, including pending and inactive registered accounts. It is not all-time signups; deleted accounts are absent. Auth identity providers linked to the same account count once. Fictional Story Garden examples do not create Auth accounts.
 
-The homepage reads a separate scalar RPC and labels the number “registered users on Mutu”. Map nodes and community exchange statistics keep their existing scope and permissions; their captions explicitly say “in this community”. No Auth rows, identities or status breakdowns are exposed. Only authenticated callers can request the aggregate.
+The homepage reads a separate scalar RPC and, per the founder’s copy preference, labels the number “members in community”. The number still counts all Mutu registered accounts, not only Rotman members. Map nodes and community exchange statistics keep their existing scope and permissions; their captions explicitly say “in this community”. No Auth rows, identities or status breakdowns are exposed. Only authenticated callers can request the aggregate.
 
 Fetch on mount, browser focus, visible-page return and every 60 seconds while visible. Late requests cannot replace newer responses. Missing migration or network errors show “Mutu registration total temporarily unavailable”, never 61, zero, or a community count as a substitute. Demo mode says “example members”.
 
