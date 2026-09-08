@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { isSupabaseConfigured } from '../lib/supabase'
+import { fetchRegistrationCount } from '../lib/registrationCount'
 import { fetchMyMatches } from '../lib/matches'
 import { fetchBothConfirmedMatchIds } from '../lib/recognition'
 import { fetchEncounters } from '../lib/eventMemory'
@@ -104,6 +105,29 @@ const BLOB_INKS = ['rgba(122,94,23,0.50)', 'rgba(78,92,48,0.50)', 'rgba(96,82,14
 
 export default function CommunityNetworkGraph({ userId, userName, communityName = 'Rotman' }) {
   const demoMode = !isSupabaseConfigured
+  const [registrationCount, setRegistrationCount] = useState(undefined)
+
+  useEffect(() => {
+    let cancelled = false
+    let request = 0
+    setRegistrationCount(undefined)
+    const refresh = async () => {
+      if (demoMode || document.hidden) return
+      const current = ++request
+      const count = await fetchRegistrationCount()
+      if (!cancelled && current === request) setRegistrationCount(count)
+    }
+    refresh()
+    window.addEventListener('focus', refresh)
+    document.addEventListener('visibilitychange', refresh)
+    const interval = window.setInterval(refresh, 60000)
+    return () => {
+      cancelled = true
+      window.clearInterval(interval)
+      window.removeEventListener('focus', refresh)
+      document.removeEventListener('visibilitychange', refresh)
+    }
+  }, [demoMode, userId])
 
   const [view, setView] = useState('circle')       // production-safe default
   const [map, setMap] = useState({ loading: true, errorKind: null, model: null })
@@ -472,11 +496,14 @@ export default function CommunityNetworkGraph({ userId, userName, communityName 
   // strengthened), not a raw count nobody can interpret.
   const countsLine = isMap
     ? (summary
-        ? `${summary.members} members`
+        ? (demoMode ? `${summary.members} example members`
+            : registrationCount === undefined ? 'Loading Mutu registration total…'
+            : registrationCount === null ? 'Mutu registration total temporarily unavailable'
+            : `${registrationCount.toLocaleString()} registered users on Mutu`)
           + (summary.strengthened30d > 0
-              ? ` · ${summary.strengthened30d} relationship${summary.strengthened30d === 1 ? '' : 's'} strengthened this month`
+              ? ` · ${summary.strengthened30d} relationship${summary.strengthened30d === 1 ? '' : 's'} strengthened this month in this community`
               : (summary.verifiedTotal != null
-                  ? ` · ${summary.verifiedTotal} verified exchange${summary.verifiedTotal === 1 ? '' : 's'}` : ''))
+                  ? ` · ${summary.verifiedTotal} verified exchange${summary.verifiedTotal === 1 ? '' : 's'} in this community` : ''))
         : null)
     : (circle.graph
         ? `${circle.graph.edges.length} ${circle.graph.edges.length === 1 ? 'person' : 'people'} in your circle`
