@@ -27,31 +27,13 @@ Together 新增 The Story Garden，保留已选定的花园纸页与翻开手记
 
 写作承诺为 `I wrote this myself, without AI writing or rewriting.`，每次确认界面默认未勾选。允许基础拼写检查和逐字语音输入。这里没有 AI 起草、润色、自动总结、AI 检测器或按文章内容自动匹配。承诺和人工审核建立社区规范，不能证明一段文字从未使用外部 AI。
 
-## 开启预览
+## 正式开放
 
-遵循 `AGENTS.md`：**所有 Supabase SQL 均由 founder 手动运行；Git 提交需要 founder 明确提出。**
+Founder 已完成数据库安装、权限检查和功能验收，并明确授权向所有用户显示 Story Garden。`STORIES_ROLLOUT = true`，入口位于 Together → For You → Story Garden。旧的 `mutu_stories` 浏览器预览覆盖值不再控制入口，用户无需打开 Console。
 
-1. 审阅 `scripts/migration-story-garden.sql`。需要现有的 `profiles`、`communities`、`community_members`、`blocks`。脚本在一个事务内创建故事模块，不改写现有产品数据，不自动指定管理员。
-2. 由 founder 在选定的 Supabase 项目 SQL Editor 手动执行整份迁移。
-3. 手动运行 `scripts/verify-story-garden.sql`，确认所有新表启用 RLS，`anon` / `authenticated` 无原始表权限，只有 `authenticated` 能执行公开 RPC，私有 helper 不可执行。
-4. 按下一节明确指定社区 moderator，再以真实且有资格的学生与校友账号做预览。
-5. 在安装了本次代码的浏览器中开启单设备入口并刷新：
+界面开放不改变数据库社区资格和匿名权限。没有 Supabase 配置、缺少迁移或加载失败时显示实际错误，不用示例掩盖故障。其他模块的功能开关保持现状。
 
-```js
-localStorage.setItem('mutu_stories', 'on')
-location.reload()
-```
-
-入口位于 Together 的 For You 页。没有 Supabase 配置、缺少迁移或加载失败时显示实际错误，不用示例掩盖故障。示例仅在社区资格和列表读取成功后显示。
-
-关闭该设备入口：
-
-```js
-localStorage.setItem('mutu_stories', 'off')
-location.reload()
-```
-
-新功能默认开关为 `false`。现有 Together、Home Community Map 等开关值保持不变。这个开关仅控制界面可见性；数据库资格才是权限边界。关闭界面不会撤销已经授予的 RPC 权限，不删除已有故事。
+后续新环境安装顺序：由 founder 手动执行 `migration-story-garden.sql`、`migration-story-garden-notebook.sql`，然后分别运行对应的只读验证脚本。已有生产数据库无需为本次开关更新重新运行 SQL。
 
 ## 虚构人物与示例文章
 

@@ -105,12 +105,9 @@ export function isLumaEnabled() {
 
 // Story Garden is independent of the existing Together rollout. SQL and
 // community access are checked separately; the flag is never an auth boundary.
-const STORIES_ROLLOUT = false
+// Founder approved general release after acceptance testing. Retire the
+// preview-only browser override so an old 'off' value cannot hide the entry.
+const STORIES_ROLLOUT = true
 export function isStoriesEnabled() {
-  try {
-    const override = localStorage.getItem('mutu_stories')
-    if (override === 'on') return true
-    if (override === 'off') return false
-  } catch { /* storage can be unavailable */ }
   return STORIES_ROLLOUT
 }

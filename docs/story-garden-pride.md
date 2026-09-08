@@ -1,6 +1,6 @@
 # Story Garden: a little collection, entirely yours
 
-本次为已有 Story Garden 增加四处轻提示，沿用 mutu-behavioral-ux。代码通过 `feat/story-garden` 分支与 PR #1 审阅，未修改 Supabase，尚未合并到正式版。
+本次为已有 Story Garden 增加四处轻提示，沿用 mutu-behavioral-ux。代码已通过 PR #1 合并到 main；founder 已手动升级数据库、完成验收并授权正式开放入口。
 
 ## 已实现
 
@@ -15,7 +15,7 @@
 
 1. 已安装原来的 migration-story-garden.sql 后，运行 scripts/migration-story-garden-notebook.sql。
 2. 运行 scripts/verify-story-garden-notebook.sql。结果预期写在脚本内。
-3. 部署本次前端并沿用已有 mutu_stories 浏览器开关。
+3. 部署本次前端；Story Garden 现已默认开放，旧的 mutu_stories 浏览器预览值不再控制入口。
 
 升级增加 story_notebooks 一张私有表、两个经过社区资格检查的 RPC，并更新既有 story_private.project 的作者专属字段。没有修改既有安装脚本；如果以后重跑旧安装脚本，必须再运行本次升级脚本恢复作者人数投影。
 
