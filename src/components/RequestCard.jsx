@@ -26,7 +26,7 @@ const C = {
   text:       '#111111',
   textSub:    '#4B5563',
   textMuted:  '#9CA3AF',
-  white:      '#FFFFFF',
+  white:      'var(--mutu-surface, #FFFFFF)',
 }
 
 /* ── Urgency indicator config ────────────────────────────────────── */
@@ -107,7 +107,7 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
   return (
     <motion.div
       layout
-      className="absolute inset-x-4 top-4 touch-none"
+      className="mutu-swipe-card absolute inset-x-4 top-4 touch-none"
       style={{
         borderRadius: 24,
         cursor: isTop ? 'grab' : 'default',

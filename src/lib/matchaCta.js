@@ -30,11 +30,11 @@ const SEIGAIHA =
 export const matchaCta = {
   backgroundColor: MATCHA,
   backgroundImage:
-    `linear-gradient(180deg, rgba(255,255,255,0.09), rgba(255,255,255,0) 46%, rgba(0,0,0,0.06)), ${SEIGAIHA}, linear-gradient(145deg, ${MATCHA_LIGHT} 0%, ${MATCHA_DARK} 100%)`,
+    `linear-gradient(180deg, rgba(255,255,255,0.32), rgba(255,255,255,0) 36%, rgba(0,0,0,0.12) 80%, rgba(255,255,255,0.14)), ${SEIGAIHA}, linear-gradient(145deg, ${MATCHA_LIGHT} 0%, ${MATCHA_DARK} 100%)`,
   backgroundRepeat: 'no-repeat, repeat, no-repeat',
   backgroundSize: 'auto, 15px 7.5px, auto',
   color: '#FFFFFF',
-  boxShadow: '0 2px 8px rgba(92,106,62,0.30), inset 0 1px 0 rgba(255,255,255,0.14)',
+  boxShadow: 'inset 0 2px 3px rgba(255,255,255,.65), inset 0 -2px 3px rgba(48,72,32,.22), 0 3px 8px rgba(66,86,42,.14)',
 }
 
 // Flat sage (no texture) — for very small pills/toggles where texture would

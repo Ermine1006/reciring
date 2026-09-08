@@ -18,7 +18,7 @@ const C = {
   text:       '#111111',
   textSub:    '#4B5563',
   textMuted:  '#9CA3AF',
-  white:      '#FFFFFF',
+  white:      'var(--mutu-surface, #FFFFFF)',
 }
 
 const URGENCY = {
@@ -256,7 +256,7 @@ export default function RequestDetailModal({ request, matchReason, matchReasons,
 
             {/* ── Safety menu (…) ─────────────────────────── */}
             <div style={{ position: 'relative', flexShrink: 0 }}>
-              <button
+              <button data-mutu-glass=""
                 type="button"
                 onClick={() => setShowMenu(m => !m)}
                 style={{
@@ -331,7 +331,7 @@ export default function RequestDetailModal({ request, matchReason, matchReasons,
             {/* Explicit "not for me" — only offered when a pass handler is
                 provided (e.g. from Home). Discover keeps its single action. */}
             {onPass && (
-              <button
+              <button data-mutu-glass=""
                 type="button"
                 onClick={() => { onPass(request); onClose() }}
                 style={{
@@ -345,7 +345,7 @@ export default function RequestDetailModal({ request, matchReason, matchReasons,
                 Not for me
               </button>
             )}
-            <button
+            <button data-mutu-glass=""
               type="button"
               onClick={() => { onMatch(request); onClose() }}
               style={{

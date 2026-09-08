@@ -21,7 +21,7 @@ import { MATCHA_DEEP } from '../../lib/matchaCta'
 
 const C = {
   gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7', goldBg: '#F8F3E5',
-  ink: '#18160F', ink2: '#6E6A61', ink3: '#9A958B', line: '#E9E5DD', white: '#FFFFFF',
+  ink: '#18160F', ink2: '#6E6A61', ink3: '#9A958B', line: '#E9E5DD', white: 'var(--mutu-surface, #FFFFFF)',
   matcha: '#6E7F4A', matchaSoft: '#EDF0E4',
 }
 const FONT = 'Inter, system-ui, sans-serif'
@@ -60,7 +60,7 @@ export function PassportCard({ passport, onOpen }) {
           </h3>
         </span>
         <span style={{ flex: 1 }} />
-        <button type="button" onClick={onOpen}
+        <button data-mutu-glass="" type="button" onClick={onOpen}
           style={{
             flexShrink: 0, border: `1px solid ${C.line}`, background: C.white, color: C.ink2,
             borderRadius: 99, padding: '5px 11px', fontSize: 11, fontWeight: 650,
@@ -142,7 +142,7 @@ export function PassportDetail({ passport, onClose, onCta, sessionById = {}, onR
         </h2>
         <span style={{ flex: 1 }} />
         {onClose && (
-          <button type="button" onClick={onClose}
+          <button data-mutu-glass="" type="button" onClick={onClose}
             style={{
               border: `1px solid ${C.line}`, background: C.white, color: C.ink2,
               borderRadius: 99, padding: '5px 12px', fontSize: 11, fontWeight: 650,
@@ -253,7 +253,7 @@ export function PassportDetail({ passport, onClose, onCta, sessionById = {}, onR
                       .format(new Date(token.verified_at))
                   : null
                 return (
-                  <button key={token.id} type="button" onClick={() => onOpenToken?.(token, session, partnerId)}
+                  <button data-mutu-glass="" key={token.id} type="button" onClick={() => onOpenToken?.(token, session, partnerId)}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 11, width: '100%', textAlign: 'left',
                       minHeight: 44, background: C.white, border: `1px solid ${C.line}`,
@@ -292,7 +292,7 @@ export function PassportDetail({ passport, onClose, onCta, sessionById = {}, onR
           <p style={{ margin: 0, fontSize: 12.5, color: C.ink, fontFamily: FONT, lineHeight: 1.5 }}>
             {rec.text}
           </p>
-          <button type="button" onClick={() => onCta?.(rec.cta)}
+          <button data-mutu-glass="" type="button" onClick={() => onCta?.(rec.cta)}
             style={{
               marginTop: 10, width: '100%', border: 'none', borderRadius: 12,
               background: C.matcha, color: C.white, padding: '10px 0',
@@ -346,7 +346,7 @@ export function PassportDetail({ passport, onClose, onCta, sessionById = {}, onR
             )
           })}
           {p.feedbackReceived.length > 1 && (
-            <button type="button" onClick={() => setShowAllFeedback((v) => !v)}
+            <button data-mutu-glass="" type="button" onClick={() => setShowAllFeedback((v) => !v)}
               style={{
                 minHeight: 44, border: `1px solid ${C.line}`, background: C.white, color: C.ink2,
                 borderRadius: 11, padding: '9px 14px', fontSize: 12, fontWeight: 650,

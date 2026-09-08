@@ -6,7 +6,7 @@
 
 const C = {
   gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7', goldBg: '#F8F3E5',
-  ink: '#18160F', ink2: '#6E6A61', ink3: '#9A958B', line: '#E9E5DD', white: '#FFFFFF',
+  ink: '#18160F', ink2: '#6E6A61', ink3: '#9A958B', line: '#E9E5DD', white: 'var(--mutu-surface, #FFFFFF)',
 }
 const FONT = 'Inter, system-ui, sans-serif'
 
@@ -51,7 +51,7 @@ export default function ExchangeEventCard({ event, onOpen }) {
           : 'Show up and take part with the community'}
       </p>
 
-      <button
+      <button data-mutu-glass=""
         type="button" onClick={() => onOpen(event.id)}
         className="active:scale-[0.98] transition-all"
         style={{

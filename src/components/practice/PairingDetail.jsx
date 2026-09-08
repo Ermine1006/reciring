@@ -23,7 +23,7 @@ import MeetingDetails from './MeetingDetails'
 
 const C = {
   gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7', goldBg: '#F8F3E5',
-  ink: '#18160F', ink2: '#6E6A61', ink3: '#9A958B', line: '#E9E5DD', white: '#FFFFFF',
+  ink: '#18160F', ink2: '#6E6A61', ink3: '#9A958B', line: '#E9E5DD', white: 'var(--mutu-surface, #FFFFFF)',
   sage: '#2F7A55', sageBg: '#EEF5F0',
 }
 const FONT = 'Inter, system-ui, sans-serif'
@@ -192,7 +192,7 @@ export default function PairingDetail({
   // time, nothing else competing for attention.
   if (guideOpen && session) {
     return (
-      <div style={{ minHeight: '100%', background: '#F9F7F4', paddingTop: 10 }}>
+      <div style={{ minHeight: '100%', background: 'var(--mutu-canvas, #F9F7F4)', paddingTop: 10 }}>
         <GuidedPractice
           session={session}
           pairing={pairing}
@@ -206,7 +206,7 @@ export default function PairingDetail({
   }
 
   return (
-    <div className="flex-1 phone-scroll" style={{ background: '#F9F7F4' }}>
+    <div className="flex-1 phone-scroll" style={{ background: 'var(--mutu-canvas, #F9F7F4)' }}>
       <div style={{ padding: '10px 16px 28px', maxWidth: 560, margin: '0 auto' }}>
 
         {/* Header */}
@@ -223,7 +223,7 @@ export default function PairingDetail({
             <p style={{ margin: '1px 0 0', fontSize: 11.5, color: C.goldDark, fontFamily: FONT }}>Mock interview partner · identities revealed</p>
           </div>
           {pairing?.match_id && (
-            <button type="button" onClick={() => onOpenChat(pairing.match_id)}
+            <button data-mutu-glass="" type="button" onClick={() => onOpenChat(pairing.match_id)}
               style={{
                 border: `1px solid ${C.goldLight}`, background: C.goldBg, color: C.goldDark,
                 borderRadius: 11, padding: '8px 13px', fontSize: 12, fontWeight: 700,
@@ -285,7 +285,7 @@ export default function PairingDetail({
               <div style={{ marginBottom: 10 }}>
                 <p style={{ margin: '0 0 4px', fontSize: 11.5, color: C.ink2, fontFamily: FONT }}>You're both free:</p>
                 {shared.slice(0, 4).map((w, i) => (
-                  <button key={i} type="button" onClick={() => fillFromWindow(w)}
+                  <button data-mutu-glass="" key={i} type="button" onClick={() => fillFromWindow(w)}
                     style={{
                       display: 'block', width: '100%', textAlign: 'left', marginBottom: 4,
                       border: `1px solid ${C.goldLight}`, background: C.goldBg, color: C.goldDark,
@@ -337,7 +337,7 @@ export default function PairingDetail({
                 />
               </div>
             )}
-            <button type="button" disabled={busy} onClick={propose}
+            <button data-mutu-glass="" type="button" disabled={busy} onClick={propose}
               className="active:scale-[0.98] transition-all"
               style={{
                 width: '100%', border: 'none', borderRadius: 12, padding: '11px 0',
@@ -365,7 +365,7 @@ export default function PairingDetail({
             </p>
             {state === 'proposal_received' ? (
               <div style={{ display: 'flex', gap: 8 }}>
-                <button type="button" disabled={busy} onClick={onDeclineTime}
+                <button data-mutu-glass="" type="button" disabled={busy} onClick={onDeclineTime}
                   style={{
                     flex: 1, border: `1px solid ${C.line}`, background: C.white, color: C.ink2,
                     borderRadius: 11, padding: '10px 0', fontSize: 12.5, fontWeight: 600,
@@ -373,7 +373,7 @@ export default function PairingDetail({
                   }}>
                   Suggest another time
                 </button>
-                <button type="button" disabled={busy || describeMeeting(session).invalid} onClick={onConfirmTime}
+                <button data-mutu-glass="" type="button" disabled={busy || describeMeeting(session).invalid} onClick={onConfirmTime}
                   className="active:scale-[0.98] transition-all"
                   style={{
                     flex: 1.4, border: 'none', borderRadius: 11, padding: '10px 0',
@@ -384,7 +384,7 @@ export default function PairingDetail({
                 </button>
               </div>
             ) : (
-              <button type="button" disabled={busy} onClick={onWithdrawTime}
+              <button data-mutu-glass="" type="button" disabled={busy} onClick={onWithdrawTime}
                 style={{
                   border: `1px solid ${C.line}`, background: C.white, color: C.ink3,
                   borderRadius: 11, padding: '8px 14px', fontSize: 12, fontWeight: 600,
@@ -422,7 +422,7 @@ export default function PairingDetail({
                 }
                 const started = new Date(session.scheduled_start) <= new Date()
                 return (
-                  <button type="button" onClick={() => setGuideOpen(true)}
+                  <button data-mutu-glass="" type="button" onClick={() => setGuideOpen(true)}
                     className="active:scale-[0.98] transition-all"
                     style={{
                       width: '100%', marginBottom: 10, border: 'none', borderRadius: 12,
@@ -483,7 +483,7 @@ export default function PairingDetail({
             const g = guideAvailability({ session, pairing, userId: myUserId })
             if (!g.ok) return null
             return (
-              <button type="button" onClick={() => setGuideOpen(true)}
+              <button data-mutu-glass="" type="button" onClick={() => setGuideOpen(true)}
                 style={{
                   width: 'calc(100% - 32px)', margin: '0 16px 10px', border: `1px solid ${C.line}`,
                   background: C.white, color: C.ink2, borderRadius: 12, padding: '11px 0',
@@ -541,7 +541,7 @@ export default function PairingDetail({
               Mock Interview Passport updated
             </p>
             <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-              <button type="button" onClick={onViewProgress}
+              <button data-mutu-glass="" type="button" onClick={onViewProgress}
                 className="active:scale-[0.98] transition-all"
                 style={{
                   flex: 1.3, minHeight: 44, border: 'none', borderRadius: 11, padding: '11px 0',
@@ -549,7 +549,7 @@ export default function PairingDetail({
                 }}>
                 View my progress
               </button>
-              <button type="button" onClick={() => setScheduleAgain(true)}
+              <button data-mutu-glass="" type="button" onClick={() => setScheduleAgain(true)}
                 style={{
                   flex: 1, minHeight: 44, border: `1px solid ${C.line}`, background: C.white,
                   color: C.ink2, borderRadius: 11, padding: '11px 0', fontSize: 12.5,
@@ -597,7 +597,7 @@ export default function PairingDetail({
                 cancelled, and {name} will get a friendly notification.
                 You two can always match again later.
               </p>
-              <button type="button" disabled={busy}
+              <button data-mutu-glass="" type="button" disabled={busy}
                 onClick={() => { setConfirmEnd(false); onEndPairing() }}
                 style={{
                   width: '100%', border: 'none', borderRadius: 12, padding: '12px 0',

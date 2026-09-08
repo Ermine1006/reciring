@@ -17,7 +17,7 @@ const C = {
   text:      '#111111',
   textSub:   '#6B7280',
   textMuted: '#9CA3AF',
-  white:     '#FFFFFF',
+  white:     'var(--mutu-surface, #FFFFFF)',
   chatBg:    '#F5F2EE',
 }
 
@@ -119,7 +119,7 @@ function MeetingCard({ msg, onConfirm, onSuggestAnother, onReschedule }) {
         {/* Pending — receiver sees Confirm / Suggest another time */}
         {meeting.status === 'pending' && !isMe && (
           <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={onConfirm} style={{
+            <button data-mutu-glass="" onClick={onConfirm} style={{
               flex: 1, padding: '8px 0', borderRadius: 10,
               fontSize: 12, fontWeight: 600,
               fontFamily: 'Inter, system-ui, sans-serif',
@@ -128,7 +128,7 @@ function MeetingCard({ msg, onConfirm, onSuggestAnother, onReschedule }) {
             }}>
               Confirm
             </button>
-            <button onClick={onSuggestAnother} style={{
+            <button data-mutu-glass="" onClick={onSuggestAnother} style={{
               flex: 1, padding: '8px 0', borderRadius: 10,
               background: '#F3F4F6', color: C.textSub,
               fontSize: 12, fontWeight: 600,
@@ -152,7 +152,7 @@ function MeetingCard({ msg, onConfirm, onSuggestAnother, onReschedule }) {
                 borderTop: '1px dashed #E5E7EB',
                 display: 'flex', gap: 6,
               }}>
-                <button onClick={onConfirm} style={{
+                <button data-mutu-glass="" onClick={onConfirm} style={{
                   flex: 1, padding: '6px 0', borderRadius: 8,
                   background: '#DBEAFE', border: '1px solid #93C5FD',
                   color: '#1E40AF', fontSize: 10, fontWeight: 600,
@@ -160,7 +160,7 @@ function MeetingCard({ msg, onConfirm, onSuggestAnother, onReschedule }) {
                 }}>
                   Mock confirm as peer
                 </button>
-                <button onClick={onSuggestAnother} style={{
+                <button data-mutu-glass="" onClick={onSuggestAnother} style={{
                   flex: 1, padding: '6px 0', borderRadius: 8,
                   background: '#DBEAFE', border: '1px solid #93C5FD',
                   color: '#1E40AF', fontSize: 10, fontWeight: 600,
@@ -176,7 +176,7 @@ function MeetingCard({ msg, onConfirm, onSuggestAnother, onReschedule }) {
         {/* Confirmed — show calendar + reschedule actions */}
         {meeting.status === 'confirmed' && (
           <div style={{ display: 'flex', gap: 8 }}>
-            <button
+            <button data-mutu-glass=""
               onClick={() => {
                 const title = encodeURIComponent('Coffee Chat · Mutu')
                 const dtStart = new Date(meeting.datetime).toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '')
@@ -307,7 +307,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
         borderBottom: `1px solid rgba(201,163,59,0.18)`,
         flexShrink: 0,
       }}>
-        <button onClick={onBack} style={{
+        <button data-mutu-glass="" onClick={onBack} style={{
           width: 36, height: 36, borderRadius: 10, flexShrink: 0,
           background: C.goldBg, border: `1px solid ${C.goldLight}`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -378,7 +378,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
 
         {/* ── Safety menu (…) ──────────────────────────── */}
         <div style={{ position: 'relative', flexShrink: 0 }}>
-          <button
+          <button data-mutu-glass=""
             type="button"
             onClick={() => setShowSafetyMenu(m => !m)}
             style={{
@@ -671,7 +671,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
-                <button
+                <button data-mutu-glass=""
                   onClick={() => setShowRevealModal(true)}
                   style={{
                     flex: 1, padding: '8px 0', borderRadius: 10,
@@ -683,7 +683,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
                 >
                   Review
                 </button>
-                <button
+                <button data-mutu-glass=""
                   onClick={async () => { await onDeclineReveal?.() }}
                   style={{
                     flex: 1, padding: '8px 0', borderRadius: 10,
@@ -870,7 +870,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
                   ? 'Still interested? Lock in a time'
                   : 'Looks like a good match. Schedule a chat?'}
               </p>
-              <button
+              <button data-mutu-glass=""
                 onClick={() => setShowCoffee(true)}
                 style={{
                   padding: '5px 12px', borderRadius: 10,
@@ -924,7 +924,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
                 Did you end up meeting?
               </p>
               <div style={{ display: 'flex', gap: 8 }}>
-                <button
+                <button data-mutu-glass=""
                   onClick={() => setShowFollowUp(false)}
                   style={{
                     flex: 1, padding: '9px 0', borderRadius: 12,
@@ -936,7 +936,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
                 >
                   Yes, leave a review
                 </button>
-                <button
+                <button data-mutu-glass=""
                   onClick={() => setShowFollowUp(false)}
                   style={{
                     flex: 1, padding: '9px 0', borderRadius: 12,
@@ -968,7 +968,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
           borderTop: '1px solid rgba(0,0,0,0.05)',
           flexShrink: 0,
         }}>
-          <button
+          <button data-mutu-glass=""
             onClick={() => setShowCoffee(true)}
             style={{
               width: '100%', padding: '9px 0', borderRadius: 12,

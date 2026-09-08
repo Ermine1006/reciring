@@ -6,7 +6,7 @@ import { matchaCta } from '../lib/matchaCta'
 
 const C = {
   gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7', goldBg: '#F8F3E5',
-  ink: '#14110C', sub: '#6B6152', muted: '#9C9789', white: '#FFFFFF', border: '#E5E7EB', danger: '#DC2626',
+  ink: '#14110C', sub: '#6B6152', muted: '#9C9789', white: 'var(--mutu-surface, #FFFFFF)', border: '#E5E7EB', danger: '#DC2626',
 }
 
 // Best-effort: turn a suggested phrase ("Tomorrow", "This week") into a date.
@@ -94,7 +94,7 @@ export default function EventCaptureSheet({ open, mode = 'manual', initial = nul
 
   return createPortal(
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 95, background: 'rgba(17,17,17,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-      <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 460, background: '#F9F7F4', borderRadius: '24px 24px 0 0', padding: '10px 22px calc(20px + env(safe-area-inset-bottom))', maxHeight: '92vh', overflowY: 'auto' }}>
+      <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 460, background: 'var(--mutu-canvas, #F9F7F4)', borderRadius: '24px 24px 0 0', padding: '10px 22px calc(20px + env(safe-area-inset-bottom))', maxHeight: '92vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'center', padding: '4px 0 12px' }}>
           <div style={{ width: 36, height: 4, borderRadius: 99, background: '#D1D5DB' }} />
         </div>

@@ -225,25 +225,8 @@ const CARD_ART = {
  * decoded it, so a missing or broken file degrades to the SVG rather
  * than to a broken-image icon.
  */
-function CardArt({ card, palette }) {
-  const [state, setState] = useState(card.art ? 'loading' : 'none')
-  if (state === 'ok') {
-    return (
-      <img src={card.art} alt="" aria-hidden="true"
-        width={ART_BOX.width} height={ART_BOX.height}
-        style={{ width: ART_BOX.width, height: ART_BOX.height, objectFit: 'contain', display: 'block' }} />
-    )
-  }
-  return (
-    <>
-      {state === 'loading' && (
-        <img src={card.art} alt="" aria-hidden="true"
-          onLoad={() => setState('ok')} onError={() => setState('none')}
-          style={{ display: 'none' }} />
-      )}
-      {CARD_ART[card.id](palette)}
-    </>
-  )
+function CardArt({ card }) {
+  return <div className="mutu-connection-art" data-scene={card.id} aria-hidden="true" />
 }
 
 export function ConnectionCards({ onSelect, selectedId }) {
@@ -263,7 +246,7 @@ export function ConnectionCards({ onSelect, selectedId }) {
           const matcha = c.tone === 'matcha'
           const on = selectedId === c.id
           return (
-            <div key={c.id} style={{
+            <div key={c.id} className="mutu-connection-card" data-tone={matcha ? 'matcha' : 'gold'} style={{
               background: matcha ? T.matchaSoft : T.goldBg,
               border: `1px solid ${on ? (matcha ? T.matchaDeep : T.goldLight) : (matcha ? '#E2E7D2' : T.goldLight)}`,
               borderRadius: T.radius, padding: '15px 14px 14px',
@@ -285,15 +268,14 @@ export function ConnectionCards({ onSelect, selectedId }) {
               }}>
                 {c.sub}
               </p>
-              <button type="button" onClick={() => onSelect(c.id)}
+              <button data-mutu-glass="" type="button" onClick={() => onSelect(c.id)}
                 className="active:scale-[0.98] transition-all"
                 style={{
                   minHeight: MIN_TAP, width: '100%', border: 'none', borderRadius: 13,
                   padding: '11px 12px', fontSize: 12.5, fontWeight: 700, fontFamily: FONT,
                   cursor: 'pointer', display: 'inline-flex', alignItems: 'center',
                   justifyContent: 'center', gap: 7, ...focusable,
-                  // flat fills on purpose: the reference has no
-                  // gradients, so the textured matcha CTA is not used here
+                  // Material styling comes from the shared Pixel & Glass theme.
                   background: matcha ? T.matchaDeep : T.goldDark,
                   color: '#FFFFFF',
                 }}>
@@ -373,7 +355,7 @@ function YourListing({ myRequest, myWindows = [], onLeave }) {
             you like.
           </p>
           <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-            <button type="button" onClick={() => { setConfirmLeave(false); onLeave?.() }}
+            <button data-mutu-glass="" type="button" onClick={() => { setConfirmLeave(false); onLeave?.() }}
               style={{
                 flex: 1, minHeight: MIN_TAP, border: `1px solid ${T.border}`,
                 borderRadius: 11, background: T.surface, cursor: 'pointer',
@@ -381,7 +363,7 @@ function YourListing({ myRequest, myWindows = [], onLeave }) {
               }}>
               Yes, leave
             </button>
-            <button type="button" onClick={() => setConfirmLeave(false)}
+            <button data-mutu-glass="" type="button" onClick={() => setConfirmLeave(false)}
               style={{
                 flex: 1, minHeight: MIN_TAP, border: 'none', borderRadius: 11,
                 background: T.matchaDeep, color: '#FFFFFF', cursor: 'pointer',
@@ -535,7 +517,7 @@ export function UpcomingForYou({ event, onOpenEvent, onExplore }) {
             <p style={{ margin: '5px 0 12px', fontSize: 12.5, lineHeight: 1.5, color: T.ink2, fontFamily: FONT }}>
               {EMPTY_EVENT.body}
             </p>
-            <button type="button" onClick={onExplore}
+            <button data-mutu-glass="" type="button" onClick={onExplore}
               style={{
                 minHeight: MIN_TAP, border: 'none', borderRadius: 13, padding: '11px 18px',
                 fontSize: 12.5, fontWeight: 700, fontFamily: FONT, cursor: 'pointer',

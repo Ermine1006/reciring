@@ -42,7 +42,7 @@ export default class ErrorBoundary extends Component {
             {this.state.error?.message || 'Unexpected error.'}
           </p>
           <div className="flex gap-2 justify-center">
-            <button
+            <button data-mutu-glass=""
               onClick={this.reset}
               style={{
                 padding: '10px 18px',
@@ -57,7 +57,7 @@ export default class ErrorBoundary extends Component {
             >
               Try again
             </button>
-            <button
+            <button data-mutu-glass=""
               onClick={() => window.location.reload()}
               style={{
                 padding: '10px 18px',

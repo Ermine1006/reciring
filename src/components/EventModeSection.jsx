@@ -13,7 +13,7 @@ const C = {
   text:      '#111111',
   textSub:   '#4B5563',
   textMuted: '#9CA3AF',
-  white:     '#FFFFFF',
+  white:     'var(--mutu-surface, #FFFFFF)',
   border:    '#E5E7EB',
   ok:        '#059669',
   okBg:      '#ECFDF5',
@@ -197,7 +197,7 @@ export default function EventModeSection({
             )}
           </div>
         ) : (
-          <button
+          <button data-mutu-glass=""
             type="button"
             onClick={() => setModalTarget({ attendee: a })}
             className="active:scale-[0.98]"

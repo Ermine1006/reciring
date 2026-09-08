@@ -14,7 +14,7 @@ const C = {
   text:      '#111111',
   textSub:   '#6B7280',
   textMuted: '#9CA3AF',
-  white:     '#FFFFFF',
+  white:     'var(--mutu-surface, #FFFFFF)',
   border:    '#E5E7EB',
   danger:    '#DC2626',
   success:   '#2E6B4F',
@@ -123,7 +123,7 @@ export default function SettingsTab({ onOpenAdminEmailTest, onOpenEventReview })
               Receive product updates, community announcements, new features, and event invitations.
             </p>
           </div>
-          <button
+          <button data-mutu-glass=""
             type="button"
             onClick={handleEmailToggle}
             disabled={emailToggleSaving}
@@ -198,7 +198,7 @@ export default function SettingsTab({ onOpenAdminEmailTest, onOpenEventReview })
       {/* ── Admin (only for admin emails) ─────────────────────── */}
       {userIsAdmin && (
         <Section title="Admin">
-          <button
+          <button data-mutu-glass=""
             type="button"
             onClick={onOpenAdminEmailTest}
             className="w-full py-3 rounded-xl text-sm font-semibold active:scale-[0.98] flex items-center justify-center gap-2"
@@ -214,7 +214,7 @@ export default function SettingsTab({ onOpenAdminEmailTest, onOpenEventReview })
             </svg>
             Email center
           </button>
-          <button
+          <button data-mutu-glass=""
             type="button"
             onClick={onOpenEventReview}
             className="w-full py-3 mt-2 rounded-xl text-sm font-semibold active:scale-[0.98] flex items-center justify-center gap-2"
@@ -241,7 +241,7 @@ export default function SettingsTab({ onOpenAdminEmailTest, onOpenEventReview })
 
       {/* ── Account ──────────────────────────────────────────── */}
       <Section title="Account">
-        <button
+        <button data-mutu-glass=""
           type="button"
           onClick={() => setShowSupport(true)}
           className="w-full py-3 rounded-xl text-sm font-semibold active:scale-[0.98] flex items-center justify-center gap-2 mb-3"
@@ -258,7 +258,7 @@ export default function SettingsTab({ onOpenAdminEmailTest, onOpenEventReview })
           Contact Support
         </button>
 
-        <button
+        <button data-mutu-glass=""
           type="button"
           onClick={handleSignOut}
           className="w-full py-3 rounded-xl text-sm font-semibold mb-3 active:scale-[0.98]"
@@ -277,7 +277,7 @@ export default function SettingsTab({ onOpenAdminEmailTest, onOpenEventReview })
         )}
 
         {!confirmDel ? (
-          <button
+          <button data-mutu-glass=""
             type="button"
             onClick={() => setConfirmDel(true)}
             className="w-full py-3 rounded-xl text-sm font-semibold active:scale-[0.98]"
@@ -294,7 +294,7 @@ export default function SettingsTab({ onOpenAdminEmailTest, onOpenEventReview })
               This will permanently delete your profile data and sign you out. This action cannot be undone.
             </p>
             <div className="flex gap-2">
-              <button
+              <button data-mutu-glass=""
                 type="button"
                 onClick={() => setConfirmDel(false)}
                 disabled={deleting}
@@ -303,7 +303,7 @@ export default function SettingsTab({ onOpenAdminEmailTest, onOpenEventReview })
               >
                 Cancel
               </button>
-              <button
+              <button data-mutu-glass=""
                 type="button"
                 onClick={handleDelete}
                 disabled={deleting}
@@ -390,7 +390,7 @@ export default function SettingsTab({ onOpenAdminEmailTest, onOpenEventReview })
                 If your mail app doesn't open, copy the address below.
               </p>
 
-              <button
+              <button data-mutu-glass=""
                 type="button"
                 onClick={() => {
                   navigator.clipboard.writeText('hello@muturing.com').then(() => {
@@ -424,7 +424,7 @@ export default function SettingsTab({ onOpenAdminEmailTest, onOpenEventReview })
                 )}
               </button>
 
-              <button
+              <button data-mutu-glass=""
                 type="button"
                 onClick={() => setShowSupport(false)}
                 className="w-full py-3 rounded-xl text-sm font-semibold active:scale-[0.98]"

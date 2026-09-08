@@ -15,8 +15,8 @@ import { MATCHA_DEEP, MATCHA_SOFT, MATCHA_INK } from '../lib/matchaCta'
 
 export const T = {
   // canvas — matches AppScreen's default background exactly
-  page:        '#F9F7F4',
-  surface:     '#FFFFFF',
+  page:        'var(--mutu-canvas, #F9F7F4)',
+  surface:     'var(--mutu-surface, #FFFFFF)',
   // pale matcha surface for the practice-side card + selected tab
   matchaSoft:  MATCHA_SOFT,   // #F0F2E8
   matchaDeep:  MATCHA_DEEP,   // #68764A — action green

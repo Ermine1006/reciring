@@ -10,7 +10,7 @@ const C = {
   text:      '#111111',
   textSub:   '#6B7280',
   textMuted: '#9CA3AF',
-  white:     '#FFFFFF',
+  white:     'var(--mutu-surface, #FFFFFF)',
   border:    '#F0ECE4',
 }
 
@@ -134,7 +134,7 @@ export default function IdentityRevealRequestModal({ open, onAccept, onDecline, 
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <button
+              <button data-mutu-glass=""
                 type="button"
                 onClick={handleAccept}
                 disabled={!!busy}
@@ -150,7 +150,7 @@ export default function IdentityRevealRequestModal({ open, onAccept, onDecline, 
               >
                 {busy === 'accept' ? 'Accepting…' : 'Accept — reveal identities'}
               </button>
-              <button
+              <button data-mutu-glass=""
                 type="button"
                 onClick={handleDecline}
                 disabled={!!busy}

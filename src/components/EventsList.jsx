@@ -52,7 +52,7 @@ const C = {
   text:      '#25231E',
   textSub:   '#6E675B',
   textMuted: '#9C9284',
-  white:     '#FFFFFF',
+  white:     'var(--mutu-surface, #FFFFFF)',
   border:    '#ECE6DB',
 }
 
@@ -253,7 +253,7 @@ export default function EventsList({ onCreateEvent, onOpenEvent, onPrepare, onOp
           ].map(t => {
             const active = topView === t.id
             return (
-              <button
+              <button data-mutu-glass=""
                 key={t.id}
                 type="button"
                 role="tab"
@@ -296,7 +296,7 @@ export default function EventsList({ onCreateEvent, onOpenEvent, onPrepare, onOp
             <h1 className="font-display" style={{ fontSize: 26, fontWeight: 600, color: C.text, margin: 0, letterSpacing: '-0.02em' }}>Events</h1>
             <p style={{ fontSize: 13, color: C.textSub, margin: '4px 0 0', fontFamily: 'Inter, system-ui, sans-serif' }}>Meet people through shared experiences.</p>
           </div>
-          <button type="button" onClick={onCreateEvent} aria-label="Create event"
+          <button data-mutu-glass="" type="button" onClick={onCreateEvent} aria-label="Create event"
             style={{ flexShrink: 0, width: 40, height: 40, borderRadius: '50%', border: 'none', cursor: 'pointer',
               display: 'grid', placeItems: 'center', ...matchaCta }}>
             <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
@@ -313,7 +313,7 @@ export default function EventsList({ onCreateEvent, onOpenEvent, onPrepare, onOp
           ].map(f => {
             const active = filter === f.id
             return (
-              <button
+              <button data-mutu-glass=""
                 key={f.id}
                 type="button"
                 onClick={() => setFilter(f.id)}
@@ -349,7 +349,7 @@ export default function EventsList({ onCreateEvent, onOpenEvent, onPrepare, onOp
         {/* Filters — by category + date/calendar */}
         <div style={{ marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <button type="button" onClick={() => setShowFilters(s => !s)}
+            <button data-mutu-glass="" type="button" onClick={() => setShowFilters(s => !s)}
               style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '6px 14px', borderRadius: 99,
                 background: (showFilters || filtersActive) ? C.goldBg : C.white,
                 border: `1px solid ${filtersActive ? C.gold : C.border}`,
@@ -422,7 +422,7 @@ export default function EventsList({ onCreateEvent, onOpenEvent, onPrepare, onOp
           filtersActive ? (
             <div style={{ textAlign: 'center', padding: '36px 16px', color: C.textSub, fontFamily: 'Inter, system-ui, sans-serif' }}>
               <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: C.text }}>No events match your filters</p>
-              <button type="button" onClick={clearFilters}
+              <button data-mutu-glass="" type="button" onClick={clearFilters}
                 style={{ marginTop: 10, padding: '8px 16px', borderRadius: 10, border: `1px solid ${C.goldLight}`, background: C.goldBg, color: C.goldDark, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
                 Clear filters
               </button>
@@ -560,7 +560,7 @@ function ConfirmModal({ open, title, body, confirmLabel, confirmIntent, busy, on
               >
                 {confirmLabel}
               </button>
-              <button
+              <button data-mutu-glass=""
                 type="button"
                 onClick={onCancel}
                 disabled={busy}
@@ -670,7 +670,7 @@ function CancelEventModal({ open, event, busy, onCancel, onConfirm }) {
               {PRESET_REASONS.map(r => {
                 const isSelected = selected === r
                 return (
-                  <button
+                  <button data-mutu-glass=""
                     key={r}
                     type="button"
                     onClick={() => setSelected(r)}
@@ -714,7 +714,7 @@ function CancelEventModal({ open, event, busy, onCancel, onConfirm }) {
             )}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <button
+              <button data-mutu-glass=""
                 type="button"
                 onClick={() => canConfirm && onConfirm(finalReason)}
                 disabled={!canConfirm}
@@ -731,7 +731,7 @@ function CancelEventModal({ open, event, busy, onCancel, onConfirm }) {
               >
                 {busy ? 'Cancelling…' : 'Cancel event'}
               </button>
-              <button
+              <button data-mutu-glass=""
                 type="button"
                 onClick={onCancel}
                 disabled={busy}
@@ -889,7 +889,7 @@ function EmptyState({ filter, onCreateEvent }) {
       </div>
 
       {/* Prominent CTA */}
-      <button
+      <button data-mutu-glass=""
         type="button"
         onClick={onCreateEvent}
         className="active:scale-[0.98]"

@@ -25,7 +25,7 @@ import { track } from '../../lib/analytics'
 
 const C = {
   gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7', goldBg: '#F8F3E5',
-  ink: '#18160F', ink2: '#6E6A61', ink3: '#9A958B', line: '#E9E5DD', white: '#FFFFFF',
+  ink: '#18160F', ink2: '#6E6A61', ink3: '#9A958B', line: '#E9E5DD', white: 'var(--mutu-surface, #FFFFFF)',
   matcha: '#6E7F4A', matchaSoft: '#EDF0E4',
 }
 const FONT = 'Inter, system-ui, sans-serif'
@@ -55,7 +55,7 @@ function StageTimer({ seconds, stageKey, reduced }) {
   const label = over ? `${mmss(-left)} over` : mmss(left)
 
   const btn = (onClick, text, primary) => (
-    <button type="button" onClick={onClick}
+    <button data-mutu-glass="" type="button" onClick={onClick}
       style={{
         ...TAP, border: `1px solid ${primary ? C.matcha : C.line}`,
         background: primary ? C.matchaSoft : C.white, color: primary ? C.matcha : C.ink2,
@@ -197,7 +197,7 @@ export default function GuidedPractice({
                 {[{ id: userId, label: 'I start as candidate' },
                   { id: session.participant_a_user_id === userId ? session.participant_b_user_id : session.participant_a_user_id,
                     label: `${partnerName} starts` }].map((opt) => (
-                  <button key={opt.label} type="button"
+                  <button data-mutu-glass="" key={opt.label} type="button"
                     onClick={() => { setLocalFirst(opt.id); persist({ localFirst: opt.id }) }}
                     style={{
                       ...TAP, flex: 1, border: `1px solid ${C.line}`, background: C.white, color: C.ink2,
@@ -238,7 +238,7 @@ export default function GuidedPractice({
               You left this guide at round {resumeOffer.round}, stage {resumeOffer.stageIndex + 1}.
             </p>
             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-              <button type="button"
+              <button data-mutu-glass="" type="button"
                 onClick={() => {
                   setRound(resumeOffer.round); setStageIndex(resumeOffer.stageIndex)
                   if (resumeOffer.localFirst) setLocalFirst(resumeOffer.localFirst)
@@ -248,7 +248,7 @@ export default function GuidedPractice({
                 style={{ ...TAP, flex: 1, border: `1px solid ${C.goldLight}`, background: C.white, color: C.goldDark, borderRadius: 10, padding: '9px 8px', fontSize: 12, fontWeight: 700, fontFamily: FONT, cursor: 'pointer' }}>
                 Resume where I left off
               </button>
-              <button type="button"
+              <button data-mutu-glass="" type="button"
                 onClick={() => { setResumeOffer(null); setRound(1); setStageIndex(0); persist({ round: 1, stageIndex: 0 }) }}
                 style={{ ...TAP, flex: 1, border: `1px solid ${C.line}`, background: C.white, color: C.ink2, borderRadius: 10, padding: '9px 8px', fontSize: 12, fontWeight: 650, fontFamily: FONT, cursor: 'pointer' }}>
                 Start guide again
@@ -257,7 +257,7 @@ export default function GuidedPractice({
           </div>
         )}
 
-        <button type="button" disabled={!roles.resolved}
+        <button data-mutu-glass="" type="button" disabled={!roles.resolved}
           onClick={() => {
             setPhase('running'); persist({ round, stageIndex })
             track('guided_practice_started', { resumed: false })
@@ -292,7 +292,7 @@ export default function GuidedPractice({
             {guide.completion}
           </p>
         )}
-        <button type="button"
+        <button data-mutu-glass="" type="button"
           onClick={() => { track('confirmation_flow_opened_from_guide'); onConfirmPractice?.() }}
           style={{
             ...TAP, width: '100%', marginTop: 14, border: 'none', borderRadius: 12,
@@ -301,7 +301,7 @@ export default function GuidedPractice({
           }}>
           Confirm mock interview
         </button>
-        <button type="button" onClick={onClose}
+        <button data-mutu-glass="" type="button" onClick={onClose}
           style={{
             ...TAP, width: '100%', marginTop: 8, border: `1px solid ${C.line}`, background: C.white,
             color: C.ink2, borderRadius: 12, padding: '11px 0', fontSize: 12.5, fontWeight: 650,
@@ -339,7 +339,7 @@ export default function GuidedPractice({
               : `${partnerName} practises as the candidate this time.`}
           </p>
         </div>
-        <button type="button" onClick={() => setPhase('running')}
+        <button data-mutu-glass="" type="button" onClick={() => setPhase('running')}
           style={{
             ...TAP, width: '100%', marginTop: 14, border: 'none', borderRadius: 12,
             padding: '13px 0', fontSize: 14, fontWeight: 700, fontFamily: FONT,
@@ -435,7 +435,7 @@ export default function GuidedPractice({
         </div>
       )}
 
-      <button type="button" onClick={() => advance(false)}
+      <button data-mutu-glass="" type="button" onClick={() => advance(false)}
         style={{
           ...TAP, width: '100%', marginTop: 14, border: 'none', borderRadius: 12,
           padding: '13px 0', fontSize: 14, fontWeight: 700, fontFamily: FONT,
@@ -447,7 +447,7 @@ export default function GuidedPractice({
               : 'Next stage')}
       </button>
       {stage.skip && (
-        <button type="button" onClick={() => advance(true)}
+        <button data-mutu-glass="" type="button" onClick={() => advance(true)}
           style={{
             ...TAP, width: '100%', marginTop: 8, border: `1px solid ${C.line}`, background: C.white,
             color: C.ink2, borderRadius: 12, padding: '11px 0', fontSize: 12.5, fontWeight: 650,
@@ -476,7 +476,7 @@ function Shell({ title, onClose, children }) {
           {title}
         </h2>
         <span style={{ flex: 1 }} />
-        <button type="button" onClick={onClose}
+        <button data-mutu-glass="" type="button" onClick={onClose}
           style={{
             ...TAP, border: `1px solid ${C.line}`, background: C.white, color: C.ink2,
             borderRadius: 99, padding: '6px 13px', fontSize: 11.5, fontWeight: 650,

@@ -7,7 +7,7 @@ import { matchaCta } from '../lib/matchaCta'
 // (program + industry only) until an interest is accepted.
 
 const C = {
-  ground:'#FFFFFF', ivory:'#FBF8F3', ink:'#1A1712', ink2:'#5F584D', ink3:'#9A958B',
+  ground:'var(--mutu-canvas, #F9F7F4)', ivory:'#FBF8F3', ink:'#1A1712', ink2:'#5F584D', ink3:'#9A958B',
   line:'#ECE7DE', line2:'#F3EFE8', gold:'#A6822A', goldInk:'#7A5E17',
   goldBtn:'#C9A33B', goldBtnInk:'#2E2405', goldLine:'#E8D9A7',
   slate:'#4B5A8A', sage:'#2F7A55', danger:'#B4453A',
@@ -63,10 +63,10 @@ export default function EventPostCard({
         {mine && (onEdit || onDelete) && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {onEdit && (
-              <button type="button" onClick={onEdit} style={{ padding: '7px 13px', borderRadius: 9, background: C.ground, border: `1px solid ${C.goldLine}`, color: C.gold, fontSize: 12.5, fontWeight: 650, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>Edit</button>
+              <button data-mutu-glass="" type="button" onClick={onEdit} style={{ padding: '7px 13px', borderRadius: 9, background: C.ground, border: `1px solid ${C.goldLine}`, color: C.gold, fontSize: 12.5, fontWeight: 650, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>Edit</button>
             )}
             {onDelete && (
-              <button type="button" onClick={onDelete} aria-label="Delete post" style={{ padding: '7px 9px', borderRadius: 9, background: C.ground, border: `1px solid ${C.line}`, color: C.ink3, display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+              <button data-mutu-glass="" type="button" onClick={onDelete} aria-label="Delete post" style={{ padding: '7px 9px', borderRadius: 9, background: C.ground, border: `1px solid ${C.line}`, color: C.ink3, display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2m2 0v14a1 1 0 01-1 1H6a1 1 0 01-1-1V6"/><path d="M10 11v6M14 11v6"/></svg>
               </button>
             )}
@@ -81,15 +81,15 @@ export default function EventPostCard({
       {/* One action */}
       <div style={{ marginTop: 12 }}>
         {mine ? (
-          <button type="button" onClick={onManage} style={{ ...primary, background: C.ivory, color: C.ink, border: `1px solid ${C.line}`, boxShadow: 'none' }}>
+          <button data-mutu-glass="" type="button" onClick={onManage} style={{ ...primary, background: C.ivory, color: C.ink, border: `1px solid ${C.line}`, boxShadow: 'none' }}>
             {pendingCount > 0 ? `Review interest · ${pendingCount}` : `Interest · ${interestCount}`}
           </button>
         ) : myInterest?.status === 'accepted' && myInterest.match_id ? (
           <button type="button" onClick={() => onOpenChat?.(myInterest.match_id)} style={primary}>Open chat</button>
         ) : myInterest?.status === 'pending' ? (
-          <button type="button" disabled style={{ ...primary, background: C.ivory, color: C.ink3, cursor: 'default', boxShadow: 'none' }}>✓ Interest sent</button>
+          <button data-mutu-glass="" type="button" disabled style={{ ...primary, background: C.ivory, color: C.ink3, cursor: 'default', boxShadow: 'none' }}>✓ Interest sent</button>
         ) : myInterest?.status === 'declined' ? (
-          <button type="button" disabled style={{ ...primary, background: C.ivory, color: C.ink3, cursor: 'default', boxShadow: 'none' }}>Not this time</button>
+          <button data-mutu-glass="" type="button" disabled style={{ ...primary, background: C.ivory, color: C.ink3, cursor: 'default', boxShadow: 'none' }}>Not this time</button>
         ) : (
           <button type="button" onClick={() => onInterested?.(rep)} style={primary}>I'm interested</button>
         )}

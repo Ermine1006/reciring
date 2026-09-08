@@ -12,7 +12,7 @@ const C = {
   text:      '#111111',
   textSub:   '#4B5563',
   textMuted: '#9CA3AF',
-  white:     '#FFFFFF',
+  white:     'var(--mutu-surface, #FFFFFF)',
   border:    '#E5E7EB',
 }
 
@@ -142,7 +142,7 @@ export default function LinkAccountPrompt() {
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <button
+          <button data-mutu-glass=""
             type="button"
             onClick={handleLink}
             disabled={linking}

@@ -14,7 +14,7 @@ const C = {
   text:      '#111111',
   textSub:   '#4B5563',
   textMuted: '#9CA3AF',
-  white:     '#FFFFFF',
+  white:     'var(--mutu-surface, #FFFFFF)',
   bg:        '#F9F7F4',
 }
 
@@ -197,7 +197,7 @@ export default function LeaderboardView() {
                 Share your Community Connector badge on LinkedIn
               </p>
             </div>
-            <button
+            <button data-mutu-glass=""
               onClick={() => setShowCert(true)}
               style={{
                 padding: '8px 16px', borderRadius: 99, flexShrink: 0,

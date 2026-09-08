@@ -8,7 +8,7 @@ import ReciRingLogo from './ReciRingLogo'
 
 const C = {
   gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7',
-  cream: '#F8F3E5', ink: '#1A1712', textSub: '#6B6152', white: '#FFFFFF',
+  cream: '#F8F3E5', ink: '#1A1712', textSub: '#6B6152', white: 'var(--mutu-surface, #FFFFFF)',
 }
 
 function posterDate(iso) {
@@ -308,7 +308,7 @@ export default function EventSharePoster({ event, open, onClose }) {
           </div>
         )}
 
-        <button
+        <button data-mutu-glass=""
           type="button"
           onClick={handleShareImage}
           disabled={busy}
@@ -324,7 +324,7 @@ export default function EventSharePoster({ event, open, onClose }) {
           {busy ? 'Creating poster…' : '📸  Share event poster'}
         </button>
 
-        <button
+        <button data-mutu-glass=""
           type="button"
           onClick={handleCopyLink}
           className="active:scale-[0.98]"

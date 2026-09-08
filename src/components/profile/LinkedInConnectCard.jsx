@@ -21,7 +21,7 @@ export default function LinkedInConnectCard({ onConnect, onManual, connecting = 
         </p>
       )}
 
-      <button type="button" onClick={onConnect} disabled={connecting}
+      <button data-mutu-glass="" type="button" onClick={onConnect} disabled={connecting}
         style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
           background: connecting ? '#7FA8D4' : '#0A66C2', color: '#fff', border: 'none', borderRadius: 12,
           padding: '14px', fontSize: 14.5, fontWeight: 700, cursor: connecting ? 'default' : 'pointer', fontFamily: C.sans }}>

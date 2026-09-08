@@ -90,7 +90,7 @@ export default function ContactHistorySheet({ open, person, userId, onOpenEventR
             {sub && <p style={{ margin: '2px 0 0', fontSize: 12.5, color: C.sub, fontFamily: 'Inter, system-ui, sans-serif' }}>{sub}</p>}
           </div>
           {canMessage && (
-            <button type="button" onClick={handleMessage} disabled={messaging}
+            <button data-mutu-glass="" type="button" onClick={handleMessage} disabled={messaging}
               style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '9px 14px', borderRadius: 12, border: 'none', background: `linear-gradient(180deg, ${C.gold}, ${C.goldDeep})`, color: '#fff', fontSize: 13, fontWeight: 700, cursor: messaging ? 'default' : 'pointer', fontFamily: 'Inter, system-ui, sans-serif', boxShadow: '0 4px 12px -5px rgba(151,117,64,0.6)' }}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
               {messaging ? '…' : 'Message'}

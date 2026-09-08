@@ -11,7 +11,7 @@ import { describeMeeting, canJoin, NOT_RECORDED } from '../../data/meetingMethod
 
 const C = {
   gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7', goldBg: '#F8F3E5',
-  ink: '#18160F', ink2: '#6E6A61', ink3: '#9A958B', line: '#E9E5DD', white: '#FFFFFF',
+  ink: '#18160F', ink2: '#6E6A61', ink3: '#9A958B', line: '#E9E5DD', white: 'var(--mutu-surface, #FFFFFF)',
 }
 const FONT = 'Inter, system-ui, sans-serif'
 

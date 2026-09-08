@@ -17,7 +17,7 @@ const C = {
   text:      '#111111',
   textSub:   '#6B7280',
   textMuted: '#9CA3AF',
-  white:     '#FFFFFF',
+  white:     'var(--mutu-surface, #FFFFFF)',
   border:    '#F0ECE4',
   red:       '#EF4444',
 }
@@ -101,7 +101,7 @@ export default function NotificationBell({ userId, onOpenNotification, onIncomin
   return (
     <div style={{ position: 'relative', flexShrink: 0 }}>
       {/* Bell button */}
-      <button
+      <button data-mutu-glass=""
         type="button"
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}

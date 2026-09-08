@@ -7,7 +7,7 @@ import { fetchMyMarketplacePosts, createMarketplacePost, updateMarketplacePost, 
 import { rewriteText } from '../lib/aiRewrite'
 
 const C = {
-  ground:'#FFFFFF', ivory:'#FBF8F3', ink:'#1A1712', ink2:'#5F584D', ink3:'#9A958B',
+  ground:'var(--mutu-canvas, #F9F7F4)', ivory:'#FBF8F3', ink:'#1A1712', ink2:'#5F584D', ink3:'#9A958B',
   line:'#ECE7DE', gold:'#A6822A', goldInk:'#7A5E17', goldBtn:'#C9A33B', goldBtnInk:'#2E2405',
   goldSoft:'#F8F3E5', goldLine:'#E8D9A7', slate:'#4B5A8A', sage:'#2F7A55',
 }
@@ -125,7 +125,7 @@ export default function EventPreparePage({ eventId, userId, onBack, onSaved }) {
           {GOAL_OPTIONS.map(g => {
             const on = goals.includes(g.id)
             return (
-              <button key={g.id} type="button" onClick={() => toggleGoal(g.id)}
+              <button data-mutu-glass="" key={g.id} type="button" onClick={() => toggleGoal(g.id)}
                 style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 16px', borderRadius: 10, border: `1.5px solid ${on ? '#8A9668' : C.line}`, background: on ? '#EEF1E6' : C.ground, color: on ? '#5C6A3E' : C.ink2, fontSize: 13.5, fontWeight: on ? 700 : 600, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
                 {g.label}{on && <span style={{ fontSize: 13, lineHeight: 1 }}>✓</span>}
               </button>
@@ -193,7 +193,7 @@ function AiRow({ field, value, improving, undo, onImprove, onUndo }) {
   const showUndo = undo?.field === field
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8, flexWrap: 'wrap', minHeight: 22 }}>
-      <button type="button" onClick={() => onImprove(field)} disabled={!can}
+      <button data-mutu-glass="" type="button" onClick={() => onImprove(field)} disabled={!can}
         className="inline-flex items-center gap-2 transition-all duration-150 active:scale-[0.98]"
         style={{
           display: 'inline-flex', alignItems: 'center', gap: 6,

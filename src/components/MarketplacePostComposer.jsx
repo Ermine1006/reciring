@@ -5,7 +5,7 @@ import { matchaCta } from '../lib/matchaCta'
 
 const C = {
   gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7', goldBg: '#F8F3E5',
-  ink: '#1A1712', textSub: '#6B6152', white: '#FFFFFF', border: '#E5E7EB',
+  ink: '#1A1712', textSub: '#6B6152', white: 'var(--mutu-surface, #FFFFFF)', border: '#E5E7EB',
   green: '#2E6B4F', greenBg: '#EDF3EE', greenBorder: '#CBDBCF', danger: '#DC2626',
 }
 
@@ -88,7 +88,7 @@ export default function MarketplacePostComposer({ open, mode = 'create', type = 
       <div
         onClick={e => e.stopPropagation()}
         style={{
-          width: '100%', maxWidth: 460, background: '#F9F7F4',
+          width: '100%', maxWidth: 460, background: 'var(--mutu-canvas, #F9F7F4)',
           borderRadius: '24px 24px 0 0',
           padding: '10px 22px calc(20px + env(safe-area-inset-bottom))',
           maxHeight: '92vh', overflowY: 'auto',
@@ -168,7 +168,7 @@ export default function MarketplacePostComposer({ open, mode = 'create', type = 
           {URGENCY_CHIPS.map(u => {
             const on = urgency === u
             return (
-              <button key={u} type="button" onClick={() => setUrgency(on ? '' : u)}
+              <button data-mutu-glass="" key={u} type="button" onClick={() => setUrgency(on ? '' : u)}
                 style={{
                   padding: '8px 14px', borderRadius: 999,
                   border: `1.5px solid ${on ? accent : C.border}`,

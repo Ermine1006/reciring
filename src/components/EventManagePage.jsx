@@ -10,7 +10,7 @@ import { fetchMarketplaceInterestStats, fetchMarketplaceFeed } from '../lib/mark
 // private notes, private messages, or other people's follow-ups.
 
 const C = {
-  ground:'#FFFFFF', ivory:'#FBF8F3', ink:'#1A1712', ink2:'#5F584D', ink3:'#9A958B',
+  ground:'var(--mutu-canvas, #F9F7F4)', ivory:'#FBF8F3', ink:'#1A1712', ink2:'#5F584D', ink3:'#9A958B',
   line:'#ECE7DE', line2:'#F3EFE8', gold:'#A6822A', goldInk:'#7A5E17',
   host:'#3B6EA5', hostBg:'#EDF3FA', hostLine:'#CFE0F2', danger:'#B4453A', dangerBg:'#FBEEEC', dangerLine:'#F0D6D2',
 }
@@ -112,7 +112,7 @@ const Divider = () => <div style={{ width: 1, alignSelf: 'stretch', background: 
 
 function ActionRow({ icon, label, onClick, danger, last }) {
   return (
-    <button type="button" onClick={onClick}
+    <button data-mutu-glass="" type="button" onClick={onClick}
       style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 11, padding: '13px 14px', background: C.ground, border: 'none', borderBottom: last ? 'none' : `1px solid ${C.line2}`, cursor: 'pointer', textAlign: 'left', fontFamily: 'Inter, system-ui, sans-serif' }}>
       <span style={{ width: 29, height: 29, borderRadius: 8, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: danger ? C.dangerBg : C.ivory, border: `1px solid ${danger ? C.dangerLine : C.line}`, color: danger ? C.danger : C.ink2 }}>{icon}</span>
       <span style={{ flex: 1, fontSize: 13.5, fontWeight: 600, color: danger ? C.danger : C.ink }}>{label}</span>

@@ -55,7 +55,7 @@ export default function LinkedInImportReview({ claims = {}, rows = [], onUse, on
         </div>
       </div>
 
-      <button type="button"
+      <button data-mutu-glass="" type="button"
         onClick={() => onUse?.(choices, { values, linkedinUrl: url.trim() })}
         style={{ width: '100%', marginTop: 16, background: C.green, color: '#fff', border: 'none', borderRadius: 13, padding: '15px', fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: C.sans }}>
         Use this information
@@ -70,7 +70,7 @@ export default function LinkedInImportReview({ claims = {}, rows = [], onUse, on
 
 function ToggleTag({ on, onClick, label }) {
   return (
-    <button type="button" onClick={onClick} aria-pressed={on}
+    <button data-mutu-glass="" type="button" onClick={onClick} aria-pressed={on}
       style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: on ? C.chipGoldBg : '#fff',
         border: `1.5px solid ${on ? C.goldMid : C.line}`, color: on ? C.chipGoldInk : C.muted,
         borderRadius: 999, padding: '6px 12px', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: C.sans }}>

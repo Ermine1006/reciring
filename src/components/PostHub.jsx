@@ -65,7 +65,7 @@ export default function PostHub({
           {TABS.map(t => {
             const active = subTab === t.id
             return (
-              <button
+              <button data-mutu-glass=""
                 key={t.id}
                 type="button"
                 role="tab"

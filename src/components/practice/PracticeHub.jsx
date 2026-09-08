@@ -54,7 +54,7 @@ const StoriesHub = lazy(() => import('../stories/StoriesHub'))
 
 const C = {
   gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7', goldBg: '#F8F3E5',
-  ink: '#18160F', ink2: '#6E6A61', ink3: '#9A958B', line: '#E9E5DD', white: '#FFFFFF',
+  ink: '#18160F', ink2: '#6E6A61', ink3: '#9A958B', line: '#E9E5DD', white: 'var(--mutu-surface, #FFFFFF)',
 }
 const FONT = 'Inter, system-ui, sans-serif'
 
@@ -762,7 +762,7 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
   }
 
   const EventRow = ({ e }) => (
-    <button key={e.id} type="button" onClick={() => onOpenEvent?.(e.id)}
+    <button data-mutu-glass="" key={e.id} type="button" onClick={() => onOpenEvent?.(e.id)}
       className="active:scale-[0.995]"
       style={{
         display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left',
@@ -851,7 +851,7 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
               onClick={(e) => e.stopPropagation()}
               style={{
                 width: '100%', maxHeight: '86dvh', overflowY: 'auto',
-                background: '#F9F7F4', borderRadius: '22px 22px 0 0',
+                background: 'var(--mutu-canvas, #F9F7F4)', borderRadius: '22px 22px 0 0',
                 padding: '14px 0 calc(20px + env(safe-area-inset-bottom))',
               }}>
               <div style={{ width: 40, height: 4, borderRadius: 99, background: C.line, margin: '0 auto 14px' }} />
@@ -988,7 +988,7 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
                       Your listed times have passed. Partners can still match with you,
                       but fresh times let them book you instantly.
                     </p>
-                    <button type="button" onClick={() => setSetupOpen(3)}
+                    <button data-mutu-glass="" type="button" onClick={() => setSetupOpen(3)}
                       style={{
                         flexShrink: 0, minHeight: 44, border: 'none', borderRadius: 10, padding: '9px 14px',
                         fontSize: 12, fontWeight: 700, fontFamily: FONT,
@@ -1098,7 +1098,7 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
           {/* Token pill appears only after the first verified session:
               a brand-new user should never see a prominent "0". */}
           {!tokensFailed && reputation.verifiedCount > 0 && (
-            <button type="button" onClick={() => setImpactOpen(true)}
+            <button data-mutu-glass="" type="button" onClick={() => setImpactOpen(true)}
               aria-label="My Impact"
               className="active:scale-95 transition-all"
               style={{
@@ -1129,7 +1129,7 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
             ].map((t) => {
               const on = view === t.id
               return (
-                <button key={t.id} type="button" role="tab" aria-selected={on} onClick={() => setView(t.id)}
+                <button data-mutu-glass="" key={t.id} type="button" role="tab" aria-selected={on} onClick={() => setView(t.id)}
                   style={{
                     flex: 1, minHeight: 44, border: 'none', borderRadius: 99, padding: '10px 0',
                     fontSize: 13.5, fontWeight: 650, fontFamily: FONT, cursor: 'pointer',
@@ -1215,7 +1215,7 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
               <p style={{ fontSize: 12.5, color: C.ink3, margin: '6px auto 16px', lineHeight: 1.55, maxWidth: 300, fontFamily: FONT }}>
                 Start something in For You, and everything you join will show up right here.
               </p>
-              <button type="button" onClick={() => setView('explore')}
+              <button data-mutu-glass="" type="button" onClick={() => setView('explore')}
                 style={{
                   border: 'none', borderRadius: 13, padding: '12px 22px',
                   fontSize: 13.5, fontWeight: 700, fontFamily: FONT,

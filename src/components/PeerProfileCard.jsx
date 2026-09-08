@@ -9,7 +9,7 @@ const C = {
   text:      '#111111',
   textSub:   '#6B7280',
   textMuted: '#9CA3AF',
-  white:     '#FFFFFF',
+  white:     'var(--mutu-surface, #FFFFFF)',
   border:    '#F0ECE4',
   black:     '#111111',
 }
@@ -78,7 +78,7 @@ export default function PeerProfileCard({ open, onClose, match, peerProfile }) {
               position: 'relative',
               borderBottom: `2px solid ${C.gold}`,
             }}>
-              <button
+              <button data-mutu-glass=""
                 type="button"
                 onClick={onClose}
                 aria-label="Close profile"
@@ -233,7 +233,7 @@ function InfoRow({ label, value, copyable }) {
           {value}
         </p>
         {copyable && value && value !== '—' && (
-          <button
+          <button data-mutu-glass=""
             type="button"
             onClick={() => {
               try { navigator.clipboard?.writeText(value) } catch {}

@@ -7,7 +7,7 @@ import { matchaCta } from '../lib/matchaCta'
 // After joining, a compact "You're going." confirmation nudges Prepare.
 
 const C = {
-  ground:'#FFFFFF', ivory:'#FBF8F3', ink:'#1A1712', ink2:'#5F584D', ink3:'#9A958B',
+  ground:'var(--mutu-canvas, #F9F7F4)', ivory:'#FBF8F3', ink:'#1A1712', ink2:'#5F584D', ink3:'#9A958B',
   line:'#ECE7DE', gold:'#A6822A', goldBtn:'#C9A33B', goldBtnInk:'#2E2405',
   sage:'#2F7A55', sageBg:'#EEF5F0', sageLine:'#CFE4D6',
 }
@@ -60,7 +60,7 @@ export default function EventJoinIntentModal({ open, eventTitle, eventWhen, iden
                   </p>
                 </div>
                 {error && <p style={{ color: '#B4453A', fontSize: 12.5, margin: '12px 0 0', textAlign: 'center', fontFamily: 'Inter, system-ui, sans-serif' }}>{error}</p>}
-                <button type="button" onClick={join} disabled={busy}
+                <button data-mutu-glass="" type="button" onClick={join} disabled={busy}
                   style={{ width: '100%', marginTop: 16, padding: '13px', borderRadius: 12, border: 'none', fontSize: 14, fontWeight: 700, cursor: busy ? 'default' : 'pointer', opacity: busy ? 0.7 : 1, fontFamily: 'Inter, system-ui, sans-serif', ...matchaCta }}>
                   {busy ? 'Joining…' : 'Join event'}
                 </button>
@@ -78,7 +78,7 @@ export default function EventJoinIntentModal({ open, eventTitle, eventWhen, iden
                 <p style={{ fontSize: 12.5, color: C.ink2, margin: '6px 18px 0', lineHeight: 1.5, fontFamily: 'Inter, system-ui, sans-serif' }}>
                   Add what you're looking for and what you can offer so relevant attendees can find you.
                 </p>
-                <button type="button" onClick={() => { onClose?.(); onPrepare?.() }}
+                <button data-mutu-glass="" type="button" onClick={() => { onClose?.(); onPrepare?.() }}
                   style={{ width: '100%', marginTop: 16, padding: '13px', borderRadius: 12, border: 'none', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif', ...matchaCta }}>
                   Prepare for event
                 </button>

@@ -138,7 +138,7 @@ export default function AdminEmailComposer({ blocks, onChange }) {
             gap: 6,
           }}>
             {BLOCK_MENU.map(opt => (
-              <button
+              <button data-mutu-glass=""
                 key={opt.type}
                 type="button"
                 onClick={() => insert(opt.type)}
@@ -221,7 +221,7 @@ function BlockRow({ block, isFirst, isLast, onUpdate, onRemove, onMoveUp, onMove
 
 function IconButton({ children, onClick, disabled, danger, title }) {
   return (
-    <button
+    <button data-mutu-glass=""
       type="button"
       onClick={onClick}
       disabled={disabled}
@@ -435,7 +435,7 @@ function InlineToolbar({ textAreaRef, value, onChange }) {
   return (
     <div style={{ display: 'flex', gap: 4, marginBottom: 6 }}>
       {buttons.map(b => (
-        <button
+        <button data-mutu-glass=""
           key={b.label}
           type="button"
           onClick={b.onClick}
@@ -501,7 +501,7 @@ function ListEditor({ items, onChange, numbered }) {
               color: C.text,
             }}
           />
-          <button
+          <button data-mutu-glass=""
             type="button"
             onClick={() => removeItem(i)}
             title="Remove item"

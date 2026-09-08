@@ -13,13 +13,13 @@ const C = {
   goldDark:  '#A6822A',
   goldBg:    '#F8F3E5',
   textSub:   '#6B7280',
-  white:     '#FFFFFF',
+  white:     'var(--mutu-surface, #FFFFFF)',
   border:    '#E5E7EB',
 }
 
 export default function Chip({ label, active, onClick, disabled = false }) {
   return (
-    <button
+    <button data-mutu-glass=""
       type="button"
       onClick={() => !disabled && onClick(label)}
       disabled={disabled}

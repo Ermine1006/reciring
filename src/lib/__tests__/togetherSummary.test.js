@@ -194,7 +194,7 @@ describe('layout and accessibility contract (tests 13, 14)', () => {
 
   it('uses the shared palette rather than scattered values', () => {
     // the page background must match AppScreen's, or the page seams
-    expect(T.page).toBe('#F9F7F4')
+    expect(T.page).toBe('var(--mutu-canvas, #F9F7F4)')
     expect(T.radius).toBeGreaterThanOrEqual(20)
     expect(T.radius).toBeLessThanOrEqual(24)
     // no gradients in the token set

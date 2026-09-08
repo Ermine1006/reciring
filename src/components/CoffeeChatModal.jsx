@@ -10,7 +10,7 @@ const C = {
   text:      '#111111',
   textSub:   '#6B7280',
   textMuted: '#9CA3AF',
-  white:     '#FFFFFF',
+  white:     'var(--mutu-surface, #FFFFFF)',
 }
 
 const inputStyle = {
@@ -181,7 +181,7 @@ export default function CoffeeChatModal({ onConfirm, onClose, initialValues }) {
           borderTop: '1px solid #F3F4F6',
           background: C.white,
         }}>
-          <button
+          <button data-mutu-glass=""
             onClick={handleConfirm}
             style={{
               width: '100%', padding: '15px 0', borderRadius: 16,

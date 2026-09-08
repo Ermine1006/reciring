@@ -20,7 +20,7 @@ const C = {
   text:      '#111111',
   textSub:   '#6B7280',
   textMuted: '#9CA3AF',
-  white:     '#FFFFFF',
+  white:     'var(--mutu-surface, #FFFFFF)',
   border:    '#E5E7EB',
   danger:    '#DC2626',
   success:   '#2E6B4F',
@@ -218,7 +218,7 @@ export default function SettingsPage({ section }) {
     // Nesting another flex-1 phone-scroll here would break scrolling: the
     // flex parent would size this child by its flex factor, hiding the
     // overflow.
-    <div style={{ background: '#F9F7F4' }}>
+    <div style={{ background: 'var(--mutu-canvas, #F9F7F4)' }}>
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -340,7 +340,7 @@ export default function SettingsPage({ section }) {
               {VISIBILITY_OPTIONS.map(opt => {
                 const active = visibility === opt.id
                 return (
-                  <button
+                  <button data-mutu-glass=""
                     key={opt.id}
                     type="button"
                     onClick={() => setVisibility(opt.id)}
@@ -445,7 +445,7 @@ export default function SettingsPage({ section }) {
 
         {/* ── Save changes ────────────────────────────────────── */}
         <div className="mb-6">
-          <button
+          <button data-mutu-glass=""
             type="button"
             onClick={handleSave}
             disabled={saving}

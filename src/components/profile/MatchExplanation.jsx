@@ -74,12 +74,12 @@ export default function MatchExplanation({ viewer = {}, other = {}, headline, pr
             <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.12em', color: C.gold, textTransform: 'uppercase', margin: '0 0 6px' }}>“ Try this opener</p>
             <p style={{ fontSize: 15, color: C.ink, lineHeight: 1.55, margin: 0 }}>{opener}</p>
           </div>
-          <button type="button" onClick={copy} style={{ flexShrink: 0, background: '#fff', border: `1px solid ${C.line}`, borderRadius: 10, padding: '9px 16px', fontWeight: 600, fontSize: 13.5, cursor: 'pointer', color: C.ink, fontFamily: C.sans }}>{copied ? 'Copied ✓' : 'Copy'}</button>
+          <button data-mutu-glass="" type="button" onClick={copy} style={{ flexShrink: 0, background: '#fff', border: `1px solid ${C.line}`, borderRadius: 10, padding: '9px 16px', fontWeight: 600, fontSize: 13.5, cursor: 'pointer', color: C.ink, fontFamily: C.sans }}>{copied ? 'Copied ✓' : 'Copy'}</button>
         </div>
       )}
 
       {onSayHello && (
-        <button type="button" onClick={onSayHello} style={{ width: '100%', marginTop: 18, background: C.green, color: '#fff', border: 'none', borderRadius: 13, padding: '16px', fontWeight: 700, fontSize: 15, cursor: 'pointer', fontFamily: C.sans }}>
+        <button data-mutu-glass="" type="button" onClick={onSayHello} style={{ width: '100%', marginTop: 18, background: C.green, color: '#fff', border: 'none', borderRadius: 13, padding: '16px', fontWeight: 700, fontSize: 15, cursor: 'pointer', fontFamily: C.sans }}>
           Say hello to {other.name || 'them'} →
         </button>
       )}

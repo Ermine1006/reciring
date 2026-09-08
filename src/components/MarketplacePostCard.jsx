@@ -3,7 +3,7 @@ import { matchaCta } from '../lib/matchaCta'
 
 const C = {
   gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7', goldBg: '#F8F3E5',
-  ink: '#111111', textSub: '#6B7280', textMuted: '#9CA3AF', white: '#FFFFFF',
+  ink: '#111111', textSub: '#6B7280', textMuted: '#9CA3AF', white: 'var(--mutu-surface, #FFFFFF)',
   border: '#F0ECE4', green: '#2E6B4F', greenBg: '#EDF3EE', greenBorder: '#CBDBCF',
   danger: '#DC2626',
 }
@@ -126,11 +126,11 @@ export default function MarketplacePostCard({
             💬 Open chat
           </button>
         ) : myInterest?.status === 'pending' ? (
-          <button type="button" disabled style={{ ...primaryBtn, background: '#F5F3EF', color: C.textSub, cursor: 'default', boxShadow: 'none' }}>
+          <button data-mutu-glass="" type="button" disabled style={{ ...primaryBtn, background: '#F5F3EF', color: C.textSub, cursor: 'default', boxShadow: 'none' }}>
             ✓ Interest sent
           </button>
         ) : myInterest?.status === 'declined' ? (
-          <button type="button" disabled style={{ ...primaryBtn, background: '#F5F3EF', color: C.textMuted, cursor: 'default', boxShadow: 'none' }}>
+          <button data-mutu-glass="" type="button" disabled style={{ ...primaryBtn, background: '#F5F3EF', color: C.textMuted, cursor: 'default', boxShadow: 'none' }}>
             Not this time
           </button>
         ) : (

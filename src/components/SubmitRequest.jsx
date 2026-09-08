@@ -22,7 +22,7 @@ const C = {
   text:       '#111111',
   textSub:    '#6B7280',
   textMuted:  '#9CA3AF',
-  white:      '#FFFFFF',
+  white:      'var(--mutu-surface, #FFFFFF)',
   border:     '#E5E7EB',
 }
 
@@ -119,7 +119,7 @@ function ChipGroup({ options, selected, onToggle, multi = false }) {
           ? (selected || []).includes(value)
           : selected === value
         return (
-          <button
+          <button data-mutu-glass=""
             key={label}
             type="button"
             onClick={() => onToggle(value)}
@@ -306,7 +306,7 @@ export default function SubmitRequest({ onSubmitted, prefill = null }) {
     const busyThis = improvingField === field
     const can = canImprove(field)
     return (
-      <button
+      <button data-mutu-glass=""
         type="button"
         onClick={() => handleImprove(field)}
         disabled={!can}
@@ -554,7 +554,7 @@ export default function SubmitRequest({ onSubmitted, prefill = null }) {
           {/* Quick-fill chips */}
           <div className="flex flex-wrap gap-1.5 mb-2.5">
             {OFFER_PRESETS.map((p) => (
-              <button
+              <button data-mutu-glass=""
                 key={p.label}
                 type="button"
                 onClick={() => setOffers((prev) => {
@@ -723,7 +723,7 @@ export default function SubmitRequest({ onSubmitted, prefill = null }) {
           ].map(opt => {
             const active = isAnonymous === opt.id
             return (
-              <button
+              <button data-mutu-glass=""
                 key={String(opt.id)}
                 type="button"
                 role="tab"

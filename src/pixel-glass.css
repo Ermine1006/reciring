@@ -1,0 +1,89 @@
+/* Approved Pixel & Glass material system. AnonymousAvatar is intentionally
+   outside this styling contract: no SVG, image or avatar filters here. */
+:root {
+  --mutu-surface: rgba(255,253,247,.94);
+  --mutu-canvas: rgba(250,248,240,.64);
+  --mutu-glass-line: rgba(255,255,255,.92);
+  --mutu-glass-shadow: inset 0 1px 2px #fff, inset 0 -2px 4px #81744b18, 0 3px 9px #594f3215;
+  --mutu-ink: #263b31;
+}
+body { background: #f4f1e8; }
+.mutu-shell {
+  isolation: isolate;
+  background: #faf8f0 url('/pixel-glass/campus.png') center / 100% 100% no-repeat !important;
+}
+.mutu-shell > main { background: transparent !important; }
+.mutu-shell .app-header {
+  background: linear-gradient(110deg,rgba(255,253,247,.97),rgba(255,253,247,.70)) !important;
+  border-bottom: 1px solid rgba(255,255,255,.9);
+  box-shadow: 0 2px 7px #66543312;
+  margin: 12px 10px 4px;
+  padding-left: 16px; padding-right:16px;
+  border-radius: 24px;
+}
+.mutu-shell > nav {
+  background: rgba(255,253,247,.92) !important;
+  border: 1px solid var(--mutu-glass-line) !important;
+  border-radius: 22px 22px 0 0;
+  box-shadow: 0 -3px 12px #58472110, inset 0 1px 1px #fff;
+}
+.mutu-shell > nav button { box-shadow:none !important; min-height:48px; }
+.mutu-shell > nav button span { text-transform:none; letter-spacing:0; font-size:11px; font-weight:500; }
+.mutu-home { background: transparent !important; }
+.mutu-home > div > h1 { padding-right:30px; line-height:1.18; }
+.mutu-greeting-name { display:block; font:400 32px/1.1 Georgia,serif; color:#345328; }
+[data-mutu-glass] {
+  box-shadow:var(--mutu-glass-shadow) !important;
+  border:1px solid var(--mutu-glass-line) !important;
+}
+button[data-mutu-glass] { min-height:44px; transition:box-shadow 160ms ease, opacity 160ms ease; }
+button[data-mutu-glass]:active:not(:disabled) { box-shadow:inset 0 2px 5px #52613930 !important; }
+button:disabled { cursor:not-allowed; }
+:focus-visible { outline:2px solid #49603b !important; outline-offset:3px !important; }
+input:not([type=checkbox]):not([type=radio]):not([type=range]),textarea,select {
+  border-color:#dcdccf !important;
+  box-shadow:inset 0 1px 3px #6a643a09;
+}
+.mutu-swipe-card {
+  background:linear-gradient(135deg,rgba(255,255,255,.97),rgba(255,250,238,.96)) !important;
+  border:1px solid #fff !important;
+  box-shadow:inset 0 2px 2px #fff,inset 0 -2px 5px #be9d5b26,0 0 0 2px #d8bd784a,0 12px 28px #75613c22 !important;
+}
+.mutu-connection-card {
+  padding:7px 7px 10px !important; border-radius:22px !important;
+  background:linear-gradient(145deg,#fffffff2,#e7eddbeb) !important;
+  border:1px solid #fff !important; box-shadow:var(--mutu-glass-shadow);
+}
+.mutu-connection-card[data-tone=gold] { background:linear-gradient(145deg,#fffffff2,#f4e9cde8) !important; }
+.mutu-connection-card > span { margin:0 0 11px !important; }
+.mutu-connection-card > h3,.mutu-connection-card > p { margin-left:4px !important; margin-right:4px !important; }
+.mutu-connection-art { height:110px; width:100%; border-radius:16px; background:url('/pixel-glass/together.png') left center / 200% 100%; }
+.mutu-connection-art[data-scene=groups] { background-position:right center; }
+.mutu-connection-card button { border-radius:16px !important; }
+.mutu-story-garden { --g-cream:#faf8f0; }
+.mutu-story-garden.g-root { background:var(--mutu-canvas) !important; }
+.mutu-story-garden .g-home-entry {
+  background:linear-gradient(90deg,#f3f6e9f5,#f4f5e6d9),url('/pixel-glass/campus.png') right bottom / cover !important;
+  border:1px solid #fff !important; border-radius:22px !important; box-shadow:var(--mutu-glass-shadow);
+}
+.mutu-story-garden .g-primary {
+  color:#fff; border:1px solid #ffffffb3 !important;
+  background:linear-gradient(170deg,#b0bd95 0%,#718b54 35%,#4d693d 78%,#789060 100%) !important;
+  border-radius:17px !important; box-shadow:inset 0 2px 3px #ffffffad,inset 0 -2px 3px #30482045,0 3px 8px #42562a24 !important;
+}
+.safe-screen { background: #faf8f0 url('/pixel-glass/campus.png') center / cover no-repeat !important; }
+.mutu-graph-glass { pointer-events:none; }
+@media (min-width:640px) { .mutu-shell .app-header { margin-top:42px; padding-top:16px; } }
+@media (prefers-reduced-transparency:reduce) {
+  :root { --mutu-surface:#fffdf7; --mutu-canvas:#faf8f0; }
+  .mutu-shell .app-header,.mutu-shell > nav { background:#fffdf7 !important; backdrop-filter:none !important; }
+}
+@media (prefers-reduced-motion:reduce) {
+  [data-mutu-glass],.mutu-graph-glass { transition:none !important; animation:none !important; }
+}
+@media (forced-colors:active) { .mutu-shell,.safe-screen { background:Canvas !important; } [data-mutu-glass] { border:1px solid ButtonText !important; } }
+
+.mutu-connection-card button { background:linear-gradient(170deg,#9baa82,#576f40 70%,#748956) !important; }
+.mutu-connection-card[data-tone=gold] button { background:linear-gradient(170deg,#c8ae70,#8c6b2f 70%,#ab8d4b) !important; }
+
+.mutu-shell .app-header,.mutu-shell > nav { -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px); }

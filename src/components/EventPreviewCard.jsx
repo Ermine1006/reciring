@@ -24,7 +24,7 @@ const C = {
   ink:       '#111111',
   sub:       '#4B5563',
   muted:     '#9CA3AF',
-  white:     '#FFFFFF',
+  white:     'var(--mutu-surface, #FFFFFF)',
   line:      '#E5E7EB',
   indigo:    '#4F46E5',
   indigoBg:  '#EEF2FF',
@@ -227,7 +227,7 @@ export default function EventPreviewCard({ promo, isTop, onDrag, onSwipeLeft, on
         </p>
 
         {/* Primary CTA */}
-        <button
+        <button data-mutu-glass=""
           type="button"
           onPointerUp={(e) => e.stopPropagation()}
           onClick={(e) => { e.stopPropagation(); onSwipeRight?.() }}

@@ -4,7 +4,7 @@ import { categoryEmoji } from '../data/eventCategories'
 
 const C = {
   gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7', goldBg: '#F8F3E5',
-  ink: '#1A1712', textSub: '#6B6152', white: '#FFFFFF', danger: '#DC2626', ok: '#15803D',
+  ink: '#1A1712', textSub: '#6B6152', white: 'var(--mutu-surface, #FFFFFF)', danger: '#DC2626', ok: '#15803D',
 }
 
 function when(iso) {
@@ -45,7 +45,7 @@ export default function AdminEventReview({ onClose }) {
   }
 
   return (
-    <div className="flex-1 phone-scroll" style={{ background: '#F9F7F4' }}>
+    <div className="flex-1 phone-scroll" style={{ background: 'var(--mutu-canvas, #F9F7F4)' }}>
       <div style={{ padding: '18px 20px 40px', maxWidth: 640, margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: C.ink, fontFamily: 'Fraunces, Georgia, serif', margin: 0 }}>
@@ -102,7 +102,7 @@ export default function AdminEventReview({ onClose }) {
                 </div>
 
                 <div style={{ display: 'flex', gap: 10 }}>
-                  <button
+                  <button data-mutu-glass=""
                     type="button" disabled={busyId === ev.id}
                     onClick={() => moderate(ev.id, 'approved')}
                     style={{
@@ -113,7 +113,7 @@ export default function AdminEventReview({ onClose }) {
                   >
                     Approve
                   </button>
-                  <button
+                  <button data-mutu-glass=""
                     type="button" disabled={busyId === ev.id}
                     onClick={() => { if (window.confirm(`Reject "${ev.title}"? The host's event stays hidden.`)) moderate(ev.id, 'rejected') }}
                     style={{

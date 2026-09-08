@@ -9,7 +9,7 @@ const C = {
   text:      '#111111',
   textSub:   '#6B7280',
   textMuted: '#9CA3AF',
-  white:     '#FFFFFF',
+  white:     'var(--mutu-surface, #FFFFFF)',
 }
 
 export default function MatchModal({ match, onClose, onConfirm, onSchedule }) {
@@ -78,7 +78,7 @@ export default function MatchModal({ match, onClose, onConfirm, onSchedule }) {
             {/* Peer card */}
             <div
               className="flex items-center gap-3 rounded-[14px] px-4 py-3 mb-5"
-              style={{ background: '#F9F7F4', border: '1px solid #F0ECE4' }}
+              style={{ background: 'var(--mutu-canvas, #F9F7F4)', border: '1px solid #F0ECE4' }}
             >
               <div
                 className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-semibold"
@@ -95,7 +95,7 @@ export default function MatchModal({ match, onClose, onConfirm, onSchedule }) {
             {/* Pre-filled message preview */}
             <div
               className="rounded-[12px] px-4 py-3 mb-5"
-              style={{ background: '#F9F7F4', border: '1px solid #F0ECE4' }}
+              style={{ background: 'var(--mutu-canvas, #F9F7F4)', border: '1px solid #F0ECE4' }}
             >
               <p className="text-[11px] font-semibold uppercase tracking-[0.12em] mb-1.5" style={{ color: C.gold }}>
                 Quick intro message
@@ -106,7 +106,7 @@ export default function MatchModal({ match, onClose, onConfirm, onSchedule }) {
             </div>
 
             {/* Primary CTA — Schedule (recommended) */}
-            <button
+            <button data-mutu-glass=""
               type="button"
               onClick={() => onSchedule?.(match, 'coffee_chat')}
               className="w-full py-4 rounded-[16px] text-sm font-semibold tracking-[0.12em] uppercase transition-all duration-200 active:scale-[0.98]"
@@ -117,7 +117,7 @@ export default function MatchModal({ match, onClose, onConfirm, onSchedule }) {
             <div className="mb-3" />
 
             {/* Secondary CTA — Send intro */}
-            <button
+            <button data-mutu-glass=""
               type="button"
               onClick={() => onConfirm?.(match, 'quick_intro')}
               className="w-full py-3.5 rounded-[16px] text-sm font-semibold tracking-[0.08em] transition-all duration-200 active:scale-[0.98]"

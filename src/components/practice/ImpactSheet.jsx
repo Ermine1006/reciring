@@ -7,7 +7,7 @@ import ReputationCard from './ReputationCard'
 
 const C = {
   gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7', goldBg: '#F8F3E5',
-  ink: '#18160F', ink2: '#6E6A61', ink3: '#9A958B', line: '#E9E5DD', white: '#FFFFFF',
+  ink: '#18160F', ink2: '#6E6A61', ink3: '#9A958B', line: '#E9E5DD', white: 'var(--mutu-surface, #FFFFFF)',
 }
 const FONT = 'Inter, system-ui, sans-serif'
 
@@ -29,7 +29,7 @@ export default function ImpactSheet({ open, reputation, communityName = 'Rotman'
             onClick={(e) => e.stopPropagation()}
             style={{
               width: '100%', maxHeight: '82dvh', overflowY: 'auto',
-              background: '#F9F7F4', borderRadius: '22px 22px 0 0',
+              background: 'var(--mutu-canvas, #F9F7F4)', borderRadius: '22px 22px 0 0',
               padding: '14px 16px calc(20px + env(safe-area-inset-bottom))',
             }}
           >

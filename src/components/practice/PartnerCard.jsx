@@ -22,7 +22,7 @@ import { MATCHA_DEEP, MATCHA_SOFT } from '../../lib/matchaCta'
 
 const C = {
   gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7', goldBg: '#F8F3E5',
-  ink: '#18160F', ink2: '#6E6A61', ink3: '#9A958B', line: '#E9E5DD', white: '#FFFFFF',
+  ink: '#18160F', ink2: '#6E6A61', ink3: '#9A958B', line: '#E9E5DD', white: 'var(--mutu-surface, #FFFFFF)',
 }
 const FONT = 'Inter, system-ui, sans-serif'
 const short = (t) => PRACTICE_TYPE_SHORT[t] || t
@@ -105,7 +105,7 @@ export default function PartnerCard({ row, myRequest, onInvite, busy }) {
           {windows.map((w) => {
             const on = slot?.id === w.id
             return (
-              <button key={w.id} type="button" onClick={() => setSlotId(on ? null : w.id)}
+              <button data-mutu-glass="" key={w.id} type="button" onClick={() => setSlotId(on ? null : w.id)}
                 title={formatWindow(w.starts_at, w.ends_at, row.timezone)}
                 style={{
                   border: `1.5px solid ${on ? MATCHA_DEEP : C.line}`, borderRadius: 10,
@@ -155,7 +155,7 @@ export default function PartnerCard({ row, myRequest, onInvite, busy }) {
       )}
 
       {/* One dominant CTA */}
-      <button type="button" disabled={busy}
+      <button data-mutu-glass="" type="button" disabled={busy}
         onClick={() => onInvite(row, slot?.id || null)}
         className="active:scale-[0.98] transition-all"
         style={{

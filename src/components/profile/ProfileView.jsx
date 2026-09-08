@@ -44,7 +44,7 @@ export default function ProfileView({ profile = {}, cta, onBack, onMenu, embedde
           </div>
         )}
         {cta && (
-          <button type="button" onClick={cta.onClick}
+          <button data-mutu-glass="" type="button" onClick={cta.onClick}
             style={{ marginTop: 16, background: C.green, color: '#fff', fontWeight: 700, fontSize: 15, border: 'none', borderRadius: 14, padding: '14px 26px', cursor: 'pointer', fontFamily: C.sans }}>
             {cta.label}
           </button>

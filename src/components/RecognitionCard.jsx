@@ -9,7 +9,7 @@ import { matchaCta } from '../lib/matchaCta'
 const C = {
   gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7', goldBg: '#F8F3E5',
   ink: '#1A1712', text: '#111111', textSub: '#6B6152', textMuted: '#9CA3AF',
-  border: '#E5E7EB', white: '#FFFFFF',
+  border: '#E5E7EB', white: 'var(--mutu-surface, #FFFFFF)',
 }
 
 // The five things worth naming after an exchange. Never a rating — always

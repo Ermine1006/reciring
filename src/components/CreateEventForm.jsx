@@ -15,7 +15,7 @@ const C = {
   text:      '#111111',
   textSub:   '#6B7280',
   textMuted: '#9CA3AF',
-  white:     '#FFFFFF',
+  white:     'var(--mutu-surface, #FFFFFF)',
   border:    '#E5E7EB',
   danger:    '#DC2626',
 }
@@ -185,7 +185,7 @@ export default function CreateEventForm({ onCreated, onClose }) {
   }
 
   return (
-    <div className="flex-1 phone-scroll" style={{ background: '#F9F7F4' }}>
+    <div className="flex-1 phone-scroll" style={{ background: 'var(--mutu-canvas, #F9F7F4)' }}>
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -365,7 +365,7 @@ export default function CreateEventForm({ onCreated, onClose }) {
                 ].map(opt => {
                   const active = attendeeVisibility === opt.id
                   return (
-                    <button
+                    <button data-mutu-glass=""
                       key={opt.id}
                       type="button"
                       onClick={() => setAttendeeVisibility(opt.id)}
@@ -395,7 +395,7 @@ export default function CreateEventForm({ onCreated, onClose }) {
             <div style={{ marginBottom: 18 }}>
               <label style={labelStyle}>Promote in Discover</label>
               <p style={helperStyle}>Let attendees choose to show their Opportunity Board posts as anonymous previews in the main Discover feed, to attract more people to this event. Names are never shown — only after someone joins and connects.</p>
-              <button
+              <button data-mutu-glass=""
                 type="button"
                 onClick={() => setAllowDiscoverPromotion(v => !v)}
                 style={{

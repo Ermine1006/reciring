@@ -10,7 +10,7 @@ const C = {
   text:      '#111111',
   textSub:   '#6B7280',
   textMuted: '#9CA3AF',
-  white:     '#FFFFFF',
+  white:     'var(--mutu-surface, #FFFFFF)',
 }
 
 export default function EmailConfirmed({ onGoToLogin }) {
@@ -58,7 +58,7 @@ export default function EmailConfirmed({ onGoToLogin }) {
           Sign in with your email and password.
         </p>
 
-        <button
+        <button data-mutu-glass=""
           type="button"
           onClick={onGoToLogin}
           className="w-full py-3.5 rounded-xl text-sm font-semibold tracking-wide transition-all duration-200 active:scale-[0.98]"

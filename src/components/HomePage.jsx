@@ -22,7 +22,7 @@ import { broadLabelsOf } from '../data/careerFocus'
 // Warm-white ground, charcoal text, restrained gold, compact cards.
 
 const C = {
-  ground:   '#FFFFFF',
+  ground:   'var(--mutu-canvas, #F9F7F4)',
   ink:      '#1A1712',
   ink2:     '#5F584D',
   ink3:     '#9A958B',
@@ -140,12 +140,12 @@ export default function HomePage({
   ].filter(Boolean).slice(0, 3)
 
   return (
-    <div className="flex-1 phone-scroll" style={{ background: C.ground }}>
+    <div className="mutu-home flex-1 phone-scroll" style={{ background: C.ground }}>
       <div style={{ padding: '10px 18px 26px', maxWidth: 560, margin: '0 auto' }}>
 
         {/* Greeting */}
         <h1 style={{ fontSize: 22, fontWeight: 700, color: C.ink, margin: '4px 0 0', letterSpacing: '-0.01em', fontFamily: 'Inter, system-ui, sans-serif' }}>
-          {greeting()}, {firstName(me.name)}
+          {greeting()}, <span className="mutu-greeting-name">{firstName(me.name)}</span>
         </h1>
         <p style={{ fontSize: 13.5, color: C.ink2, margin: '3px 0 0', fontFamily: 'Inter, system-ui, sans-serif' }}>
           Here's your community at a glance.
@@ -179,7 +179,7 @@ export default function HomePage({
         )}
 
         {/* ── Ask Mutu — AI assistant (directly under the dashboard) ── */}
-        <button type="button" onClick={() => onAskMutu?.()}
+        <button data-mutu-glass="" type="button" onClick={() => onAskMutu?.()}
           style={{ width: '100%', marginTop: 12, display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left', cursor: 'pointer',
             background: 'linear-gradient(135deg, #FBF7EE 0%, #F6EFDD 100%)', border: '1px solid #ECDEBC', borderRadius: 16, padding: '13px 14px',
             boxShadow: '0 2px 10px rgba(150,120,30,0.06)' }}>
@@ -202,7 +202,7 @@ export default function HomePage({
 
         {/* ── Reminder: carry a past-event post into Discover ── */}
         {pastPosts.length > 0 && (
-          <button type="button" onClick={() => setPastOpen(true)}
+          <button data-mutu-glass="" type="button" onClick={() => setPastOpen(true)}
             style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 11, textAlign: 'left', marginTop: 16, background: C.goldSoft, border: `1px solid ${C.goldLine}`, borderRadius: 14, padding: '12px 14px', cursor: 'pointer' }}>
             <span style={{ fontSize: 18, flexShrink: 0 }}>↗️</span>
             <span style={{ flex: 1, minWidth: 0 }}>
@@ -297,7 +297,7 @@ function PastPostsSheet({ open, posts, onShare, onDismiss, onClose }) {
   if (!open) return null
   return createPortal(
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 96, background: 'rgba(17,17,17,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-      <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 460, background: '#F9F7F4', borderRadius: '24px 24px 0 0', maxHeight: '86vh', display: 'flex', flexDirection: 'column' }}>
+      <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 460, background: 'var(--mutu-canvas, #F9F7F4)', borderRadius: '24px 24px 0 0', maxHeight: '86vh', display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 4px', flexShrink: 0 }}>
           <div style={{ width: 36, height: 4, borderRadius: 99, background: '#D1D5DB' }} />
         </div>
@@ -314,11 +314,11 @@ function PastPostsSheet({ open, posts, onShare, onDismiss, onClose }) {
               {item.offer && <PastPostSide kind="offer" post={item.offer} spaced={Boolean(item.need)} />}
               <p style={{ margin: '10px 0 0', fontSize: 11.5, color: C.ink3, fontFamily: 'Inter, system-ui, sans-serif' }}>from {item.eventTitle}</p>
               <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                <button type="button" onClick={() => onShare(item)}
+                <button data-mutu-glass="" type="button" onClick={() => onShare(item)}
                   style={{ flex: 1, padding: '10px', borderRadius: 11, border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif', ...matchaCta }}>
                   Share in Discover
                 </button>
-                <button type="button" onClick={() => onDismiss(item)}
+                <button data-mutu-glass="" type="button" onClick={() => onDismiss(item)}
                   style={{ padding: '10px 14px', borderRadius: 11, background: C.ground, border: `1px solid ${C.line}`, color: C.ink2, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
                   Not now
                 </button>

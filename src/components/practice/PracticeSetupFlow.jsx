@@ -16,7 +16,7 @@ import { MATCHA_DEEP } from '../../lib/matchaCta'
 
 const C = {
   gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7', goldBg: '#F8F3E5',
-  ink: '#18160F', ink2: '#6E6A61', ink3: '#9A958B', line: '#E9E5DD', white: '#FFFFFF',
+  ink: '#18160F', ink2: '#6E6A61', ink3: '#9A958B', line: '#E9E5DD', white: 'var(--mutu-surface, #FFFFFF)',
 }
 const FONT = 'Inter, system-ui, sans-serif'
 
@@ -45,7 +45,7 @@ function TypeChips({ selected, onToggle }) {
       {PILOT_PRACTICE_TYPES.map((t) => {
         const on = selected.includes(t)
         return (
-          <button key={t} type="button" onClick={() => onToggle(t)}
+          <button data-mutu-glass="" key={t} type="button" onClick={() => onToggle(t)}
             className="active:scale-95 transition-all"
             style={{
               border: `1.5px solid ${on ? MATCHA_DEEP : C.line}`, borderRadius: 14,
@@ -139,7 +139,7 @@ export default function PracticeSetupFlow({ existing, existingWindows = [], onSa
   }
 
   return (
-    <div className="flex-1 phone-scroll" style={{ background: '#F9F7F4' }}>
+    <div className="flex-1 phone-scroll" style={{ background: 'var(--mutu-canvas, #F9F7F4)' }}>
       <div style={{ padding: '10px 20px 28px', maxWidth: 560, margin: '0 auto' }}>
 
         {/* Labeled step header */}
@@ -215,7 +215,7 @@ export default function PracticeSetupFlow({ existing, existingWindows = [], onSa
               </div>
             ))}
             <MoreDetails open={more3} onToggle={() => setMore3(!more3)}>
-              <button type="button"
+              <button data-mutu-glass="" type="button"
                 onClick={() => setWindows((ws) => [...ws, { date: '', start: '', end: '' }])}
                 style={{
                   alignSelf: 'flex-start', border: `1px dashed ${C.goldLight}`, background: C.goldBg,
@@ -240,7 +240,7 @@ export default function PracticeSetupFlow({ existing, existingWindows = [], onSa
 
         {err && <p role="alert" style={{ margin: '14px 0 0', fontSize: 12.5, color: '#B4232A', fontFamily: FONT }}>{err}</p>}
 
-        <button type="button" disabled={saving}
+        <button data-mutu-glass="" type="button" disabled={saving}
           onClick={step === 3 ? submit : next}
           className="active:scale-[0.98] transition-all"
           style={{

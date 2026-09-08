@@ -47,7 +47,7 @@ export default function AdminEmailPreview({ subject, eyebrow, blocks }) {
         {VIEWPORTS.map(v => {
           const active = viewport === v.id
           return (
-            <button
+            <button data-mutu-glass=""
               key={v.id}
               type="button"
               onClick={() => setViewport(v.id)}

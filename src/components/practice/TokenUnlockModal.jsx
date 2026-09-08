@@ -9,7 +9,7 @@ import { MATCHA_DEEP } from '../../lib/matchaCta'
 
 const C = {
   gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7', goldBg: '#F8F3E5',
-  ink: '#18160F', ink2: '#6E6A61', ink3: '#9A958B', white: '#FFFFFF',
+  ink: '#18160F', ink2: '#6E6A61', ink3: '#9A958B', white: 'var(--mutu-surface, #FFFFFF)',
 }
 const FONT = 'Inter, system-ui, sans-serif'
 
@@ -116,7 +116,7 @@ export default function TokenUnlockModal({ open, partnerName = 'your partner', v
               </motion.button>
             )}
 
-            <button
+            <button data-mutu-glass=""
               type="button" onClick={onClose}
               style={{
                 marginTop: 10, width: '100%', border: 'none', borderRadius: 12,

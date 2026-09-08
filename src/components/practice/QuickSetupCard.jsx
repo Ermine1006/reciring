@@ -11,7 +11,7 @@ import { MATCHA_DEEP, MATCHA_SOFT } from '../../lib/matchaCta'
 
 const C = {
   gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7', goldBg: '#F8F3E5',
-  ink: '#18160F', ink2: '#6E6A61', ink3: '#9A958B', line: '#E9E5DD', white: '#FFFFFF',
+  ink: '#18160F', ink2: '#6E6A61', ink3: '#9A958B', line: '#E9E5DD', white: 'var(--mutu-surface, #FFFFFF)',
 }
 const FONT = 'Inter, system-ui, sans-serif'
 
@@ -31,7 +31,7 @@ function TypeRow({ label, selected, onToggle }) {
         {PILOT_PRACTICE_TYPES.map((t) => {
           const on = selected.includes(t)
           return (
-            <button key={t} type="button" onClick={() => onToggle(t)}
+            <button data-mutu-glass="" key={t} type="button" onClick={() => onToggle(t)}
               className="active:scale-95 transition-all"
               style={{
                 flex: 1, border: `1.5px solid ${on ? MATCHA_DEEP : C.line}`, borderRadius: 13,
@@ -107,7 +107,7 @@ export default function QuickSetupCard({ saving, onPublish }) {
               </div>
             </div>
           ))}
-          <button type="button" onClick={() => setWindows((ws) => [...ws, { date: '', start: '', end: '' }])}
+          <button data-mutu-glass="" type="button" onClick={() => setWindows((ws) => [...ws, { date: '', start: '', end: '' }])}
             style={{ border: `1px dashed ${C.goldLight}`, background: C.goldBg, color: C.goldDark, borderRadius: 9, padding: '7px 12px', fontSize: 12, fontWeight: 600, fontFamily: FONT, cursor: 'pointer' }}>
             + Another time
           </button>
@@ -119,7 +119,7 @@ export default function QuickSetupCard({ saving, onPublish }) {
 
       {err && <p role="alert" style={{ margin: '10px 0 0', fontSize: 12.5, color: '#B4232A', fontFamily: FONT }}>{err}</p>}
 
-      <button type="button" disabled={!ready || saving} onClick={publish}
+      <button data-mutu-glass="" type="button" disabled={!ready || saving} onClick={publish}
         className="active:scale-[0.98] transition-all"
         style={{
           width: '100%', marginTop: 14, border: 'none', borderRadius: 14,

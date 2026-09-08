@@ -20,7 +20,7 @@ import {
 
 const C = {
   gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7', goldBg: '#F8F3E5',
-  ink: '#18160F', ink2: '#6E6A61', ink3: '#9A958B', line: '#E9E5DD', white: '#FFFFFF',
+  ink: '#18160F', ink2: '#6E6A61', ink3: '#9A958B', line: '#E9E5DD', white: 'var(--mutu-surface, #FFFFFF)',
   matcha: '#6E7F4A', matchaSoft: '#EDF0E4',
 }
 const FONT = 'Inter, system-ui, sans-serif'
@@ -72,7 +72,7 @@ export default function SessionSetupFields({ value, onChange, supported = true, 
             const m = SESSION_MODES[k]
             const on = mode === k
             return (
-              <button key={k} type="button" disabled={disabled}
+              <button data-mutu-glass="" key={k} type="button" disabled={disabled}
                 onClick={() => set({ mode: k })}
                 aria-pressed={on}
                 style={{
@@ -103,7 +103,7 @@ export default function SessionSetupFields({ value, onChange, supported = true, 
           {INTERVIEW_CATEGORY_KEYS.map((k) => {
             const on = category === k
             return (
-              <button key={k} type="button" disabled={disabled}
+              <button data-mutu-glass="" key={k} type="button" disabled={disabled}
                 onClick={() => set({ category: k })}
                 aria-pressed={on}
                 style={{
@@ -134,7 +134,7 @@ export default function SessionSetupFields({ value, onChange, supported = true, 
             {skills.map((s) => {
               const on = skillFocus === s.key
               return (
-                <button key={s.key} type="button" disabled={disabled}
+                <button data-mutu-glass="" key={s.key} type="button" disabled={disabled}
                   onClick={() => set({ skillFocus: on ? null : s.key })}
                   aria-pressed={on}
                   style={{
@@ -159,7 +159,7 @@ export default function SessionSetupFields({ value, onChange, supported = true, 
           {MEETING_METHOD_KEYS.map((k) => {
             const on = value.meetingMethod === k
             return (
-              <button key={k} type="button"
+              <button data-mutu-glass="" key={k} type="button"
                 onClick={() => set({ meetingMethod: k, meetingUrl: '', meetingLocation: '' })}
                 aria-pressed={on}
                 style={{

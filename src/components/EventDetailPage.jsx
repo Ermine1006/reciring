@@ -40,7 +40,7 @@ const C = {
   text:      '#111111',
   textSub:   '#6B7280',
   textMuted: '#9CA3AF',
-  white:     '#FFFFFF',
+  white:     'var(--mutu-surface, #FFFFFF)',
   border:    '#F0ECE4',
   success:   '#2E6B4F',
   danger:    '#DC2626',
@@ -384,7 +384,7 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
 
   if (loading) {
     return (
-      <div className="flex-1 phone-scroll" style={{ background: '#F9F7F4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="flex-1 phone-scroll" style={{ background: 'var(--mutu-canvas, #F9F7F4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <p style={{ fontSize: 13, color: C.textMuted, fontFamily: 'Inter, system-ui, sans-serif' }}>
           Loading event…
         </p>
@@ -394,7 +394,7 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
 
   if (!event) {
     return (
-      <div className="flex-1 phone-scroll" style={{ background: '#F9F7F4', padding: 24 }}>
+      <div className="flex-1 phone-scroll" style={{ background: 'var(--mutu-canvas, #F9F7F4)', padding: 24 }}>
         <button onClick={onBack} style={backButtonStyle}>← Back</button>
         <p style={{ textAlign: 'center', marginTop: 80, color: C.textMuted, fontFamily: 'Inter, system-ui, sans-serif' }}>
           Event not found or no longer available.
@@ -404,7 +404,7 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
   }
 
   return (
-    <div className="flex-1 phone-scroll" style={{ background: '#F9F7F4' }}>
+    <div className="flex-1 phone-scroll" style={{ background: 'var(--mutu-canvas, #F9F7F4)' }}>
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -444,7 +444,7 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
           )}
           {/* Host-only Manage — not a participant tab */}
           {isHost && !isCancelled && (viewMode === 'overview' || viewMode === 'marketplace') && (
-            <button type="button" onClick={() => setViewMode('manage')}
+            <button data-mutu-glass="" type="button" onClick={() => setViewMode('manage')}
               style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 13px', borderRadius: 99, background: '#EDF3FA', border: '1px solid #CFE0F2', color: '#3B6EA5', fontSize: 12.5, fontWeight: 650, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round"><path d="M4 6h10M18 6h2M4 12h2M10 12h10M4 18h7M15 18h5"/><circle cx="15" cy="6" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="13" cy="18" r="2"/></svg>
               Manage
@@ -470,7 +470,7 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
             {[{ id: 'overview', label: 'Event' }, { id: 'marketplace', label: 'Board' }].map(t => {
               const active = viewMode === t.id
               return (
-                <button key={t.id} type="button" onClick={() => setViewMode(t.id)}
+                <button data-mutu-glass="" key={t.id} type="button" onClick={() => setViewMode(t.id)}
                   style={{
                     flex: 1, padding: '10px 6px', borderRadius: 9,
                     background: active ? '#FFFFFF' : 'transparent',
@@ -563,7 +563,7 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
             {event.title}
           </h1>
           {/* Share (fb8) */}
-          <button
+          <button data-mutu-glass=""
             type="button"
             onClick={() => setShowShare(true)}
             aria-label="Share event"
@@ -823,7 +823,7 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
               <p style={sectionLabelStyle}>Discussion</p>
               {isHost && !isCancelled && (
-                <button
+                <button data-mutu-glass=""
                   type="button"
                   onClick={handleToggleChatPublic}
                   disabled={chatToggling}

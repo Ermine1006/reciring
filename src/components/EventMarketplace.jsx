@@ -15,7 +15,7 @@ import { matchaCta } from '../lib/matchaCta'
 
 const C = {
   gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7', goldBg: '#F8F3E5',
-  ink: '#111111', textSub: '#6B7280', textMuted: '#9CA3AF', white: '#FFFFFF',
+  ink: '#111111', textSub: '#6B7280', textMuted: '#9CA3AF', white: 'var(--mutu-surface, #FFFFFF)',
   border: '#F0ECE4', green: '#2E6B4F',
 }
 
@@ -210,7 +210,7 @@ export default function EventMarketplace({ eventId, userId, isHost = false, allo
           <p style={{ margin: 0, fontSize: 13.5, color: C.textSub, lineHeight: 1.5, fontFamily: 'Inter, system-ui, sans-serif' }}>
             Let attendees know what you're looking for or can offer.
           </p>
-          <button type="button" onClick={() => (onPrepare ? onPrepare() : setComposer({ mode: 'create', type: 'need' }))}
+          <button data-mutu-glass="" type="button" onClick={() => (onPrepare ? onPrepare() : setComposer({ mode: 'create', type: 'need' }))}
             style={{ width: '100%', marginTop: 12, padding: '12px', borderRadius: 11, border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif', ...matchaCta }}>
             Create event post
           </button>

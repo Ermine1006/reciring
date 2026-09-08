@@ -60,7 +60,7 @@ const C = {
   textSub:     '#6B7280',
   textMuted:   '#9CA3AF',
   border:      'rgba(201,163,59,0.22)',
-  white:       '#FFFFFF',
+  white:       'var(--mutu-surface, #FFFFFF)',
 }
 
 /* Initials for the fallback avatar — matches the Profile page's gold circle. */
@@ -1022,7 +1022,7 @@ function AppShell() {
       {/* ── Phone frame ───────────────────────────────────────── */}
       <div
         className="
-          relative flex flex-col
+          mutu-shell relative flex flex-col
           w-full          sm:w-[390px]
           h-[100dvh]      sm:h-[844px]
                           sm:rounded-[52px] sm:overflow-hidden
@@ -1130,7 +1130,7 @@ function AppShell() {
         )}
 
         {/* ── Main content ──────────────────────────────────── */}
-        <main className="flex-1 flex flex-col min-h-0" style={{ background: '#F9F7F4', position: 'relative' }}>
+        <main className="flex-1 flex flex-col min-h-0" style={{ background: 'var(--mutu-canvas, #F9F7F4)', position: 'relative' }}>
           {showAdminEmailTest && session && isAdmin(user?.email) ? (
             <AdminEmailTest onClose={() => setShowAdminEmailTest(false)} />
           ) : showEventReview && session && isAdmin(user?.email) ? (
@@ -1183,7 +1183,7 @@ function AppShell() {
               old Post slot in the bottom bar. The 'post' screen itself still
               renders below — it's just no longer a nav tab (like Profile). */}
           {tab === 'discover' && practiceOn && (
-            <button
+            <button data-mutu-glass=""
               type="button"
               onClick={() => setTab('post')}
               aria-label="Create a post"
@@ -1375,7 +1375,7 @@ function AppShell() {
           {navTabs.map((t) => {
             const active = tab === t.id
             return (
-              <button
+              <button data-mutu-glass=""
                 key={t.id}
                 type="button"
                 onClick={() => setTab(t.id)}

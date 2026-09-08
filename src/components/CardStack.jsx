@@ -19,12 +19,12 @@ const C = {
   text:      '#111111',
   textSub:   '#6B7280',
   textMuted: '#9CA3AF',
-  white:     '#FFFFFF',
+  white:     'var(--mutu-surface, #FFFFFF)',
 }
 
 function FilterChip({ label, active, onClick }) {
   return (
-    <button
+    <button data-mutu-glass=""
       type="button"
       onClick={onClick}
       style={{
@@ -264,10 +264,10 @@ export default function CardStack({ requests, eventPromos, unmatchedPostIds, int
 
   /* ── Filter bar ───────────────────────────────────────────────── */
   const filterBar = (
-    <div style={{ flexShrink: 0, background: '#F9F7F4' }}>
+    <div style={{ flexShrink: 0, background: 'var(--mutu-canvas, #F9F7F4)' }}>
       {/* Toggle + clear row */}
       <div style={{ display: 'flex', alignItems: 'center', padding: '10px 16px 0', gap: 8 }}>
-        <button
+        <button data-mutu-glass=""
           type="button"
           onClick={() => setShowFilters(f => !f)}
           style={{
@@ -404,7 +404,7 @@ export default function CardStack({ requests, eventPromos, unmatchedPostIds, int
             }
           </p>
           {hasFilters && (
-            <button
+            <button data-mutu-glass=""
               type="button"
               onClick={() => setFilters({ industries: [], helpTypes: [], times: [] })}
               style={{
@@ -420,7 +420,7 @@ export default function CardStack({ requests, eventPromos, unmatchedPostIds, int
           {/* Bring back posts the user passed (beta feedback: let me revisit).
               Includes skipped event-promo cards so they can be recovered too. */}
           {!hasFilters && (passedCount + dismissedPromoCount) > 0 && (onRestorePassed || dismissedPromoCount > 0) && (
-            <button
+            <button data-mutu-glass=""
               type="button"
               onClick={restoreAllPassed}
               style={{
@@ -489,7 +489,7 @@ export default function CardStack({ requests, eventPromos, unmatchedPostIds, int
         >
           {/* Rewind — undo the last pass (only when there's one to undo) */}
           {lastPassed && (
-            <button
+            <button data-mutu-glass=""
               type="button"
               onClick={handleUndoPass}
               className="flex items-center justify-center transition-all duration-200 active:scale-90"
@@ -509,7 +509,7 @@ export default function CardStack({ requests, eventPromos, unmatchedPostIds, int
           )}
 
           {/* Pass */}
-          <button
+          <button data-mutu-glass=""
             type="button"
             onClick={() => handleSwipeLeft(topRequest)}
             className="flex items-center justify-center transition-all duration-200 active:scale-90"
@@ -527,7 +527,7 @@ export default function CardStack({ requests, eventPromos, unmatchedPostIds, int
           </button>
 
           {/* Match */}
-          <button
+          <button data-mutu-glass=""
             type="button"
             onClick={() => handleSwipeRight(topRequest)}
             className="flex items-center justify-center transition-all duration-200 active:scale-90"

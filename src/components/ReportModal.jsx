@@ -7,7 +7,7 @@ const C = {
   text:      '#111111',
   textSub:   '#6B7280',
   textMuted: '#9CA3AF',
-  white:     '#FFFFFF',
+  white:     'var(--mutu-surface, #FFFFFF)',
   border:    '#E5E7EB',
   danger:    '#DC2626',
 }
@@ -102,7 +102,7 @@ export default function ReportModal({ type = 'post', targetId, onSubmit, onClose
             <p style={{ fontSize: 13, color: C.textSub, lineHeight: 1.5, marginBottom: 20 }}>
               Thank you. Our team will review this report and take appropriate action.
             </p>
-            <button
+            <button data-mutu-glass=""
               type="button"
               onClick={onClose}
               style={{
@@ -126,7 +126,7 @@ export default function ReportModal({ type = 'post', targetId, onSubmit, onClose
             {/* Reason list */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
               {REASONS.map(r => (
-                <button
+                <button data-mutu-glass=""
                   key={r}
                   type="button"
                   onClick={() => setReason(r)}
@@ -164,7 +164,7 @@ export default function ReportModal({ type = 'post', targetId, onSubmit, onClose
 
             {/* Actions */}
             <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-              <button
+              <button data-mutu-glass=""
                 type="button"
                 onClick={onClose}
                 style={{
@@ -175,7 +175,7 @@ export default function ReportModal({ type = 'post', targetId, onSubmit, onClose
               >
                 Cancel
               </button>
-              <button
+              <button data-mutu-glass=""
                 type="button"
                 onClick={handleSubmit}
                 disabled={!reason || sending}

@@ -12,7 +12,7 @@ const C = {
   text:      '#111111',
   textSub:   '#4B5563',
   textMuted: '#9CA3AF',
-  white:     '#FFFFFF',
+  white:     'var(--mutu-surface, #FFFFFF)',
   border:    '#E5E7EB',
   danger:    '#DC2626',
 }
@@ -156,7 +156,7 @@ export default function EventMemoryModal({
                 {TOPIC_CHIPS.map(t => {
                   const active = topics.includes(t)
                   return (
-                    <button
+                    <button data-mutu-glass=""
                       key={t}
                       type="button"
                       onClick={() => toggleTopic(t)}
@@ -226,7 +226,7 @@ export default function EventMemoryModal({
               background: C.white,
               display: 'flex', flexDirection: 'column', gap: 8,
             }}>
-              <button
+              <button data-mutu-glass=""
                 type="button"
                 onClick={handleSave}
                 disabled={saving}

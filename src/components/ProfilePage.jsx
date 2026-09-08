@@ -20,7 +20,7 @@ import { useLinkedInProfileLink } from './profile/useLinkedInProfileLink'
 // preserved unchanged — only how they're reached has changed.
 
 const C = {
-  ground:   '#FFFFFF',
+  ground:   'var(--mutu-canvas, #F9F7F4)',
   card:     '#FAFAF7',
   cardLine: '#EFEBE2',
   ink:      '#18160F',
@@ -155,7 +155,7 @@ export default function ProfilePage({
                 <p style={{ margin: 0, fontSize: 13.5, fontWeight: 700, color: C.goldInk, fontFamily: 'Inter, system-ui, sans-serif' }}>We reorganized your profile</p>
                 <p style={{ margin: '2px 0 0', fontSize: 12.5, color: C.ink2, fontFamily: 'Inter, system-ui, sans-serif' }}>Take a look and add the topics you can help with.</p>
               </div>
-              <button type="button" onClick={openV3Edit} style={{ flexShrink: 0, background: C.gold, color: '#fff', border: 'none', borderRadius: 10, padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>Review</button>
+              <button data-mutu-glass="" type="button" onClick={openV3Edit} style={{ flexShrink: 0, background: C.gold, color: '#fff', border: 'none', borderRadius: 10, padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>Review</button>
             </div>
           )}
           <ProfileView embedded profile={rowToViewProps(me)} />
@@ -216,8 +216,8 @@ export default function ProfilePage({
 
 function SubScreen({ title, onBack, children }) {
   return (
-    <div className="flex-1 flex flex-col min-h-0" style={{ background: '#F9F7F4' }}>
-      <div style={{ flexShrink: 0, background: '#F9F7F4', padding: '14px 16px 10px', display: 'flex', alignItems: 'center', gap: 8 }}>
+    <div className="flex-1 flex flex-col min-h-0" style={{ background: 'var(--mutu-canvas, #F9F7F4)' }}>
+      <div style={{ flexShrink: 0, background: 'var(--mutu-canvas, #F9F7F4)', padding: '14px 16px 10px', display: 'flex', alignItems: 'center', gap: 8 }}>
         <button type="button" onClick={onBack} aria-label="Back" style={{ background: 'none', border: 'none', padding: 4, cursor: 'pointer', color: C.ink, display: 'flex' }}>
           <ChevronLeft size={22} strokeWidth={2.1} />
         </button>
@@ -243,7 +243,7 @@ function SummaryRow({ color, label, value, empty }) {
 
 function Row({ icon, label, onClick, danger, last }) {
   return (
-    <button type="button" onClick={onClick}
+    <button data-mutu-glass="" type="button" onClick={onClick}
       style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '13px 14px', background: C.ground, border: 'none', borderBottom: last ? 'none' : `1px solid ${C.line2}`, cursor: 'pointer', textAlign: 'left', fontFamily: 'Inter, system-ui, sans-serif' }}>
       <span style={{ width: 30, height: 30, borderRadius: 9, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
                      background: danger ? C.dangerBg : C.goldSoft, border: `1px solid ${danger ? C.dangerLn : C.goldLine}`, color: danger ? C.danger : C.goldInk }}>

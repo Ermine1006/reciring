@@ -7,7 +7,7 @@ import PeerAvatar from './PeerAvatar'
 // (both people tapped "We met"). Behaviour/data unchanged.
 
 const C = {
-  ground:   '#FFFFFF',
+  ground:   'var(--mutu-canvas, #F9F7F4)',
   card:     '#FAFAF7',
   cardLine: '#EFEBE2',
   ink:      '#18160F',
@@ -89,7 +89,7 @@ export default function MatchesList({ matches = [], completedMatchIds = new Set(
           {[{ id: 'active', label: `Active${active.length ? ` · ${active.length}` : ''}` }, { id: 'past', label: 'Past' }].map(t => {
             const on = view === t.id
             return (
-              <button key={t.id} type="button" role="tab" aria-selected={on} onClick={() => setView(t.id)}
+              <button data-mutu-glass="" key={t.id} type="button" role="tab" aria-selected={on} onClick={() => setView(t.id)}
                 style={{ flex: 1, border: 'none', background: on ? C.ground : 'transparent', borderRadius: 8, padding: '7px 0', fontSize: 12.5, fontWeight: 600, color: on ? C.ink : C.ink2, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif', boxShadow: on ? '0 1px 3px rgba(0,0,0,0.06)' : 'none' }}>
                 {t.label}
               </button>

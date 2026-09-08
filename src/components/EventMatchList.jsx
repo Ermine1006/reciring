@@ -3,7 +3,7 @@ import { fetchEventMatches } from '../lib/eventMatch'
 
 const C = {
   gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7', goldBg: '#F8F3E5',
-  ink: '#1A1712', textSub: '#6B6152', textMuted: '#9CA3AF', white: '#FFFFFF', border: '#EFEAE0',
+  ink: '#1A1712', textSub: '#6B6152', textMuted: '#9CA3AF', white: 'var(--mutu-surface, #FFFFFF)', border: '#EFEAE0',
 }
 
 /**

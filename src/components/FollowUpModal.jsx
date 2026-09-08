@@ -12,7 +12,7 @@ const C = {
   text:      '#111111',
   textSub:   '#4B5563',
   textMuted: '#9CA3AF',
-  white:     '#FFFFFF',
+  white:     'var(--mutu-surface, #FFFFFF)',
   border:    '#E5E7EB',
   ok:        '#059669',
   okBg:      '#ECFDF5',
@@ -227,7 +227,7 @@ export default function FollowUpModal({
                 {copied ? '✓ Copied to clipboard' : 'Copy message'}
               </button>
               <div style={{ display: 'flex', gap: 8 }}>
-                <button
+                <button data-mutu-glass=""
                   type="button"
                   onClick={handleSaveDraft}
                   disabled={marking}

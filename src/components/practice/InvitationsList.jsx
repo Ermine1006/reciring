@@ -9,7 +9,7 @@ import { matchaCta } from '../../lib/matchaCta'
 
 const C = {
   gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7', goldBg: '#F8F3E5',
-  ink: '#18160F', ink2: '#6E6A61', ink3: '#9A958B', line: '#E9E5DD', white: '#FFFFFF',
+  ink: '#18160F', ink2: '#6E6A61', ink3: '#9A958B', line: '#E9E5DD', white: 'var(--mutu-surface, #FFFFFF)',
 }
 const FONT = 'Inter, system-ui, sans-serif'
 
@@ -66,7 +66,7 @@ function Row({ p, incoming, onAccept, onDecline, onWithdraw, busy }) {
       {incoming ? (
         <>
           {/* ONE action, with its consequence stated right underneath */}
-          <button type="button" disabled={busy} onClick={() => onAccept(p)}
+          <button data-mutu-glass="" type="button" disabled={busy} onClick={() => onAccept(p)}
             className="active:scale-[0.98] transition-all"
             style={{
               width: '100%', border: 'none', borderRadius: 11, padding: '12px 0',
@@ -91,7 +91,7 @@ function Row({ p, incoming, onAccept, onDecline, onWithdraw, busy }) {
           </button>
         </>
       ) : (
-        <button type="button" disabled={busy} onClick={() => onWithdraw(p)}
+        <button data-mutu-glass="" type="button" disabled={busy} onClick={() => onWithdraw(p)}
           style={{
             border: `1px solid ${C.line}`, background: C.white, color: C.ink3,
             borderRadius: 11, padding: '8px 14px', fontSize: 12, fontWeight: 600,

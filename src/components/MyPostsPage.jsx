@@ -11,7 +11,7 @@ const C = {
   text:      '#111111',
   textSub:   '#6B7280',
   textMuted: '#9CA3AF',
-  white:     '#FFFFFF',
+  white:     'var(--mutu-surface, #FFFFFF)',
   border:    '#E5E7EB',
   danger:    '#DC2626',
   warm:      '#8B6F47',
@@ -40,7 +40,7 @@ function ChipGroup({ options, selected, onToggle, multi = false }) {
         const label = typeof opt === 'string' ? opt : opt.label
         const active = multi ? (selected || []).includes(value) : selected === value
         return (
-          <button
+          <button data-mutu-glass=""
             key={label}
             type="button"
             onClick={() => onToggle(value)}
@@ -207,7 +207,7 @@ function EditPostModal({ post, onSave, onClose }) {
               ].map(opt => {
                 const active = isAnonymous === opt.id
                 return (
-                  <button
+                  <button data-mutu-glass=""
                     key={String(opt.id)}
                     type="button"
                     role="tab"
@@ -356,7 +356,7 @@ export default function MyPostsPage({
   }
 
   return (
-    <div className="flex-1 phone-scroll" style={{ background: '#F9F7F4', position: 'relative' }}>
+    <div className="flex-1 phone-scroll" style={{ background: 'var(--mutu-canvas, #F9F7F4)', position: 'relative' }}>
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}

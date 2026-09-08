@@ -49,7 +49,7 @@ export default function AppScreen({
   children,
   footer = null,
   scroll = true,
-  background = '#F9F7F4',
+  background = 'var(--mutu-canvas, #F9F7F4)',
   className = '',
   style = {},
 }) {

@@ -11,7 +11,7 @@ const C = {
   text:      '#111111',
   textSub:   '#4B5563',
   textMuted: '#9CA3AF',
-  white:     '#FFFFFF',
+  white:     'var(--mutu-surface, #FFFFFF)',
   border:    '#E5E7EB',
 }
 
@@ -41,7 +41,7 @@ export default function MyEventMemoryPage({ onOpenEvent }) {
   }, [])
 
   return (
-    <div style={{ background: '#F9F7F4' }}>
+    <div style={{ background: 'var(--mutu-canvas, #F9F7F4)' }}>
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -96,7 +96,7 @@ export default function MyEventMemoryPage({ onOpenEvent }) {
             const open      = encounters.filter(e => (e.next_action || '').trim() && !e.followed_up_at && !e.followup_dismissed_at).length
             const date = event.start_at ? new Date(event.start_at) : null
             return (
-              <button
+              <button data-mutu-glass=""
                 key={event.id}
                 type="button"
                 onClick={() => onOpenEvent?.(event.id)}

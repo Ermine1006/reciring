@@ -16,7 +16,7 @@ import { matchaCta, MATCHA_DEEP } from '../lib/matchaCta'
 // missing, it renders nothing rather than erroring.
 
 const C = {
-  ground: '#FFFFFF', ink: '#1A1712', ink2: '#5F584D', ink3: '#9A958B',
+  ground: 'var(--mutu-canvas, #F9F7F4)', ink: '#1A1712', ink2: '#5F584D', ink3: '#9A958B',
   line: '#ECE7DE', gold: '#A6822A', goldBtn: '#C9A33B', goldBtnInk: '#2E2405',
   goldSoft: '#F8F3E5', goldLine: '#E8D9A7',
 }
@@ -122,11 +122,11 @@ export default function SmartMatchSection() {
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
-                <button type="button" onClick={() => act(n, 'interested')} disabled={busyId === n.id}
+                <button data-mutu-glass="" type="button" onClick={() => act(n, 'interested')} disabled={busyId === n.id}
                   style={{ border: 'none', borderRadius: 99, padding: '8px 15px', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif', opacity: busyId === n.id ? 0.6 : 1, ...matchaCta }}>
                   Interested
                 </button>
-                <button type="button" onClick={() => act(n, 'skipped')} disabled={busyId === n.id}
+                <button data-mutu-glass="" type="button" onClick={() => act(n, 'skipped')} disabled={busyId === n.id}
                   style={{ border: `1px solid ${C.line}`, borderRadius: 99, padding: '6px 13px', background: C.ground, color: C.ink3, fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
                   Skip
                 </button>

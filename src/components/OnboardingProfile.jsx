@@ -17,7 +17,7 @@ const C = {
   text:      '#111111',
   textSub:   '#6B7280',
   textMuted: '#9CA3AF',
-  white:     '#FFFFFF',
+  white:     'var(--mutu-surface, #FFFFFF)',
   border:    '#E5E7EB',
 }
 
@@ -370,7 +370,7 @@ export default function OnboardingProfile() {
                     {VISIBILITY_OPTIONS.map(opt => {
                       const active = visibility === opt.id
                       return (
-                        <button
+                        <button data-mutu-glass=""
                           key={opt.id}
                           type="button"
                           onClick={() => setVisibility(opt.id)}
@@ -442,7 +442,7 @@ export default function OnboardingProfile() {
         {/* Navigation */}
         <div className="flex gap-2 mt-6">
           {step > 1 && (
-            <button
+            <button data-mutu-glass=""
               type="button"
               onClick={handleBack}
               disabled={saving}

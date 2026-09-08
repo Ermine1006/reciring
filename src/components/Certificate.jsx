@@ -126,7 +126,7 @@ export default function Certificate({ points, onClose }) {
         </div>
 
         {/* ── Actions ── */}
-        <button
+        <button data-mutu-glass=""
           onClick={handleDownload}
           disabled={downloading}
           style={{

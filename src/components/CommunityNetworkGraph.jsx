@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useId, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { isSupabaseConfigured } from '../lib/supabase'
 import { fetchRegistrationCount } from '../lib/registrationCount'
 import { fetchMyMatches } from '../lib/matches'
@@ -44,7 +44,7 @@ import {
 
 const C = {
   ink: '#1A1712', ink2: '#5F584D', ink3: '#9A958B',
-  line: '#ECE7DE', white: '#FFFFFF',
+  line: '#ECE7DE', white: 'var(--mutu-surface, #FFFFFF)',
   gold: '#A6822A', goldSoft: '#F8F3E5', goldLine: '#E8D9A7',
   matcha: '#6E7F4A', matchaSoft: '#EDF0E4',
   // members are neutral warm white; meaning comes from placement and
@@ -104,6 +104,7 @@ const BLOB_FILLS = ['rgba(201,163,59,0.10)', 'rgba(110,127,74,0.10)', 'rgba(139,
 const BLOB_INKS = ['rgba(122,94,23,0.50)', 'rgba(78,92,48,0.50)', 'rgba(96,82,140,0.50)', 'rgba(122,94,23,0.45)']
 
 export default function CommunityNetworkGraph({ userId, userName, communityName = 'Rotman' }) {
+  const glassId = `mutu-glass-${useId().replace(/:/g, '')}`
   const demoMode = !isSupabaseConfigured
   const [registrationCount, setRegistrationCount] = useState(undefined)
 
@@ -520,7 +521,7 @@ export default function CommunityNetworkGraph({ userId, userName, communityName 
           {[{ id: 'map', label: 'Community Map' }, { id: 'circle', label: 'My Circle' }].map((v) => {
             const on = view === v.id
             return (
-              <button key={v.id} type="button" role="tab" aria-selected={on} onClick={() => setView(v.id)}
+              <button data-mutu-glass="" key={v.id} type="button" role="tab" aria-selected={on} onClick={() => setView(v.id)}
                 style={{
                   flex: 1, border: 'none', borderRadius: 99, padding: '7px 0',
                   fontSize: 11.5, fontWeight: 700, fontFamily: FONT, cursor: 'pointer',
@@ -533,7 +534,7 @@ export default function CommunityNetworkGraph({ userId, userName, communityName 
           })}
         </div>
         {!isMap && (
-          <button type="button" onClick={() => setFilterOpen((o) => !o)}
+          <button data-mutu-glass="" type="button" onClick={() => setFilterOpen((o) => !o)}
             aria-expanded={filterOpen}
             style={{
               flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 5,
@@ -554,7 +555,7 @@ export default function CommunityNetworkGraph({ userId, userName, communityName 
           {FILTERS.map((f) => {
             const on = filter === f.id
             return (
-              <button key={f.id} type="button" onClick={() => { setFilter(f.id); if (f.id !== 'all') setFilterOpen(true) }}
+              <button data-mutu-glass="" key={f.id} type="button" onClick={() => { setFilter(f.id); if (f.id !== 'all') setFilterOpen(true) }}
                 style={{
                   border: `1px solid ${on ? C.matcha : C.line}`, borderRadius: 99,
                   background: on ? C.matchaSoft : C.white, color: on ? C.matcha : C.ink2,
@@ -582,7 +583,7 @@ export default function CommunityNetworkGraph({ userId, userName, communityName 
           {countsLine && (
             <p style={{ margin: '2px 0 0', fontSize: 11.5, color: C.ink2, fontFamily: FONT }}>
               {countsLine}
-              <button type="button" onClick={() => setLegendOpen((o) => !o)}
+              <button data-mutu-glass="" type="button" onClick={() => setLegendOpen((o) => !o)}
                 aria-label="About this view"
                 style={{
                   marginLeft: 6, width: 15, height: 15, borderRadius: '50%',
@@ -623,7 +624,7 @@ export default function CommunityNetworkGraph({ userId, userName, communityName 
           )}
         </div>
         {isMap && model && locateReady && (
-          <button type="button"
+          <button data-mutu-glass="" type="button"
             onClick={() => {
               setLocate((o) => !o)
               setInsightHidden(false)   // re-entering locate brings the summary back
@@ -661,7 +662,7 @@ export default function CommunityNetworkGraph({ userId, userName, communityName 
                 ? 'The Community Map is available to active community members.'
                 : "We couldn't load the Community Map right now."}
           </p>
-          <button type="button" onClick={loadMap} style={{
+          <button data-mutu-glass="" type="button" onClick={loadMap} style={{
             marginTop: 12, border: `1px solid ${C.goldLine}`, background: C.goldSoft,
             color: C.gold, borderRadius: 10, padding: '8px 18px', fontSize: 12.5,
             fontWeight: 700, fontFamily: FONT, cursor: 'pointer',
@@ -681,7 +682,7 @@ export default function CommunityNetworkGraph({ userId, userName, communityName 
           <p style={{ margin: 0, fontSize: 12.5, color: C.ink2, fontFamily: FONT }}>
             We couldn't load your circle right now.
           </p>
-          <button type="button" onClick={loadCircle} style={{
+          <button data-mutu-glass="" type="button" onClick={loadCircle} style={{
             marginTop: 12, border: `1px solid ${C.goldLine}`, background: C.goldSoft,
             color: C.gold, borderRadius: 10, padding: '8px 18px', fontSize: 12.5,
             fontWeight: 700, fontFamily: FONT, cursor: 'pointer',
@@ -760,6 +761,7 @@ export default function CommunityNetworkGraph({ userId, userName, communityName 
 
           <svg viewBox={`0 0 ${VW} ${isMap ? MAP_VH : VH}`} style={{ width: '100%', display: 'block', marginTop: 2, touchAction: 'manipulation' }}
             role="img" aria-label={`${communityName} ${isMap ? 'community map' : 'relationship circle'}`}>
+            <defs><radialGradient id={glassId} cx="30%" cy="18%" r="85%"><stop offset="0%" stopColor="#fff" stopOpacity=".75" /><stop offset="50%" stopColor="#fff" stopOpacity=".06" /><stop offset="100%" stopColor="#68764A" stopOpacity=".12" /></radialGradient></defs>
 
             <g style={{
               transform: `translate(${camera.tx}px, ${camera.ty}px) scale(${camera.s})`,
@@ -809,6 +811,7 @@ export default function CommunityNetworkGraph({ userId, userName, communityName 
               return (
                 <g key={`field-${f.label}`} style={{ pointerEvents: 'none', opacity: locateOn ? 0.45 : 1, transition: 'opacity 0.45s ease' }}>
                   <circle cx={f.x} cy={f.y} r={f.r} fill={BLOB_FILLS[i % BLOB_FILLS.length]} />
+                  <circle className="mutu-graph-glass" cx={f.x} cy={f.y} r={f.r} fill={`url(#${glassId})`} stroke="rgba(255,255,255,.95)" strokeWidth="1.5" />
                   <text x={lx} y={top} textAnchor="middle"
                     style={{
                       fontSize: 8.5, fontWeight: 700, letterSpacing: '0.14em',
@@ -1087,7 +1090,7 @@ export default function CommunityNetworkGraph({ userId, userName, communityName 
                   {insight.title}
                 </span>
                 <span style={{ flex: 1 }} />
-                <button type="button" onClick={() => setInsightHidden(true)}
+                <button data-mutu-glass="" type="button" onClick={() => setInsightHidden(true)}
                   aria-label="Hide this summary and keep my relationships shown"
                   style={{
                     flexShrink: 0, border: `1px solid ${C.line}`, background: C.white,

@@ -15,7 +15,7 @@ const C = {
   text:      '#111111',
   textSub:   '#6B7280',
   textMuted: '#9CA3AF',
-  white:     '#FFFFFF',
+  white:     'var(--mutu-surface, #FFFFFF)',
   border:    '#E5E7EB',
   danger:    '#DC2626',
 }
@@ -151,7 +151,7 @@ export default function EditEventForm({ eventId, onSaved, onClose }) {
 
   if (loading) {
     return (
-      <div className="flex-1 phone-scroll" style={{ background: '#F9F7F4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="flex-1 phone-scroll" style={{ background: 'var(--mutu-canvas, #F9F7F4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <p style={{ fontSize: 13, color: C.textMuted, fontFamily: 'Inter, system-ui, sans-serif' }}>
           Loading…
         </p>
@@ -161,7 +161,7 @@ export default function EditEventForm({ eventId, onSaved, onClose }) {
 
   if (!event) {
     return (
-      <div className="flex-1 phone-scroll" style={{ background: '#F9F7F4', padding: 24 }}>
+      <div className="flex-1 phone-scroll" style={{ background: 'var(--mutu-canvas, #F9F7F4)', padding: 24 }}>
         <button onClick={onClose} style={{ background: 'none', border: 'none', color: C.goldDark, cursor: 'pointer', fontSize: 14, marginBottom: 12 }}>
           ← Back
         </button>
@@ -171,7 +171,7 @@ export default function EditEventForm({ eventId, onSaved, onClose }) {
   }
 
   return (
-    <div className="flex-1 phone-scroll" style={{ background: '#F9F7F4' }}>
+    <div className="flex-1 phone-scroll" style={{ background: 'var(--mutu-canvas, #F9F7F4)' }}>
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -346,7 +346,7 @@ export default function EditEventForm({ eventId, onSaved, onClose }) {
                 ].map(opt => {
                   const active = attendeeVisibility === opt.id
                   return (
-                    <button
+                    <button data-mutu-glass=""
                       key={opt.id}
                       type="button"
                       onClick={() => setAttendeeVisibility(opt.id)}
@@ -376,7 +376,7 @@ export default function EditEventForm({ eventId, onSaved, onClose }) {
             <div style={{ marginBottom: 18 }}>
               <label style={labelStyle}>Promote in Discover</label>
               <p style={helperStyle}>Let attendees show their Opportunity Board posts as anonymous previews in Discover, to attract more people. Names are never shown — only after someone joins and connects.</p>
-              <button
+              <button data-mutu-glass=""
                 type="button"
                 onClick={() => setAllowDiscoverPromotion(v => !v)}
                 style={{

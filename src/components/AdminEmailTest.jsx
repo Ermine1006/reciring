@@ -13,7 +13,7 @@ const C = {
   text:      '#111111',
   textSub:   '#6B7280',
   textMuted: '#9CA3AF',
-  white:     '#FFFFFF',
+  white:     'var(--mutu-surface, #FFFFFF)',
   border:    '#E5E7EB',
   success:   '#2E6B4F',
   danger:    '#DC2626',
@@ -281,7 +281,7 @@ export default function AdminEmailTest({ onClose }) {
   }
 
   return (
-    <div className="flex-1 phone-scroll" style={{ background: '#F9F7F4' }}>
+    <div className="flex-1 phone-scroll" style={{ background: 'var(--mutu-canvas, #F9F7F4)' }}>
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -319,7 +319,7 @@ export default function AdminEmailTest({ onClose }) {
             {TEMPLATES.map(t => {
               const active = templateId === t.id
               return (
-                <button
+                <button data-mutu-glass=""
                   key={t.id}
                   type="button"
                   onClick={() => setTemplateId(t.id)}
@@ -501,7 +501,7 @@ export default function AdminEmailTest({ onClose }) {
 
         {/* Action buttons */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-          <button
+          <button data-mutu-glass=""
             type="button"
             onClick={handleTest}
             disabled={!canSendTest}
@@ -521,7 +521,7 @@ export default function AdminEmailTest({ onClose }) {
           >
             {sending && sendMode === 'test' ? 'Sending…' : `Send Test${valid.length ? ` (${valid.length})` : ''}`}
           </button>
-          <button
+          <button data-mutu-glass=""
             type="button"
             onClick={handleBroadcast}
             disabled={!canSendBroadcast}
@@ -630,7 +630,7 @@ export default function AdminEmailTest({ onClose }) {
             ].map(opt => {
               const active = subAction === opt.id
               return (
-                <button
+                <button data-mutu-glass=""
                   key={opt.id}
                   type="button"
                   onClick={() => setSubAction(opt.id)}
@@ -651,7 +651,7 @@ export default function AdminEmailTest({ onClose }) {
             })}
           </div>
 
-          <button
+          <button data-mutu-glass=""
             type="button"
             onClick={handleSubscriptionUpdate}
             disabled={subSaving || !subEmail.trim()}

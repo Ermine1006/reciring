@@ -27,7 +27,7 @@ function renderText(text) {
 
 const C = {
   gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7', goldBg: '#F8F3E5',
-  ink: '#14110C', sub: '#6B6152', muted: '#9C9789', white: '#FFFFFF', border: '#E5E7EB',
+  ink: '#14110C', sub: '#6B6152', muted: '#9C9789', white: 'var(--mutu-surface, #FFFFFF)', border: '#E5E7EB',
 }
 
 // Quick free-text prompts under the three primary actions.
@@ -192,7 +192,7 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
 
   return createPortal(
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 96, background: 'rgba(17,17,17,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-      <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 460, height: '86vh', background: '#F9F7F4', borderRadius: '24px 24px 0 0', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 460, height: '86vh', background: 'var(--mutu-canvas, #F9F7F4)', borderRadius: '24px 24px 0 0', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {/* Header */}
         <div style={{ flexShrink: 0, padding: '10px 20px 12px', borderBottom: `1px solid ${C.border}`, background: C.white }}>
           <div style={{ display: 'flex', justifyContent: 'center', padding: '2px 0 10px' }}>
@@ -233,7 +233,7 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {prepEvents.map(ev => (
-                    <button key={ev.id} type="button" onClick={() => onPickEvent(ev)}
+                    <button data-mutu-glass="" key={ev.id} type="button" onClick={() => onPickEvent(ev)}
                       style={{ textAlign: 'left', padding: '12px 14px', borderRadius: 12, background: C.white, border: `1px solid ${C.goldLight}`, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
                       <span style={{ display: 'block', fontSize: 13.5, fontWeight: 700, color: C.ink }}>{ev.title}</span>
                       {ev.start_at && (
@@ -286,7 +286,7 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
             actions never disappear and you can trigger any of them mid-chat
             without clearing your history. */}
         {view !== 'pickEvent' && (
-          <div className="phone-scroll" style={{ flexShrink: 0, display: 'flex', gap: 8, padding: '8px 14px 2px', overflowX: 'auto', background: '#F9F7F4' }}>
+          <div className="phone-scroll" style={{ flexShrink: 0, display: 'flex', gap: 8, padding: '8px 14px 2px', overflowX: 'auto', background: 'var(--mutu-canvas, #F9F7F4)' }}>
             {ACTIONS.map(a => (
               <button key={a.kind} type="button" onClick={() => onAction(a.kind)} style={rowChip}>
                 <ActionIcon kind={a.kind} />{a.short}
@@ -306,7 +306,7 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
             rows={1}
             placeholder="Ask about your network…"
-            style={{ flex: 1, resize: 'none', maxHeight: 100, padding: '11px 13px', borderRadius: 14, border: `1.5px solid ${C.border}`, background: '#F9F7F4', fontSize: 14.5, color: C.ink, fontFamily: 'Inter, system-ui, sans-serif', outline: 'none' }}
+            style={{ flex: 1, resize: 'none', maxHeight: 100, padding: '11px 13px', borderRadius: 14, border: `1.5px solid ${C.border}`, background: 'var(--mutu-canvas, #F9F7F4)', fontSize: 14.5, color: C.ink, fontFamily: 'Inter, system-ui, sans-serif', outline: 'none' }}
           />
           <button type="button" onClick={() => send()} disabled={!input.trim() || busy}
             style={{ width: 44, height: 44, borderRadius: 13, border: 'none', flexShrink: 0, display: 'grid', placeItems: 'center', cursor: !input.trim() || busy ? 'default' : 'pointer', ...(!input.trim() || busy ? { background: '#E5E1D8', color: '#fff' } : matchaCta) }}>

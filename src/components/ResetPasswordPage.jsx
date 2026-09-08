@@ -12,7 +12,7 @@ const C = {
   text:      '#111111',
   textSub:   '#6B7280',
   textMuted: '#9CA3AF',
-  white:     '#FFFFFF',
+  white:     'var(--mutu-surface, #FFFFFF)',
   border:    '#E5E7EB',
 }
 
@@ -148,7 +148,7 @@ export default function ResetPasswordPage() {
         </p>
 
         {success ? (
-          <button
+          <button data-mutu-glass=""
             type="button"
             onClick={() => { window.location.href = '/' }}
             className="w-full py-3.5 rounded-xl text-sm font-semibold tracking-wide transition-all duration-200 active:scale-[0.98]"

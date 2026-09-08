@@ -23,7 +23,7 @@ const C = {
   text:      '#111111',
   textSub:   '#4B5563',
   textMuted: '#9CA3AF',
-  white:     '#FFFFFF',
+  white:     'var(--mutu-surface, #FFFFFF)',
   border:    '#E5E7EB',
   ok:        '#059669',
   okBg:      '#ECFDF5',
@@ -176,7 +176,7 @@ export default function EventRecapPage({
               Pick the attendees you spoke with to remember the conversation.
             </p>
             {onAddPeople && (
-              <button type="button" onClick={onAddPeople}
+              <button data-mutu-glass="" type="button" onClick={onAddPeople}
                 style={{ marginTop: 14, padding: '11px 18px', borderRadius: 11, border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif', ...matchaCta }}>
                 Choose from attendees
               </button>
@@ -340,7 +340,7 @@ function NextActionModal({ open, onClose, person, encounter, onSave }) {
         />
 
         <div style={{ display: 'flex', gap: 8, marginTop: 18 }}>
-          <button type="button" onClick={onClose} style={{ flex: 1, padding: '12px', borderRadius: 12, background: C.white, color: C.textSub, border: `1.5px solid ${C.border}`, fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
+          <button data-mutu-glass="" type="button" onClick={onClose} style={{ flex: 1, padding: '12px', borderRadius: 12, background: C.white, color: C.textSub, border: `1.5px solid ${C.border}`, fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
             Cancel
           </button>
           <button type="button" onClick={handleSave} disabled={saving || !action.trim()} style={{ flex: 2, padding: '12px', borderRadius: 12, border: 'none', fontSize: 14, fontWeight: 700, cursor: saving || !action.trim() ? 'default' : 'pointer', fontFamily: 'Inter, system-ui, sans-serif', ...(!action.trim() ? { background: '#E5E7EB', color: C.textMuted } : matchaCta) }}>
@@ -473,11 +473,11 @@ function EncounterCard({ encounter, them, themTopPost, rationale, onEdit, onFoll
 
       {/* One primary action + a ••• overflow — not four equal buttons. */}
       <div style={{ position: 'relative', display: 'flex', gap: 8, marginTop: 12, alignItems: 'stretch' }}>
-        <button type="button" onClick={onFollowUp} className="active:scale-[0.98]"
+        <button data-mutu-glass="" type="button" onClick={onFollowUp} className="active:scale-[0.98]"
           style={{ flex: 1, padding: '10px 12px', borderRadius: 10, border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif', ...matchaCta }}>
           Follow up
         </button>
-        <button type="button" onClick={() => setMenuOpen(o => !o)} aria-label="More options"
+        <button data-mutu-glass="" type="button" onClick={() => setMenuOpen(o => !o)} aria-label="More options"
           style={{ width: 42, borderRadius: 10, background: C.white, border: `1px solid ${C.border}`, color: C.textSub, fontSize: 16, fontWeight: 700, cursor: 'pointer', lineHeight: 1 }}>
           ⋯
         </button>
@@ -499,7 +499,7 @@ function EncounterCard({ encounter, them, themTopPost, rationale, onEdit, onFoll
 
 function MenuItem({ children, onClick, danger }) {
   return (
-    <button type="button" onClick={onClick}
+    <button data-mutu-glass="" type="button" onClick={onClick}
       style={{ display: 'block', width: '100%', textAlign: 'left', padding: '11px 14px', background: '#fff', border: 'none', borderBottom: '1px solid #F3EFE8', fontSize: 13, fontWeight: 500, color: danger ? '#B4453A' : '#1A1712', cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
       {children}
     </button>

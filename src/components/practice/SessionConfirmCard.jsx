@@ -22,14 +22,14 @@ import {
 
 const C = {
   gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7', goldBg: '#F8F3E5',
-  ink: '#18160F', ink2: '#6E6A61', ink3: '#9A958B', line: '#E9E5DD', white: '#FFFFFF',
+  ink: '#18160F', ink2: '#6E6A61', ink3: '#9A958B', line: '#E9E5DD', white: 'var(--mutu-surface, #FFFFFF)',
   matcha: '#6E7F4A', matchaSoft: '#EDF0E4',
 }
 const FONT = 'Inter, system-ui, sans-serif'
 const TAP = { minHeight: 44 }
 
 const Choice = ({ selected, onClick, children, sub }) => (
-  <button type="button" onClick={onClick} aria-pressed={selected}
+  <button data-mutu-glass="" type="button" onClick={onClick} aria-pressed={selected}
     style={{
       ...TAP, width: '100%', textAlign: 'left', display: 'block',
       background: selected ? C.matchaSoft : C.white,
@@ -101,7 +101,7 @@ export default function SessionConfirmCard({
   )
 
   const Primary = ({ onClick, disabled, children }) => (
-    <button type="button" onClick={onClick} disabled={disabled || busy}
+    <button data-mutu-glass="" type="button" onClick={onClick} disabled={disabled || busy}
       className="active:scale-[0.98] transition-all"
       style={{
         ...TAP, width: '100%', border: 'none', borderRadius: 12, padding: '13px 0',

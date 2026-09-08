@@ -14,7 +14,7 @@ const C = {
   text:      '#111111',
   textSub:   '#6B7280',
   textMuted: '#9CA3AF',
-  white:     '#FFFFFF',
+  white:     'var(--mutu-surface, #FFFFFF)',
   border:    '#E5E7EB',
 }
 
@@ -303,7 +303,7 @@ export default function LoginScreen() {
             ].map(t => {
               const active = mode === t.id
               return (
-                <button
+                <button data-mutu-glass=""
                   key={t.id}
                   type="button"
                   role="tab"
@@ -427,7 +427,7 @@ export default function LoginScreen() {
           <div className="flex flex-col gap-2 mt-5">
             {(mode === 'signin' || mode === 'signup') && (
               <>
-                <button
+                <button data-mutu-glass=""
                   type="submit"
                   disabled={loading}
                   className="w-full py-3.5 rounded-xl text-sm font-semibold tracking-wide transition-all duration-200 active:scale-[0.98]"
@@ -486,7 +486,7 @@ export default function LoginScreen() {
                     so the post-OAuth gate redeems it; the code is
                     re-validated server-side via redeem_access_code, so
                     the client stash is not a security boundary. */}
-                <button
+                <button data-mutu-glass=""
                   type="button"
                   onClick={async () => {
                     setError(null); setInfo(null)
@@ -541,7 +541,7 @@ export default function LoginScreen() {
 
             {mode === 'forgot' && (
               <>
-                <button
+                <button data-mutu-glass=""
                   type="submit"
                   disabled={loading}
                   className="w-full py-3.5 rounded-xl text-sm font-semibold tracking-wide transition-all duration-200 active:scale-[0.98]"

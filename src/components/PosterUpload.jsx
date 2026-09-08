@@ -3,7 +3,7 @@ import { uploadEventPoster } from '../lib/storage'
 
 const C = {
   gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7', goldBg: '#F8F3E5',
-  text: '#111111', textSub: '#6B7280', white: '#FFFFFF', border: '#E5E7EB', danger: '#DC2626',
+  text: '#111111', textSub: '#6B7280', white: 'var(--mutu-surface, #FFFFFF)', border: '#E5E7EB', danger: '#DC2626',
 }
 
 /**
@@ -76,7 +76,7 @@ export default function PosterUpload({ value, onChange, userId }) {
           </div>
         </div>
       ) : (
-        <button
+        <button data-mutu-glass=""
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={busy}

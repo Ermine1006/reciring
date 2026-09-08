@@ -5,7 +5,7 @@ import { matchaCta } from '../lib/matchaCta'
 
 const C = {
   gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7', goldBg: '#F8F3E5',
-  ink: '#1A1712', textSub: '#6B6152', textMuted: '#9CA3AF', white: '#FFFFFF',
+  ink: '#1A1712', textSub: '#6B6152', textMuted: '#9CA3AF', white: 'var(--mutu-surface, #FFFFFF)',
   border: '#E5E7EB', green: '#2E6B4F', greenBg: '#EDF3EE', greenBorder: '#CBDBCF',
   danger: '#DC2626',
 }
@@ -41,7 +41,7 @@ export default function MarketplaceInterestSheet({ open, post, interests = [], b
       <div
         onClick={e => e.stopPropagation()}
         style={{
-          width: '100%', maxWidth: 460, background: '#F9F7F4',
+          width: '100%', maxWidth: 460, background: 'var(--mutu-canvas, #F9F7F4)',
           borderRadius: '24px 24px 0 0',
           padding: '10px 20px calc(20px + env(safe-area-inset-bottom))',
           maxHeight: '88vh', overflowY: 'auto',
