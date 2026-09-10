@@ -240,7 +240,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
   const [showProfileCard, setShowProfileCard] = useState(false)
   const [revealDeclineDismissed, setRevealDeclineDismissed] = useState(false)
   const autoOpenedRef = useRef(false)
-  const bottomRef                        = useRef(null)
+  const messageListRef                   = useRef(null)
 
   const reveal = match?.reveal || { status: 'none', iAmRequester: false }
   const isRevealed = reveal.status === 'accepted'
@@ -249,7 +249,9 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
   const wasDeclinedByPeer = reveal.status === 'declined' && reveal.iAmRequester
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    // Scroll only the message list, never the clipped phone shell or page.
+    const list = messageListRef.current
+    if (list) list.scrollTop = list.scrollHeight
   }, [messages])
 
   // Auto-open scheduler when coming from "Schedule coffee chat" CTA
@@ -297,7 +299,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: C.chatBg, position: 'relative' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', flex: '1 1 0%', minHeight: 0, minWidth: 0, overflow: 'hidden', background: C.chatBg, position: 'relative' }}>
 
       {/* ── Header ── */}
       <div style={{
@@ -515,7 +517,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
       )}
 
       {/* ── Messages ── */}
-      <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '16px 0' }}>
+      <div ref={messageListRef} aria-label="Conversation messages" role="region" tabIndex={0} style={{ flex: '1 1 0%', minHeight: 0, minWidth: 0, overflowY: 'auto', overflowX: 'hidden', overscrollBehaviorY: 'contain', WebkitOverflowScrolling: 'touch', padding: '16px 0' }}>
 
         {/* Context card. Marketplace connections show "Connected about: <the
             opportunity>"; ordinary peer matches show the needs/offers exchange. */}
@@ -953,7 +955,6 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
           </motion.div>
         )}
 
-        <div ref={bottomRef} />
       </div>
 
       {/* ── Coffee chat quick-action ──

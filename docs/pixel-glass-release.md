@@ -31,3 +31,7 @@ Together entries now use full-width horizontal rows, with square artwork on the 
 Notifications render through a document-body portal above the phone shell. This avoids the stacking context introduced by the glass header's backdrop filter. The opaque panel is bounded by viewport width and height, with a scrollable list, backdrop dismissal, close button, Escape, keyboard navigation and focus restoration. Notification data, read state and destination handlers are retained.
 
 Production build and 339 tests pass, including portal placement, dismissal/focus restoration and keyboard message selection. These DOM checks do not claim physical-phone visual verification. Avatar sources remain unchanged.
+
+## Web chat scrolling correction
+
+ChatView now participates in the constrained flex layout with a zero minimum height. Its message list can shrink and scroll inside the available space, leaving the composer fixed below it. Automatic scrolling targets the message list itself instead of scrollIntoView, which could also scroll ancestor containers. The scroll region is keyboard-focusable. Message, match, scheduling and avatar logic are unchanged. Browser visual acceptance remains a separate manual check.
