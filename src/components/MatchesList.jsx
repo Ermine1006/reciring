@@ -78,7 +78,7 @@ export default function MatchesList({ matches = [], completedMatchIds = new Set(
   }
 
   return (
-    <div className="flex-1 phone-scroll" style={{ background: C.ground }}>
+    <div className="mutu-matches-scroll flex-1 phone-scroll" role="region" aria-label="Conversations" tabIndex={0} style={{ background: C.ground, flex: '1 1 0%', minHeight: 0 }}>
       <div style={{ padding: '12px 16px 26px', maxWidth: 560, margin: '0 auto' }}>
         <h1 style={{ fontSize: 19, fontWeight: 700, color: C.ink, margin: '2px 0 12px', letterSpacing: '-0.01em', fontFamily: 'Inter, system-ui, sans-serif' }}>
           Messages

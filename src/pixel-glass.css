@@ -104,3 +104,8 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]),textarea,select {
 .mutu-connection-art { height:auto; aspect-ratio:1 / 1; background-size:200% 100%; }
 .mutu-notification-panel { position:fixed; z-index:10001; top:max(16px, env(safe-area-inset-top)); left:50%; width:min(360px, calc(100vw - 24px)); max-height:calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
 @supports not (height:100dvh) { .mutu-notification-panel { max-height:calc(100vh - 64px); } }
+
+/* One bounded scroll owner for the Matches index, including desktop wheels. */
+.mutu-matches-scroll { scrollbar-width:thin; scrollbar-color:#a69258 transparent; }
+.mutu-matches-scroll::-webkit-scrollbar { width:6px; }
+.mutu-matches-scroll::-webkit-scrollbar-thumb { background:#a6925880; border-radius:6px; }

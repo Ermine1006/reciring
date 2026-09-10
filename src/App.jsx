@@ -1224,14 +1224,14 @@ function AppShell() {
             />
           )}
           {tab === 'matches' && !chatMatchId && (
-            <AppScreen>
-              <MatchesList
-                matches={matches}
-                completedMatchIds={completedMatchIds}
-                onOpenChat={(id) => setChatMatchId(id)}
-                revealedMatchIds={revealedMatchIds}
-              />
-            </AppScreen>
+            // MatchesList owns its scroll area. Nesting it in AppScreen's
+            // phone-scroll wrapper traps desktop wheel/trackpad scrolling.
+            <MatchesList
+              matches={matches}
+              completedMatchIds={completedMatchIds}
+              onOpenChat={(id) => setChatMatchId(id)}
+              revealedMatchIds={revealedMatchIds}
+            />
           )}
           {tab === 'matches' && chatMatchId && (
             <div className="flex-1 min-h-0 overflow-hidden" style={{ display: 'flex', flexDirection: 'column' }}>

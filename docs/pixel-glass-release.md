@@ -35,3 +35,7 @@ Production build and 339 tests pass, including portal placement, dismissal/focus
 ## Web chat scrolling correction
 
 ChatView now participates in the constrained flex layout with a zero minimum height. Its message list can shrink and scroll inside the available space, leaving the composer fixed below it. Automatic scrolling targets the message list itself instead of scrollIntoView, which could also scroll ancestor containers. The scroll region is keyboard-focusable. Message, match, scheduling and avatar logic are unchanged. Browser visual acceptance remains a separate manual check.
+
+## PC Matches index scrolling correction
+
+The Matches index was wrapped in AppScreen's phone-scroll while MatchesList also owned a phone-scroll container. The content-sized inner container had overscroll containment, trapping desktop wheel/trackpad scrolling before the outer container could move. MatchesList now renders directly in the constrained main flex area as the sole scroll owner, with an explicit zero flex minimum, keyboard focus and a more visible scrollbar. Active/Past filtering, destinations, rows and avatars are preserved. Production build and all 339 existing tests pass; these are not a browser wheel acceptance test.
