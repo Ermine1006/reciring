@@ -24,7 +24,7 @@ const SUPPORT_EMAIL = 'hello@muturing.com'
 
 export default function LoginScreen() {
   const {
-    signIn, signUp, signInWithGoogle, resetPassword, verifyRecoveryCode,
+    signIn, signUp, signInWithGoogle, signInWithApple, resetPassword, verifyRecoveryCode,
     accessDenied, clearAccessDenied,
   } = useAuth()
 
@@ -479,6 +479,48 @@ export default function LoginScreen() {
                     letterSpacing: '0.04em',
                   }}
                 />
+
+                {/* Sign in with Apple — the privacy-preserving login
+                    option App Store Guideline 4.8 requires alongside
+                    Google. Placed first and at least as prominent as the
+                    Google button. Same invite-code handling: a new
+                    non-institutional Apple user needs a code, an existing
+                    linked member signs in without one. */}
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setError(null); setInfo(null)
+                    const trimmedCode = accessCode.trim()
+                    if (trimmedCode) {
+                      const check = await checkAccessCode(trimmedCode)
+                      if (!check.code) {
+                        setError(accessCodeReasonLabel(check.reason || 'code_not_found'))
+                        return
+                      }
+                      safeStashSession('mutu_access_code', trimmedCode)
+                    } else {
+                      safeClearStash('mutu_access_code')
+                    }
+                    setLoading(true)
+                    const { error: oauthErr } = await signInWithApple()
+                    setLoading(false)
+                    if (oauthErr) setError(oauthErr.message)
+                  }}
+                  disabled={loading}
+                  className="w-full py-3.5 rounded-xl text-sm font-semibold tracking-wide transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-2.5"
+                  style={{
+                    background: '#000',
+                    color: '#fff',
+                    border: 'none',
+                    cursor: loading ? 'default' : 'pointer',
+                    opacity: loading ? 0.6 : 1,
+                  }}
+                >
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="#fff" aria-hidden="true">
+                    <path d="M17.05 12.04c-.03-2.6 2.12-3.85 2.22-3.91-1.21-1.77-3.09-2.01-3.76-2.04-1.6-.16-3.12.94-3.93.94-.81 0-2.06-.92-3.39-.89-1.74.03-3.35 1.01-4.25 2.57-1.81 3.14-.46 7.79 1.3 10.34.86 1.25 1.89 2.65 3.24 2.6 1.3-.05 1.79-.84 3.36-.84 1.57 0 2.01.84 3.39.81 1.4-.02 2.29-1.27 3.15-2.53.99-1.45 1.4-2.85 1.42-2.93-.03-.01-2.72-1.04-2.75-4.13zM14.6 4.44c.72-.87 1.2-2.08 1.07-3.29-1.03.04-2.28.69-3.02 1.56-.66.77-1.24 2-1.09 3.18 1.15.09 2.32-.58 3.04-1.45z"/>
+                  </svg>
+                  Sign in with Apple
+                </button>
 
                 {/* Google OAuth. We do NOT block on an empty code here
                     — existing linked members need to sign in without

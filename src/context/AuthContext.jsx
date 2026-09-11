@@ -486,6 +486,36 @@ export function AuthProvider({ children }) {
     return { data, error }
   }
 
+  // Sign in with Apple. Offered as the privacy-preserving login option
+  // required by App Store Guideline 4.8 (limits data to name + email,
+  // lets the user Hide My Email, no interaction tracking for ads). Runs
+  // through the exact same native OAuth pipeline as Google — no extra
+  // native plugin — so the invite gate, deep-link callback and PKCE
+  // exchange all behave identically. A Hide-My-Email user arrives with a
+  // privaterelay.appleid.com address, which the gate treats like any
+  // non-institutional email (invite / referral required), same as Gmail.
+  async function signInWithApple() {
+    if (!isSupabaseConfigured) return { error: new Error('Supabase not configured.') }
+    if (isNativeApp) {
+      return runNativeOAuth(() =>
+        supabase.auth.signInWithOAuth({
+          provider: 'apple',
+          options: {
+            redirectTo: authRedirect('/auth/callback'),
+            skipBrowserRedirect: true,
+          },
+        })
+      )
+    }
+    // Web: full-page redirect to the origin root, handled by
+    // detectSessionInUrl — mirrors the Google web path above.
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'apple',
+      options: { redirectTo: window.location.origin },
+    })
+    return { data, error }
+  }
+
   // Link a Google account to the current session's auth user so the
   // member can sign in with either their institutional email OR their
   // Gmail after graduation. Requires an active session — Supabase's
@@ -743,6 +773,7 @@ export function AuthProvider({ children }) {
       signUp,
       signIn,
       signInWithGoogle,
+      signInWithApple,
       linkGoogleIdentity,
       linkLinkedInIdentity,
       getLinkedInIdentity,
