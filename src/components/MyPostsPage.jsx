@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import MyPostPreview from './MyPostPreview'
 import { motion, AnimatePresence } from 'framer-motion'
 import { HELP_TYPES, INDUSTRIES, TIME_OPTIONS } from '../data/requestOptions'
 import { matchaCta } from '../lib/matchaCta'
@@ -339,6 +340,7 @@ export default function MyPostsPage({
   error = null,
   isSupabaseConfigured = false,
 }) {
+  const [previewPost, setPreviewPost] = useState(null)
   const [deleting, setDeleting]       = useState(null)
   const [editingPost, setEditingPost] = useState(null)
 
@@ -408,9 +410,10 @@ export default function MyPostsPage({
             return (
               <div
                 key={post.id}
+                onClick={() => setPreviewPost(post)}
                 className="rounded-2xl overflow-hidden"
                 style={{
-                  background: C.white,
+                  background: C.white, cursor: 'pointer',
                   border: `1px solid ${C.border}`,
                   boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
                 }}
@@ -501,7 +504,8 @@ export default function MyPostsPage({
                   )}
 
                   {/* Action buttons */}
-                  <div style={{ borderTop: '1px solid #F3F4F6', paddingTop: 10, display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                  <div onClick={(event) => event.stopPropagation()} style={{ borderTop: '1px solid #F3F4F6', paddingTop: 10, display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                    <button type="button" onClick={() => setPreviewPost(post)} style={{ marginRight: 'auto', minHeight: 44, padding: '6px 8px', color: C.goldDark, fontSize: 12, fontWeight: 600 }}>Preview</button>
                     <button
                       type="button"
                       onClick={() => setEditingPost(post)}
@@ -541,6 +545,8 @@ export default function MyPostsPage({
           })}
         </div>
       </motion.div>
+
+      {previewPost && <MyPostPreview post={previewPost} onClose={() => setPreviewPost(null)} />}
 
       {/* Edit modal */}
       {editingPost && (
