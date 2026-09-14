@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import CardStack from './components/CardStack'
-import PostHub from './components/PostHub'
+import GiveAskHub from './components/GiveAskHub'
 import AppScreen from './components/AppScreen'
 import MatchesList from './components/MatchesList'
 import ReciRingLogo from './components/ReciRingLogo'
@@ -22,7 +22,6 @@ import { isProfileV3Enabled, isPracticeEnabled } from './lib/featureFlags'
 import useGuardedTab from './lib/useGuardedTab'
 import PracticeHub from './components/practice/PracticeHub'
 import AnonymousAvatar from './components/AnonymousAvatar'
-import MyPostsPage from './components/MyPostsPage'
 import AdminEmailTest from './components/AdminEmailTest'
 import AdminEventReview from './components/AdminEventReview'
 import EventsList from './components/EventsList'
@@ -49,7 +48,7 @@ import { fetchCompletedMatchIds } from './lib/recognition'
 import { track } from './lib/analytics'
 import { notifyEventReview, notifyNewMatch } from './lib/email'
 import { fetchMessages, sendMessage, sendMeetingProposal, updateMeetingStatus, msgToUI, markMessagesRead } from './lib/messages'
-import { MATCHA_DEEP, MATCHA_SOFT, matchaCta } from './lib/matchaCta'
+import { MATCHA_DEEP, MATCHA_SOFT } from './lib/matchaCta'
 
 /* ─── Design tokens ─────────────────────────────────────────────── */
 const C = {
@@ -103,11 +102,10 @@ const TABS = [
   },
   {
     id: 'discover',
-    label: 'Discover',
+    label: 'Give & Ask',
     icon: (active) => (
       <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={active ? 2 : 1.5}>
-        <circle cx="12" cy="12" r="10" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M16.24 7.76l-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M20 7H4m0 0 4-4M4 7l4 4M4 17h16m0 0-4-4m4 4-4 4" />
       </svg>
     ),
   },
@@ -172,6 +170,7 @@ function AppShell() {
   // of Post (Post creation moves to a "+" inside Discover — the 'post'
   // screen itself stays reachable, like Profile). When OFF, nothing
   // Practice-related renders anywhere.
+  const [discoverView, setDiscoverView] = useState('browse')
   const practiceOn = isPracticeEnabled()
   const navTabs = useMemo(
     () => TABS.filter(t => (practiceOn ? t.id !== 'post' && t.id !== 'events' : !t.practiceOnly)),
@@ -1152,7 +1151,20 @@ function AppShell() {
               onSharePastPost={handleSharePastPost}
             />
           )}
-          {tab === 'discover' && (
+          {(tab === 'discover' || tab === 'post') && (
+            <GiveAskHub
+              view={tab === 'post' ? 'create' : discoverView}
+              onViewChange={(view) => {
+                if (view === 'create') setTab('post')
+                else { setDiscoverView(view); setTab('discover') }
+              }}
+              myPosts={myPosts}
+              onCreatePost={handleNewRequest}
+              onEditPost={handleEditPost}
+              onDeletePost={handleDeletePost}
+              isSupabaseConfigured={isSupabaseConfigured}
+              prefill={postPrefill}
+            >
             <CardStack
               requests={visibleRequests}
               eventPromos={eventPromos}
@@ -1178,27 +1190,7 @@ function AppShell() {
                 setTab('events')
               }}
             />
-          )}
-          {/* Post creation entry inside Discover when Practice occupies the
-              old Post slot in the bottom bar. The 'post' screen itself still
-              renders below — it's just no longer a nav tab (like Profile). */}
-          {tab === 'discover' && practiceOn && (
-            <button data-mutu-glass=""
-              type="button"
-              onClick={() => setTab('post')}
-              aria-label="Create a post"
-              className="active:scale-95 transition-all"
-              style={{
-                position: 'absolute', right: 18, bottom: 18, zIndex: 30,
-                width: 52, height: 52, borderRadius: '50%', border: 'none',
-                display: 'grid', placeItems: 'center', cursor: 'pointer',
-                ...matchaCta,
-              }}
-            >
-              <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14M5 12h14" />
-              </svg>
-            </button>
+            </GiveAskHub>
           )}
           {tab === 'practice' && practiceOn && (
             <PracticeHub
@@ -1211,16 +1203,6 @@ function AppShell() {
               onOpenChat={(matchId) => { loadMatches(); setTab('matches'); setChatMatchId(matchId) }}
               onOpenEvent={(id) => { setEventReturnTab('practice'); setEventInitialView(null); setViewingEventId(id); setTab('events') }}
               onOpenEventsList={() => { setEventsCameFrom('practice'); setEventsTopView('discover'); setViewingEventId(null); setTab('events') }}
-            />
-          )}
-          {tab === 'post' && (
-            <PostHub
-              myPosts={myPosts}
-              onCreatePost={handleNewRequest}
-              onEditPost={handleEditPost}
-              onDeletePost={handleDeletePost}
-              isSupabaseConfigured={isSupabaseConfigured}
-              prefill={postPrefill}
             />
           )}
           {tab === 'matches' && !chatMatchId && (
@@ -1373,22 +1355,22 @@ function AppShell() {
           }}
         >
           {navTabs.map((t) => {
-            const active = tab === t.id
+            const active = tab === t.id || (practiceOn && tab === 'post' && t.id === 'discover')
             return (
               <button data-mutu-glass=""
                 key={t.id}
                 type="button"
                 onClick={() => setTab(t.id)}
-                className="flex flex-col items-center gap-1 py-2 px-4 rounded-2xl transition-all duration-200 active:scale-95"
+                className="flex flex-col items-center gap-1 py-2 px-1 rounded-2xl transition-all duration-200 active:scale-95"
                 style={{
                   color: active ? MATCHA_DEEP : C.textMuted,
                   background: active ? MATCHA_SOFT : 'transparent',
-                  minWidth: 60,
+                  minWidth: 0, flex: 1,
                 }}
               >
                 {t.icon(active)}
                 <span
-                  className="text-[9px] tracking-[0.12em] font-semibold uppercase"
+                  className="text-[11px] font-medium whitespace-nowrap"
                   style={{ color: active ? MATCHA_DEEP : C.textMuted }}
                 >
                   {t.label}

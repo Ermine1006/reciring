@@ -104,7 +104,7 @@ export default function MatchesList({ matches = [], completedMatchIds = new Set(
             </p>
             <p style={{ fontSize: 13, color: C.ink3, margin: '5px 0 0', lineHeight: 1.5, fontFamily: 'Inter, system-ui, sans-serif' }}>
               {view === 'active'
-                ? 'Connect with someone on Discover or in an event to start a conversation.'
+                ? 'Connect with someone on Give & Ask or in an event to start a conversation.'
                 : 'Connections move here once you and the other person both mark “We met”.'}
             </p>
           </div>

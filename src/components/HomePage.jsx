@@ -210,7 +210,7 @@ export default function HomePage({
                 {pastPosts.length === 1 ? 'Your event post ended' : `${pastPosts.length} event posts ended`}
               </span>
               <span style={{ display: 'block', fontSize: 12, color: C.ink2, marginTop: 1, fontFamily: 'Inter, system-ui, sans-serif' }}>
-                Share {pastPosts.length === 1 ? 'it' : 'them'} in Discover so people can still help.
+                Share {pastPosts.length === 1 ? 'it' : 'them'} in Give &amp; Ask so people can still help.
               </span>
             </span>
             <span style={{ fontSize: 12.5, fontWeight: 700, color: C.gold, flexShrink: 0, fontFamily: 'Inter, system-ui, sans-serif' }}>Review</span>
@@ -304,7 +304,7 @@ function PastPostsSheet({ open, posts, onShare, onDismiss, onClose }) {
         <div style={{ padding: '6px 22px 12px', flexShrink: 0 }}>
           <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: C.ink, fontFamily: 'Inter, system-ui, sans-serif' }}>Keep these going</h2>
           <p style={{ margin: '3px 0 0', fontSize: 13, color: C.ink2, lineHeight: 1.5, fontFamily: 'Inter, system-ui, sans-serif' }}>
-            These posts were tied to events that have ended. Share one in Discover and the whole community can help — not just attendees.
+            These posts were tied to events that have ended. Share one in Give &amp; Ask and the whole community can help — not just attendees.
           </p>
         </div>
         <div className="phone-scroll" style={{ flex: 1, overflowY: 'auto', padding: '0 16px calc(20px + env(safe-area-inset-bottom))' }}>
@@ -316,7 +316,7 @@ function PastPostsSheet({ open, posts, onShare, onDismiss, onClose }) {
               <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
                 <button data-mutu-glass="" type="button" onClick={() => onShare(item)}
                   style={{ flex: 1, padding: '10px', borderRadius: 11, border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif', ...matchaCta }}>
-                  Share in Discover
+                  Share in Give &amp; Ask
                 </button>
                 <button data-mutu-glass="" type="button" onClick={() => onDismiss(item)}
                   style={{ padding: '10px 14px', borderRadius: 11, background: C.ground, border: `1px solid ${C.line}`, color: C.ink2, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>

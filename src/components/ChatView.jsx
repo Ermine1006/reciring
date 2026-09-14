@@ -453,7 +453,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
                   type="button"
                   onClick={() => {
                     setShowSafetyMenu(false)
-                    if (window.confirm('Unmatch this person? The original post will reappear in Discover for both of you.')) {
+                    if (window.confirm('Unmatch this person? The original post will reappear in Give & Ask for both of you.')) {
                       onUnmatch()
                     }
                   }}

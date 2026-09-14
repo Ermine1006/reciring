@@ -198,7 +198,7 @@ export default function MarketplacePostComposer({ open, mode = 'create', type = 
             <br />
             <span style={{ fontSize: 12, color: C.textSub }}>
               {allowPromotion
-                ? "Your post appears as an anonymous preview on Mutu's home page (Discover) to bring more people to this event. Your name stays hidden until someone joins and you connect. Off by default."
+                ? "Your post appears as an anonymous preview on Mutu's home page (Give & Ask) to bring more people to this event. Your name stays hidden until someone joins and you connect. Off by default."
                 : "The event host hasn't turned on home-page promotion for this event yet. Once they do, you can show this post on the home page."}
             </span>
           </span>

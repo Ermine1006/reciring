@@ -165,7 +165,7 @@ export default function EventPreparePage({ eventId, userId, onBack, onSaved }) {
             <span style={{ fontSize: 13, color: C.ink, lineHeight: 1.5, fontFamily: 'Inter, system-ui, sans-serif' }}>
               <b style={{ fontWeight: 600 }}>Show this post on the home page</b>
               <br />
-              <span style={{ fontSize: 12, color: C.ink3 }}>Appears as an anonymous preview in Discover to bring more people to this event. Your name stays hidden until someone connects.</span>
+              <span style={{ fontSize: 12, color: C.ink3 }}>Appears as an anonymous preview in Give & Ask to bring more people to this event. Your name stays hidden until someone connects.</span>
             </span>
           </label>
         )}

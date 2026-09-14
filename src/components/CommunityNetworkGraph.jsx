@@ -61,7 +61,7 @@ const CX = VW / 2, CY = 106
 
 const FILTERS = [
   { id: 'all', label: 'All' },
-  { id: 'discover', label: 'Discover' },
+  { id: 'discover', label: 'Give & Ask' },
   { id: 'event', label: 'Events' },
   { id: 'together', label: 'Together' },
 ]
@@ -91,7 +91,7 @@ function driftOf(base, id, t) {
   }
 }
 
-const channelLabel = (o) => (o === 'together' ? 'Together' : o === 'event' ? 'Events' : 'Discover')
+const channelLabel = (o) => (o === 'together' ? 'Together' : o === 'event' ? 'Events' : 'Give & Ask')
 const firstName = (name) => String(name || '').trim().split(/\s+/)[0] || ''
 
 // Soft per-member pastels, picked deterministically from the member's

@@ -332,7 +332,7 @@ export default function SettingsPage({ section }) {
         {/* ── 1b. Profile visibility ─────────────────────────── */}
         <Section title="Profile visibility" sectionRef={refs.privacy} flash={flash === 'privacy'}>
           <Field
-            label="How others see your posts in Discover"
+            label="How others see your posts in Give & Ask"
             helper="You can change this anytime. Matching and chat are unaffected."
             last
           >

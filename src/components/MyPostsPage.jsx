@@ -256,7 +256,7 @@ function EditPostModal({ post, onSave, onClose }) {
               )}
             </div>
             <p className="text-[11px] mt-1.5" style={{ color: C.textMuted }}>
-              Hidden from Discover after this date. Saving also refreshes the post to the top.
+              Hidden from Give & Ask after this date. Saving also refreshes the post to the top.
             </p>
           </div>
 
@@ -319,7 +319,7 @@ function EditPostModal({ post, onSave, onClose }) {
             {saving ? 'Saving & republishing…' : 'Save & republish'}
           </button>
           <p className="text-center mt-2" style={{ fontSize: 10, color: C.textMuted }}>
-            Republishing moves your post to the top of Discover.
+            Republishing moves your post to the top of Give & Ask.
           </p>
         </div>
       </motion.div>
@@ -333,6 +333,8 @@ export default function MyPostsPage({
   onEditPost,
   onDeletePost,
   onClose,
+  embedded = false,
+  onCreatePost,
   loading = false,
   error = null,
   isSupabaseConfigured = false,
@@ -363,7 +365,7 @@ export default function MyPostsPage({
         className="px-5 pt-5 pb-10"
       >
         {/* Header */}
-        <div className="flex items-center justify-between mb-1">
+        {!embedded && <div className="flex items-center justify-between mb-1">
           <h1 style={{ fontSize: 22, fontWeight: 600, color: C.text }}>My Posts</h1>
           <button
             type="button"
@@ -373,9 +375,9 @@ export default function MyPostsPage({
           >
             Done
           </button>
-        </div>
+        </div>}
         <p style={{ fontSize: 12, color: C.textMuted, marginBottom: 16 }}>
-          Manage, edit, or republish your requests.
+          Manage what you have shared.
         </p>
 
         {posts.length === 0 && (
@@ -392,8 +394,9 @@ export default function MyPostsPage({
             </div>
             <p style={{ fontSize: 16, fontWeight: 600, color: C.text, marginBottom: 6 }}>No posts yet</p>
             <p style={{ fontSize: 13, color: C.textSub, lineHeight: 1.5 }}>
-              When you post a request, it will appear here.
+              Ask for help or share what you can offer.
             </p>
+            {onCreatePost && <button type="button" onClick={onCreatePost} style={{ minHeight: 44, marginTop: 12, color: C.goldDark, fontWeight: 600 }}>Create your first post</button>}
           </div>
         )}
 
@@ -503,7 +506,7 @@ export default function MyPostsPage({
                       type="button"
                       onClick={() => setEditingPost(post)}
                       style={{
-                        padding: '6px 14px', borderRadius: 99,
+                        padding: '6px 14px', minHeight: 44, borderRadius: 99,
                         border: `1.5px solid ${C.goldLight}`,
                         background: 'transparent',
                         color: C.goldDark, fontSize: 11, fontWeight: 600,
@@ -521,7 +524,7 @@ export default function MyPostsPage({
                       onClick={() => handleDelete(post.id)}
                       disabled={deleting === post.id}
                       style={{
-                        padding: '6px 14px', borderRadius: 99,
+                        padding: '6px 14px', minHeight: 44, borderRadius: 99,
                         border: `1px solid ${C.danger}33`,
                         background: 'transparent',
                         color: C.danger, fontSize: 11, fontWeight: 600,

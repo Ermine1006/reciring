@@ -364,7 +364,7 @@ export default function OnboardingProfile() {
                 <div>
                   <label style={labelStyle}>Profile visibility</label>
                   <p style={helperStyle}>
-                    How peers see your posts in Discover. You can change this later in Settings.
+                    How peers see your posts in Give & Ask. You can change this later in Settings.
                   </p>
                   <div className="flex flex-col gap-2">
                     {VISIBILITY_OPTIONS.map(opt => {

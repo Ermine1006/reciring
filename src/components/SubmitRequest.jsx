@@ -398,7 +398,7 @@ export default function SubmitRequest({ onSubmitted, prefill = null }) {
           Mutu
         </p>
         <h2 className="font-display text-[24px] font-semibold" style={{ color: C.text }}>
-          Post a request
+          Create a post
         </h2>
         <p className="text-sm mt-1 leading-relaxed" style={{ color: C.textSub }}>
           Ask when you need support. Help when you can.
@@ -417,7 +417,7 @@ export default function SubmitRequest({ onSubmitted, prefill = null }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: C.goldBg, border: `1px solid ${C.goldLight}`, borderRadius: 11, padding: '10px 12px' }}>
             <span style={{ fontSize: 15 }}>↗️</span>
             <span style={{ fontSize: 12.5, color: C.textSub, fontFamily: 'Inter, system-ui, sans-serif', lineHeight: 1.4 }}>
-              Carried over from <b style={{ color: C.text }}>{prefill.sourceEvent}</b>. Review and complete it before sharing to Discover.
+              Carried over from <b style={{ color: C.text }}>{prefill.sourceEvent}</b>. Review and complete it before sharing to Give & Ask.
             </span>
           </div>
         )}
@@ -488,7 +488,7 @@ export default function SubmitRequest({ onSubmitted, prefill = null }) {
             )}
           </div>
           <p className="text-[11px] mt-1.5" style={{ color: C.textMuted }}>
-            The post disappears from Discover after this date. Leave empty to keep it up until you remove it.
+            The post disappears from Give & Ask after this date. Leave empty to keep it up until you remove it.
           </p>
         </div>
 
@@ -767,7 +767,7 @@ export default function SubmitRequest({ onSubmitted, prefill = null }) {
         >
           {submitting
             ? 'Posting…'
-            : (isAnonymous ? 'Post anonymously' : 'Post with my name')}
+            : (isAnonymous ? 'Publish post anonymously' : 'Publish post with my name')}
         </button>
       </form>
 
