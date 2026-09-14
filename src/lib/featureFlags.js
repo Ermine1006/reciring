@@ -112,8 +112,9 @@ export function isStoriesEnabled() {
   return STORIES_ROLLOUT
 }
 
-// Buddy rollout stays dark until the founder installs the migration and roster.
+// Founder approved the production Together entry. Enrollment and program
+// availability remain enforced by Buddy RPCs, independently of UI visibility.
+// An explicit build-time false remains available for operational rollback.
 export function isBuddyEnabled() {
-  try { if (localStorage.getItem('mutu_buddy') === 'on') return true } catch {}
-  return import.meta.env.VITE_BUDDY_ENABLED === 'true'
+  return import.meta.env.VITE_BUDDY_ENABLED !== 'false'
 }
