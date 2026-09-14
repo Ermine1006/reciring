@@ -190,7 +190,7 @@ function SectionCard({ accentColor, accentBorder, label, labelColor, labelBg, la
 }
 
 /* ── Main component ─────────────────────────────────────────────── */
-export default function SubmitRequest({ onSubmitted, prefill = null }) {
+export default function SubmitRequest({ onSubmitted, prefill = null, demoMode = false, audience = null }) {
   // `prefill` carries an Event Board post being republished to Discover. It
   // seeds the fields once (the parent remounts via `key` when it changes), and
   // the user reviews/completes before posting — a single-sided Event Board post
@@ -211,7 +211,7 @@ export default function SubmitRequest({ onSubmitted, prefill = null }) {
   // wins per post; once touched we stop following the profile.
   const { profile } = useAuth()
   const profileWantsRealName =
-    profile?.visibility === VISIBILITY_PUBLIC && Boolean(profile?.name)
+    !demoMode && profile?.visibility === VISIBILITY_PUBLIC && Boolean(profile?.name)
   const [anonTouched, setAnonTouched]   = useState(false)
   const [isAnonymous, setIsAnonymous]   = useState(!profileWantsRealName)
   // Profile can arrive after this mounts (auth still loading) — adopt it
@@ -227,7 +227,7 @@ export default function SubmitRequest({ onSubmitted, prefill = null }) {
   const [offersSeeded, setOffersSeeded] = useState(Boolean(prefill?.offers))
   const profileHelp = (profile?.expertise_offered || []).slice(0, 2)
   useEffect(() => {
-    if (offersSeeded || profileHelp.length === 0) return
+    if (demoMode || offersSeeded || profileHelp.length === 0) return
     setOffers((prev) => {
       if (prev.trim()) return prev
       return `Happy to help with ${profileHelp.map((t) => labelForTopic(t).toLowerCase()).join(' and ')}.`
@@ -264,6 +264,7 @@ export default function SubmitRequest({ onSubmitted, prefill = null }) {
     (field === 'details' ? Boolean(details.trim() || title.trim()) : Boolean(offers.trim()))
 
   const handleImprove = async (field) => {
+    if (demoMode) { setSubmitError('AI rewriting is unavailable in this sample. You can edit the text yourself.'); return }
     if (!canImprove(field)) return
     setImprovingField(field)
     setSubmitError(null)
@@ -488,7 +489,7 @@ export default function SubmitRequest({ onSubmitted, prefill = null }) {
             )}
           </div>
           <p className="text-[11px] mt-1.5" style={{ color: C.textMuted }}>
-            The post disappears from Give & Ask after this date. Leave empty to keep it up until you remove it.
+            The post disappears from {audience ? 'Buddy Program' : 'Give & Ask'} after this date. Leave empty to keep it up until you remove it.
           </p>
         </div>
 
@@ -745,9 +746,9 @@ export default function SubmitRequest({ onSubmitted, prefill = null }) {
           })}
         </div>
         <p className="text-center text-[11px]" style={{ color: C.textMuted, lineHeight: 1.5 }}>
-          {isAnonymous
+          {audience ? (isAnonymous ? `${audience} see your post, program and interests, not your name.` : `${audience} see your post, first name, avatar and program.`) : (isAnonymous
             ? 'Members see your program & interests, not your name.'
-            : 'Members see your first name, avatar, and program.'}
+            : 'Members see your first name, avatar, and program.')}
         </p>
 
         {/* ── Submit ─────────────────────────────────────── */}

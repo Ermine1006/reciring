@@ -2,7 +2,9 @@
 
 ## Ready to demonstrate
 
-Open `/buddy-demo` on the app domain. This route uses labeled synthetic data and never calls Buddy database RPCs or the AI service. It works before the migration is installed. The sample supports both mentee and mentor posting, need/offer matching explanations, both-party acceptance, introductions, meeting check-in and the coordinator exception dashboard. Buttons labeled “Simulate” change only the sample.
+Open `/buddy-demo` on the app domain. This route now demonstrates the founder's revised, student-led selection flow with synthetic data: any first-year student composes a Give & Ask post using the same `SubmitRequest` component as the marketplace; an approved upper-year student browses full posts and chooses whom to support; the first-year student accepts or declines. The coordinator grants upper-year access instead of assigning pairs. The demo has a three-place limit including pending invitations. A role selector simulates each perspective. Sample access is not a production authorization mechanism. Publishing, invitations, access changes and connections remain in memory; reset or refresh clears them. AI rewriting is disabled without making a request.
+
+The production Buddy database and Together entry still use the earlier automatic-matching implementation described below. They have NOT been converted to the new selection workflow. That needs a separate schema/API migration and founder-run SQL; do not use the old automatic-matching pilot as if it implements the new design.
 
 ## Enable the real pilot
 
