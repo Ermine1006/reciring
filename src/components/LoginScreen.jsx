@@ -173,7 +173,7 @@ export default function LoginScreen() {
       if (/invalid.*credentials|invalid.*login/i.test(msg)) {
         setError('Email or password is incorrect. If you are new to Mutu, click "Create account" above.')
       } else if (/email.*not.*confirmed/i.test(msg)) {
-        setError('Confirm your account first — check your inbox for the Mutu confirmation email.')
+        setError('Confirm your account first, check your inbox for the Mutu confirmation email.')
       } else {
         setError(msg)
       }
@@ -650,7 +650,7 @@ export default function LoginScreen() {
                   Mutu uses your email as your username.
                 </p>
                 <p style={{ margin: 0, color: C.textSub }}>
-                  Try your UofT email first — most members use{' '}
+                  Try your UofT email first, most members use{' '}
                   <span style={{ color: C.text, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}>@mail.utoronto.ca</span>
                   {' '}or{' '}
                   <span style={{ color: C.text, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}>@rotman.utoronto.ca</span>.

@@ -311,7 +311,7 @@ export default function SettingsPage({ section }) {
             </div>
           </Field>
 
-          <Field label="Current role" helper="We fill in your program + year — just add your role after it.">
+          <Field label="Current role" helper="We fill in your program + year, just add your role after it.">
             <input
               value={headline}
               onChange={(e) => setHeadline(e.target.value.slice(0, 80))}
@@ -320,7 +320,7 @@ export default function SettingsPage({ section }) {
             />
           </Field>
 
-          <Field label="Career stage" helper="However you see yourself — it's a self-description, not a rule. Pick “Recent grad” if you're early in your career or new to the Canadian market, even with years of experience abroad." last>
+          <Field label="Career stage" helper="However you see yourself, it's a self-description, not a rule. Pick “Recent grad” if you're early in your career or new to the Canadian market, even with years of experience abroad." last>
             <div className="flex flex-wrap gap-2">
               {CAREER_STAGES.map(s => (
                 <Chip key={s} label={s} active={careerStage === s} onClick={() => setCareerStage(s)} />
@@ -366,11 +366,11 @@ export default function SettingsPage({ section }) {
 
         {/* ── 2. Professional Matching ────────────────────────── */}
         <Section title="Professional matching" sectionRef={refs.skills} flash={flash === 'skills'}>
-          <Field label="Career focus" helper="Pick up to 3 broad areas — surfaces the right requests for you.">
+          <Field label="Career focus" helper="Pick up to 3 broad areas, surfaces the right requests for you.">
             <CareerFocusPicker value={industryInterests} onChange={setIndustryInterests} />
           </Field>
 
-          <Field label="Skills I offer" helper="Up to 5 — what peers can come to you for.">
+          <Field label="Skills I offer" helper="Up to 5, what peers can come to you for.">
             <div className="flex flex-wrap gap-2">
               {HELP_TYPES.map(ht => (
                 <Chip
@@ -383,7 +383,7 @@ export default function SettingsPage({ section }) {
             </div>
           </Field>
 
-          <Field label="Skills I want to learn" helper="Up to 5 — what you'd love a peer to teach you.">
+          <Field label="Skills I want to learn" helper="Up to 5, what you'd love a peer to teach you.">
             <div className="flex flex-wrap gap-2">
               {HELP_TYPES.map(ht => (
                 <Chip
@@ -414,7 +414,7 @@ export default function SettingsPage({ section }) {
         {/* These are free text (no options), so this is where AI helps most:
             "Help me write" drafts or polishes an answer from your profile. */}
         <Section title="Personality prompts">
-          <Field label="Ask me about…" helper="A topic, a skill, an industry — anything you'd love to be asked about.">
+          <Field label="Ask me about…" helper="A topic, a skill, an industry, anything you'd love to be asked about.">
             <input
               value={promptAskMe}
               onChange={(e) => setPromptAskMe(e.target.value.slice(0, 160))}

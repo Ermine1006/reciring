@@ -106,7 +106,7 @@ export default function MarketplaceInterestSheet({ open, post, interests = [], b
                   Connected ✓
                 </p>
                 <p style={{ margin: '2px 0 0', fontSize: 12, color: C.textSub, fontFamily: 'Inter, system-ui, sans-serif' }}>
-                  Identity revealed — chat is open.
+                  Identity revealed, chat is open.
                 </p>
               </div>
               {it.match_id && (

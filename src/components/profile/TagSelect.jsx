@@ -89,7 +89,7 @@ export function TagSelect({ options = [], grouped = false, value = [], onChange,
         <div style={menu}>
           <input autoFocus value={q} onChange={e => setQ(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (canAddCustom) addCustom() } }}
-            placeholder={atMax ? `Max ${max} reached — remove one to add` : 'Search or type your own…'}
+            placeholder={atMax ? `Max ${max} reached, remove one to add` : 'Search or type your own…'}
             style={search} />
           <div style={list}>
             {grouped && !q

@@ -159,7 +159,7 @@ export default function PeerProfileCard({ open, onClose, match, peerProfile }) {
                 padding: '4px 4px',
                 marginBottom: 16,
               }}>
-                <InfoRow label="School email" value={peerProfile?.email || '—'} copyable />
+                <InfoRow label="School email" value={peerProfile?.email || 'Not provided'} copyable />
                 <Divider />
                 <InfoRow label="Program" value={peerProfile?.program || 'Not shared'} />
               </div>
@@ -199,7 +199,7 @@ export default function PeerProfileCard({ open, onClose, match, peerProfile }) {
                 lineHeight: 1.55, textAlign: 'center',
                 fontFamily: 'Inter, system-ui, sans-serif',
               }}>
-                Reach out respectfully. Identity reveal is a trust signal — keep it that way.
+                Reach out respectfully. Identity reveal is a trust signal, keep it that way.
               </p>
             </div>
           </motion.aside>
@@ -232,7 +232,7 @@ function InfoRow({ label, value, copyable }) {
         }}>
           {value}
         </p>
-        {copyable && value && value !== '—' && (
+        {copyable && value && value !== 'Not provided' && (
           <button data-mutu-glass=""
             type="button"
             onClick={() => {

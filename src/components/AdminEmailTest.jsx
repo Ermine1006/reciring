@@ -57,7 +57,7 @@ const TEMPLATES = [
     locked:         false,
     allowBroadcast: true,
     defaultSubject: "What's new at Mutu",
-    defaultBody:    "Hi —\n\nWe just shipped some updates we think you'll like:\n\n• \n• \n\nOpen the app to try them out.\n\n— The Mutu Team",
+    defaultBody:    "Hi,\n\nWe just shipped some updates we think you'll like:\n\n• \n• \n\nOpen the app to try them out.\n\nThe Mutu Team",
     eyebrow:        'Product Update',
   },
   {
@@ -68,13 +68,13 @@ const TEMPLATES = [
     locked:         false,
     allowBroadcast: true,
     defaultSubject: 'A note from the Mutu community',
-    defaultBody:    "Hi —\n\nQuick update from the team:\n\n\n\n— The Mutu Team",
+    defaultBody:    "Hi,\n\nQuick update from the team:\n\n\n\nThe Mutu Team",
     eyebrow:        'Community',
   },
   {
     id:             'custom',
     label:          'Custom',
-    description:    'Blank slate — write your own subject and body.',
+    description:    'Blank slate, write your own subject and body.',
     apiTemplate:    'broadcast_message',
     locked:         false,
     allowBroadcast: true,
@@ -148,7 +148,7 @@ export default function AdminEmailTest({ onClose }) {
   // can read from the same source of truth. Sample blocks keep the
   // first-open experience useful instead of a blank canvas.
   const [blocks, setBlocks]                 = useState(() => [
-    { type: 'title',     text: 'Hi Mutu community —' },
+    { type: 'title',     text: 'Hi Mutu community,' },
     { type: 'paragraph', text: 'Add your message here. Use **bold**, *italic*, or [links](https://muturing.com).' },
   ])
   const [recipientsText, setRecipientsText] = useState('')

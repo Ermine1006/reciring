@@ -114,7 +114,7 @@ export default function ImpactLedger() {
           </div>
 
           <p style={{ fontSize: 12, color: C.textMuted, lineHeight: 1.55, margin: '12px 2px 0', fontFamily: 'Inter, system-ui, sans-serif' }}>
-            The more people you help, the earlier Mutu routes new opportunities — alumni, referrals, intros — to you.
+            The more people you help, the earlier Mutu routes new opportunities, alumni, referrals, intros, to you.
           </p>
 
           {/* What people say stood out */}

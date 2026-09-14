@@ -320,7 +320,7 @@ function NextActionModal({ open, onClose, person, encounter, onSave }) {
           {person?.name ? `Follow through with ${person.name}` : 'Add a next action'}
         </h2>
         <p style={{ fontSize: 12, color: C.textMuted, margin: '0 0 14px', fontFamily: 'Inter, system-ui, sans-serif' }}>
-          A concrete task you'll do — separate from any message. It shows up in My Networking → Open next actions.
+          A concrete task you'll do, separate from any message. It shows up in My Networking → Open next actions.
         </p>
 
         <label style={{ fontSize: 12, fontWeight: 600, color: C.textSub, fontFamily: 'Inter, system-ui, sans-serif' }}>What will you do?</label>

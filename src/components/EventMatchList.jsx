@@ -61,7 +61,7 @@ export default function EventMatchList({ eventId, userId, title = 'People to mee
         {header}
         <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 14, padding: '18px', textAlign: 'center' }}>
           <p style={{ margin: 0, fontSize: 13, color: C.textSub, lineHeight: 1.5 }}>
-            No strong matches yet — check back as more people join and add what they're after.
+            No strong matches yet, check back as more people join and add what they're after.
           </p>
         </div>
       </section>

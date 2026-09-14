@@ -530,7 +530,7 @@ export function AuthProvider({ children }) {
     if (!isSupabaseConfigured) return { error: new Error('Supabase not configured.') }
     if (!session) return { error: new Error('Sign in first, then link.') }
     if (typeof supabase.auth.linkIdentity !== 'function') {
-      return { error: new Error('This Supabase client is too old — update @supabase/supabase-js to link identities.') }
+      return { error: new Error('This Supabase client is too old. update @supabase/supabase-js to link identities.') }
     }
     if (isNativeApp) {
       // mirrorGoogleIdentity on the next auth event records the link in
@@ -563,7 +563,7 @@ export function AuthProvider({ children }) {
     if (!isSupabaseConfigured) return { error: new Error('Supabase not configured.') }
     if (!session) return { error: new Error('Sign in first, then connect LinkedIn.') }
     if (typeof supabase.auth.linkIdentity !== 'function') {
-      return { error: new Error('This Supabase client is too old — update @supabase/supabase-js to link identities.') }
+      return { error: new Error('This Supabase client is too old. update @supabase/supabase-js to link identities.') }
     }
     const options = { scopes: 'openid profile email' }
     if (isNativeApp) {

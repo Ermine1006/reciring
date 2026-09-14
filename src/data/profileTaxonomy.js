@@ -132,7 +132,7 @@ export const HELPING_PREFS = [
   { id: 'study-together',    label: 'Study together',           aliases: ['study group'] },
   { id: 'collaborate',       label: 'Collaborate on a project', aliases: ['collaboration', 'collaborate'] },
   { id: 'mentorship',        label: 'Mentorship',               aliases: ['mentor'] },
-  { id: 'referral',          label: 'Referral — only when I know the person well', aliases: ['referral'] },
+  { id: 'referral',          label: 'Referral, only when I know the person well', aliases: ['referral'] },
 ]
 
 // ── Structured selects ──

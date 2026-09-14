@@ -124,7 +124,7 @@ export default function LinkedAccountsSection() {
               fontSize: 12.5, color: C.textMuted,
               fontFamily: 'Inter, system-ui, sans-serif', lineHeight: 1.5,
             }}>
-              No emails on file yet. Your session email should appear here shortly — refresh if it doesn't.
+              No emails on file yet. Your session email should appear here shortly, refresh if it doesn't.
             </li>
           )}
           {emails.map(row => {

@@ -19,7 +19,7 @@ export default function ProfileQuickStart({ value = {}, onChange, onDone }) {
       <div style={{ maxWidth: 620, margin: '0 auto', padding: '34px 18px 60px' }}>
         <p style={eyebrow}>Welcome to Mutu</p>
         <h1 style={bigTitle}>Set up your profile</h1>
-        <p style={lede}>Just the essentials — this is what powers your matches. You can add more anytime.</p>
+        <p style={lede}>Just the essentials, this is what powers your matches. You can add more anytime.</p>
 
         <div style={card}>
           <div style={field}>

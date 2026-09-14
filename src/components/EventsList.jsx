@@ -198,7 +198,7 @@ export default function EventsList({ onCreateEvent, onOpenEvent, onPrepare, onOp
     // Drop the cancelled event from the local list (fetchUpcomingEvents
     // filters it out anyway, but refresh would be a roundtrip away)
     setEvents(prev => prev.filter(e => e.id !== ev.id))
-    setToast({ type: 'ok', msg: 'Event cancelled — attendees notified' })
+    setToast({ type: 'ok', msg: 'Event cancelled, attendees notified' })
   }
 
   // "My events" = events I host or joined — from a dedicated query that

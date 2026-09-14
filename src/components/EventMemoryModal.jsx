@@ -254,7 +254,7 @@ export default function EventMemoryModal({
                     fontFamily: 'Inter, system-ui, sans-serif',
                   }}
                 >
-                  Undo — remove from memory
+                  Undo, remove from memory
                 </button>
               )}
             </div>

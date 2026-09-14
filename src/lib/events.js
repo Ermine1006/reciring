@@ -391,7 +391,7 @@ export async function cancelEvent(eventId, reason) {
 
   if (error) return { error }
   if (!data || data.length === 0) {
-    return { error: new Error('Cancel had no effect — RLS may have blocked you (only the host can cancel).') }
+    return { error: new Error('Cancel had no effect. RLS may have blocked you (only the host can cancel).') }
   }
   return { error: null }
 }

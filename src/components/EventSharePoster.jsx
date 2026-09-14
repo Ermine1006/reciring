@@ -121,7 +121,7 @@ export default function EventSharePoster({ event, open, onClose }) {
         await navigator.share({
           files: [file],
           title: event.title,
-          text: `${event.title} — join me on Mutu\n${link}`,
+          text: `${event.title}, join me on Mutu\n${link}`,
         })
       } else {
         // Desktop / unsupported: download the poster so it can be posted manually.
@@ -129,7 +129,7 @@ export default function EventSharePoster({ event, open, onClose }) {
         a.href = dataUrl
         a.download = `mutu-${event.id}.png`
         a.click()
-        setToast('Poster saved — post it to your story')
+        setToast('Poster saved, post it to your story')
       }
     } catch (e) {
       // AbortError = user closed the sheet; anything else is a real failure.

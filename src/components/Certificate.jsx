@@ -145,7 +145,7 @@ export default function Certificate({ points, onClose }) {
             boxShadow: done ? 'none' : '0 8px 24px rgba(201,163,59,0.4)',
           }}
         >
-          {done ? '✓  Saved — Share on LinkedIn' : downloading ? 'Exporting…' : '⬇  Download for LinkedIn'}
+          {done ? '✓  Saved, Share on LinkedIn' : downloading ? 'Exporting…' : '⬇  Download for LinkedIn'}
         </button>
 
         <button

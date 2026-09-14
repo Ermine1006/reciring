@@ -40,13 +40,13 @@ const SUGGESTIONS = [
 // Crafted questions behind the primary action cards.
 const Q_SUMMARY = 'Give me a quick summary of my network right now: any follow-ups due, who I met recently, and the single best next step I should take.'
 const Q_ATTEND  = 'Based on my profile and interests, which upcoming event should I attend, and why?'
-const qPrep = (title) => `I'm attending "${title}". Help me prepare — who should I connect with there, why each, and how should I open the conversation?`
+const qPrep = (title) => `I'm attending "${title}". Help me prepare, who should I connect with there, why each, and how should I open the conversation?`
 
 // The three primary actions Ask Mutu opens to. `kind` drives the click handler.
 const ACTIONS = [
   { kind: 'summary', short: 'Summary',  title: 'Your networking summary', sub: 'Follow-ups due, who you met recently, next step' },
   { kind: 'attend',  short: 'Attend',   title: 'What event should I attend?', sub: 'Best upcoming events for your goals' },
-  { kind: 'prep',    short: 'Prepare',  title: 'Prepare for an event', sub: 'Who to connect with there — and how to open' },
+  { kind: 'prep',    short: 'Prepare',  title: 'Prepare for an event', sub: 'Who to connect with there, and how to open' },
 ]
 
 // Granola-style shortcut pill sitting in the row just above the composer.

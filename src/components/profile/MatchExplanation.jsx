@@ -83,7 +83,7 @@ export default function MatchExplanation({ viewer = {}, other = {}, headline, pr
           Say hello to {other.name || 'them'} →
         </button>
       )}
-      <p style={{ textAlign: 'center', color: C.muted, fontSize: 13.5, marginTop: 16 }}>No abstract compatibility score — just real, explainable reasons to connect.</p>
+      <p style={{ textAlign: 'center', color: C.muted, fontSize: 13.5, marginTop: 16 }}>No abstract compatibility score, just real, explainable reasons to connect.</p>
     </div>
   )
 }

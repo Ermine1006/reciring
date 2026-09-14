@@ -123,7 +123,7 @@ export default function EventMarketplace({ eventId, userId, isHost = false, allo
     setMyInt(prev => [...prev, { id: `tmp-${post.id}`, post_id: post.id, status: 'pending', match_id: null }])
     const { error } = await expressInterest({ postId: post.id, eventId, ownerId: post.user_id, requesterId: userId })
     if (error) { flash(error.message ? `Couldn't send interest: ${error.message}` : 'Could not send interest'); loadAll(); return }
-    flash("Interest sent — they'll be notified")
+    flash("Interest sent, they'll be notified")
     loadAll()
   }
 
@@ -175,7 +175,7 @@ export default function EventMarketplace({ eventId, userId, isHost = false, allo
       {/* Intro */}
       <p style={{ margin: '4px 0 16px', fontSize: 13.5, color: C.textSub, lineHeight: 1.55, fontFamily: 'Inter, system-ui, sans-serif' }}>
         Share what you're looking for and what you can offer, then browse other attendees and connect
-        before the event — names stay hidden until someone accepts.
+        before the event, names stay hidden until someone accepts.
       </p>
 
       {/* Host stats now live in the host-only Manage page, not on the Board. */}
@@ -225,7 +225,7 @@ export default function EventMarketplace({ eventId, userId, isHost = false, allo
       {groupedFeed.length === 0 ? (
         <div style={{ ...cardStyle, textAlign: 'center' }}>
           <p style={{ margin: 0, fontSize: 14, color: C.textMuted, fontFamily: 'Inter, system-ui, sans-serif' }}>
-            No one else has shared a post yet. Be the first — others will see it when they open the Event Board.
+            No one else has shared a post yet. Be the first, others will see it when they open the Event Board.
           </p>
         </div>
       ) : (

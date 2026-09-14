@@ -40,7 +40,7 @@ export async function writeProfilePrompt({ which, text, context } = {}) {
     const data = await res.json().catch(() => ({}))
     if (!res.ok) return { text: null, error: new Error(data.error || 'Could not write that.') }
     if (typeof data.text !== 'string' || !data.text.trim()) {
-      return { text: null, error: new Error("Couldn't reach the writer — AI features run on the deployed site, not localhost.") }
+      return { text: null, error: new Error("Couldn't reach the writer, AI features run on the deployed site, not localhost.") }
     }
     return { text: withoutEmDashes(data.text), error: null }
   } catch (err) {
@@ -65,7 +65,7 @@ export async function suggestProfileTags({ text, context } = {}) {
     // endpoint wasn't reached (e.g. the /api functions don't run on the local
     // dev server) — surface that instead of pretending we got empty results.
     if (!data || typeof data.tags !== 'object' || data.tags === null) {
-      return { tags: null, error: new Error("Couldn't reach the suggestion service — AI features run on the deployed site, not localhost.") }
+      return { tags: null, error: new Error("Couldn't reach the suggestion service, AI features run on the deployed site, not localhost.") }
     }
     const t = data.tags
     return {

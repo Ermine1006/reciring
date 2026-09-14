@@ -120,7 +120,7 @@ export async function fetchEventMatches(eventId, meUserId) {
       offer:   o.offer_text || '',
       score,
       reason:  mutual
-        ? 'Mutual fit — they can help you and you can help them'
+        ? 'Mutual fit, they can help you and you can help them'
         : theyHelpMe > 0
           ? 'They offer what you’re looking for'
           : iHelpThem > 0
@@ -219,7 +219,7 @@ export async function fetchEventPrepCandidates(eventId, meUserId, profile, { lim
       offer:   o.offer_text || '',
       score,
       reason:  mutual
-        ? 'Mutual fit — they can help you and you can help them'
+        ? 'Mutual fit, they can help you and you can help them'
         : theyHelpMe > 0
           ? 'They offer what you’re looking for'
           : iHelpThem > 0

@@ -106,7 +106,7 @@ export function renderBlocksEmail({ subject, eyebrow, blocks, appUrl, unsubscrib
           <tr>
             <td style="padding:20px 40px 32px 40px; text-align:center; border-top:1px solid ${C.border};">
               <p style="font-size:11px; color:${C.textMuted}; margin:0 0 8px; line-height:1.6;">
-                Sent from Mutu — the Rotman peer network.
+                Sent from Mutu, the Rotman peer network.
               </p>
               <p style="font-size:11px; color:${C.textMuted}; margin:0; line-height:1.6;">
                 <a href="${safeApp}" style="color:${C.goldDark}; text-decoration:none;">muturing.com</a>${safeUnsub ? `
@@ -224,7 +224,7 @@ function blockToText(b) {
       const items = Array.isArray(b.items) ? b.items : []
       return items.map((t, i) => `${i + 1}. ${stripInline(String(t || ''))}`).join('\n')
     }
-    case 'divider':  return '— — —'
+    case 'divider':  return '• • •'
     case 'quote':    return `“${stripInline(String(b.text || ''))}”`
     case 'cta': {
       const label = String(b.text || 'Learn more').trim() || 'Learn more'

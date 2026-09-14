@@ -259,7 +259,7 @@ export default function EventModeSection({
           fontSize: 12.5, color: C.textMuted, lineHeight: 1.55,
           fontFamily: 'Inter, system-ui, sans-serif', margin: 0,
         }}>
-          No matches. Adjust your search — or if the attendee list is empty, wait for people to join.
+          No matches. Adjust your search, or if the attendee list is empty, wait for people to join.
         </p>
       )}
 

@@ -158,7 +158,7 @@ export default function FollowUpModal({
                 Message {person?.name || 'them'}
               </h2>
               <p style={{ fontSize: 12, color: C.textMuted, margin: 0, fontFamily: 'Inter, system-ui, sans-serif' }}>
-                Edit before you send — nothing is sent automatically.
+                Edit before you send, nothing is sent automatically.
               </p>
             </div>
 

@@ -56,7 +56,7 @@ const RULES = [
     const shared = overlap(iWantToLearn, theyHelpWith)
     if (shared.length === 0) return null
     return {
-      reason: `${firstName(them.name)} can help with ${shared[0].toLowerCase()} — something you want to learn.`,
+      reason: `${firstName(them.name)} can help with ${shared[0].toLowerCase()}, something you want to learn.`,
       score: 10,
     }
   },
@@ -72,7 +72,7 @@ const RULES = [
     )
     if (matched) {
       return {
-        reason: `${firstName(them.name)} offers ${matched.toLowerCase()} — something you want to learn.`,
+        reason: `${firstName(them.name)} offers ${matched.toLowerCase()}, something you want to learn.`,
         score: 8,
       }
     }

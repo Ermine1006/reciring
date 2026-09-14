@@ -110,10 +110,10 @@ export async function unmatchMatch(matchId) {
 
   if (error) return { error }
   if (!data || data.length === 0) {
-    return { error: new Error('Unmatch had no effect — the row was not updated. Check your DB CHECK constraint and RLS policies.') }
+    return { error: new Error('Unmatch had no effect. the row was not updated. Check your DB CHECK constraint and RLS policies.') }
   }
   if (data[0].status !== 'unmatched') {
-    return { error: new Error(`Status is "${data[0].status}" instead of "unmatched" — CHECK constraint may be blocking the value.`) }
+    return { error: new Error(`Status is "${data[0].status}" instead of "unmatched". CHECK constraint may be blocking the value.`) }
   }
   return { error: null }
 }
@@ -250,7 +250,7 @@ export async function requestIdentityReveal(matchId, userId) {
 
   if (error) return { error }
   if (!data || data.length === 0) {
-    return { error: new Error('Reveal request had no effect — check RLS or the matches CHECK constraint.') }
+    return { error: new Error('Reveal request had no effect. check RLS or the matches CHECK constraint.') }
   }
   return { error: null }
 }

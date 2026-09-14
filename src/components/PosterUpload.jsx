@@ -30,7 +30,7 @@ export default function PosterUpload({ value, onChange, userId }) {
     const { url, error: upErr } = await uploadEventPoster(file, userId)
     setBusy(false)
     if (upErr || !url) {
-      setError(upErr?.message || 'Upload failed — try again.')
+      setError(upErr?.message || 'Upload failed, try again.')
       return
     }
     onChange(url)

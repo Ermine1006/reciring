@@ -23,7 +23,7 @@ const BLOCK_MENU = [
   { type: 'bullets',   label: 'Bullet list',      icon: '•'  },
   { type: 'numbers',   label: 'Numbered list',    icon: '1.' },
   { type: 'quote',     label: 'Highlight card',   icon: '❝'  },
-  { type: 'divider',   label: 'Divider',          icon: '—'  },
+  { type: 'divider',   label: 'Divider',          icon: '⋯'  },
   { type: 'cta',       label: 'CTA button',       icon: '→'  },
 ]
 
@@ -488,7 +488,7 @@ function ListEditor({ items, onChange, numbered }) {
             type="text"
             value={item}
             onChange={e => setItem(i, e.target.value)}
-            placeholder="List item — supports **bold** and [link](url)"
+            placeholder="List item, supports **bold** and [link](url)"
             style={{
               flex: 1,
               padding: '7px 10px',

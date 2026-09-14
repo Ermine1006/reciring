@@ -92,7 +92,7 @@ export async function updatePracticeRequest(requestId, patch) {
     .select()
   if (error) return { data: null, error }
   if (!data || data.length === 0) {
-    return { data: null, error: new Error('Update had no effect — check ownership/RLS.') }
+    return { data: null, error: new Error('Update had no effect. check ownership/RLS.') }
   }
   return { data: data[0], error: null }
 }

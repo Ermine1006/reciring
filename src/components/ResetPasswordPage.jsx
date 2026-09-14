@@ -205,7 +205,7 @@ export default function ResetPasswordPage() {
 
             {linkState === 'failed' && (
               <p className="mt-3 text-center" style={{ fontSize: 12, color: '#EF4444', lineHeight: 1.5 }}>
-                We couldn't verify this reset link. It may have already been used or expired — or it
+                We couldn't verify this reset link. It may have already been used or expired, or it
                 was opened in a different browser than the one you requested it from. Request a fresh
                 link and open it in the same browser.
               </p>

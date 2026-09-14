@@ -101,7 +101,7 @@ export default function MatchModal({ match, onClose, onConfirm, onSchedule }) {
                 Quick intro message
               </p>
               <p className="text-[13px] leading-relaxed" style={{ color: C.textSub, fontStyle: 'italic' }}>
-                "Hey! Happy to connect — want to do a quick coffee chat this week?"
+                "Hey! Happy to connect, want to do a quick coffee chat this week?"
               </p>
             </div>
 

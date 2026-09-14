@@ -237,7 +237,7 @@ export default function SubmitRequest({ onSubmitted, prefill = null, demoMode = 
 
   /* ── Derived state ── */
   const tags = [...helpType, ...industry]
-  const needsText = [title, details].filter(Boolean).join(' — ')
+  const needsText = [title, details].filter(Boolean).join('\n\n')
   // Helping is a community contribution, never the price of asking:
   // the ask alone is enough to publish.
   const canSubmit = title.trim().length > 0 && helpType.length > 0
@@ -283,7 +283,7 @@ export default function SubmitRequest({ onSubmitted, prefill = null, demoMode = 
     })
     setImprovingField(null)
     if (error || !text) {
-      setSubmitError("Couldn't rewrite just now — your text is unchanged.")
+      setSubmitError("Couldn't rewrite just now, your text is unchanged.")
       return
     }
     setRewriteUndo({ field, prev: isDetails ? details : offers })
@@ -514,9 +514,7 @@ export default function SubmitRequest({ onSubmitted, prefill = null, demoMode = 
             onFocus={focusGold}
             onBlur={blurReset}
           />
-          <p className="-mt-0.5 mb-1" style={{ fontSize: 11, color: C.textMuted, lineHeight: 1.4 }}>
-            Be specific — e.g. "VC intro for fundraising" or "Resume review for consulting"
-          </p>
+          <p className="-mt-0.5 mb-1" style={{ fontSize: 11, color: C.textMuted, lineHeight: 1.4 }}>Be specific. For example, "VC intro for fundraising" or "Resume review for consulting"</p>
 
           <label htmlFor="details" className="block text-[13px] font-semibold mb-2 mt-2" style={{ color: C.text }}>
             Details <span className="font-normal" style={{ color: C.textMuted }}>optional</span>

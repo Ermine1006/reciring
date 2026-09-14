@@ -57,13 +57,13 @@ export function generateFollowUp({
   // Value-recall — the specific reason we're following up.
   if (theirNeed && myOffer) {
     parts.push('')
-    parts.push(`You mentioned that you're looking for ${cleanFragment(theirNeed)}, and I may be able to help — I offer ${cleanFragment(myOffer)}. Would you like to continue the conversation?`)
+    parts.push(`You mentioned that you're looking for ${cleanFragment(theirNeed)}, and I may be able to help, I offer ${cleanFragment(myOffer)}. Would you like to continue the conversation?`)
   } else if (theirNeed) {
     parts.push('')
     parts.push(`You mentioned you're looking for ${cleanFragment(theirNeed)}. I'd love to think through that with you if it's still on your mind.`)
   } else if (myOffer) {
     parts.push('')
-    parts.push(`I offer ${cleanFragment(myOffer)} — happy to share more if it's useful.`)
+    parts.push(`I offer ${cleanFragment(myOffer)}, happy to share more if it's useful.`)
   } else {
     parts.push('')
     parts.push(`Would you like to continue the conversation over a coffee chat?`)

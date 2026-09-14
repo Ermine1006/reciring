@@ -117,7 +117,7 @@ export function computeBackfill(row = {}, nowIso) {
   // skills_to_learn held interaction formats too — they are NOT topics, so they
   // cannot become help_wanted. Record them rather than fabricate expertise.
   for (const val of A(row.skills_to_learn)) {
-    log.push({ field: 'skills_to_learn', legacy_value: String(val), note: 'legacy interaction format — add real topics in Review' })
+    log.push({ field: 'skills_to_learn', legacy_value: String(val), note: 'legacy interaction format. add real topics in Review' })
   }
 
   // legacy headline held the role/title → title (if not already set)

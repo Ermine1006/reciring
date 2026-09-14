@@ -148,7 +148,7 @@ export default function IdentityRevealRequestModal({ open, onAccept, onDecline, 
                   ...matchaCta,
                 }}
               >
-                {busy === 'accept' ? 'Accepting…' : 'Accept — reveal identities'}
+                {busy === 'accept' ? 'Accepting…' : 'Accept, reveal identities'}
               </button>
               <button data-mutu-glass=""
                 type="button"
@@ -166,7 +166,7 @@ export default function IdentityRevealRequestModal({ open, onAccept, onDecline, 
                   opacity: busy === 'accept' ? 0.5 : 1,
                 }}
               >
-                {busy === 'decline' ? 'Declining…' : 'Decline — stay anonymous'}
+                {busy === 'decline' ? 'Declining…' : 'Decline, stay anonymous'}
               </button>
             </div>
 

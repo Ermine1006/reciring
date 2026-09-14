@@ -91,7 +91,7 @@ export function buildExplanation(viewer, candidate) {
 
   // Headline — grounded in what actually exists.
   let headline
-  if (s.reciprocal && s.hasSpark) headline = 'A useful connection — with an easy conversation starter.'
+  if (s.reciprocal && s.hasSpark) headline = 'A useful connection, with an easy conversation starter.'
   else if (s.reciprocal)          headline = 'A genuinely two-way connection worth making.'
   else if (professional)          headline = 'A useful connection worth making.'
   else if (s.hasSpark)            headline = 'You would probably enjoy talking.'
@@ -115,7 +115,7 @@ export function buildExplanation(viewer, candidate) {
 function buildOpener({ s, otherName }) {
   const iOffer = s.youHelpThem[0]     // a topic I can help them with
   const theirs = s.theyHelpYou[0]     // a topic they can help me with
-  const coffee = s.bothOpenToCoffee ? ' — maybe over coffee?' : '?'
+  const coffee = s.bothOpenToCoffee ? ', maybe over coffee?' : '?'
   if (theirs && iOffer) {
     return `${otherName}, I saw you're deep in ${label(theirs, labelForTopic).toLowerCase()}. I'd love to hear your perspective, and I'm happy to share what I know about ${label(iOffer, labelForTopic).toLowerCase()} too${coffee}`
   }
@@ -126,7 +126,7 @@ function buildOpener({ s, otherName }) {
     return `${otherName}, I'd really value your take on ${label(theirs, labelForTopic).toLowerCase()}${coffee}`
   }
   if (s.sharedInterests.length) {
-    return `${otherName}, noticed we both like ${label(s.sharedInterests[0], labelForInterest).toLowerCase()} — would be great to connect${coffee}`
+    return `${otherName}, noticed we both like ${label(s.sharedInterests[0], labelForInterest).toLowerCase()}, would be great to connect${coffee}`
   }
   return `${otherName}, would be great to connect${coffee}`
 }

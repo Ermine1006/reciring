@@ -44,7 +44,7 @@ export default function ProfileWizard({ value = {}, onChange, onFinish, onBack }
 
           {step === 0 && (<>
             <h2 style={cardTitle}>Professional snapshot</h2>
-            <p style={cardSub}>Help people understand your experience — without turning your profile into a résumé.</p>
+            <p style={cardSub}>Help people understand your experience, without turning your profile into a résumé.</p>
             <div style={rule} />
             <Field label="Program">
               <Select value={v.program || ''} onChange={x => set({ program: x })}
@@ -80,7 +80,7 @@ export default function ProfileWizard({ value = {}, onChange, onFinish, onBack }
             <p style={cardSub}>Show what someone can genuinely ask you about, and where another person could help you.</p>
             <div style={rule} />
             <Callout icon="↔" title="Mutu matches directionally.">
-              Your expertise can meet someone else's goal — and their expertise can meet yours.
+              Your expertise can meet someone else's goal, and their expertise can meet yours.
             </Callout>
             <Field label="What I can help with" hint="What can someone genuinely come to you for?"
               count={`${arr('expertiseOffered').length} / 5`}>
@@ -90,7 +90,7 @@ export default function ProfileWizard({ value = {}, onChange, onFinish, onBack }
               count={`${arr('helpWanted').length} / 5`}>
               <TagSelect options={TOPICS} value={arr('helpWanted')} onChange={x => set({ helpWanted: x })} max={5} placeholder="Select topics or type your own…" />
             </Field>
-            <Field label="Ask me about…" hint="A memorable conversation starter — specific is better.">
+            <Field label="Ask me about…" hint="A memorable conversation starter, specific is better.">
               <Input value={v.promptAskMe || ''} onChange={x => set({ promptAskMe: x.slice(0, 240) })} placeholder="e.g. Building Mutu from 0 to 1" />
             </Field>
           </>)}
@@ -120,7 +120,7 @@ export default function ProfileWizard({ value = {}, onChange, onFinish, onBack }
             <p style={cardSub}>Set the kinds of interactions you are comfortable with. You can change these anytime.</p>
             <div style={rule} />
             <p style={{ ...flabel, marginBottom: 4 }}>How I'm open to helping</p>
-            <p style={fhint}>Choose the interactions you are comfortable offering — this is separate from your expertise.</p>
+            <p style={fhint}>Choose the interactions you are comfortable offering, this is separate from your expertise.</p>
             <div style={{ marginTop: 8 }}>
               <TagSelect options={HELPING_PREFS} value={arr('helpingPreferences')} onChange={x => set({ helpingPreferences: x })} placeholder="Select how you're open to helping…" />
             </div>

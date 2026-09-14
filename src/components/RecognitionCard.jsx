@@ -86,7 +86,7 @@ export default function RecognitionCard({ matchId, peerId, peerName, currentUser
     setBusy(true); setErr(null)
     const { error } = await confirmExchange(matchId, currentUserId)
     setBusy(false)
-    if (error) { setErr('Could not confirm — try again.'); return }
+    if (error) { setErr('Could not confirm, try again.'); return }
     await refresh()
   }
 
@@ -97,7 +97,7 @@ export default function RecognitionCard({ matchId, peerId, peerName, currentUser
       matchId, giverId: currentUserId, receiverId: peerId, chips, freeText: note,
     })
     setBusy(false)
-    if (error) { setErr(error.message || 'Could not send — try again.'); return }
+    if (error) { setErr(error.message || 'Could not send, try again.'); return }
     setPhase('done')
   }
 
@@ -184,7 +184,7 @@ export default function RecognitionCard({ matchId, peerId, peerName, currentUser
               You created value
             </h3>
             <p style={{ fontSize: 13.5, color: C.textSub, margin: '0 auto 18px', maxWidth: 260, lineHeight: 1.55 }}>
-              {name} will see what stood out. This is the quiet ledger of who you've helped — and it starts working for you.
+              {name} will see what stood out. This is the quiet ledger of who you've helped, and it starts working for you.
             </p>
             <PrimaryButton onClick={onSeeImpact}>See your impact</PrimaryButton>
           </motion.div>

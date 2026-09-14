@@ -68,7 +68,7 @@ export default function EventCaptureSheet({ open, mode = 'manual', initial = nul
     setAiBusy(true); setAiErr(null)
     const { capture, error } = await extractCapture(raw, { eventTitle })
     setAiBusy(false)
-    if (error || !capture) { setAiErr(error?.message || 'Could not read that — try adding a bit more detail.'); return }
+    if (error || !capture) { setAiErr(error?.message || 'Could not read that, try adding a bit more detail.'); return }
     setPersonName(capture.person || '')
     setNote([capture.context, capture.need ? `Looking for: ${capture.need}` : ''].filter(Boolean).join('\n'))
     setCommitment(capture.commitment || '')
@@ -103,7 +103,7 @@ export default function EventCaptureSheet({ open, mode = 'manual', initial = nul
           <>
             <p style={eyebrow}>✨ Tell Mutu what happened</p>
             <h2 style={title}>Just describe it</h2>
-            <p style={{ ...help, marginBottom: 12 }}>Write naturally — who you met, what they need, what you promised. Mutu drafts a follow-up you can edit before saving.</p>
+            <p style={{ ...help, marginBottom: 12 }}>Write naturally, who you met, what they need, what you promised. Mutu drafts a follow-up you can edit before saving.</p>
             <textarea
               value={raw}
               onChange={e => setRaw(e.target.value.slice(0, 1000))}
@@ -121,7 +121,7 @@ export default function EventCaptureSheet({ open, mode = 'manual', initial = nul
           <>
             <p style={eyebrow}>{isEdit ? 'Edit' : mode === 'ai' ? '✨ Review draft' : 'Add person I met'}</p>
             <h2 style={title}>{isEdit ? personName || 'Encounter' : mode === 'ai' ? 'Confirm before saving' : 'Who did you meet?'}</h2>
-            {mode === 'ai' && !isEdit && <p style={{ ...help, marginBottom: 12 }}>Mutu filled this in from your note — tweak anything, then save.</p>}
+            {mode === 'ai' && !isEdit && <p style={{ ...help, marginBottom: 12 }}>Mutu filled this in from your note, tweak anything, then save.</p>}
 
             <label style={label}>Name <span style={{ color: C.danger }}>*</span></label>
             <input value={personName} onChange={e => setPersonName(e.target.value)} placeholder="e.g. Sarah Chen" style={input} />
@@ -130,7 +130,7 @@ export default function EventCaptureSheet({ open, mode = 'manual', initial = nul
               <>
                 <label style={{ ...label, marginTop: 12 }}>Event</label>
                 <select value={eventId} onChange={e => setEventId(e.target.value)} style={input}>
-                  <option value="">— Not tied to an event —</option>
+                  <option value="">Not tied to an event</option>
                   {events.map(e => <option key={e.id} value={e.id}>{e.title}</option>)}
                 </select>
               </>
@@ -143,10 +143,10 @@ export default function EventCaptureSheet({ open, mode = 'manual', initial = nul
             <textarea value={note} onChange={e => setNote(e.target.value)} rows={2} placeholder="Only you can see this." style={{ ...input, resize: 'vertical', minHeight: 56 }} />
 
             <label style={{ ...label, marginTop: 12 }}>My commitment</label>
-            <input value={commitment} onChange={e => setCommitment(e.target.value)} placeholder="What you promised — e.g. Introduce her to David" style={input} />
+            <input value={commitment} onChange={e => setCommitment(e.target.value)} placeholder="What you promised, e.g. Introduce her to David" style={input} />
 
             <label style={{ ...label, marginTop: 12 }}>Next action</label>
-            <input value={nextAction} onChange={e => setNextAction(e.target.value)} placeholder="Your next action — e.g. Send the intro" style={input} />
+            <input value={nextAction} onChange={e => setNextAction(e.target.value)} placeholder="Your next action, e.g. Send the intro" style={input} />
 
             <label style={{ ...label, marginTop: 12 }}>Due</label>
             <input type="date" value={dueOn} min={new Date().toISOString().slice(0, 10)} onChange={e => setDueOn(e.target.value)} style={input} />

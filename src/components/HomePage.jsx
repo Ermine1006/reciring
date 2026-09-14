@@ -57,7 +57,7 @@ function oneLine(s, max = 92) {
 // "title — details"), or the first sentence. Keep it short.
 function titleOf(s, max = 64) {
   let t = String(s || '').trim().replace(/\s+/g, ' ')
-  t = t.split(/\s[—–]\s|\s-\s/)[0]          // before " — " / " – " / " - "
+  t = t.split(/\n+|\s[—–]\s|\s-\s/)[0]          // before " — " / " – " / " - "
   const m = t.match(/^[^.!?]*[.!?]?/)        // up to the first sentence end
   t = (m ? m[0] : t).trim()
   return t.length <= max ? t : t.slice(0, max - 1).trimEnd() + '…'
@@ -179,28 +179,6 @@ export default function HomePage({
           </div>
         )}
 
-        {/* ── Ask Mutu — AI assistant (directly under the dashboard) ── */}
-        <button data-mutu-glass="" type="button" onClick={() => onAskMutu?.()}
-          style={{ width: '100%', marginTop: 12, display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left', cursor: 'pointer',
-            background: 'linear-gradient(135deg, #FBF7EE 0%, #F6EFDD 100%)', border: '1px solid #ECDEBC', borderRadius: 16, padding: '13px 14px',
-            boxShadow: '0 2px 10px rgba(150,120,30,0.06)' }}>
-          <span style={{ width: 44, height: 44, borderRadius: '50%', flexShrink: 0, display: 'grid', placeItems: 'center',
-            background: 'linear-gradient(145deg, #D6B04A, #A6822A)', boxShadow: '0 4px 10px rgba(180,140,30,0.30)' }}>
-            <Sparkles size={20} color="#fff" strokeWidth={2} />
-          </span>
-          <span style={{ flex: 1, minWidth: 0 }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-              <b style={{ fontSize: 15.5, fontWeight: 700, color: C.ink, fontFamily: 'Inter, system-ui, sans-serif' }}>Ask Mutu</b>
-              <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.08em', color: '#8A6E1E', background: '#F3E7C4', borderRadius: 5, padding: '2px 6px', fontFamily: 'Inter, system-ui, sans-serif' }}>AI</span>
-            </span>
-            <span style={{ display: 'block', fontSize: 12, color: C.ink2, marginTop: 2, fontFamily: 'Inter, system-ui, sans-serif' }}>Your AI networking assistant — ask anything.</span>
-          </span>
-          <span style={{ width: 34, height: 34, borderRadius: '50%', flexShrink: 0, display: 'grid', placeItems: 'center',
-            background: 'linear-gradient(145deg, #97A275, #78855A)', boxShadow: '0 3px 9px rgba(92,106,62,0.28)' }}>
-            <ArrowRight size={15} color="#fff" strokeWidth={2.3} />
-          </span>
-        </button>
-
         {/* ── Reminder: carry a past-event post into Discover ── */}
         {pastPosts.length > 0 && (
           <button data-mutu-glass="" type="button" onClick={() => setPastOpen(true)}
@@ -278,6 +256,28 @@ export default function HomePage({
 
         {/* ── People you should meet (Smart Match) ── */}
         <SmartMatchSection />
+
+        {/* ── Ask Mutu — AI assistant at the bottom of Home ── */}
+        <button data-mutu-glass="" type="button" onClick={() => onAskMutu?.()}
+          style={{ width: '100%', marginTop: 12, display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left', cursor: 'pointer',
+            background: 'linear-gradient(135deg, #FBF7EE 0%, #F6EFDD 100%)', border: '1px solid #ECDEBC', borderRadius: 16, padding: '13px 14px',
+            boxShadow: '0 2px 10px rgba(150,120,30,0.06)' }}>
+          <span style={{ width: 44, height: 44, borderRadius: '50%', flexShrink: 0, display: 'grid', placeItems: 'center',
+            background: 'linear-gradient(145deg, #D6B04A, #A6822A)', boxShadow: '0 4px 10px rgba(180,140,30,0.30)' }}>
+            <Sparkles size={20} color="#fff" strokeWidth={2} />
+          </span>
+          <span style={{ flex: 1, minWidth: 0 }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+              <b style={{ fontSize: 15.5, fontWeight: 700, color: C.ink, fontFamily: 'Inter, system-ui, sans-serif' }}>Ask Mutu</b>
+              <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.08em', color: '#8A6E1E', background: '#F3E7C4', borderRadius: 5, padding: '2px 6px', fontFamily: 'Inter, system-ui, sans-serif' }}>AI</span>
+            </span>
+            <span style={{ display: 'block', fontSize: 12, color: C.ink2, marginTop: 2, fontFamily: 'Inter, system-ui, sans-serif' }}>Your AI networking assistant. Ask anything.</span>
+          </span>
+          <span style={{ width: 34, height: 34, borderRadius: '50%', flexShrink: 0, display: 'grid', placeItems: 'center',
+            background: 'linear-gradient(145deg, #97A275, #78855A)', boxShadow: '0 3px 9px rgba(92,106,62,0.28)' }}>
+            <ArrowRight size={15} color="#fff" strokeWidth={2.3} />
+          </span>
+        </button>
       </div>
 
       <PastPostsSheet
@@ -305,7 +305,7 @@ function PastPostsSheet({ open, posts, onShare, onDismiss, onClose }) {
         <div style={{ padding: '6px 22px 12px', flexShrink: 0 }}>
           <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: C.ink, fontFamily: 'Inter, system-ui, sans-serif' }}>Keep these going</h2>
           <p style={{ margin: '3px 0 0', fontSize: 13, color: C.ink2, lineHeight: 1.5, fontFamily: 'Inter, system-ui, sans-serif' }}>
-            These posts were tied to events that have ended. Share one in Give &amp; Ask and the whole community can help — not just attendees.
+            These posts were tied to events that have ended. Share one in Give &amp; Ask and the whole community can help, not just attendees.
           </p>
         </div>
         <div className="phone-scroll" style={{ flex: 1, overflowY: 'auto', padding: '0 16px calc(20px + env(safe-area-inset-bottom))' }}>
@@ -353,7 +353,7 @@ function eventReason(ev, me) {
   const interests = broadLabelsOf(me?.industry_interests || []).map(s => s.toLowerCase())
   if (ev.category && interests.includes(String(ev.category).toLowerCase())) return `Relevant to your interest in ${ev.category}.`
   const n = ev.attendee_count || 0
-  if (n >= 3) return `${n} people are going — near you.`
+  if (n >= 3) return `${n} people are going near you.`
   return 'An upcoming event near you.'
 }
 

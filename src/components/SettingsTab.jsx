@@ -92,7 +92,7 @@ export default function SettingsTab({ onOpenAdminEmailTest, onOpenEventReview })
       return
     }
     if (partial) {
-      alert('Your profile data was deleted and you have been signed out. Full account removal requires admin action — please contact support.')
+      alert('Your profile data was deleted and you have been signed out. Full account removal requires admin action, please contact support.')
     }
   }
 
@@ -187,7 +187,7 @@ export default function SettingsTab({ onOpenAdminEmailTest, onOpenEventReview })
             fontSize: 12, color: '#92400E', lineHeight: 1.5,
             fontFamily: 'Inter, system-ui, sans-serif',
           }}>
-            You're currently opted out of non-essential Mutu emails. Toggle on anytime to start receiving updates again — your unsubscribe record is updated automatically.
+            You're currently opted out of non-essential Mutu emails. Toggle on anytime to start receiving updates again, your unsubscribe record is updated automatically.
           </p>
         )}
       </Section>

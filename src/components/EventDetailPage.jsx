@@ -336,7 +336,7 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
       document.body.appendChild(ta)
       ta.select()
       try { document.execCommand('copy'); setCopiedEmails(true); setTimeout(() => setCopiedEmails(false), 2000) }
-      catch { setToast({ type: 'err', msg: 'Copy failed — select emails manually' }) }
+      catch { setToast({ type: 'err', msg: 'Copy failed, select emails manually' }) }
       document.body.removeChild(ta)
     }
   }
@@ -347,7 +347,7 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
     if (reason === null) return // user dismissed prompt
     const { error } = await cancelEvent(event.id, reason || 'No reason provided')
     if (error) { setToast({ type: 'err', msg: error.message || 'Cancel failed' }); return }
-    setToast({ type: 'ok', msg: 'Event cancelled — attendees notified' })
+    setToast({ type: 'ok', msg: 'Event cancelled, attendees notified' })
     setEvent(prev => ({ ...prev, status: 'cancelled', cancellation_reason: reason }))
     // Fan out the cancellation email to remaining attendees. The DB
     // trigger already delivered an in-app notification; this covers
@@ -690,7 +690,7 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
                 <span style={{ fontSize: 13.5, color: C.text, fontFamily: 'Inter, system-ui, sans-serif' }}>
                   {boardSharedCount > 0
                     ? `${boardSharedCount} ${boardSharedCount === 1 ? 'attendee' : 'attendees'} shared a post`
-                    : 'No posts yet — be the first to share'}
+                    : 'No posts yet, be the first to share'}
                 </span>
               </div>
               {canSeeKnown && (
@@ -748,7 +748,7 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
                 </div>
               ) : shown.length === 0 ? (
                 <div style={{ fontSize: 13, color: C.textSub, fontFamily: 'Inter, system-ui, sans-serif' }}>
-                  No one has joined yet — be the first.
+                  No one has joined yet, be the first.
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
@@ -846,7 +846,7 @@ export default function EventDetailPage({ eventId, onBack, onEdit, onPrepare, on
             }}>
               {canChat
                 ? (event.chat_public
-                    ? 'Open discussion — anyone can read and post, even before joining.'
+                    ? 'Open discussion, anyone can read and post, even before joining.'
                     : 'Ask the host about meeting point, parking, what to bring. Visible to attendees only.')
                 : 'Join the event to participate in the discussion.'}
             </p>

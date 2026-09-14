@@ -341,7 +341,7 @@ export default function EditEventForm({ eventId, onSaved, onClose }) {
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {[
-                  { id: 'public',  badge: '🌐', label: 'Public',  desc: 'Attendees and browsers can see each other — recommended for networking events.' },
+                  { id: 'public',  badge: '🌐', label: 'Public',  desc: 'Attendees and browsers can see each other, recommended for networking events.' },
                   { id: 'private', badge: '🔒', label: 'Private', desc: 'Only the host sees names; everyone else sees the attendee count.' },
                 ].map(opt => {
                   const active = attendeeVisibility === opt.id
@@ -375,7 +375,7 @@ export default function EditEventForm({ eventId, onSaved, onClose }) {
 
             <div style={{ marginBottom: 18 }}>
               <label style={labelStyle}>Promote in Discover</label>
-              <p style={helperStyle}>Let attendees show their Opportunity Board posts as anonymous previews in Discover, to attract more people. Names are never shown — only after someone joins and connects.</p>
+              <p style={helperStyle}>Let attendees show their Opportunity Board posts as anonymous previews in Discover, to attract more people. Names are never shown, only after someone joins and connects.</p>
               <button data-mutu-glass=""
                 type="button"
                 onClick={() => setAllowDiscoverPromotion(v => !v)}
@@ -392,7 +392,7 @@ export default function EditEventForm({ eventId, onSaved, onClose }) {
                     Allow this event to be promoted
                   </span>
                   <span style={{ display: 'block', fontSize: 12, color: 'rgba(0,0,0,0.55)', marginTop: 3, lineHeight: 1.4 }}>
-                    {allowDiscoverPromotion ? 'On — attendees can opt their posts in.' : 'Off — posts stay inside this event.'}
+                    {allowDiscoverPromotion ? 'On, attendees can opt their posts in.' : 'Off, posts stay inside this event.'}
                   </span>
                 </span>
                 <span style={{

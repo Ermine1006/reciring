@@ -64,7 +64,7 @@ export default function ContactHistorySheet({ open, person, userId, onOpenEventR
     const { matchId, error } = await openOrCreateDirectMatch({ myId: userId, peerId: person.encountered_user_id, eventId: rows[0]?.event_id || null })
     setMessaging(false)
     if (matchId) { onClose?.(); onOpenMatch?.(matchId) }
-    else setMsgErr(error?.message || "Couldn't open the chat — try again.")
+    else setMsgErr(error?.message || "Couldn't open the chat, try again.")
   }
   const act = async (fn, id) => { setBusyId(id); await fn(id); setBusyId(null); await load(); onChanged?.() }
   const saveAdd = async (id) => {
@@ -179,7 +179,7 @@ export default function ContactHistorySheet({ open, person, userId, onOpenEventR
                   {state === 'none' && (
                     adding === r.id ? (
                       <div>
-                        <input value={addText} onChange={e => setAddText(e.target.value)} placeholder="Next action — e.g. Send the intro" style={inp} />
+                        <input value={addText} onChange={e => setAddText(e.target.value)} placeholder="Next action, e.g. Send the intro" style={inp} />
                         <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                           <input type="date" value={addDue} min={new Date().toISOString().slice(0,10)} onChange={e => setAddDue(e.target.value)} style={{ ...inp, flex: 1 }} />
                           <button type="button" disabled={!addText.trim() || busyId === r.id} onClick={() => saveAdd(r.id)} style={btnPrimary}>Save</button>

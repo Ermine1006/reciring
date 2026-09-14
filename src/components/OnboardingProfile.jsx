@@ -65,7 +65,7 @@ const inputStyle = {
 }
 
 const stepCopy = {
-  1: { title: 'Tell us about you',         subtitle: 'The basics — used to introduce you to relevant peers.' },
+  1: { title: 'Tell us about you',         subtitle: 'The basics, used to introduce you to relevant peers.' },
   2: { title: 'What you bring & want',     subtitle: 'Powers the AI matching. The more honest, the better the fit.' },
   3: { title: 'A little personality',      subtitle: 'Optional prompts that show up on your card.' },
 }
@@ -241,7 +241,7 @@ export default function OnboardingProfile() {
                     type="text"
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value.slice(0, 30))}
-                    placeholder="Pick a nickname — shown on leaderboard"
+                    placeholder="Pick a nickname, shown on leaderboard"
                     autoFocus
                     style={inputStyle}
                   />
@@ -283,7 +283,7 @@ export default function OnboardingProfile() {
 
                 <div>
                   <label style={labelStyle}>Current role</label>
-                  <p style={helperStyle}>We fill in your program + year — just add your role after it.</p>
+                  <p style={helperStyle}>We fill in your program + year, just add your role after it.</p>
                   <input
                     type="text"
                     value={headline}
@@ -308,13 +308,13 @@ export default function OnboardingProfile() {
               <>
                 <div>
                   <label style={labelStyle}>Career focus</label>
-                  <p style={helperStyle}>Pick up to 3 broad areas — surfaces the right requests for you.</p>
+                  <p style={helperStyle}>Pick up to 3 broad areas, surfaces the right requests for you.</p>
                   <CareerFocusPicker value={industryInterests} onChange={setIndustryInterests} />
                 </div>
 
                 <div>
                   <label style={labelStyle}>Skills I offer</label>
-                  <p style={helperStyle}>Up to 5 — what peers can come to you for.</p>
+                  <p style={helperStyle}>Up to 5, what peers can come to you for.</p>
                   <div className="flex flex-wrap gap-2">
                     {HELP_TYPES.map(ht => (
                       <Chip
@@ -329,7 +329,7 @@ export default function OnboardingProfile() {
 
                 <div>
                   <label style={labelStyle}>Skills I want to learn</label>
-                  <p style={helperStyle}>Up to 5 — what you'd love a peer to teach you.</p>
+                  <p style={helperStyle}>Up to 5, what you'd love a peer to teach you.</p>
                   <div className="flex flex-wrap gap-2">
                     {HELP_TYPES.map(ht => (
                       <Chip
@@ -399,7 +399,7 @@ export default function OnboardingProfile() {
               <>
                 <div>
                   <label style={labelStyle}>Ask me about…</label>
-                  <p style={helperStyle}>A topic, a skill, an industry — anything you'd love to be asked about.</p>
+                  <p style={helperStyle}>A topic, a skill, an industry, anything you'd love to be asked about.</p>
                   <input
                     type="text"
                     value={promptAskMe}
@@ -426,7 +426,7 @@ export default function OnboardingProfile() {
                   fontFamily: 'Inter, system-ui, sans-serif', lineHeight: 1.5,
                   marginTop: 8,
                 }}>
-                  These prompts are optional — skip and refine later in your profile.
+                  These prompts are optional, skip and refine later in your profile.
                 </p>
               </>
             )}
@@ -486,7 +486,7 @@ export default function OnboardingProfile() {
             className="w-full mt-3 py-2 text-[12px] tracking-wide transition-opacity hover:opacity-60"
             style={{ color: C.textMuted, background: 'none', border: 'none', cursor: 'pointer' }}
           >
-            Skip prompts — finish later
+            Skip prompts, finish later
           </button>
         )}
       </motion.div>

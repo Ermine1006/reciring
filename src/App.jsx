@@ -76,7 +76,7 @@ function marketplaceToPrefill(item) {
   if (!item) return null
   const need = item.need, offer = item.offer
   const tags = [...(need?.tags || []), ...(offer?.tags || [])]
-  const offerText = offer ? (offer.title || '') + (offer.description ? ` — ${offer.description}` : '') : ''
+  const offerText = offer ? (offer.title || '') + (offer.description ? `\n\n${offer.description}` : '') : ''
   return {
     sourceIds:   item.postIds || [],
     sourceEvent: item.eventTitle || null,
@@ -742,7 +742,7 @@ function AppShell() {
     if (!user) return
     const targetUserId = target?.created_by || target?.poster_id || target?.peerId || null
     if (!targetUserId) {
-      alert('Cannot block this user — no real user ID available on demo data.')
+      alert('Cannot block this user, no real user ID available on demo data.')
       return
     }
     if (targetUserId === user.id) {
@@ -793,7 +793,7 @@ function AppShell() {
         profile, updateProfile,
         learnTags: newReq.helpType, industryTags: newReq.industry,
       }).then(({ added }) => {
-        if (added?.length) setBanner(`Added ${added.join(', ')} to your matching profile — edit anytime in Profile → Skills & matching.`)
+        if (added?.length) setBanner(`Added ${added.join(', ')} to your matching profile, edit anytime in Profile → Skills & matching.`)
       }).catch(() => {})
       // If this post was carried over from a past event, stamp every source
       // row (need + offer) so the reminder stops and we never republish twice.
@@ -1322,7 +1322,7 @@ function AppShell() {
               onOpenEventRecap={(id) => { setEventReturnTab(null); setEventInitialView('recap'); setViewingEventId(id) }}
               onPrepare={(id) => { setViewingEventId(null); setPreparingEventId(id) }}
               onOpenMatch={(matchId) => { loadMatches(); setTab("matches"); setChatMatchId(matchId) }}
-              onAskMutu={() => setBanner('Ask Mutu — your networking assistant — is coming soon. For now, prepare for events and connect on the Opportunity Board inside each event.')}
+              onAskMutu={() => setBanner('Ask Mutu, your networking assistant, is coming soon. For now, prepare for events and connect on the Opportunity Board inside each event.')}
             />
           )}
           {tab === 'events' && !preparingEventId && !editingEventId && !viewingEventId && showCreateEvent && (
@@ -1331,7 +1331,7 @@ function AppShell() {
                 setShowCreateEvent(false)
                 setEventsRefreshKey(k => k + 1)
                 if (meta?.pendingReview) {
-                  setBanner("Your first event is in review — we'll publish it once it's approved. Others can't see it yet. It stays marked “Under review” on your Events tab until then.")
+                  setBanner("Your first event is in review, we'll publish it once it's approved. Others can't see it yet. It stays marked “Under review” on your Events tab until then.")
                   // Alert the admin there's something to review (fire-and-forget).
                   if (data?.id) notifyEventReview(data.id)
                 }
