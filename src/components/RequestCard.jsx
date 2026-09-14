@@ -1,3 +1,4 @@
+import { withoutEmDashes } from '../lib/aiCopy'
 import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { fetchTrustSignal } from '../lib/recognition'
@@ -509,7 +510,7 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
                       textOverflow: 'ellipsis',
                       maxWidth: '100%',
                     }}>
-                      {c}
+                      {withoutEmDashes(c)}
                     </span>
                   ))}
                 </div>

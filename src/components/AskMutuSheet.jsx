@@ -1,3 +1,4 @@
+import { withoutEmDashes } from '../lib/aiCopy'
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { fetchEncounters, buildAssistantContext, askMutu, fetchAskHistory, saveAskMessage, clearAskHistory } from '../lib/eventMemory'
@@ -250,7 +251,7 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
           ) : empty ? (
             <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center' }}>
               <p style={{ fontSize: 14, color: C.sub, lineHeight: 1.6, textAlign: 'center', maxWidth: 320, fontFamily: 'Inter, system-ui, sans-serif' }}>
-                I know your network — the people you've met, who you've connected with, and your events. Pick a shortcut below, or ask me anything.
+                I know your network, the people you've met, who you've connected with, and your events. Pick a shortcut below, or ask me anything.
               </p>
             </div>
           ) : (
@@ -266,7 +267,7 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
                     borderBottomRightRadius: m.role === 'user' ? 4 : 16,
                     borderBottomLeftRadius: m.role === 'user' ? 16 : 4,
                   }}>
-                    {renderText(m.text)}
+                    {renderText(m.role === 'user' ? m.text : withoutEmDashes(m.text))}
                   </div>
                 </div>
               ))}

@@ -1,3 +1,4 @@
+import { withoutEmDashes } from '../lib/aiCopy'
 import { useState, useEffect } from 'react'
 import { fetchEventMatches } from '../lib/eventMatch'
 
@@ -78,7 +79,7 @@ export default function EventMatchList({ eventId, userId, title = 'People to mee
                 {m.name}{m.program ? <span style={{ color: C.textMuted, fontWeight: 500 }}>{' · '}{m.program}</span> : null}
               </span>
             </div>
-            <p style={{ margin: '0 0 10px', fontSize: 12, fontWeight: 600, color: C.goldDark }}>{m.reason}</p>
+            <p style={{ margin: '0 0 10px', fontSize: 12, fontWeight: 600, color: C.goldDark }}>{withoutEmDashes(m.reason)}</p>
             {m.need && (
               <p style={{ margin: '0 0 4px', fontSize: 13, color: C.ink, lineHeight: 1.4 }}>
                 <span style={{ color: C.textMuted, fontWeight: 600 }}>Needs: </span>{m.need}

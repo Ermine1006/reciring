@@ -1,3 +1,4 @@
+import { withoutEmDashes } from '../lib/aiCopy'
 import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Clock, Users, UserPlus, CalendarDays, ArrowRight, MessageSquareText, ChevronRight, Sparkles } from 'lucide-react'
@@ -271,7 +272,7 @@ export default function HomePage({
 
         {!personRec && !eventRec && !data.loading && (
           <p style={{ fontSize: 13, color: C.ink3, margin: '2px 2px 0', fontFamily: 'Inter, system-ui, sans-serif' }}>
-            No suggestions yet — {needInterests ? 'add your interests' : 'check back soon'}.
+            No suggestions yet. {needInterests ? 'add your interests' : 'check back soon'}.
           </p>
         )}
 
@@ -368,7 +369,7 @@ function SuggCard({ lead, label, title, titleSize = 16, sub, subIsMeta, reason, 
         <span style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: C.ink3, fontFamily: 'Inter, system-ui, sans-serif' }}>{label}</span>
         <p style={{ fontSize: titleSize, fontWeight: 650, color: C.ink, margin: '2px 0 0', lineHeight: 1.2, fontFamily: 'Inter, system-ui, sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{title}</p>
         <p style={{ fontSize: subIsMeta ? 12 : 12.5, color: C.ink3, margin: '1px 0 0', fontFamily: 'Inter, system-ui, sans-serif' }}>{sub}</p>
-        {reason && <p style={{ fontSize: 12.5, color: C.ink2, margin: '4px 0 0', lineHeight: 1.35, fontFamily: 'Inter, system-ui, sans-serif' }}>{reason}</p>}
+        {reason && <p style={{ fontSize: 12.5, color: C.ink2, margin: '4px 0 0', lineHeight: 1.35, fontFamily: 'Inter, system-ui, sans-serif' }}>{withoutEmDashes(reason)}</p>}
       </div>
       {actionStyle === 'chevron' ? (
         <button type="button" onClick={onAction} aria-label={actionLabel} className="active:scale-95"

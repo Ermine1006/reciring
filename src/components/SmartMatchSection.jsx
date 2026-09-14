@@ -1,3 +1,4 @@
+import { withoutEmDashes } from '../lib/aiCopy'
 import { useEffect, useState, useCallback } from 'react'
 import PeerAvatar from './PeerAvatar'
 import { generateSmartMatches, fetchPendingNudges, setNudgeStatus, checkMutualMatch } from '../lib/smartMatch'
@@ -111,7 +112,7 @@ export default function SmartMatchSection() {
                 </span>
               </span>
               <span style={{ display: 'block', fontSize: 12.5, color: C.ink2, marginTop: 2, lineHeight: 1.35, fontFamily: 'Inter, system-ui, sans-serif' }}>
-                {n.reason}
+                {withoutEmDashes(n.reason)}
               </span>
             </div>
 
@@ -136,7 +137,7 @@ export default function SmartMatchSection() {
         ))}
       </div>
       <p style={{ fontSize: 11.5, color: C.ink3, margin: '7px 2px 0', fontFamily: 'Inter, system-ui, sans-serif' }}>
-        Marking interest is private — we’ll only connect you if it’s mutual.
+        Marking interest is private. We’ll only connect you if it’s mutual.
       </p>
     </>
   )

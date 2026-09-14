@@ -153,8 +153,8 @@ function scoreCandidate(viewer, candidate) {
       buckets.intent += 20
       events.push({
         text: vIntents.has('opportunity')
-          ? "You're seeking opportunities — they're seeking talent"
-          : "You're seeking talent — they're seeking opportunities",
+          ? "You're seeking opportunities; they're seeking talent"
+          : "You're seeking talent; they're seeking opportunities",
         weight: 20,
       })
     }
@@ -255,7 +255,7 @@ async function scoreWithKimi(viewer, candidates) {
     `Return JSON: {"matches":[{"candidate_id":"<id>","score":<0-100>,"reasons":["<reason>"]}]}\n` +
     `Include only candidates worth meeting (score > 0), best first, at most ${TOP_N}. ` +
     `Give 2-3 reasons each: specific, identity-free, <= 8 words (e.g. "They can teach you fundraising"). ` +
-    `Use only candidate_id values from the list above.`
+    `Never use em dashes. Use commas or separate sentences. Use only candidate_id values from the list above.`
 
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), 25000)
@@ -413,7 +413,7 @@ serve(async (req) => {
         user_id:      viewerId,
         candidate_id: s.candidate_id,
         score:        s.score,
-        reason:       s.reason,
+        reason:       s.reason.replace(/[ \t]*\u2014+[ \t]*/g, ', '),
       }))
       const { error: upErr } = await admin
         .from('match_nudges')

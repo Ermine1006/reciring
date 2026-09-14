@@ -1,3 +1,4 @@
+import { withoutEmDashes } from './aiCopy'
 import { apiUrl } from './apiBase'
 
 // "Make it Easier to Help" — reusable AI rewrite client.
@@ -21,7 +22,7 @@ export async function rewriteText({ kind = 'post', text, context, maxChars } = {
     })
     const data = await res.json().catch(() => ({}))
     if (!res.ok) return { text: null, error: new Error(data.error || 'Rewrite failed.') }
-    return { text: data.text || null, error: null }
+    return { text: withoutEmDashes(data.text) || null, error: null }
   } catch (err) {
     return { text: null, error: err instanceof Error ? err : new Error('Network error.') }
   }
@@ -41,7 +42,7 @@ export async function writeProfilePrompt({ which, text, context } = {}) {
     if (typeof data.text !== 'string' || !data.text.trim()) {
       return { text: null, error: new Error("Couldn't reach the writer — AI features run on the deployed site, not localhost.") }
     }
-    return { text: data.text.trim(), error: null }
+    return { text: withoutEmDashes(data.text), error: null }
   } catch (err) {
     return { text: null, error: err instanceof Error ? err : new Error('Network error.') }
   }

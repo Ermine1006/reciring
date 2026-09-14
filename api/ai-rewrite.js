@@ -1,3 +1,5 @@
+import { withoutEmDashes } from '../src/lib/aiCopy.js'
+
 // Vercel serverless function — POST /api/ai-rewrite
 //
 // "Make it Easier to Help" — rewrites a user's text so it's clearer and more
@@ -188,7 +190,7 @@ export default async function handler(req, res) {
         max_tokens: 1500,
         temperature: 0.4,
         messages: [
-          { role: 'system', content: system },
+          { role: 'system', content: system + '\nNever use em dashes (U+2014). Use commas, periods or separate sentences instead.' },
           { role: 'user',   content: userMessage },
         ],
       }),
@@ -228,7 +230,7 @@ export default async function handler(req, res) {
       .trim()
 
     if (!improved) return res.status(502).json({ error: 'Empty rewrite.' })
-    improved = clampToLimit(improved, maxChars) // never exceed the editor limit
+    improved = clampToLimit(withoutEmDashes(improved), maxChars) // never exceed the editor limit
     return res.status(200).json({ text: improved })
   } catch (err) {
     const detail = err?.message || 'unknown'
@@ -274,7 +276,7 @@ Rules: Use ONLY facts present in the note. Do not invent names, companies, needs
         max_tokens: 1200,
         temperature: 0.2,
         messages: [
-          { role: 'system', content: system },
+          { role: 'system', content: system + '\nNever use em dashes (U+2014). Use commas, periods or separate sentences instead.' },
           { role: 'user',   content: user },
         ],
       }),
@@ -362,7 +364,7 @@ When asked to draft a message, write a short, warm, specific note (2–4 sentenc
         max_tokens: 1400,
         temperature: 0.35,
         messages: [
-          { role: 'system', content: system },
+          { role: 'system', content: system + '\nNever use em dashes (U+2014). Use commas, periods or separate sentences instead.' },
           { role: 'user',   content: user },
         ],
       }),
@@ -380,7 +382,7 @@ When asked to draft a message, write a short, warm, specific note (2–4 sentenc
 
   const answer = String(data?.choices?.[0]?.message?.content || '').trim()
   if (!answer) return res.status(502).json({ error: 'No answer — try rephrasing.' })
-  return res.status(200).json({ answer })
+  return res.status(200).json({ answer: withoutEmDashes(answer) })
 }
 
 // ── "Help me fill" — infer profile matching tags ────────────────────
@@ -467,7 +469,7 @@ Be genuinely helpful: whenever there's any reasonable signal, suggest at least o
         max_tokens: 400,
         temperature: 0.3,
         messages: [
-          { role: 'system', content: system },
+          { role: 'system', content: system + '\nNever use em dashes (U+2014). Use commas, periods or separate sentences instead.' },
           { role: 'user', content: known },
         ],
       }),
@@ -558,7 +560,7 @@ Output ONLY the answer — no quotes, no label, no trailing period needed. One l
         max_tokens: 200,
         temperature: 0.7,
         messages: [
-          { role: 'system', content: system },
+          { role: 'system', content: system + '\nNever use em dashes (U+2014). Use commas, periods or separate sentences instead.' },
           { role: 'user', content: userMessage },
         ],
       }),
@@ -577,7 +579,7 @@ Output ONLY the answer — no quotes, no label, no trailing period needed. One l
   let text = String(data?.choices?.[0]?.message?.content || '').trim()
   text = text.replace(/^["'“”]+|["'“”]+$/g, '').trim().slice(0, 160)
   if (!text) return res.status(502).json({ error: 'No text — try again.' })
-  return res.status(200).json({ text })
+  return res.status(200).json({ text: withoutEmDashes(text) })
 }
 
 // Parse the model's JSON, tolerating code fences / surrounding prose.
