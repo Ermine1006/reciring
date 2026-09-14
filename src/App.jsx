@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from 'react'
 import CardStack from './components/CardStack'
 import GiveAskHub from './components/GiveAskHub'
 import AppScreen from './components/AppScreen'
@@ -1478,9 +1478,14 @@ function AppShell() {
   )
 }
 
+const BuddyDemo = lazy(() => import('./components/buddy/BuddyProgram'))
+
 /* ─── Root App — auth gate ─────────────────────────────────────── */
 function AppRoot() {
   const { session, profile, loading, isConfigured, passwordRecovery } = useAuth()
+
+  // Public, explicitly synthetic walkthrough. Never reads or writes program data.
+  if (window.location.pathname === '/buddy-demo') return <div className="buddy-demo-shell"><Suspense fallback={<p>Opening sample…</p>}><BuddyDemo forceDemo onBack={() => { window.location.href = '/' }} /></Suspense></div>
 
   // 1. No backend → skip auth entirely
   if (!isConfigured) return <AppShell />

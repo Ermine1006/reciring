@@ -39,9 +39,11 @@ import { ActivitySummary, ConnectionCards, MatchingStatus, TogetherStyles, TOGET
 import { matchingState } from '../../lib/togetherSummary'
 import { PAGE } from '../../data/togetherContent'
 import { revealState, tokenForSession, hasAcknowledged } from '../../lib/practiceToken'
-import { isStoriesEnabled } from '../../lib/featureFlags'
+import BuddyEntry from '../buddy/BuddyEntry'
+import { isBuddyEnabled, isStoriesEnabled } from '../../lib/featureFlags'
 import StoryGardenEntry from '../stories/StoryGardenEntry'
 
+const BuddyProgram = lazy(() => import('../buddy/BuddyProgram'))
 const StoriesHub = lazy(() => import('../stories/StoriesHub'))
 
 // ── PracticeHub — the EXCHANGE tab root ──────────────────────────
@@ -224,6 +226,7 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
   const [tokensFailed, setTokensFailed] = useState(false)
   const [namesById, setNamesById] = useState({})
   const [view, setView] = useState('explore')            // 'explore' | 'mine'
+  const [buddyOpen, setBuddyOpen] = useState(false)
   const [storiesOpen, setStoriesOpen] = useState(false)
   const storiesNavigation = useRef(null)
   const registerStoriesNavigation = useCallback(handler => {
@@ -895,6 +898,12 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
     </>
   )
 
+  if (buddyOpen && isBuddyEnabled()) {
+    return <Suspense fallback={<AppScreen><p role="status">Opening Buddy Program…</p></AppScreen>}>
+      <BuddyProgram onBack={() => setBuddyOpen(false)} registerNavigationGuard={registerNavigationGuard} />
+    </Suspense>
+  }
+
   if (storiesOpen && isStoriesEnabled()) {
     return <Suspense fallback={<AppScreen><p role="status" style={{ padding: 24 }}>Opening the garden…</p></AppScreen>}>
       <StoriesHub key={`${community.id}:${userId || 'demo'}`} community={community} onBack={() => setStoriesOpen(false)} registerNavigationGuard={registerStoriesNavigation} />
@@ -1175,6 +1184,7 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
                 Events is the wider community pathway and is never
                 presented as secondary or as consulting-specific. */}
             <ConnectionCards selectedId={null} onSelect={chooseConnection} />
+            {isBuddyEnabled() && <BuddyEntry onOpen={() => setBuddyOpen(true)} />}
             {isStoriesEnabled() && <StoryGardenEntry onOpen={() => setStoriesOpen(true)} />}
 
             {/* ── Groups & Events ── */}
