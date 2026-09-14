@@ -43,7 +43,7 @@ import BuddyEntry from '../buddy/BuddyEntry'
 import { isBuddyEnabled, isStoriesEnabled } from '../../lib/featureFlags'
 import StoryGardenEntry from '../stories/StoryGardenEntry'
 
-const BuddyProgram = lazy(() => import('../buddy/BuddyProgram'))
+const BuddyProgram = lazy(() => import('../buddy/BuddyChoiceProgram'))
 const StoriesHub = lazy(() => import('../stories/StoriesHub'))
 
 // ── PracticeHub — the EXCHANGE tab root ──────────────────────────

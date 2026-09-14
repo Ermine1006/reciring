@@ -1,39 +1,48 @@
-# Buddy Program pilot
+# Buddy Program: upper-year choice
 
-## Ready to demonstrate
+## Production entry
 
-Open `/buddy-demo` on the app domain. This route now demonstrates the founder's revised, student-led selection flow with synthetic data: any first-year student composes a Give & Ask post using the same `SubmitRequest` component as the marketplace; an approved upper-year student browses full posts and chooses whom to support; the first-year student accepts or declines. The coordinator grants upper-year access instead of assigning pairs. The demo has a three-place limit including pending invitations. A role selector simulates each perspective. Sample access is not a production authorization mechanism. Publishing, invitations, access changes and connections remain in memory; reset or refresh clears them. AI rewriting is disabled without making a request.
+Together → Buddy Program now loads `BuddyChoiceProgram`, not the older automatic-pairing page. It uses real RPCs and never loads sample posts or silently switches to the demo. If the new schema is missing, it shows a setup message and a retry button.
 
-The production Buddy database and Together entry still use the earlier automatic-matching implementation described below. They have NOT been converted to the new selection workflow. That needs a separate schema/API migration and founder-run SQL; do not use the old automatic-matching pilot as if it implements the new design.
+## Founder-run SQL
 
-## Enable the real pilot
+In Supabase SQL Editor, run these files in order if not already installed:
 
-1. The founder runs `scripts/migration-buddy-program.sql` in Supabase SQL Editor. It assumes the existing `profiles`, `communities`, `community_members`, `blocks`, and `auth.users` tables. It is rerunnable and does not enable or enroll anyone.
-2. Review the owner email in `scripts/setup-buddy-program.sql`, then run it. This creates a closed Rotman program and makes that registered owner its coordinator. Freeda's coordinator access requires her verified account email; the commented SQL shows how to add it. No email is guessed.
-3. The founder-approved production release displays Buddy Program in Together by default. Refresh the web app after deployment. An explicit Vercel `VITE_BUDDY_ENABLED=false` hides the entry for rollback; remove it or set it to `true` and redeploy to restore the entry. Native TestFlight builds require a new app build to include these changes. The public `/buddy-demo` remains separate and uses sample data.
-4. In Coordinator overview, add registered Rotman students to the roster by email, assigning mentor or mentee roles. They must already have `community_members.status='member'`. The role is enforced by the database, not by a client toggle. Roster access does not publish a post or imply participation consent.
-5. Review mentor capacity and response period in Program settings, then enable posting and automatic matching. Each student must opt in and publish their own Give & Ask post. Coordinators cannot read their contact details, post bodies, or chats through the dashboard.
-6. Optional AI assistance uses the existing `OPENROUTER_API_KEY` plus `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`. An optional `BUDDY_AI_MODEL` overrides the existing app model. Users explicitly choose “Suggest topics with AI”; only their visible need, offer and relevant experience text are sent. AI suggestions are editable before saving. Without the key or on provider error, manual topic selection remains fully functional. This endpoint verifies sign-in and roster/coordinator access, bounds input/output, and has a per-instance burst limit; a shared rate limiter is recommended before a large rollout.
-7. To enable the daily internal reminders and expired-pairing sweep, set `BUDDY_CRON_ENABLED=true`, `CRON_SECRET`, and `SUPABASE_SERVICE_ROLE_KEY` on Vercel. The cron is `/api/cron/buddy-follow-up` at 09:00 UTC daily. Before migration/configuration the job returns `skipped`. Notices are visible inside My buddy; no emails or push notifications are sent.
+1. `scripts/migration-buddy-program.sql` (base program/coordinator tables).
+2. `scripts/setup-buddy-program.sql` (verify owner email before running).
+3. `scripts/migration-buddy-choice.sql` (new posts, permission grants, invitations and RPCs).
 
-## How matching works
+If steps 1 and 2 were completed earlier, run ONLY step 3. The new script is rerunnable. It stops automatic allocation and enables the manual-choice workflow. No sample students, posts, invitations or role grants are inserted. Existing automatic-matching posts/pairings are retained in their original tables and are not imported into the new workflow. Do not rerun the old setup to migrate posts or re-enable the old automatic matcher.
 
-The database runs matching on publishing a post, responding to a suggestion, withdrawing, changing program settings, and the enabled daily job. It serializes mutations per program, considers mentees with fewer candidate mentors first, and reserves capacity for pending suggestions as well as accepted pairings. Mentor limits are bounded by both the mentor's preference and the program limit.
+Verify with:
 
-Hard requirements: roster eligibility, active community membership, opposite roles, no block in either direction, active posts, compatible meeting mode, a future shared window of at least 30 minutes, capacity, and at least half the mentee's selected need topics covered by the mentor's offer. Declined pairs are not re-suggested. Other closed pairs have a seven-day quiet period.
+```sql
+SELECT name, automatic, choice_enabled
+FROM public.buddy_programs;
+```
 
-Within those constraints it ranks by need coverage first, optional reverse need/offer overlap second, shared self-described experience topics third, then lower mentor load and waiting time. AI classifies text into the canonical topic set; assignment is transparent, deterministic logic. This is not an LLM comparing every pair, not a globally optimal assignment solver, and not a proven improvement in real-world outcomes. “Precision” needs pilot measurement. No compatibility percentage is shown.
+Expected: `automatic=false`, `choice_enabled=true`. The legacy `enabled` field does not gate this workflow. A database constraint prevents the legacy matcher from being enabled alongside manual choice.
 
-Names and the volunteered contact field are returned only to the two participants after both accept. Before that, the suggestion shares only the program role, authored need/offer, and opted-in relevant experience. Text could itself identify a person, so this is not guaranteed anonymization. Blocks are checked during matching, acceptance and pair reads. Withdrawing ends live pairings and frees capacity. Historical consent and pairing rows are retained for audit; this feature does not implement account-data deletion or a retention policy.
+The Together entry is enabled by default. An explicit Vercel `VITE_BUDDY_ENABLED=false` still hides it. Vercel deployment updates the web app; TestFlight requires a new native build.
 
-Suggested times are overlap evidence, not bookings. After acceptance, both participants receive the other's volunteered contact details and arrange the conversation. The first-conversation check-in is bilateral and separate from existing Together sessions and Exchange Tokens. It does not mint a token, unlock unrelated profile data, or add a Community Map edge.
+## Actual user flow
 
-## Coordinator scope
+- Active community members can self-enroll as first-year students by confirming their year and participation. Their year is self-declared, not independently verified. There is no individual first-year roster approval.
+- First-year students publish using the existing Give & Ask `SubmitRequest` form. Offers remain optional. Audience text states that only approved upper-year buddies may browse. Anonymous posts hide the author name until a connection is accepted; real-name posts explicitly show the name.
+- A coordinator verifies an upper-year student's role and grants browsing access to their exact registered email. The account must already belong to the program's community. Only coordinators can grant/revoke this access; a browser role toggle cannot grant it.
+- Approved upper-year students filter and preview full posts, then choose whom to support. Pending and accepted invitations reserve up to three places, bounded by the program capacity.
+- First-year students accept or decline invitations. Acceptance reveals names only to the two participants. One first-year student can have one accepted buddy per program; accepting one invitation withdraws their other pending invitations. Declined invitations are not silently resent.
+- Upper-year students can withdraw invitations/end connections. First-year students can remove their own posts, which ends associated invitations. Revoking upper-year access ends their active invitations.
+- Community membership and blocks are checked on reads, selection and acceptance. Expired pending invitations release capacity when the program is read or a selection is attempted. Accepted connections survive post expiry. The system does not automatically assign buddies.
 
-The dashboard is computed from real records: accepted pairs, waiting suggestions, unmatched active mentees, program roster participation and bilateral first-conversation confirmations. No real status counts are hardcoded. Exception categories cover rematch requests, no suitable mentor, no shared time, and capacity/meeting preferences. Coordinators can invite more enrolled mentors, request availability updates through their usual program communication, and adjust program capacity. This first version does not import existing pair assignments or send coordinator emails automatically.
+## Boundaries
 
-## Verification and pilot measures
+The coordinator sees granted upper-year accounts but not the first-year post list unless separately authorized as an upper-year participant. Matching is manual choice, with no AI ranking or compatibility score. No notification emails, private emails, chat integration, calendar booking or Exchange Tokens are introduced. Connections reveal profile names, not contact details. The old Buddy daily cron does not process new choice invitations. Published text itself can identify its author.
 
-Local PGlite tests exercise the migration twice, direct-table and internal-RPC denial, participant-only actions, capacity, bilateral identity/contact release, bilateral check-in, coordinator privacy, blocks, no common time, invalid windows, rematching, and reminder deduplication. Browser tests cover the public sample on phone and desktop, both-party acceptance, introductions, check-in and exception review with no real mutations. API tests cover authentication, roster checks, constrained AI output and provider failure.
+## Demo
 
-Measure coordinator time spent assigning and following up; proportion of mentees receiving a feasible suggestion; both-party acceptance; rematch reasons; first conversations confirmed by both; and a separately collected “Did you receive the support you needed?” response. Do not present synthetic demo counts as pilot evidence.
+`/buddy-demo` uses synthetic, in-memory data. Expand “Interactive demo” to switch First-year, Upper-year and Coordinator perspectives. Demo role grants do not affect real permissions. It reuses the same composer and post presentation. Refresh/reset clears sample changes.
+
+## Validation
+
+PGlite tests install the migrations twice and verify community access, self-enrollment, coordinator-only grants, anonymous author protection, upper-year-only browsing/selection, reserved capacity, bilateral acceptance, one accepted buddy, revoked access, blocks, table/helper denial and post removal. UI tests verify the actual composer calls the new publish API, upper-year selection calls its API, and missing-schema states never fall back to sample or automatic matching.
