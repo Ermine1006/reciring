@@ -1165,7 +1165,8 @@ function AppShell() {
               isSupabaseConfigured={isSupabaseConfigured}
               prefill={postPrefill}
             >
-            <CardStack
+            {(toolbarActions) => <CardStack
+              toolbarActions={toolbarActions}
               requests={visibleRequests}
               eventPromos={eventPromos}
               unmatchedPostIds={unmatchedPostIds}
@@ -1189,7 +1190,7 @@ function AppShell() {
                 setViewingEventId(p.eventId)
                 setTab('events')
               }}
-            />
+            />}
             </GiveAskHub>
           )}
           {tab === 'practice' && practiceOn && (

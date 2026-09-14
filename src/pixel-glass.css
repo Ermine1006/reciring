@@ -45,7 +45,7 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]),textarea,select {
   box-shadow:inset 0 1px 3px #6a643a09;
 }
 .mutu-swipe-card {
-  background:linear-gradient(135deg,rgba(255,255,255,.97),rgba(255,250,238,.96)) !important;
+  background:linear-gradient(135deg,#ffffff,#fffaee) !important;
   border:1px solid #fff !important;
   box-shadow:inset 0 2px 2px #fff,inset 0 -2px 5px #be9d5b26,0 0 0 2px #d8bd784a,0 12px 28px #75613c22 !important;
 }

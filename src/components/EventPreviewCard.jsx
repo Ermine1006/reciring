@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { CalendarDays, MapPin, Users, ArrowRight } from 'lucide-react'
 import PeerAvatar from './PeerAvatar'
@@ -85,6 +85,7 @@ function PreviewSection({ kind, post, spaced }) {
 
 export default function EventPreviewCard({ promo, isTop, onDrag, onSwipeLeft, onSwipeRight, onTap }) {
   const [offset, setOffset] = useState(0)
+  const pointerStart = useRef(null)
   const [hasDragged, setHasDragged] = useState(false)
   const [dragging, setDragging] = useState(false)
 
@@ -106,8 +107,9 @@ export default function EventPreviewCard({ promo, isTop, onDrag, onSwipeLeft, on
     else if (info.offset.x < -SWIPE_THRESHOLD) onSwipeLeft?.()
     setTimeout(() => setHasDragged(false), 0)
   }
-  const handlePointerUp = () => {
-    if (!isTop || hasDragged) return
+  const handlePointerUp = (event) => {
+    const start = pointerStart.current
+    if (!isTop || hasDragged || (start && Math.hypot(event.clientX - start.x, event.clientY - start.y) > 8)) return
     onTap?.(promo)
   }
 
@@ -123,7 +125,7 @@ export default function EventPreviewCard({ promo, isTop, onDrag, onSwipeLeft, on
   return (
     <motion.div
       layout
-      className="absolute inset-x-4 top-4 touch-none"
+      className="absolute inset-x-4 top-2"
       style={{
         borderRadius: 24,
         cursor: isTop ? 'grab' : 'default',
@@ -134,11 +136,12 @@ export default function EventPreviewCard({ promo, isTop, onDrag, onSwipeLeft, on
           ? '0 16px 50px rgba(0,0,0,0.08), 0 4px 16px rgba(201,163,59,0.12)'
           : '0 6px 20px rgba(0,0,0,0.05)',
         overflow: 'hidden',
-        height: 'auto',
-        maxHeight: 'calc(100% - 24px)',
+        height: 'calc(100% - 16px)',
+        touchAction: 'pan-y',
         display: 'flex', flexDirection: 'column',
         userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none',
       }}
+      onPointerDown={(event) => { pointerStart.current = { x: event.clientX, y: event.clientY } }}
       onPointerUp={handlePointerUp}
       drag={isTop ? 'x' : false}
       dragConstraints={{ left: 0, right: 0 }}
@@ -180,7 +183,7 @@ export default function EventPreviewCard({ promo, isTop, onDrag, onSwipeLeft, on
       {/* touch-action: pan-y lets the content scroll vertically while leaving
           horizontal gestures for the swipe — without it the scrollable content
           swallows the left/right drag and the card won't swipe. */}
-      <div style={{ padding: '16px 18px 18px', overflowY: 'auto', touchAction: 'pan-y' }}>
+      <div style={{ padding: '16px 18px 18px', flex: 1, minHeight: 0, overflowY: 'auto', touchAction: 'pan-y' }}>
         {/* Event headline */}
         <h3 style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 21, fontWeight: 600, color: C.ink, margin: 0, lineHeight: 1.2 }}>
           {promo.eventTitle}

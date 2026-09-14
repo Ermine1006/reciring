@@ -42,7 +42,7 @@ function FilterChip({ label, active, onClick }) {
   )
 }
 
-export default function CardStack({ requests, eventPromos, unmatchedPostIds, interactionMap, onSwipeRight, onSwipeLeft, onUnpass, onCardViewed, onMatchConfirm, onOpenChat, onScheduleChat, onReport, onBlock, onRestorePassed, onOpenEventPromo, onPromoImpression }) {
+export default function CardStack({ toolbarActions, requests, eventPromos, unmatchedPostIds, interactionMap, onSwipeRight, onSwipeLeft, onUnpass, onCardViewed, onMatchConfirm, onOpenChat, onScheduleChat, onReport, onBlock, onRestorePassed, onOpenEventPromo, onPromoImpression }) {
   const { viewerProfile } = useAuth()
   const viewer = viewerProfile || DEFAULT_VIEWER_PROFILE
 
@@ -266,7 +266,7 @@ export default function CardStack({ requests, eventPromos, unmatchedPostIds, int
   const filterBar = (
     <div style={{ flexShrink: 0, background: 'var(--mutu-canvas, #F9F7F4)' }}>
       {/* Toggle + clear row */}
-      <div style={{ display: 'flex', alignItems: 'center', padding: '10px 16px 0', gap: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', padding: '4px 16px 0', gap: 4, flexWrap: 'wrap' }}>
         <button data-mutu-glass=""
           type="button"
           onClick={() => setShowFilters(f => !f)}
@@ -284,12 +284,13 @@ export default function CardStack({ requests, eventPromos, unmatchedPostIds, int
           </svg>
           Filters{hasFilters ? ` (${filterCount})` : ''}
         </button>
+        {toolbarActions}
         {hasFilters && (
           <button
             type="button"
             onClick={() => setFilters({ industries: [], helpTypes: [], times: [] })}
             style={{
-              padding: '6px 12px', borderRadius: 99,
+              padding: '6px 12px', borderRadius: 99, flexBasis: '100%', textAlign: 'left',
               background: 'transparent', border: 'none',
               fontSize: 11, fontWeight: 500, color: C.textMuted,
               fontFamily: 'Inter, system-ui, sans-serif', cursor: 'pointer',
@@ -485,7 +486,7 @@ export default function CardStack({ requests, eventPromos, unmatchedPostIds, int
         {/* ── Action buttons (flow layout, not absolute) ──────── */}
         <div
           className="flex-shrink-0 flex justify-center items-center z-20"
-          style={{ paddingTop: 12, paddingBottom: 20, gap: 20 }}
+          style={{ paddingTop: 4, paddingBottom: 6, gap: 20 }}
         >
           {/* Rewind — undo the last pass (only when there's one to undo) */}
           {lastPassed && (

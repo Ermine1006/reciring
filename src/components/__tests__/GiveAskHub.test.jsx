@@ -8,7 +8,7 @@ vi.mock('../SubmitRequest', () => ({ default: ({ onSubmitted }) => <button onCli
 afterEach(() => { cleanup(); localStorage.clear() })
 function Harness({ save = async () => ({}) }) {
   const [view, setView] = useState('browse')
-  return <GiveAskHub view={view} onViewChange={setView} myPosts={[{ id: 'mine', needs: 'Coffee chat', offers: 'Design experience' }]} onCreatePost={save} onEditPost={async () => ({})} onDeletePost={async () => ({})}><div>Swipe cards</div></GiveAskHub>
+  return <GiveAskHub view={view} onViewChange={setView} myPosts={[{ id: 'mine', needs: 'Coffee chat', offers: 'Design experience' }]} onCreatePost={save} onEditPost={async () => ({})} onDeletePost={async () => ({})}>{(actions) => <div>{actions}<div>Swipe cards</div></div>}</GiveAskHub>
 }
 it('opens My posts directly and exposes the existing edit form', async () => {
   render(<Harness />)
@@ -29,10 +29,10 @@ it('keeps the composer on failure and opens management only after publishing suc
   expect(await screen.findByRole('status')).toBeTruthy()
   expect(screen.getByRole('button', { name: 'Edit', exact: true })).toBeTruthy()
 })
-it('remembers dismissal of the optional tip', () => {
-  const first = render(<Harness />)
-  fireEvent.click(screen.getByRole('button', { name: 'Dismiss posting tip' }))
-  first.unmount()
+it('keeps browsing focused on the cards without a duplicate title or tab row', () => {
   render(<Harness />)
-  expect(screen.queryByRole('button', { name: 'Dismiss posting tip' })).toBeNull()
+  expect(screen.queryByRole('heading', { name: 'Give & Ask' })).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Browse', exact: true })).toBeNull()
+  expect(screen.getByRole('button', { name: 'My posts', exact: true })).toBeTruthy()
+  expect(screen.getByRole('button', { name: /New post/ })).toBeTruthy()
 })

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { fetchTrustSignal } from '../lib/recognition'
 import { Handshake, X } from 'lucide-react'
@@ -48,6 +48,7 @@ function markSwipeHintSeen() {
 export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight, isTop, matchReason, matchReasons, onTap }) {
   const [offset, setOffset] = useState(0)
   const [hasDragged, setHasDragged] = useState(false)
+  const pointerStart = useRef(null)
   const [dragging, setDragging] = useState(false)
 
   // Coarse trust signal for the poster (Slice 4) — shown only once ≥3 distinct
@@ -99,15 +100,16 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
     setTimeout(() => setHasDragged(false), 0)
   }
 
-  const handlePointerUp = () => {
-    if (!isTop || hasDragged) return
+  const handlePointerUp = (event) => {
+    const start = pointerStart.current
+    if (!isTop || hasDragged || (start && Math.hypot(event.clientX - start.x, event.clientY - start.y) > 8)) return
     onTap?.(request)
   }
 
   return (
     <motion.div
       layout
-      className="mutu-swipe-card absolute inset-x-4 top-4 touch-none"
+      className="mutu-swipe-card absolute inset-x-4 top-2"
       style={{
         borderRadius: 24,
         cursor: isTop ? 'grab' : 'default',
@@ -118,8 +120,8 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
           ? '0 16px 50px rgba(0,0,0,0.08), 0 4px 16px rgba(201,163,59,0.12)'
           : '0 6px 20px rgba(0,0,0,0.05)',
         overflow: 'hidden',
-        height: 'auto',
-        maxHeight: 'calc(100% - 24px)',
+        height: 'calc(100% - 16px)',
+        touchAction: 'pan-y',
         display: 'flex',
         flexDirection: 'column',
         // Dragging on the card's TEXT was starting an iOS text selection /
@@ -130,6 +132,7 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
         WebkitUserSelect: 'none',
         WebkitTouchCallout: 'none',
       }}
+      onPointerDown={(event) => { pointerStart.current = { x: event.clientX, y: event.clientY } }}
       onPointerUp={handlePointerUp}
       drag={isTop ? 'x' : false}
       dragConstraints={{ left: 0, right: 0 }}
@@ -262,7 +265,7 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
       {/* ── Card body ─────────────────────────────────── */}
       {/* pan-y: allow vertical scroll of a long request while keeping the
           left/right swipe gesture working (a plain scroll child eats it). */}
-      <div style={{ padding: '28px 30px 24px', flex: 1, overflowY: 'auto', minHeight: 0, touchAction: 'pan-y' }}>
+      <div style={{ padding: '16px 20px 18px', flex: 1, overflowY: 'auto', minHeight: 0, touchAction: 'pan-y' }}>
 
         {/* ── Scannable meta bar — the 1-second decision row ────── */}
         {(() => {
@@ -335,9 +338,7 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
           </div>
           <p
             style={{
-              // 15px / 3 lines rather than 17px / 2: beta feedback (fb9) —
-              // titles like "Connect with others in the CPG Industry — Want
-              // to connect with…" were cutting off before the actual ask.
+              // Keep the full ask readable within the scrollable card.
               fontSize: 15,
               lineHeight: 1.45,
               fontWeight: 700,
@@ -347,10 +348,6 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
               paddingLeft: 13,
               wordWrap: 'break-word',
               overflowWrap: 'break-word',
-              display: '-webkit-box',
-              WebkitLineClamp: 3,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
             }}
           >
             {request.needs}
@@ -409,7 +406,7 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
           </div>
           <p
             style={{
-              // Secondary to the ask above: smaller, lighter, 2 lines.
+              // Secondary to the ask above, with the full contribution readable.
               fontSize: 13,
               lineHeight: 1.5,
               fontWeight: 500,
@@ -418,10 +415,6 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
               paddingLeft: 13,
               wordWrap: 'break-word',
               overflowWrap: 'break-word',
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
             }}
           >
             {request.offers}
