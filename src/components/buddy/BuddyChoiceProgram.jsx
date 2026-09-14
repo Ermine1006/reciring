@@ -13,7 +13,10 @@ export default function BuddyChoiceProgram({onBack,registerNavigationGuard}) {
  const [retry,setRetry]=useState(0),[formKey,setFormKey]=useState(0)
  const root=useRef(null),dirty=useRef(false),working=useRef(false)
  useEffect(()=>registerNavigationGuard?.(proceed=>{if(!dirty.current||window.confirm('Leave without publishing your post?'))proceed()}),[registerNavigationGuard])
- useLayoutEffect(()=>root.current?.closest('.phone-scroll')?.scrollTo({top:0}),[view,program])
+ useLayoutEffect(()=>{
+  // scrollTo may return a Promise; effects must return only a cleanup function.
+  root.current?.closest('.phone-scroll')?.scrollTo({top:0})
+ },[view,program])
  async function refresh(p=program){const next=await buddyRpc('buddy_choice_state',{p_program:p});setData(next);return next}
  useEffect(()=>{let mounted=true;setLoading(true);setError('');buddyRpc('buddy_choice_state').then(async result=>{
   if(!mounted)return;setPrograms(result.programs||[])

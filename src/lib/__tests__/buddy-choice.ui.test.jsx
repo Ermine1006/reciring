@@ -6,7 +6,8 @@ import BuddyChoiceProgram from '../../components/buddy/BuddyChoiceProgram'
 const {rpc}=vi.hoisted(()=>({rpc:vi.fn()}))
 vi.mock('../buddy/api',()=>({buddyRpc:rpc}))
 vi.mock('../../context/AuthContext',()=>({useAuth:()=>({profile:null})}))
-HTMLElement.prototype.scrollTo = vi.fn()
+// Modern browsers may return a Promise from scrollTo. React must never use it as effect cleanup.
+HTMLElement.prototype.scrollTo = vi.fn(() => Promise.resolve())
 afterEach(()=>{cleanup();vi.clearAllMocks()})
 const base={role:null,coordinator:false,enabled:true,capacity:3,posts:[],invitations:[],upper_students:[]}
 it('shows a setup error rather than old matching or sample posts when schema is missing',async()=>{
