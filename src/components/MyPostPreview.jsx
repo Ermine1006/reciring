@@ -31,7 +31,7 @@ export default function MyPostPreview({ post, onClose }) {
           <X size={22} />
         </button>
       </div>
-      <div style={{ height: 'min(720px, calc(100dvh - 92px))' }}>
+      <div>
         <RequestCard request={post} preview />
       </div>
     </dialog>, document.body

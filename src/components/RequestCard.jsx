@@ -121,7 +121,8 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
           ? '0 16px 50px rgba(0,0,0,0.08), 0 4px 16px rgba(201,163,59,0.12)'
           : '0 6px 20px rgba(0,0,0,0.05)',
         overflow: 'hidden',
-        height: preview ? '100%' : 'calc(100% - 16px)',
+        height: preview ? 'auto' : 'calc(100% - 16px)',
+        maxHeight: preview ? 'calc(100dvh - 92px)' : undefined,
         touchAction: 'pan-y',
         display: 'flex',
         flexDirection: 'column',
@@ -155,6 +156,7 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
       <div
         style={{
           height: 3,
+          flexShrink: 0,
           background: `linear-gradient(90deg,
             transparent 0%,
             ${C.goldLight} 15%,
@@ -455,17 +457,21 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
               letterSpacing: display.isPublic ? '0.04em' : '0.12em',
               textTransform: display.isPublic ? 'none' : 'uppercase',
               fontWeight: display.isPublic ? 600 : 500,
-              color: display.isPublic ? C.text : C.textMuted,
-              opacity: display.isPublic ? 0.95 : 0.6,
+              color: preview ? C.textSub : (display.isPublic ? C.text : C.textMuted),
+              opacity: preview ? 1 : (display.isPublic ? 0.95 : 0.6),
               fontFamily: 'Inter, system-ui, sans-serif',
-              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              whiteSpace: preview ? 'normal' : 'nowrap',
+              overflow: preview ? 'visible' : 'hidden',
+              textOverflow: preview ? undefined : 'ellipsis',
+              overflowWrap: preview ? 'anywhere' : undefined,
+              lineHeight: preview ? 1.6 : undefined,
             }}>
               {display.isPublic && (
                 <span style={{ marginRight: 5, opacity: 0.85 }}>🌟</span>
               )}
               {display.primary}
               {display.secondary && (
-                <span style={{ color: C.textMuted, opacity: 0.7, fontWeight: 400 }}>
+                <span style={{ color: preview ? C.textSub : C.textMuted, opacity: preview ? 1 : 0.7, fontWeight: 400 }}>
                   {' · '}{display.secondary}
                 </span>
               )}
@@ -528,7 +534,11 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
                 fontFamily: 'Inter, system-ui, sans-serif',
                 marginTop: 4,
                 display: 'flex', alignItems: 'center', gap: 5,
-                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                whiteSpace: preview ? 'normal' : 'nowrap',
+              overflow: preview ? 'visible' : 'hidden',
+              textOverflow: preview ? undefined : 'ellipsis',
+              overflowWrap: preview ? 'anywhere' : undefined,
+              lineHeight: preview ? 1.6 : undefined,
               }}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.goldDark} strokeWidth="2" style={{ flexShrink: 0 }}>
                   <circle cx="12" cy="12" r="9" /><path d="M9 12l2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
