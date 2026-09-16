@@ -46,7 +46,7 @@ function markSwipeHintSeen() {
   try { window.localStorage.setItem(SWIPE_HINT_KEY, '1') } catch {}
 }
 
-export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight, isTop, matchReason, matchReasons, onTap }) {
+export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight, isTop, matchReason, matchReasons, onTap, preview = false }) {
   const [offset, setOffset] = useState(0)
   const [hasDragged, setHasDragged] = useState(false)
   const pointerStart = useRef(null)
@@ -103,17 +103,17 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
 
   const handlePointerUp = (event) => {
     const start = pointerStart.current
-    if (!isTop || hasDragged || (start && Math.hypot(event.clientX - start.x, event.clientY - start.y) > 8)) return
+    if (preview || !isTop || hasDragged || (start && Math.hypot(event.clientX - start.x, event.clientY - start.y) > 8)) return
     onTap?.(request)
   }
 
   return (
     <motion.div
       layout
-      className="mutu-swipe-card absolute inset-x-4 top-2"
+      className={preview ? 'mutu-swipe-card relative' : 'mutu-swipe-card absolute inset-x-4 top-2'}
       style={{
         borderRadius: 24,
-        cursor: isTop ? 'grab' : 'default',
+        cursor: isTop && !preview ? 'grab' : 'default',
         zIndex: isTop ? 10 : 5,
         background: 'linear-gradient(180deg, #FFFFFF 0%, #FBF8F2 100%)',
         border: `1px solid ${C.goldLight}`,
@@ -121,7 +121,7 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
           ? '0 16px 50px rgba(0,0,0,0.08), 0 4px 16px rgba(201,163,59,0.12)'
           : '0 6px 20px rgba(0,0,0,0.05)',
         overflow: 'hidden',
-        height: 'calc(100% - 16px)',
+        height: preview ? '100%' : 'calc(100% - 16px)',
         touchAction: 'pan-y',
         display: 'flex',
         flexDirection: 'column',
@@ -129,13 +129,13 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
         // callout mid-swipe, which cancelled the drag so the CONNECT/PASS
         // stamp stopped tracking the finger and the gesture felt inconsistent.
         // Suppressing selection keeps the whole gesture with the drag handler.
-        userSelect: 'none',
-        WebkitUserSelect: 'none',
+        userSelect: preview ? 'text' : 'none',
+        WebkitUserSelect: preview ? 'text' : 'none',
         WebkitTouchCallout: 'none',
       }}
       onPointerDown={(event) => { pointerStart.current = { x: event.clientX, y: event.clientY } }}
       onPointerUp={handlePointerUp}
-      drag={isTop ? 'x' : false}
+      drag={isTop && !preview ? 'x' : false}
       dragConstraints={{ left: 0, right: 0 }}
       // 1:1 with the finger — the card sticks to and moves WITH your thumb
       // (was 0.6, a laggy rubber-band that pulled back and made CONNECT feel
@@ -146,8 +146,8 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
       onDragEnd={handleDragEnd}
       animate={{
         rotate,
-        scale: isTop ? 1 : 0.94,
-        y:     isTop ? 0 : 16,
+        scale: preview || isTop ? 1 : 0.94,
+        y:     preview || isTop ? 0 : 16,
       }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
     >
@@ -166,7 +166,7 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
       />
 
       {/* ── Swipe overlays (Tinder/Hinge style stamps) ── */}
-      {isTop && (
+      {isTop && !preview && (
         <>
           {/* CONNECT — top-left stamp on right swipe */}
           <div
@@ -349,6 +349,7 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
               paddingLeft: 13,
               wordWrap: 'break-word',
               overflowWrap: 'break-word',
+              whiteSpace: preview ? 'pre-wrap' : undefined,
             }}
           >
             {request.needs}
@@ -416,6 +417,7 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
               paddingLeft: 13,
               wordWrap: 'break-word',
               overflowWrap: 'break-word',
+              whiteSpace: preview ? 'pre-wrap' : undefined,
             }}
           >
             {request.offers}
@@ -537,7 +539,7 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
           </div>
 
           {/* Tap hint */}
-          {isTop && (
+          {isTop && !preview && (
             <div style={{
               display: 'flex', alignItems: 'center', gap: 4,
               color: C.textMuted, opacity: 0.5, flexShrink: 0,
