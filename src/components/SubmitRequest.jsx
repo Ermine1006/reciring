@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { HELP_TYPES, INDUSTRIES, TIME_OPTIONS } from '../data/requestOptions'
+import { suggestedRequestTitle } from '../lib/requestWording'
 import { rewriteText } from '../lib/aiRewrite'
 import { matchaCta } from '../lib/matchaCta'
 import { useAuth } from '../context/AuthContext'
@@ -195,6 +196,8 @@ export default function SubmitRequest({ onSubmitted, prefill = null, demoMode = 
   // seeds the fields once (the parent remounts via `key` when it changes), and
   // the user reviews/completes before posting — a single-sided Event Board post
   // still needs its other side (offer for a need, need for an offer).
+  const [wordingOpen, setWordingOpen] = useState(false)
+  const [wordingUndo, setWordingUndo] = useState(null)
   const [title,    setTitle]    = useState(prefill?.title    || '')
   const [details,  setDetails]  = useState(prefill?.details  || '')
   const [offers,   setOffers]   = useState(prefill?.offers   || '')
@@ -234,6 +237,14 @@ export default function SubmitRequest({ onSubmitted, prefill = null, demoMode = 
     })
     setOffersSeeded(true)
   }, [offersSeeded, profileHelp])
+
+  const suggestedTitle = suggestedRequestTitle(helpType, industry)
+  const applySuggestedTitle = () => {
+    if (!suggestedTitle) return
+    setWordingUndo({ previous: title, applied: suggestedTitle })
+    setTitle(suggestedTitle)
+    setWordingOpen(false)
+  }
 
   /* ── Derived state ── */
   const tags = [...helpType, ...industry]
@@ -505,6 +516,30 @@ export default function SubmitRequest({ onSubmitted, prefill = null, demoMode = 
           <label htmlFor="title" className="block text-[13px] font-semibold mb-2" style={{ color: C.text }}>
             What would you like help with? <span style={{ color: '#EF4444' }}>*</span>
           </label>
+          <div style={{ marginBottom: 10 }}>
+            <button type="button" disabled={!suggestedTitle}
+              onClick={() => title.trim() ? setWordingOpen(open => !open) : applySuggestedTitle()}
+              style={{ minHeight: 44, padding: '8px 12px', borderRadius: 12, border: `1px solid ${C.goldLight}`, background: C.goldBg, color: C.goldDark, fontSize: 12, fontWeight: 600, opacity: suggestedTitle ? 1 : 0.55, cursor: suggestedTitle ? 'pointer' : 'default' }}>
+              Use suggested wording
+            </button>
+            {!suggestedTitle && <p style={{ marginTop: 4, fontSize: 11, color: C.textSub }}>Choose the help you need above to get a suggestion.</p>}
+            {wordingOpen && suggestedTitle && (
+              <div style={{ marginTop: 8, padding: 12, borderRadius: 12, border: `1px solid ${C.goldLight}`, background: C.white }}>
+                <p style={{ fontSize: 11, color: C.textSub, marginBottom: 6 }}>Suggested title. You can edit it after adding.</p>
+                <p style={{ fontSize: 13, lineHeight: 1.5, color: C.text }}>{suggestedTitle}</p>
+                <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+                  <button type="button" onClick={applySuggestedTitle} style={{ minHeight: 44, color: C.goldDark, fontSize: 12, fontWeight: 600 }}>Replace title</button>
+                  <button type="button" onClick={() => setWordingOpen(false)} style={{ minHeight: 44, color: C.textSub, fontSize: 12 }}>Keep mine</button>
+                </div>
+              </div>
+            )}
+            {wordingUndo && title === wordingUndo.applied && (
+              <div role="status" style={{ marginTop: 6, fontSize: 11, color: C.textSub }}>
+                Suggested wording added. Make it your own.
+                <button type="button" onClick={() => { setTitle(wordingUndo.previous); setWordingUndo(null) }} style={{ marginLeft: 8, minHeight: 44, color: C.goldDark, fontWeight: 600 }}>Undo</button>
+              </div>
+            )}
+          </div>
           <CountedInput
             id="title"
             value={title}
@@ -552,27 +587,33 @@ export default function SubmitRequest({ onSubmitted, prefill = null, demoMode = 
 
           {/* Quick-fill chips */}
           <div className="flex flex-wrap gap-1.5 mb-2.5">
-            {OFFER_PRESETS.map((p) => (
-              <button data-mutu-glass=""
-                key={p.label}
-                type="button"
-                onClick={() => setOffers((prev) => {
-                  if (!prev.trim()) return p.text
-                  const base = prev.trimEnd()
-                  const sep = base.endsWith('.') || base.endsWith('!') || base.endsWith('?') ? ' ' : '. '
-                  return `${base}${sep}${p.text}`.slice(0, OFFERS_MAX)
-                })}
-                className="px-2.5 py-1 rounded-full transition-all duration-150 active:scale-95"
-                style={{
-                  fontSize: 10, fontWeight: 500,
-                  background: C.warmBg, border: `1px solid ${C.warmBorder}`, color: C.warmDark,
-                }}
-              >
-                {p.label}
-              </button>
-            ))}
+            {OFFER_PRESETS.map((p) => {
+              const selected = offers.includes(p.text)
+              const next = offers.trim() ? `${offers.trimEnd()}\n${p.text}` : p.text
+              const full = !selected && next.length > OFFERS_MAX
+              return (
+                <button data-mutu-glass="" key={p.label} type="button"
+                  aria-pressed={selected} disabled={full}
+                  title={full ? 'Shorten your offer to add this suggestion.' : selected ? 'Tap again to remove' : 'Add this suggestion'}
+                  onClick={() => {
+                    setOffersSeeded(true)
+                    setOffers(selected ? offers.replace(p.text, '').trim() : next)
+                  }}
+                  className="px-2.5 py-1 rounded-full transition-all duration-150 active:scale-95"
+                  style={{ fontSize: 10, fontWeight: selected ? 700 : 500,
+                    background: selected ? '#EDF2E5' : C.warmBg,
+                    border: `1px solid ${selected ? '#748456' : C.warmBorder}`,
+                    color: selected ? '#49603B' : C.warmDark, opacity: full ? 0.5 : 1 }}>
+                  {selected && <span aria-hidden="true">✓ </span>}{p.label}
+                </button>
+              )
+            })}
           </div>
 
+          <p style={{ fontSize: 11, color: C.textSub, marginBottom: 8, lineHeight: 1.5 }}>
+            Tap to add suggested wording. Tap again to remove. You can edit it anytime.
+            {OFFER_PRESETS.some(p => !offers.includes(p.text) && (offers.trim() ? `${offers.trimEnd()}\n${p.text}` : p.text).length > OFFERS_MAX) && ' Shorten your offer to add more suggestions.'}
+          </p>
           <CountedInput
             id="offers"
             value={offers}
