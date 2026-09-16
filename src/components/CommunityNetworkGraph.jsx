@@ -581,21 +581,26 @@ export default function CommunityNetworkGraph({ userId, userName, communityName 
             )}
           </div>
           {countsLine && (
-            <p style={{ margin: '2px 0 0', fontSize: 11.5, color: C.ink2, fontFamily: FONT }}>
-              {countsLine}
-              <button data-mutu-glass="" type="button" onClick={() => setLegendOpen((o) => !o)}
-                aria-label="About this view"
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 4, marginTop: 2 }}>
+              <p style={{ flex: 1, minWidth: 0, margin: 0, fontSize: 11.5, lineHeight: 1.5, color: C.ink2, fontFamily: FONT }}>
+                {countsLine}
+              </p>
+              <button type="button" onClick={() => setLegendOpen((o) => !o)}
+                aria-label="About this view" aria-expanded={legendOpen}
                 style={{
-                  marginLeft: 6, width: 15, height: 15, borderRadius: '50%',
+                  width: 44, height: 44, flexShrink: 0, padding: 0,
+                  display: 'flex', justifyContent: 'center', alignItems: 'flex-start', paddingTop: 1,
+                  border: 'none', background: 'transparent', cursor: 'pointer', borderRadius: 12,
+                }}>
+                <span aria-hidden="true" style={{
+                  width: 15, height: 15, borderRadius: '50%', display: 'inline-grid', placeItems: 'center',
                   border: `1px solid ${legendOpen ? C.gold : C.line}`,
                   background: legendOpen ? C.goldSoft : C.white,
                   color: legendOpen ? C.gold : C.ink3,
-                  fontSize: 9.5, fontWeight: 700, fontFamily: FONT, cursor: 'pointer',
-                  verticalAlign: '1px', padding: 0, lineHeight: '13px',
-                }}>
-                i
+                  fontSize: 9.5, fontWeight: 700, fontFamily: FONT, lineHeight: 1,
+                }}>i</span>
               </button>
-            </p>
+            </div>
           )}
           {subtitle && (
             <p style={{ margin: '2px 0 0', fontSize: 10.5, color: C.ink3, fontFamily: FONT, lineHeight: 1.45 }}>
