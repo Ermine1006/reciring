@@ -55,6 +55,7 @@ export default function ProfilePage({
   const me = profile || {}
   // 'landing' | 'edit' | 'settings' | 'v3edit'
   const [view, setView] = useState('landing')
+  const [completionOpen, setCompletionOpen] = useState(false)
   // Which section the edit screen opens on (and its title).
   const [edit, setEditState] = useState({ section: 'basic', title: 'Edit profile & interests' })
   const openEdit = (section, title) => { setEditState({ section, title }); setView('edit') }
@@ -87,11 +88,19 @@ export default function ProfilePage({
     li.reset()
   }
 
-  const completeness = useMemo(() => {
-    const f = [me.name, me.headline || me.program, me.industry_interests?.length,
-              me.can_help_with?.length, me.skills_to_learn?.length, resolveAvatarSeed(me.avatar_url)]
-    return Math.round((f.filter(Boolean).length / f.length) * 100)
-  }, [me])
+  // The ring and checklist share the same six checks, so every missing
+  // item explains exactly what remains before the percentage reaches 100.
+  const completionItems = useMemo(() => [
+    { id: 'name', label: 'Display name', done: Boolean(me.name?.trim()), section: 'basic' },
+    { id: 'role', label: 'Role or program', done: Boolean(me.headline?.trim() || me.program?.trim()), section: 'basic' },
+    { id: 'focus', label: 'Career Focus', done: Boolean(me.industry_interests?.length), section: 'skills' },
+    { id: 'help', label: 'What you can help with', done: Boolean(me.can_help_with?.length), section: 'skills' },
+    { id: 'learn', label: 'What you want to learn', done: Boolean(me.skills_to_learn?.length), section: 'skills' },
+    { id: 'avatar', label: 'Choose an avatar', done: Boolean(resolveAvatarSeed(me.avatar_url)), section: 'basic' },
+  ], [me])
+  const completedCount = completionItems.filter(item => item.done).length
+  const completeness = Math.round(completedCount / completionItems.length * 100)
+  const missingItems = completionItems.filter(item => !item.done)
 
   const canHelp = (me.can_help_with || []).slice(0, 4).join(', ')
   const wants   = (me.skills_to_learn || []).slice(0, 4).join(', ')
@@ -188,11 +197,44 @@ export default function ProfilePage({
             <p style={{ margin: 0, fontSize: 18, fontWeight: 700, color: C.ink, letterSpacing: '-0.01em', fontFamily: 'Inter, system-ui, sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{me.name || 'Your name'}</p>
             <p style={{ margin: '2px 0 0', fontSize: 12.5, color: C.ink3, fontFamily: 'Inter, system-ui, sans-serif' }}>{[me.headline, me.program].filter(Boolean).join(' · ') || 'Add your role'}</p>
           </div>
-          <div style={{ textAlign: 'center', flexShrink: 0 }}>
+          <button type="button" onClick={() => setCompletionOpen(open => !open)}
+            aria-expanded={completionOpen} aria-controls="profile-completion-checklist"
+            aria-label={`Profile ${completeness}% complete. View checklist`}
+            style={{ textAlign: 'center', flexShrink: 0, background: 'none', border: 'none', padding: 0, cursor: 'pointer', minWidth: 60, minHeight: 44 }}>
             <Ring pct={completeness} />
-            <div style={{ fontSize: 10, color: C.ink3, marginTop: 2, fontFamily: 'Inter, system-ui, sans-serif' }}>Complete</div>
-          </div>
+            <div style={{ fontSize: 10, color: C.ink3, marginTop: 2, fontFamily: 'Inter, system-ui, sans-serif' }}>{completionOpen ? 'Hide details' : 'View details'}</div>
+          </button>
         </div>
+
+        {completionOpen && (
+          <section id="profile-completion-checklist" aria-label="Profile completion checklist"
+            style={{ marginTop: 14, padding: 16, borderRadius: 16, border: `1px solid ${C.goldLine}`, background: C.card }}>
+            <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: C.ink }}>
+              {missingItems.length ? 'Complete your profile' : 'Your profile is complete'}
+            </h2>
+            <p style={{ margin: '5px 0 12px', fontSize: 12, lineHeight: 1.5, color: C.ink2 }}>
+              {completedCount} of {completionItems.length} items complete.
+              {missingItems.length > 0 && ' Add the items below to reach 100%. You can do this anytime.'}
+            </p>
+            {missingItems.map(item => (
+              <button key={item.id} type="button"
+                onClick={() => openEdit(item.section, item.section === 'basic' ? 'Edit profile & interests' : 'Skills & matching')}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, minHeight: 44, padding: '10px 0', border: 'none', borderBottom: `1px solid ${C.line2}`, background: 'none', textAlign: 'left', cursor: 'pointer', color: C.ink }}>
+                <span style={{ flex: 1, fontSize: 13 }}>{item.label}</span>
+                <span style={{ fontSize: 12, color: C.goldInk, fontWeight: 600 }}>Add</span>
+                <ChevronRight size={15} color={C.goldInk} />
+              </button>
+            ))}
+            <ul style={{ padding: 0, margin: '12px 0 0', listStyle: 'none' }}>
+              {completionItems.filter(item => item.done).map(item => (
+                <li key={item.id} style={{ display: 'flex', gap: 8, padding: '5px 0', fontSize: 12, color: C.ink2 }}>
+                  <span style={{ color: C.sage }} aria-hidden="true">✓</span>
+                  <span>{item.label}<span className="sr-only">: complete</span></span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         {/* Need / offer summary */}
         <div style={{ background: C.card, border: `1px solid ${C.cardLine}`, borderRadius: 16, padding: '13px 14px', marginTop: 14 }}>

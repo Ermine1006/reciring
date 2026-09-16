@@ -532,7 +532,7 @@ async function handlePromptWrite(body, res) {
   ].filter(Boolean).join(' · ')
 
   const question = which === 'weekend'
-    ? "The weekend you're most likely to find me…"
+    ? "On weekends, you're most likely to find me…"
     : 'Ask me about…'
   const guide = which === 'weekend'
     ? "Give a warm, specific glimpse of life outside work — a hobby, place, or activity. If they left a draft, polish it. If it's blank, write ONE relatable, inviting example they can easily edit (keep it light and generic enough to be safe to change — don't assert specific personal facts as if certain)."

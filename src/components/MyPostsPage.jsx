@@ -163,7 +163,7 @@ function EditPostModal({ post, onSave, onClose }) {
           {/* Help type */}
           <div style={{ marginBottom: 14 }}>
             <p className="text-[11px] tracking-[0.14em] uppercase font-semibold mb-2" style={{ color: C.textSub }}>
-              Help type <span style={{ color: '#EF4444' }}>*</span>
+              What help do you need? <span style={{ color: '#EF4444' }}>*</span>
             </p>
             <ChipGroup
               options={HELP_TYPES}

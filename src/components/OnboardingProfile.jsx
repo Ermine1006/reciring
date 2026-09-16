@@ -410,7 +410,7 @@ export default function OnboardingProfile() {
                 </div>
 
                 <div>
-                  <label style={labelStyle}>Weekend you're most likely to find me…</label>
+                  <label style={labelStyle}>On weekends, you're most likely to find me…</label>
                   <p style={helperStyle}>A glimpse of who you are outside work.</p>
                   <input
                     type="text"

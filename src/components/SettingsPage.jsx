@@ -426,7 +426,7 @@ export default function SettingsPage({ section }) {
             </button>
           </Field>
 
-          <Field label="Weekend you're most likely to find me…" helper="A glimpse of who you are outside work." last>
+          <Field label="On weekends, you're most likely to find me…" helper="A glimpse of who you are outside work." last>
             <input
               value={promptWeekend}
               onChange={(e) => setPromptWeekend(e.target.value.slice(0, 160))}

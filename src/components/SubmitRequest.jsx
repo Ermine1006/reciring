@@ -426,7 +426,7 @@ export default function SubmitRequest({ onSubmitted, prefill = null, demoMode = 
         {/* ── Help type (multi, required) ─────────────── */}
         <div>
           <p className="text-[11px] tracking-[0.16em] uppercase font-semibold mb-2.5" style={{ color: C.textSub }}>
-            Help type <span style={{ color: '#EF4444' }}>*</span>
+            What help do you need? <span style={{ color: '#EF4444' }}>*</span>
             <span className="normal-case tracking-normal font-normal ml-1" style={{ color: C.textMuted }}>select up to 3</span>
           </p>
           <ChipGroup
@@ -630,7 +630,7 @@ export default function SubmitRequest({ onSubmitted, prefill = null, demoMode = 
                   borderRadius: 99, padding: '3px 10px', fontSize: 9, fontWeight: 700,
                   letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: 'Inter, system-ui, sans-serif',
                 }}>
-                  {helpType[0] || 'Help type'}
+                  {helpType[0] || 'Help needed'}
                 </span>
                 <span style={{
                   display: 'inline-flex', alignItems: 'center', gap: 4,
