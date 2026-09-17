@@ -281,6 +281,8 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
   }
 
   // ── Load everything ────────────────────────────────────────────
+  const [browseError, setBrowseError] = useState(false)
+  const [browseLoading, setBrowseLoading] = useState(false)
   const loadAll = useCallback(async () => {
     if (demoMode) {
       setCommunity({ id: 'demo', slug: 'rotman', name: 'Rotman' }); setIsMember(true)
@@ -352,8 +354,15 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
       setMyWindows(wins || [])
     } else setMyWindows([])
     if (member) {
-      const { data: rows } = await browsePracticeRequests(comm.id)
-      setBrowseRows(rows || [])
+      setBrowseLoading(true)
+      try {
+        const { data: rows, error } = await browsePracticeRequests(comm.id)
+        setBrowseError(Boolean(error))
+        setBrowseRows(error ? [] : (rows || []))
+      } catch {
+        setBrowseError(true)
+        setBrowseRows([])
+      } finally { setBrowseLoading(false) }
     }
     const ids = [
       ...(prs || []).map((p) => p.counterpart_user_id).filter(Boolean),
@@ -959,7 +968,7 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
 
             {banner && <p role="alert" style={{ margin: '12px 16px', color: '#8A6E1E' }}>{banner}</p>}
             {inlineNote && <p role="status" style={{ margin: '12px 16px', color: MATCHA_DEEP }}>{inlineNote}</p>}
-            <PracticeQuest request={myRequest} windowsStale={myWindowsStale} rows={fitRows}
+            <PracticeQuest browseError={browseError} browseLoading={browseLoading} onRetry={loadAll} request={myRequest} windowsStale={myWindowsStale} rows={fitRows}
               pairings={pairings} names={namesById} passport={passport} saving={saving} busyId={busyId}
               onPublish={quickPublish} onPreferences={() => setSetupOpen(1)} onTimes={() => setSetupOpen(3)}
               onLeave={withdrawRequest} onInvite={invite} onAccept={accept} onDecline={decline} onWithdraw={withdraw}

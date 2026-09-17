@@ -16,7 +16,8 @@ const steps = [
 ]
 
 export default function PracticeQuest({ request, windowsStale, rows, pairings, names, passport, saving, busyId,
-  onPublish, onPreferences, onTimes, onLeave, onInvite, onAccept, onDecline, onWithdraw, onChat, onPractice, onProgress }) {
+  browseError = false, browseLoading = false, onRetry, onPublish, onPreferences, onTimes, onLeave, onInvite, onAccept, onDecline, onWithdraw, onChat, onPractice, onProgress }) {
+  const pending = pairings.filter(p => p.status === 'invited')
   const accepted = pairings.filter(p => p.status === 'accepted')
   const [step, setStep] = useState(null)
   const current = step ?? (!request ? 0 : accepted.length ? 2 : 1)
@@ -49,7 +50,10 @@ export default function PracticeQuest({ request, windowsStale, rows, pairings, n
         <InvitationsList pairings={pairings} busyId={busyId} only="incoming" onAccept={onAccept} onDecline={onDecline} onWithdraw={onWithdraw} />
         {!request ? <section className="quest-paper"><p>Choose what you want to practise.</p><button className="quest-primary" onClick={() => setStep(0)}>Pick a quest →</button></section> : <>
           <p className="quest-private"><LockKeyhole size={14} /> Names unlock when you both accept.</p>
-          {rows.length ? rows.map(row => <PartnerCard key={row.request_id} row={row} myRequest={request} busy={busyId === row.request_id} onInvite={onInvite} />) : <section className="quest-paper"><h3>No teammate available yet</h3><p>Add a time or adjust your preferences.</p><button className="quest-primary" onClick={onTimes}>Add a time</button></section>}
+          {browseLoading ? <p role="status">Looking for teammates…</p> : browseError ? <section className="quest-paper"><h3>Couldn’t load teammates</h3><p>Your preferences are saved. Please try again.</p><button className="quest-primary" onClick={onRetry}>Try again</button></section> : rows.length ? rows.map(row => <PartnerCard key={row.request_id} row={row} myRequest={request} busy={busyId === row.request_id} onInvite={onInvite} />) : <section className="quest-paper"><h3>{accepted.length ? 'Your teammate is already matched' : pending.length ? 'Your invitations are in progress' : 'No new practice matches right now'}</h3>
+            <p>{accepted.length ? 'Open your existing partnership to chat or practise.' : pending.length ? 'Invited people are listed in your invitations below.' : 'No new requests currently match what you want to practise and can help with. Times are optional.'}</p>
+            <button className="quest-primary" onClick={accepted.length ? () => setStep(2) : onPreferences}>{accepted.length ? 'Open my teammates' : 'Review practice types'}</button>
+            <button className="quest-link" onClick={onRetry}>Refresh teammates</button></section>}
           <details><summary>My preferences & invitations</summary><button className="quest-link" onClick={onPreferences}>Edit preferences</button><InvitationsList pairings={pairings} busyId={busyId} only="outgoing" onAccept={onAccept} onDecline={onDecline} onWithdraw={onWithdraw} /><button className="quest-link" onClick={onLeave}>Leave the pool</button></details>
           {windowsStale && <button className="quest-secondary" onClick={onTimes}>Refresh my available times →</button>}
         </>}
