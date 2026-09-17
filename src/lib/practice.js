@@ -551,3 +551,9 @@ export async function peerStrengthSharing(communityId, share = null) {
   if (!isSupabaseConfigured) return notConfigured()
   return supabase.rpc('practice_peer_strengths_sharing', { p_community_id: communityId, p_share: share })
 }
+
+export async function fetchTeammateFeedbackSupport() {
+  if (!isSupabaseConfigured) return { supported: false }
+  const { data, error } = await supabase.rpc('practice_teammate_feedback_supported')
+  return { supported: !error && data === true }
+}

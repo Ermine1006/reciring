@@ -1,3 +1,4 @@
+import { teammateTraitName } from '../../data/practiceTeammateTraits'
 import { skillName, responseRecord } from '../../lib/practiceRecommendations'
 import { useState } from 'react'
 import { mutualFit, formatWindow } from '../../lib/practiceMatching'
@@ -90,13 +91,18 @@ export default function PartnerCard({ row, myRequest, onInvite, busy }) {
       <div className="quest-match-evidence" style={{ fontFamily: FONT, fontSize: 13, lineHeight: 1.5 }}>
         <p style={{ color: MATCHA_DEEP, margin: '0 0 12px', fontWeight: 650 }}>{relevant.length ? `Can support your focus: ${relevant.join(', ')}` : `They can support your ${short(youPractise).toLowerCase()} practice. You can help with ${short(youHelpWith).toLowerCase()}.`}</p>
         <div style={{ background: '#F7F5F0', borderRadius: 12, padding: 12, marginBottom: 12 }}>
-          {rec?.peer_strengths?.length > 0 && <div style={{ marginBottom: 12 }}><strong>Recognised by practice partners</strong>
+          {rec?.peer_strengths?.some(e => skillName(e.skill) && e.partners > 0) && <div style={{ marginBottom: 12 }}><strong>Recognised by practice partners</strong>
             {rec.peer_strengths.filter(e => skillName(e.skill) && Number.isInteger(e.partners) && e.partners > 0).map(e => <p key={e.skill} style={{ margin: '4px 0', color: C.ink2 }}>{skillName(e.skill)} · {e.partners} {e.partners === 1 ? 'partner' : 'partners'}</p>)}
             <small>From mutually confirmed practice</small>
           </div>}
+          {rec?.peer_strengths?.some(e => teammateTraitName(e.skill) && e.partners > 0) && <div style={{ marginBottom: 12 }}>
+            <strong>Teammate qualities · Partner recognised</strong>
+            {rec.peer_strengths.filter(e => teammateTraitName(e.skill) && Number.isInteger(e.partners) && e.partners > 0).map(e => <p key={e.skill} style={{ margin: '4px 0', color: C.ink2 }}>{teammateTraitName(e.skill)} · {e.partners} {e.partners === 1 ? 'partner' : 'partners'}</p>)}
+            {rec.shared_teammate_traits?.length > 0 && <small>Shared teammate qualities: {rec.shared_teammate_traits.map(teammateTraitName).filter(Boolean).join(', ')}</small>}
+          </div>}
           <strong>Strong skills <span style={{ fontWeight: 400, color: C.ink2 }}>· Self selected</span></strong>
           <p style={{ margin: '4px 0 12px', color: C.ink2 }}>{skills.length ? skills.join(' · ') : 'Specific skills not shared yet'}</p>
-          <strong>Responsiveness</strong>
+          <strong>Invitation response record</strong>
           <p style={{ margin: '4px 0', color: C.ink2 }}>{response || 'No shared response record yet'}</p>
           {response && <small style={{ color: C.ink2 }}>Last 90 days · One invitation per sender · Accept or decline</small>}
           {rec?.similar_response === true && response && <p style={{ margin: '6px 0 0', color: MATCHA_DEEP }}>Similar response habits to yours</p>}

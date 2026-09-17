@@ -22,7 +22,7 @@ export default function PeerStrengthSharing({ communityId, onChange }) {
     finally { setBusy(false) }
   }
   return <div style={{ margin: '16px 0' }}>
-    <label className="quest-response-choice"><input type="checkbox" checked={shared} disabled={busy} onChange={e => save(e.target.checked)} /> Show strengths recognised by practice partners and use them for recommendations</label>
+    <label className="quest-response-choice"><input type="checkbox" checked={shared} disabled={busy} onChange={e => save(e.target.checked)} /> Show skills and teammate qualities recognised by practice partners and use them for recommendations</label>
     <small>Only mutually confirmed practice counts. Your name and private tips stay hidden in the pool. You can turn this off anytime.</small>
     {error && <p role="alert">{error}</p>}
   </div>

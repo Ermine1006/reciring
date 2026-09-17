@@ -1,4 +1,5 @@
-import { fetchFeedbackSupport, fetchPeerStrengthSupport } from '../../lib/practice'
+import { TEAMMATE_TRAITS } from '../../data/practiceTeammateTraits'
+import { fetchFeedbackSupport, fetchPeerStrengthSupport, fetchTeammateFeedbackSupport } from '../../lib/practice'
 import { SKILLS_BY_CATEGORY } from '../../data/practiceModes'
 import { useEffect, useMemo, useState } from 'react'
 import { matchaCta } from '../../lib/matchaCta'
@@ -82,11 +83,13 @@ export default function SessionConfirmCard({
   const [feedbackSupported, setFeedbackSupported] = useState(initialFeedbackSupported)
   const [checkingFeedback, setCheckingFeedback] = useState(true)
   const [strengthSupported, setStrengthSupported] = useState(false)
+  const [teammateSupported, setTeammateSupported] = useState(false)
+  const [teammateTraits, setTeammateTraits] = useState([])
   const [strengthSkills, setStrengthSkills] = useState([])
   useEffect(() => {
     let active = true
-    Promise.all([fetchFeedbackSupport(), fetchPeerStrengthSupport()]).then(([feedback, strengths]) => {
-      if (active) { setFeedbackSupported(initialFeedbackSupported || feedback.supported); setStrengthSupported(strengths.supported) }
+    Promise.all([fetchFeedbackSupport(), fetchPeerStrengthSupport(), fetchTeammateFeedbackSupport()]).then(([feedback, strengths, teammate]) => {
+      if (active) { setFeedbackSupported(initialFeedbackSupported || feedback.supported); setStrengthSupported(strengths.supported); setTeammateSupported(teammate.supported) }
     }).catch(() => {}).finally(() => { if (active) setCheckingFeedback(false) })
     return () => { active = false }
   }, [initialFeedbackSupported])
@@ -210,6 +213,13 @@ export default function SessionConfirmCard({
           </div>
           <p style={{ fontSize: 12, color: C.ink2 }}>After you both confirm, these can support their next recommendations and anonymous card if they choose to share.</p>
         </section>}
+        {teammateSupported && <section style={{ marginBottom: 20 }}>
+          <h3 style={{ fontSize: 17 }}>What made them a good teammate?</h3>
+          <p style={{ fontSize: 13, color: C.ink2 }}>Optional · Choose what you observed. Tap again to remove.</p>
+          {TEAMMATE_TRAITS.map(trait => <Choice key={trait.key} selected={teammateTraits.includes(trait.key)} sub={trait.description}
+            onClick={() => setTeammateTraits(keys => keys.includes(trait.key) ? keys.filter(k => k !== trait.key) : [...keys, trait.key])}>{trait.label}</Choice>)}
+          <p style={{ fontSize: 12, color: C.ink2 }}>Partner recognition is separate from the automatically recorded invitation response history. Your partner controls sharing.</p>
+        </section>}
         {feedbackSupported && <details>
           <summary style={{ cursor: 'pointer', fontWeight: 650, marginBottom: 12 }}>Add a private tip · Optional</summary>
 
@@ -242,7 +252,7 @@ export default function SessionConfirmCard({
         </p>
         </details>}
         <Primary disabled={!feedbackCheck.ok} onClick={() => setStep('review')}>
-          {suggestionCode || strengthSkills.length ? 'Continue' : 'Skip and continue'}
+          {suggestionCode || strengthSkills.length || teammateTraits.length ? 'Continue' : 'Skip and continue'}
         </Primary>
         <Back to="roles" />
       </Frame>
@@ -252,6 +262,7 @@ export default function SessionConfirmCard({
   // ── review, then an immutable submission ──
   const lines = reviewLines({ session, answer, suggestionCode, note, reasonCode })
   if (answer === 'completed' && strengthSkills.length) lines.push(`Partner strengths: ${strengthOptions.filter(s => strengthSkills.includes(s.key)).map(s => s.label).join(', ')}`)
+  if (answer === 'completed' && teammateTraits.length) lines.push(`Teammate recognition: ${TEAMMATE_TRAITS.filter(t => teammateTraits.includes(t.key)).map(t => t.label).join(', ')}`)
   return (
     <Frame>
       <p style={{ margin: '0 0 8px', fontSize: 15, fontWeight: 700, color: C.ink, fontFamily: FONT }}>
@@ -265,7 +276,7 @@ export default function SessionConfirmCard({
       <p style={{ margin: '0 0 11px', fontSize: 12, color: C.ink2, fontFamily: FONT, lineHeight: 1.5 }}>
         You cannot edit this confirmation after submitting.
       </p>
-      <Primary disabled={!submission} onClick={() => onSubmit?.({ ...submission, strengthSkills: answer === 'completed' ? strengthSkills : [] })}>
+      <Primary disabled={!submission} onClick={() => onSubmit?.({ ...submission, strengthSkills: answer === 'completed' ? [...strengthSkills, ...teammateTraits] : [] })}>
         {busy ? 'Submitting…' : 'Submit confirmation'}
       </Primary>
       <Back to={answer === 'completed' ? ((feedbackSupported || strengthSupported) ? 'feedback' : 'roles') : 'happened'} />
