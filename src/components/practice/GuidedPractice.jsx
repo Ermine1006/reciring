@@ -1,3 +1,4 @@
+import AppScreen from '../AppScreen'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   guideAvailability, resolveGuide, guideStages, rolesForRound, ROLE_LABEL,
@@ -159,7 +160,24 @@ export default function GuidedPractice({
       ? (roles.candidateUserId === userId ? 'You' : partnerName)
       : null
     return (
-      <Shell onClose={onClose} title="Guided practice">
+      <Shell onClose={onClose} title="Guided practice" footer={
+          <div style={{ padding: '0 16px 12px' }}>
+        <button data-mutu-glass="" type="button" disabled={!roles.resolved}
+          onClick={() => {
+            setPhase('running'); persist({ round, stageIndex })
+            track('guided_practice_started', { resumed: false })
+          }}
+          style={{
+            ...TAP, width: '100%', marginTop: 14, border: 'none', borderRadius: 12,
+            padding: '13px 0', fontSize: 14, fontWeight: 700, fontFamily: FONT,
+            cursor: roles.resolved ? 'pointer' : 'not-allowed',
+            opacity: roles.resolved ? 1 : 0.55, ...matchaCta,
+          }}>
+          Start this round
+        </button>
+
+          </div>
+        }>
         <p style={{ margin: 0, fontSize: 15, fontWeight: 750, color: C.ink, fontFamily: FONT }}>
           {summary.title}
         </p>
@@ -176,22 +194,20 @@ export default function GuidedPractice({
             <>
               <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: C.ink, fontFamily: FONT }}>Round 1</p>
               <p style={{ margin: '2px 0 0', fontSize: 12.5, color: C.ink2, fontFamily: FONT, lineHeight: 1.5 }}>
-                {firstCandidateName} {firstCandidateName === 'You' ? 'practise' : 'practises'} as the candidate
-                <br />
-                {firstCandidateName === 'You' ? partnerName : 'You'} {firstCandidateName === 'You' ? 'acts' : 'act'} as interviewer
+                {firstCandidateName} {firstCandidateName === 'You' ? 'practise' : 'practises'} · {firstCandidateName === 'You' ? partnerName : 'You'} {firstCandidateName === 'You' ? 'interviews' : 'interview'}
               </p>
               <p style={{ margin: '8px 0 0', fontSize: 12, fontWeight: 700, color: C.ink, fontFamily: FONT }}>Round 2</p>
               <p style={{ margin: '2px 0 0', fontSize: 12.5, color: C.ink2, fontFamily: FONT }}>Switch roles</p>
               {!roles.fromSession && (
                 <p style={{ margin: '8px 0 0', fontSize: 11, color: C.ink3, lineHeight: 1.45, fontFamily: FONT }}>
-                  Chosen on this device for the guide only. It is not saved to the session.
+                  Guide choices stay on this device.
                 </p>
               )}
             </>
           ) : (
             <>
               <p style={{ margin: 0, fontSize: 12.5, color: C.ink, fontFamily: FONT, lineHeight: 1.5 }}>
-                This session did not record who starts. Agree with {partnerName}, then choose here.
+                Who practises first? Agree with {partnerName}.
               </p>
               <div style={{ display: 'flex', gap: 8, marginTop: 9 }}>
                 {[{ id: userId, label: 'I start as candidate' },
@@ -209,7 +225,7 @@ export default function GuidedPractice({
                 ))}
               </div>
               <p style={{ margin: '8px 0 0', fontSize: 11, color: C.ink3, lineHeight: 1.45, fontFamily: FONT }}>
-                This choice stays on your device. Nothing is written to the session.
+                Guide choices stay on this device.
               </p>
             </>
           )}
@@ -223,14 +239,12 @@ export default function GuidedPractice({
           <MeetingDetails session={session} compact />
         </div>
 
-        {/* what to prepare */}
-        <p style={{ margin: '13px 0 6px', fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700, color: C.ink3, fontFamily: FONT }}>
-          Prepare
-        </p>
-        <Bullets items={guide.prepare || [...(guide.setup || []), MATERIAL_NOTE]} muted />
-        <p style={{ margin: '9px 0 0', fontSize: 11.5, color: C.ink3, lineHeight: 1.5, fontFamily: FONT }}>
-          {MATERIAL_NOTE} Mutu does not provide cases or exhibits.
-        </p>
+        <details style={{ marginTop: 12 }}>
+          <summary style={{ minHeight: 44, display: 'flex', alignItems: 'center', cursor: 'pointer', fontWeight: 650, fontSize: 13 }}>Preparation & guide tips</summary>
+          <Bullets items={(guide.prepare || guide.setup || []).filter(item => session.location_type !== 'in_person' || item !== 'A video or voice call')} muted />
+          <p style={{ fontSize: 12, color: C.ink2, lineHeight: 1.5 }}>{MATERIAL_NOTE} Mutu does not provide cases or exhibits.</p>
+          <p style={{ fontSize: 12, color: C.ink2 }}>Each person controls their own guide and timer.</p>
+        </details>
 
         {resumeOffer && (
           <div style={{ marginTop: 13, background: C.goldBg, border: `1px solid ${C.goldLight}`, borderRadius: 12, padding: '10px 12px' }}>
@@ -257,22 +271,7 @@ export default function GuidedPractice({
           </div>
         )}
 
-        <button data-mutu-glass="" type="button" disabled={!roles.resolved}
-          onClick={() => {
-            setPhase('running'); persist({ round, stageIndex })
-            track('guided_practice_started', { resumed: false })
-          }}
-          style={{
-            ...TAP, width: '100%', marginTop: 14, border: 'none', borderRadius: 12,
-            padding: '13px 0', fontSize: 14, fontWeight: 700, fontFamily: FONT,
-            cursor: roles.resolved ? 'pointer' : 'not-allowed',
-            opacity: roles.resolved ? 1 : 0.55, ...matchaCta,
-          }}>
-          Start this round
-        </button>
-        <p style={{ margin: '8px 0 0', fontSize: 11, color: C.ink3, textAlign: 'center', fontFamily: FONT, lineHeight: 1.45 }}>
-          You can both open this guide. Each device moves at its own pace.
-        </p>
+
       </Shell>
     )
   }
@@ -468,9 +467,10 @@ export default function GuidedPractice({
   )
 }
 
-function Shell({ title, onClose, children }) {
+function Shell({ title, onClose, children, footer }) {
   return (
-    <div style={{ padding: '2px 16px 24px' }}>
+    <AppScreen footer={footer}>
+    <div style={{ padding: '10px 16px 24px', maxWidth: 560, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <h2 style={{ margin: 0, fontSize: 13, fontWeight: 700, letterSpacing: '0.02em', color: C.ink3, fontFamily: FONT }}>
           {title}
@@ -487,5 +487,6 @@ function Shell({ title, onClose, children }) {
       </div>
       <div style={{ marginTop: 12 }}>{children}</div>
     </div>
+    </AppScreen>
   )
 }

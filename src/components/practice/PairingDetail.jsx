@@ -192,7 +192,6 @@ export default function PairingDetail({
   // time, nothing else competing for attention.
   if (guideOpen && session) {
     return (
-      <div style={{ minHeight: '100%', background: 'var(--mutu-canvas, #F9F7F4)', paddingTop: 10 }}>
         <GuidedPractice
           session={session}
           pairing={pairing}
@@ -201,7 +200,6 @@ export default function PairingDetail({
           onClose={() => setGuideOpen(false)}
           onConfirmPractice={() => setGuideOpen(false)}
         />
-      </div>
     )
   }
 
@@ -314,7 +312,7 @@ export default function PairingDetail({
               </select>
               <input style={{ ...inputStyle, flex: 1.6 }} value={locationDetail} maxLength={120}
                 onChange={(e) => setLocationDetail(e.target.value)}
-                placeholder={locationType === 'virtual' ? 'Zoom / Meet link (optional)' : 'Where?'} />
+                placeholder={locationType === 'virtual' ? 'Zoom / Meet / Teams link' : 'Where?'} />
             </div>
             <p style={{ margin: '0 0 10px', fontSize: 11, color: C.ink3, fontFamily: FONT }}>
               Times are in {tz.replace('America/', '')} time.

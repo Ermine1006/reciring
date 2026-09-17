@@ -1,3 +1,5 @@
+import SessionTimeChange from './SessionTimeChange'
+import SessionMeetingLinkEditor from './SessionMeetingLinkEditor'
 import { useState, useEffect, useCallback } from 'react'
 import SessionConfirmCard from './SessionConfirmCard'
 import TokenUnlockModal from './TokenUnlockModal'
@@ -58,6 +60,26 @@ const quietLink = {
   fontFamily: FONT, cursor: 'pointer', textDecoration: 'underline',
 }
 
+const Shell = ({ label, children, err, onOpenDetails }) => (
+    <div style={{
+      margin: '0 16px 16px', background: C.white, borderRadius: 16,
+      padding: '12px 16px 14px', border: `1px solid ${C.goldLight}`,
+      boxShadow: '0 2px 8px rgba(201,163,59,0.08)',
+    }}>
+      <p style={{ margin: '0 0 8px', fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 600, color: C.gold, fontFamily: FONT }}>
+        Next step · {label}
+      </p>
+      {children}
+      {err && <p role="alert" style={{ margin: '8px 0 0', fontSize: 12, color: '#B4232A', fontFamily: FONT }}>{err}</p>}
+      {onOpenDetails && (
+        <button type="button" onClick={onOpenDetails} style={{ ...quietLink, marginTop: 9 }}>
+          Session details
+        </button>
+      )}
+    </div>
+  )
+
+
 export default function ExchangeNextStep({ matchId, currentUserId, peerName, onOpenDetails }) {
   const name = peerName || 'your partner'
   const [pairing, setPairing] = useState(null)
@@ -79,9 +101,10 @@ export default function ExchangeNextStep({ matchId, currentUserId, peerName, onO
   const [modesSupported, setModesSupported] = useState(false)
 
   const load = useCallback(async () => {
-    const [{ data: prs }, { data: sess }, modeSupport] = await Promise.all([
+    const [{ data: prs, error: pairingError }, { data: sess, error: sessionError }, modeSupport] = await Promise.all([
       fetchMyPairings(), fetchMySessions(), fetchSessionModeSupport(),
     ])
+    if (pairingError || sessionError) { setErr('Could not refresh the session. Please try again.'); return }
     setModesSupported(Boolean(modeSupport?.supported))
     const p = (prs || []).find((x) => x.match_id === matchId) || null
     setPairing(p)
@@ -97,7 +120,14 @@ export default function ExchangeNextStep({ matchId, currentUserId, peerName, onO
     setLoaded(true)
   }, [matchId, currentUserId])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    load()
+    const refresh = () => { if (document.visibilityState !== 'hidden') load() }
+    const timer = window.setInterval(refresh, 15000)
+    window.addEventListener('focus', refresh)
+    document.addEventListener('visibilitychange', refresh)
+    return () => { window.clearInterval(timer); window.removeEventListener('focus', refresh); document.removeEventListener('visibilitychange', refresh) }
+  }, [load])
 
   const act = (fn, after) => async (...args) => {
     setBusy(true); setErr(null)
@@ -150,24 +180,6 @@ export default function ExchangeNextStep({ matchId, currentUserId, peerName, onO
   if (!loaded || !pairing || !['accepted'].includes(pairing.status)) return null
   const st = deriveDisplayState({ pairing, session, myUserId: currentUserId, myConfirmed })
 
-  const Shell = ({ label, children }) => (
-    <div style={{
-      margin: '0 16px 16px', background: C.white, borderRadius: 16,
-      padding: '12px 16px 14px', border: `1px solid ${C.goldLight}`,
-      boxShadow: '0 2px 8px rgba(201,163,59,0.08)',
-    }}>
-      <p style={{ margin: '0 0 8px', fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 600, color: C.gold, fontFamily: FONT }}>
-        Next step · {label}
-      </p>
-      {children}
-      {err && <p role="alert" style={{ margin: '8px 0 0', fontSize: 12, color: '#B4232A', fontFamily: FONT }}>{err}</p>}
-      {onOpenDetails && (
-        <button type="button" onClick={onOpenDetails} style={{ ...quietLink, marginTop: 9 }}>
-          Session details
-        </button>
-      )}
-    </div>
-  )
 
   const blocked = (modesSupported && !setupCheck.ok) || !meetingCheck.ok
   const miniScheduler = (
@@ -209,7 +221,7 @@ export default function ExchangeNextStep({ matchId, currentUserId, peerName, onO
   return (
     <>
       {st === 'scheduling' && (
-        <Shell label="Choose a time">
+        <Shell err={err} onOpenDetails={onOpenDetails} label="Choose a time">
           <p style={{ margin: 0, fontSize: 13.5, fontWeight: 650, color: C.ink, fontFamily: FONT }}>
             Agree on a time with {name}
           </p>
@@ -222,7 +234,7 @@ export default function ExchangeNextStep({ matchId, currentUserId, peerName, onO
       )}
 
       {st === 'proposal_sent' && session && (
-        <Shell label="Waiting on them">
+        <Shell err={err} onOpenDetails={onOpenDetails} label="Waiting on them">
           <p style={{ margin: 0, fontSize: 13.5, fontWeight: 650, color: C.ink, fontFamily: FONT }}>
             You suggested {formatSessionTime(session.scheduled_start, session.duration_minutes, session.timezone)}
           </p>
@@ -240,7 +252,7 @@ export default function ExchangeNextStep({ matchId, currentUserId, peerName, onO
       )}
 
       {st === 'proposal_received' && session && (
-        <Shell label="Confirm the time">
+        <Shell err={err} onOpenDetails={onOpenDetails} label="Confirm the time">
           <p style={{ margin: '0 0 10px', fontSize: 13.5, fontWeight: 650, color: C.ink, fontFamily: FONT }}>
             {name} suggested {formatSessionTime(session.scheduled_start, session.duration_minutes, session.timezone)}
           </p>
@@ -298,13 +310,15 @@ export default function ExchangeNextStep({ matchId, currentUserId, peerName, onO
       )}
 
       {st === 'scheduled' && session && (
-        <Shell label="You're scheduled">
+        <Shell err={err} onOpenDetails={onOpenDetails} label="You're scheduled">
           <p style={{ margin: '0 0 4px', fontSize: 13.5, fontWeight: 650, color: C.ink, fontFamily: FONT }}>
             {formatSessionTime(session.scheduled_start, session.duration_minutes, session.timezone)}
           </p>
           {agreementLine(session)}
           <div style={{ marginTop: 8 }}>
             <MeetingDetails session={session} />
+            <SessionMeetingLinkEditor key={session.id} session={session} onSaved={load} />
+            <SessionTimeChange key={`time-${session.id}`} session={session} currentUserId={currentUserId} onSaved={load} />
           </div>
           <div style={{ height: 10 }} />
           <a href={calendarUrl(session, name)} target="_blank" rel="noopener noreferrer"
@@ -332,7 +346,7 @@ export default function ExchangeNextStep({ matchId, currentUserId, peerName, onO
       )}
 
       {st === 'waiting_for_partner' && (
-        <Shell label="Almost there">
+        <Shell err={err} onOpenDetails={onOpenDetails} label="Almost there">
           <p style={{ margin: 0, fontSize: 13.5, fontWeight: 650, color: C.ink, fontFamily: FONT }}>
             You've confirmed. Waiting for {name}.
           </p>
@@ -343,7 +357,7 @@ export default function ExchangeNextStep({ matchId, currentUserId, peerName, onO
       )}
 
       {st === 'verified' && (
-        <Shell label="Token earned">
+        <Shell err={err} onOpenDetails={onOpenDetails} label="Token earned">
           <p style={{ margin: 0, fontSize: 13.5, fontWeight: 650, color: C.goldDark, fontFamily: FONT }}>
             ✦ Session verified with {name}
           </p>
@@ -355,7 +369,7 @@ export default function ExchangeNextStep({ matchId, currentUserId, peerName, onO
       )}
 
       {st === 'disputed' && (
-        <Shell label="Under review">
+        <Shell err={err} onOpenDetails={onOpenDetails} label="Under review">
           <p style={{ margin: 0, fontSize: 13, color: C.ink2, lineHeight: 1.5, fontFamily: FONT }}>
             Your confirmations didn't match, so this session is paused for a quick
             manual review. The Mutu team will follow up.

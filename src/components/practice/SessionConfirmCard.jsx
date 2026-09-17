@@ -1,4 +1,6 @@
-import { useMemo, useState } from 'react'
+import { fetchFeedbackSupport, fetchPeerStrengthSupport } from '../../lib/practice'
+import { SKILLS_BY_CATEGORY } from '../../data/practiceModes'
+import { useEffect, useMemo, useState } from 'react'
 import { matchaCta } from '../../lib/matchaCta'
 import {
   ANSWERS, ANSWER_KEYS, DID_NOT_HAPPEN_REASONS,
@@ -60,10 +62,35 @@ const CheckRow = ({ checked, onChange, label }) => (
   </label>
 )
 
+  const Frame = ({ children }) => (
+    <div style={{
+      margin: '0 16px 16px', background: '#FBFAF7', border: `1px solid ${C.line}`,
+      borderRadius: 16, padding: '14px 16px 16px',
+    }}>
+      <p style={{ margin: '0 0 10px', fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 700, color: C.gold, fontFamily: FONT }}>
+        Confirm your session
+      </p>
+      {children}
+    </div>
+  )
+
+
 export default function SessionConfirmCard({
   partnerName = 'your partner', myUserId, partnerUserId, busy, onSubmit, session = null,
-  feedbackSupported = false,
+  feedbackSupported: initialFeedbackSupported = false,
 }) {
+  const [feedbackSupported, setFeedbackSupported] = useState(initialFeedbackSupported)
+  const [checkingFeedback, setCheckingFeedback] = useState(true)
+  const [strengthSupported, setStrengthSupported] = useState(false)
+  const [strengthSkills, setStrengthSkills] = useState([])
+  useEffect(() => {
+    let active = true
+    Promise.all([fetchFeedbackSupport(), fetchPeerStrengthSupport()]).then(([feedback, strengths]) => {
+      if (active) { setFeedbackSupported(initialFeedbackSupported || feedback.supported); setStrengthSupported(strengths.supported) }
+    }).catch(() => {}).finally(() => { if (active) setCheckingFeedback(false) })
+    return () => { active = false }
+  }, [initialFeedbackSupported])
+  const strengthOptions = SKILLS_BY_CATEGORY[session?.interview_category] || Object.values(SKILLS_BY_CATEGORY).flat()
   const [step, setStep] = useState('happened')     // happened | roles | feedback | review
   const [answer, setAnswer] = useState(null)       // nothing preselected
   const [ownRound, setOwnRound] = useState(false)
@@ -87,18 +114,6 @@ export default function SessionConfirmCard({
   const feedbackCheck = validateFeedback({
     interviewCategory: session?.interview_category, suggestionCode, note,
   })
-
-  const Frame = ({ children }) => (
-    <div style={{
-      margin: '0 16px 16px', background: '#FBFAF7', border: `1px solid ${C.line}`,
-      borderRadius: 16, padding: '14px 16px 16px',
-    }}>
-      <p style={{ margin: '0 0 10px', fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 700, color: C.gold, fontFamily: FONT }}>
-        Confirm your session
-      </p>
-      {children}
-    </div>
-  )
 
   const Primary = ({ onClick, disabled, children }) => (
     <button data-mutu-glass="" type="button" onClick={onClick} disabled={disabled || busy}
@@ -169,8 +184,8 @@ export default function SessionConfirmCard({
         </p>
         <CheckRow checked={ownRound} onChange={setOwnRound} label={labels.own} />
         <CheckRow checked={partnerRound} onChange={setPartnerRound} label={labels.partner} />
-        <Primary disabled={!ownRound || !partnerRound}
-          onClick={() => setStep(feedbackSupported ? 'feedback' : 'review')}>
+        <Primary disabled={!ownRound || !partnerRound || checkingFeedback}
+          onClick={() => setStep((feedbackSupported || strengthSupported) ? 'feedback' : 'review')}>
           Continue
         </Primary>
         <Back to="happened" />
@@ -182,6 +197,22 @@ export default function SessionConfirmCard({
   if (step === 'feedback') {
     return (
       <Frame>
+        {strengthSupported && <section style={{ marginBottom: 20 }}>
+          <h3 style={{ margin: '0 0 6px', fontSize: 17 }}>What did your partner do well?</h3>
+          <p style={{ fontSize: 13, color: C.ink2 }}>Optional · Pick up to 3 strengths you observed.</p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {strengthOptions.map(skill => <button type="button" key={skill.key} aria-pressed={strengthSkills.includes(skill.key)}
+              disabled={busy || (!strengthSkills.includes(skill.key) && strengthSkills.length >= 3)}
+              onClick={() => setStrengthSkills(keys => keys.includes(skill.key) ? keys.filter(k => k !== skill.key) : [...keys, skill.key])}
+              style={{ ...TAP, borderRadius: 18, padding: '8px 12px', border: `1px solid ${C.line}`, background: strengthSkills.includes(skill.key) ? C.matchaSoft : C.white, color: C.ink }}>
+              {strengthSkills.includes(skill.key) ? '✓ ' : ''}{skill.label}
+            </button>)}
+          </div>
+          <p style={{ fontSize: 12, color: C.ink2 }}>After you both confirm, these can support their next recommendations and anonymous card if they choose to share.</p>
+        </section>}
+        {feedbackSupported && <details>
+          <summary style={{ cursor: 'pointer', fontWeight: 650, marginBottom: 12 }}>Add a private tip · Optional</summary>
+
         <p style={{ margin: '0 0 4px', fontSize: 15, fontWeight: 700, color: C.ink, fontFamily: FONT, lineHeight: 1.4 }}>
           {FEEDBACK_QUESTION}
         </p>
@@ -209,8 +240,9 @@ export default function SessionConfirmCard({
         <p aria-live="polite" style={{ margin: '4px 0 10px', fontSize: 11.5, color: C.ink3, fontFamily: FONT, textAlign: 'right' }}>
           {note.length} of {NOTE_MAX} characters
         </p>
+        </details>}
         <Primary disabled={!feedbackCheck.ok} onClick={() => setStep('review')}>
-          {suggestionCode ? 'Continue' : 'Skip and continue'}
+          {suggestionCode || strengthSkills.length ? 'Continue' : 'Skip and continue'}
         </Primary>
         <Back to="roles" />
       </Frame>
@@ -219,6 +251,7 @@ export default function SessionConfirmCard({
 
   // ── review, then an immutable submission ──
   const lines = reviewLines({ session, answer, suggestionCode, note, reasonCode })
+  if (answer === 'completed' && strengthSkills.length) lines.push(`Partner strengths: ${strengthOptions.filter(s => strengthSkills.includes(s.key)).map(s => s.label).join(', ')}`)
   return (
     <Frame>
       <p style={{ margin: '0 0 8px', fontSize: 15, fontWeight: 700, color: C.ink, fontFamily: FONT }}>
@@ -232,10 +265,10 @@ export default function SessionConfirmCard({
       <p style={{ margin: '0 0 11px', fontSize: 12, color: C.ink2, fontFamily: FONT, lineHeight: 1.5 }}>
         You cannot edit this confirmation after submitting.
       </p>
-      <Primary disabled={!submission} onClick={() => onSubmit?.(submission)}>
+      <Primary disabled={!submission} onClick={() => onSubmit?.({ ...submission, strengthSkills: answer === 'completed' ? strengthSkills : [] })}>
         {busy ? 'Submitting…' : 'Submit confirmation'}
       </Primary>
-      <Back to={answer === 'completed' ? (feedbackSupported ? 'feedback' : 'roles') : 'happened'} />
+      <Back to={answer === 'completed' ? ((feedbackSupported || strengthSupported) ? 'feedback' : 'roles') : 'happened'} />
     </Frame>
   )
 }

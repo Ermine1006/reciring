@@ -370,7 +370,7 @@ export async function fetchSessionConfirmations(sessionId) {
  */
 export async function submitPracticeConfirmation({
   sessionId, outcome, completedOwnRound = false, completedPartnerRound = false, noShowOf = null,
-  suggestionCode = null, note = '',
+  suggestionCode = null, note = '', strengthSkills = [],
 }) {
   if (!isSupabaseConfigured) return notConfigured()
   const base = {
@@ -387,7 +387,9 @@ export async function submitPracticeConfirmation({
   const args = suggestionCode
     ? { ...base, p_suggestion_code: suggestionCode, p_note: (note || '').slice(0, 280) }
     : base
-  const { data, error } = await supabase.rpc('submit_practice_confirmation', args)
+  const { data, error } = strengthSkills.length
+    ? await supabase.rpc('submit_practice_confirmation_with_strengths', { ...base, p_suggestion_code: suggestionCode, p_note: note || '', p_strength_skills: strengthSkills })
+    : await supabase.rpc('submit_practice_confirmation', args)
   return { data, error }
 }
 
@@ -523,4 +525,29 @@ export async function savePracticeRecommendationPreferences(communityId, prefere
     p_community_id: communityId, p_support_skills: preferences.support_skills,
     p_focus_skills: preferences.focus_skills, p_share_response: preferences.share_response,
   })
+}
+
+export async function updatePracticeMeetingLink(sessionId, url) {
+  if (!isSupabaseConfigured || !sessionId) return { error: new Error('Not connected') }
+  return supabase.rpc('update_practice_meeting_link', { p_session_id: sessionId, p_url: url })
+}
+
+export async function proposePracticeTimeChange(sessionId, start) {
+  if (!isSupabaseConfigured) return { error: new Error('Not connected') }
+  return supabase.rpc('propose_practice_time_change', { p_session_id: sessionId, p_start: start })
+}
+export async function respondPracticeTimeChange(sessionId, changeId, accept) {
+  if (!isSupabaseConfigured) return { error: new Error('Not connected') }
+  return supabase.rpc('respond_practice_time_change', { p_session_id: sessionId, p_change_id: changeId, p_accept: accept })
+}
+
+/** Feature probe for the additive peer endorsement migration. */
+export async function fetchPeerStrengthSupport() {
+  if (!isSupabaseConfigured) return { supported: false }
+  const { error } = await supabase.from('practice_peer_strengths').select('session_id').limit(1)
+  return { supported: !error, error }
+}
+export async function peerStrengthSharing(communityId, share = null) {
+  if (!isSupabaseConfigured) return notConfigured()
+  return supabase.rpc('practice_peer_strengths_sharing', { p_community_id: communityId, p_share: share })
 }

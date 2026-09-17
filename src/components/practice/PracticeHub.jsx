@@ -1009,7 +1009,7 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
 
             {banner && <p role="alert" style={{ margin: '12px 16px', color: '#8A6E1E' }}>{banner}</p>}
             {inlineNote && <p role="status" style={{ margin: '12px 16px', color: MATCHA_DEEP }}>{inlineNote}</p>}
-            <PracticeQuest recommendationSettings={recommendationPreferences && myRequest ? <RecommendationPreferences
+            <PracticeQuest recommendationSettings={recommendationPreferences && myRequest ? <RecommendationPreferences communityId={community.id} onSharingChange={loadAll}
               key={myRequest.id + JSON.stringify(myRequest.want_types) + JSON.stringify(myRequest.help_types)}
               value={recommendationPreferences} request={myRequest}
               suggestions={feedbackFocusSuggestions(myFeedback, sessions, userId)}

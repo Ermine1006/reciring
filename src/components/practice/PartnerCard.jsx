@@ -49,7 +49,7 @@ export default function PartnerCard({ row, myRequest, onInvite, busy }) {
   const youHelpWith = overlap(row.want_types, myRequest.help_types)[0]
   const rec = row.recommendation
   const response = responseRecord(rec?.response_record)
-  const relevant = (rec?.relevant_skills || []).map(skillName).filter(Boolean)
+  const relevant = ([...new Set([...(rec?.peer_relevant_skills || []), ...(rec?.relevant_skills || [])])]).map(skillName).filter(Boolean)
   const skills = (rec?.support_skills || []).map(skillName).filter(Boolean)
   const slot = windows.find((w) => w.id === slotId) || null
 
@@ -90,6 +90,10 @@ export default function PartnerCard({ row, myRequest, onInvite, busy }) {
       <div className="quest-match-evidence" style={{ fontFamily: FONT, fontSize: 13, lineHeight: 1.5 }}>
         <p style={{ color: MATCHA_DEEP, margin: '0 0 12px', fontWeight: 650 }}>{relevant.length ? `Can support your focus: ${relevant.join(', ')}` : `They can support your ${short(youPractise).toLowerCase()} practice. You can help with ${short(youHelpWith).toLowerCase()}.`}</p>
         <div style={{ background: '#F7F5F0', borderRadius: 12, padding: 12, marginBottom: 12 }}>
+          {rec?.peer_strengths?.length > 0 && <div style={{ marginBottom: 12 }}><strong>Recognised by practice partners</strong>
+            {rec.peer_strengths.filter(e => skillName(e.skill) && Number.isInteger(e.partners) && e.partners > 0).map(e => <p key={e.skill} style={{ margin: '4px 0', color: C.ink2 }}>{skillName(e.skill)} · {e.partners} {e.partners === 1 ? 'partner' : 'partners'}</p>)}
+            <small>From mutually confirmed practice</small>
+          </div>}
           <strong>Strong skills <span style={{ fontWeight: 400, color: C.ink2 }}>· Self selected</span></strong>
           <p style={{ margin: '4px 0 12px', color: C.ink2 }}>{skills.length ? skills.join(' · ') : 'Specific skills not shared yet'}</p>
           <strong>Responsiveness</strong>

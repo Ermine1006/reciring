@@ -1,8 +1,9 @@
+import PeerStrengthSharing from './PeerStrengthSharing'
 import { useState } from 'react'
 import { SKILLS_BY_CATEGORY, INTERVIEW_CATEGORIES } from '../../data/practiceModes'
 import { skillName } from '../../lib/practiceRecommendations'
 
-export default function RecommendationPreferences({ value, request, suggestions = [], onSave }) {
+export default function RecommendationPreferences({ value, request, suggestions = [], onSave, communityId, onSharingChange }) {
   const [draft, setDraft] = useState(() => ({
     ...value,
     focus_skills: value.focus_skills.filter(k => (request.want_types || []).some(t => SKILLS_BY_CATEGORY[t]?.some(s => s.key === k))),
@@ -29,6 +30,7 @@ export default function RecommendationPreferences({ value, request, suggestions 
       </div></div>)}
     </fieldset>)}
     {suggestions.length > 0 && <div><p>From your recent verified feedback · Only you can see this</p><div className="quest-skill-options">{suggestions.filter(k => (request.want_types || []).some(t => SKILLS_BY_CATEGORY[t]?.some(s => s.key === k))).map(k => <button key={k} type="button" disabled={saving || (!draft.focus_skills.includes(k) && draft.focus_skills.length >= 3)} aria-pressed={draft.focus_skills.includes(k)} onClick={() => toggle('focus_skills', k)}>{draft.focus_skills.includes(k) ? '✓ ' : '+ '}{skillName(k)}</button>)}</div><small>Choose a suggestion and save to use it for your next recommendations.</small></div>}
+    {communityId && <PeerStrengthSharing communityId={communityId} onChange={onSharingChange} />}
     <label className="quest-response-choice"><input type="checkbox" checked={draft.share_response} disabled={saving} onChange={e => { setDraft(d => ({ ...d, share_response: e.target.checked })); setMessage('') }} /> Share my response record and use it to find similar response habits</label>
     <small>Last 90 days. One invitation per sender, at least 3 senders. Accepting or declining within 48 hours both count. Names stay hidden until you both accept.</small>
     <button type="button" className="quest-primary" disabled={saving} onClick={save}>{saving ? 'Saving…' : 'Save & refresh recommendations'}</button>
