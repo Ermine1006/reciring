@@ -984,10 +984,11 @@ function AppShell() {
   }
 
   // ── Propose a meeting ───────────────────────────────────────
-  const handleProposeMeeting = async (matchId, { datetime, location }) => {
-    if (!user) return
-    const { data, error } = await sendMeetingProposal(matchId, user.id, { datetime, location })
-    if (error) { console.error('[ReciRing] Meeting proposal failed:', error); return }
+  const handleProposeMeeting = async (matchId, proposal) => {
+    if (!user) throw new Error('Please sign in again')
+    const { data, error } = await sendMeetingProposal(matchId, user.id, proposal)
+    if (error) throw error
+    if (!data) throw new Error('Meeting proposal was not saved')
     setChatMessages(prev => [...prev, msgToUI(data, user.id)])
   }
 
@@ -1219,6 +1220,7 @@ function AppShell() {
           {tab === 'matches' && chatMatchId && (
             <div className="flex-1 min-h-0 overflow-hidden" style={{ display: 'flex', flexDirection: 'column' }}>
               <ChatView
+                key={chatMatchId}
                 match={matches.find(m => m.id === chatMatchId)}
                 messages={chatMessages}
                 peerProfile={peerProfile}

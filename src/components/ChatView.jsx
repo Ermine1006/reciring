@@ -1,5 +1,9 @@
 import { useState, useRef, useEffect, Fragment } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import VoiceTyping from './VoiceTyping'
+import { meetingLink } from '../lib/meetingLink'
+import { isNativeApp } from '../lib/platform'
+import { Browser } from '@capacitor/browser'
 import PeerAvatar from './PeerAvatar'
 import CoffeeChatModal from './CoffeeChatModal'
 import ReportModal from './ReportModal'
@@ -75,12 +79,14 @@ function DaySeparator({ iso }) {
 function fmtMeeting(iso) {
   return new Date(iso).toLocaleDateString('en-US', {
     weekday: 'long', month: 'short', day: 'numeric',
-    hour: 'numeric', minute: '2-digit',
+    hour: 'numeric', minute: '2-digit', timeZoneName: 'short',
   })
 }
 
 function MeetingCard({ msg, onConfirm, onSuggestAnother, onReschedule }) {
   const { meeting } = msg
+  const link = meetingLink(meeting.meetingUrl || meeting.location || '')
+  const [linkError, setLinkError] = useState(false)
   const isMe = msg.senderId === 'me'
   return (
     <div style={{ display: 'flex', justifyContent: isMe ? 'flex-end' : 'flex-start', padding: '4px 16px' }}>
@@ -113,7 +119,15 @@ function MeetingCard({ msg, onConfirm, onSuggestAnother, onReschedule }) {
           fontFamily: 'Inter, system-ui, sans-serif',
           marginBottom: 12,
         }}>
-          📍 {meeting.location}
+          {link ? <a href={link.url} target="_blank" rel="noopener noreferrer"
+            onClick={async e => {
+              if (isNativeApp) {
+                e.preventDefault()
+                try { await Browser.open({ url: link.url }); setLinkError(false) }
+                catch { setLinkError(true) }
+              }
+            }} style={{ color: '#49603B', overflowWrap: 'anywhere' }}>Open {link.provider} meeting ↗</a> : `📍 ${meeting.location}`}
+          {linkError && <span role="alert"> Could not open the meeting. Please try again.</span>}
         </p>
 
         {/* Pending — receiver sees Confirm / Suggest another time */}
@@ -181,7 +195,7 @@ function MeetingCard({ msg, onConfirm, onSuggestAnother, onReschedule }) {
                 const title = encodeURIComponent('Coffee Chat · Mutu')
                 const dtStart = new Date(meeting.datetime).toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '')
                 const dtEnd = new Date(new Date(meeting.datetime).getTime() + 30 * 60000).toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '')
-                const loc = encodeURIComponent(meeting.location)
+                const loc = encodeURIComponent(link?.url || meeting.location || '')
                 window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dtStart}/${dtEnd}&location=${loc}`, '_blank')
               }}
               style={{
@@ -230,6 +244,8 @@ function shouldRevealIdentity(messages) {
 }
 
 export default function ChatView({ match, messages, onSend, onProposeMeeting, onMeetingResponse, onBack, autoOpenSchedule, onScheduleOpened, scheduleFeedback, currentUserId, onSeeImpact, peerProfile, onReport, onBlock, onUnmatch, onRequestReveal, onAcceptReveal, onDeclineReveal, onOpenPractice }) {
+  const composerRef = useRef(null)
+  const [dictating, setDictating] = useState(false)
   const [input, setInput]               = useState('')
   const [showCoffee, setShowCoffee]     = useState(false)
   const [showFollowUp, setShowFollowUp] = useState(false)
@@ -293,7 +309,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
 
   const handleSend = () => {
     const t = input.trim()
-    if (!t) return
+    if (!t || dictating) return
     onSend(t)
     setInput('')
   }
@@ -771,11 +787,11 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
                   msg={msg}
                   onConfirm={() => onMeetingResponse(msg.id, 'confirmed')}
                   onSuggestAnother={() => {
-                    setRescheduleData({ datetime: msg.meeting.datetime, location: msg.meeting.location })
+                    setRescheduleData({ ...msg.meeting })
                     setShowCoffee(true)
                   }}
                   onReschedule={() => {
-                    setRescheduleData({ datetime: msg.meeting.datetime, location: msg.meeting.location })
+                    setRescheduleData({ ...msg.meeting })
                     setShowCoffee(true)
                   }}
                 />
@@ -998,7 +1014,12 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
         padding: '8px 16px 14px',
         background: C.white, flexShrink: 0,
       }}>
+        <VoiceTyping inputRef={composerRef} onActiveChange={setDictating}
+          onTranscript={text => setInput(previous => previous + (previous && !/\s$/.test(previous) ? ' ' : '') + text)} />
         <textarea
+          ref={composerRef}
+          aria-label="Message"
+          readOnly={dictating}
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
@@ -1016,7 +1037,8 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
         />
         <button
           onClick={handleSend}
-          disabled={!input.trim()}
+          disabled={!input.trim() || dictating}
+          aria-label="Send message"
           style={{
             width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
             border: 'none',
@@ -1037,7 +1059,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
         {showCoffee && (
           <CoffeeChatModal
             initialValues={rescheduleData}
-            onConfirm={(data) => { onProposeMeeting(data); setShowCoffee(false); setRescheduleData(null) }}
+            onConfirm={async (data) => { await onProposeMeeting(data); setShowCoffee(false); setRescheduleData(null) }}
             onClose={() => { setShowCoffee(false); setRescheduleData(null) }}
           />
         )}

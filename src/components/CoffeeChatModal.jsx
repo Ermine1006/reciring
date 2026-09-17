@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { meetingLink } from '../lib/meetingLink'
 import { matchaCta } from '../lib/matchaCta'
 
 const C = {
@@ -21,25 +22,54 @@ const inputStyle = {
   boxSizing: 'border-box',
 }
 
+function localDate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 export default function CoffeeChatModal({ onConfirm, onClose, initialValues }) {
   const tomorrow = new Date()
   tomorrow.setDate(tomorrow.getDate() + 1)
-  const defaultDate = tomorrow.toISOString().split('T')[0]
+  const defaultDate = localDate(tomorrow)
 
   // Pre-fill from previous meeting when rescheduling
-  const initDate = initialValues?.datetime ? new Date(initialValues.datetime).toISOString().split('T')[0] : defaultDate
+  const initDate = initialValues?.datetime ? localDate(new Date(initialValues.datetime)) : defaultDate
   const initTime = initialValues?.datetime ? new Date(initialValues.datetime).toTimeString().slice(0, 5) : '14:00'
   const initLocation = initialValues?.location || 'Madison Pub'
 
   const [date, setDate]         = useState(initDate)
   const [time, setTime]         = useState(initTime)
   const [location, setLocation] = useState(initLocation)
+  const [format, setFormat] = useState(initialValues?.format || (meetingLink(initLocation) ? 'online' : 'in_person'))
+  const [link, setLink] = useState(initialValues?.meetingUrl || (meetingLink(initLocation)?.url ?? ''))
+  const [error, setError] = useState('')
+  const [sending, setSending] = useState(false)
   const [selectedQuick, setSelectedQuick] = useState(null)
 
-  const handleConfirm = () => {
-    if (!date || !time) return
-    const datetime = new Date(`${date}T${time}:00`).toISOString()
-    onConfirm({ datetime, location: location.trim() || 'Madison Pub' })
+  const handleConfirm = async () => {
+    if (sending) return
+    setError('')
+    const selected = new Date(`${date}T${time}:00`)
+    if (!date || !time || !Number.isFinite(selected.getTime()) || selected <= new Date()) {
+      setError('Choose a future date and time.')
+      return
+    }
+    const parsed = meetingLink(link)
+    if (format === 'online' && !parsed) {
+      setError('Paste a full HTTPS meeting link from Zoom, Google Meet or Teams.')
+      return
+    }
+    if (format === 'in_person' && !location.trim()) {
+      setError('Add a place to meet.')
+      return
+    }
+    setSending(true)
+    try {
+      await onConfirm({ datetime: selected.toISOString(), format,
+        location: format === 'online' ? parsed.url : location.trim(),
+        meetingUrl: format === 'online' ? parsed.url : null })
+    } catch {
+      setError('Your suggestion could not be sent. Please try again.')
+    } finally { setSending(false) }
   }
 
   return (
@@ -109,9 +139,8 @@ export default function CoffeeChatModal({ onConfirm, onClose, initialValues }) {
                   setSelectedQuick(q.label)
                   const d = new Date()
                   d.setDate(d.getDate() + q.days)
-                  setDate(d.toISOString().split('T')[0])
+                  setDate(localDate(d))
                   setTime(q.hour)
-                  setLocation('Madison Pub')
                 }}
                 style={{
                   flex: 1, padding: '10px 6px', borderRadius: 12,
@@ -133,10 +162,20 @@ export default function CoffeeChatModal({ onConfirm, onClose, initialValues }) {
           })}
         </div>
 
+        <div role="group" aria-label="How would you like to meet?" style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+          {[['in_person', 'In person'], ['online', 'Online']].map(([value, label]) => (
+            <button key={value} type="button" aria-pressed={format === value}
+              onClick={() => { setFormat(value); setError('') }}
+              style={{ flex: 1, padding: 12, borderRadius: 14, border: '1px solid #CBDBCF', background: format === value ? '#EDF3EE' : '#fff', color: '#214E3A', fontWeight: 600 }}>
+              {label}
+            </button>
+          ))}
+        </div>
+        <p style={{ fontSize: 12, color: C.textSub, marginBottom: 12 }}>Times shown in {Intl.DateTimeFormat().resolvedOptions().timeZone}.</p>
         {/* Fields */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {[
-            { label: 'Date', type: 'date', value: date, onChange: e => setDate(e.target.value), min: new Date().toISOString().split('T')[0] },
+            { label: 'Date', type: 'date', value: date, onChange: e => setDate(e.target.value), min: localDate(new Date()) },
             { label: 'Time', type: 'time', value: time, onChange: e => setTime(e.target.value) },
           ].map(({ label, ...props }) => (
             <label key={label} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -157,16 +196,18 @@ export default function CoffeeChatModal({ onConfirm, onClose, initialValues }) {
               textTransform: 'uppercase', color: C.textMuted,
               fontFamily: 'Inter, system-ui, sans-serif',
             }}>
-              Location
+              {format === 'online' ? 'Meeting link' : 'Location'}
             </span>
             <input
-              type="text"
-              value={location}
-              onChange={e => setLocation(e.target.value)}
-              placeholder="Madison Pub"
+              type={format === 'online' ? 'url' : 'text'}
+              value={format === 'online' ? link : location}
+              onChange={e => { (format === 'online' ? setLink : setLocation)(e.target.value); setError('') }}
+              placeholder={format === 'online' ? 'https://zoom.us/j/…' : 'A place to meet'}
               style={inputStyle}
             />
           </label>
+          {format === 'online' && <p style={{ fontSize: 12, color: C.textSub }}>Create a meeting in Zoom, Google Meet or Teams, then paste its link here. Only your chat partner receives it.</p>}
+          {error && <p role="alert" style={{ color: '#B42318', fontSize: 13 }}>{error}</p>}
         </div>
 
         </div>
@@ -183,6 +224,7 @@ export default function CoffeeChatModal({ onConfirm, onClose, initialValues }) {
         }}>
           <button data-mutu-glass=""
             onClick={handleConfirm}
+            disabled={sending}
             style={{
               width: '100%', padding: '15px 0', borderRadius: 16,
               fontSize: 15, fontWeight: 600,
@@ -191,7 +233,7 @@ export default function CoffeeChatModal({ onConfirm, onClose, initialValues }) {
               ...matchaCta,
             }}
           >
-            Send Suggestion
+            {sending ? 'Sending…' : 'Send Suggestion'}
           </button>
           <button
             onClick={onClose}

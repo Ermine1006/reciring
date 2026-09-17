@@ -38,10 +38,10 @@ export async function sendMessage(matchId, senderUserId, body) {
 /**
  * Send a meeting proposal message.
  */
-export async function sendMeetingProposal(matchId, senderUserId, { datetime, location }) {
+export async function sendMeetingProposal(matchId, senderUserId, { datetime, location, format = 'in_person', meetingUrl = null }) {
   if (!isSupabaseConfigured) return { data: null, error: new Error('Supabase not configured.') }
 
-  const meetingData = { datetime, location, status: 'pending' }
+  const meetingData = { datetime, location, format, meetingUrl, status: 'pending' }
 
   const { data, error } = await supabase
     .from('messages')
