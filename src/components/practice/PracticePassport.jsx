@@ -56,7 +56,7 @@ export function PassportCard({ passport, onOpen }) {
             <circle cx="10.5" cy="10" r="2.4" /><path d="M7 16c.6-1.7 2-2.6 3.5-2.6s2.9.9 3.5 2.6" />
           </svg>
           <h3 style={{ margin: 0, fontSize: 13.5, fontWeight: 700, color: C.ink, fontFamily: FONT, letterSpacing: '-0.01em' }}>
-            Mock Interview Passport
+            Practice Passport
           </h3>
         </span>
         <span style={{ flex: 1 }} />
@@ -77,7 +77,7 @@ export function PassportCard({ passport, onOpen }) {
       ) : (
         <>
           <p style={{ margin: '7px 0 0', fontSize: 11.5, color: C.ink2, fontFamily: FONT }}>
-            {p.verified} verified mock interview{p.verified === 1 ? '' : 's'}
+            {p.verified} verified practice session{p.verified === 1 ? '' : 's'}
             {' · '}
             {p.partners} different partner{p.partners === 1 ? '' : 's'}
           </p>
@@ -138,7 +138,7 @@ export function PassportDetail({ passport, onClose, onCta, sessionById = {}, onR
     <div style={{ paddingBottom: 26 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '2px 16px 0' }}>
         <h2 style={{ margin: 0, fontSize: 17, fontWeight: 750, color: C.ink, fontFamily: FONT, letterSpacing: '-0.015em' }}>
-          Mock Interview Passport
+          Practice Passport
         </h2>
         <span style={{ flex: 1 }} />
         {onClose && (
@@ -194,7 +194,7 @@ export function PassportDetail({ passport, onClose, onCta, sessionById = {}, onR
         ))}
         {p.unrecordedSessions > 0 && (
           <p style={{ margin: '9px 0 0', fontSize: 10.5, color: C.ink3, lineHeight: 1.5, fontFamily: FONT }}>
-            {p.unrecordedSessions} earlier verified mock interview{p.unrecordedSessions === 1 ? '' : 's'} recorded no mode.
+            {p.unrecordedSessions} earlier verified practice session{p.unrecordedSessions === 1 ? '' : 's'} recorded no mode.
           </p>
         )}
       </Section>
@@ -283,8 +283,8 @@ export function PassportDetail({ passport, onClose, onCta, sessionById = {}, onR
         )
       })()}
 
-      {/* ── Recommended next mock interview ── */}
-      <Section title="Recommended next mock interview">
+      {/* ── Your next quest ── */}
+      <Section title="Your next quest">
         <div style={{
           background: C.matchaSoft, border: `1px solid ${C.matcha}33`,
           borderRadius: 15, padding: '12px 13px',
@@ -303,10 +303,10 @@ export function PassportDetail({ passport, onClose, onCta, sessionById = {}, onR
         </div>
       </Section>
 
-      {/* ── Feedback for your next mock interview (private) ── */}
+      {/* ── Private feedback for your next quest (private) ── */}
       {p.feedbackSupported && p.feedbackReceived.length > 0 && (
         <Section
-          title="Feedback for your next mock interview"
+          title="Private feedback for your next quest"
           note="Written by the partner you practised with. Only you can see it.">
           {(showAllFeedback ? p.feedbackReceived : p.feedbackReceived.slice(0, 1)).map((f) => {
             const s2 = sessionById?.[f.session_id]

@@ -61,9 +61,9 @@ export const CONNECTION_CARDS = [
   {
     id: 'one_on_one',
     action: 'practice',
-    title: 'Mock Interview',
-    sub: 'Practise consulting case and behavioural interviews',
-    cta: 'Find a partner',
+    title: 'Practice Quest',
+    sub: 'Pick a quest. Find a teammate. Grow together.',
+    cta: 'Let’s play',
     tone: 'matcha',
     art: '/illustrations/mock-interview.png',
   },

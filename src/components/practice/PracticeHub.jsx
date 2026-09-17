@@ -1,3 +1,4 @@
+import PracticeQuest from './PracticeQuest'
 import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import AppScreen from '../AppScreen'
@@ -462,7 +463,6 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
     }
     setCategory('one_on_one')
     // no preferences yet → the setup flow IS the way to find a partner
-    if (!myRequest) { setSetupOpen(1); return }
     setPathwayOpen(true)
   }
 
@@ -948,105 +948,23 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
                 Together
               </button>
               <h1 style={{ margin: '2px 0 0', fontSize: 24, fontWeight: 750, color: C.ink, letterSpacing: '-0.02em', fontFamily: FONT }}>
-                Mock Interview
+                Practice Quest
               </h1>
               <p style={{ margin: '4px 0 0', fontSize: 13, color: C.ink2, lineHeight: 1.45, fontFamily: FONT }}>
-                Practise consulting case and behavioural interviews.
+                Interview practice. Better together.
               </p>
             </div>
 
             <div ref={matchingRef} aria-hidden="true" style={{ height: 1, scrollMarginTop: 14 }} />
 
-            {/* Your activity is about mock interviews specifically,
-                so it belongs inside this pathway rather than on the
-                hub's neutral landing. Numbers and milestone progress
-                come from computePassport; the action still opens the
-                full Passport. */}
-            <div style={{ paddingTop: 14 }}>
-              <ActivitySummary passport={passport}
-                onOpen={() => { setPassportOpen(true); track('passport_opened') }} />
-            </div>
-            {inlineNote && (
-              <p role="status" style={{
-                margin: '12px 16px 0', fontSize: 12.5, fontWeight: 650,
-                color: MATCHA_DEEP, fontFamily: FONT,
-              }}>
-                ✓ {inlineNote}
-              </p>
-            )}
-
-            {!myRequest ? (
-              <div style={{ padding: '14px 16px 0' }}>
-                <QuickSetupCard saving={saving} onPublish={quickPublish} />
-              </div>
-            ) : (
-              <>
-                <MatchingStatus
-                  state={poolState}
-                  myRequest={myRequest}
-                  myWindows={myWindows}
-                  onPrimary={() => setSetupOpen(1)}
-                  onLeavePool={withdrawRequest} />
-
-                {myWindowsStale && (
-                  <div style={{
-                    margin: '12px 16px 0', background: '#FBF4E4', border: `1px solid ${C.goldLight}`,
-                    borderRadius: 14, padding: '11px 14px', display: 'flex', alignItems: 'center', gap: 10,
-                  }}>
-                    <p style={{ margin: 0, flex: 1, fontSize: 12.5, color: C.ink2, lineHeight: 1.45, fontFamily: FONT }}>
-                      Your listed times have passed. Partners can still match with you,
-                      but fresh times let them book you instantly.
-                    </p>
-                    <button data-mutu-glass="" type="button" onClick={() => setSetupOpen(3)}
-                      style={{
-                        flexShrink: 0, minHeight: 44, border: 'none', borderRadius: 10, padding: '9px 14px',
-                        fontSize: 12, fontWeight: 700, fontFamily: FONT,
-                        background: MATCHA_DEEP, color: '#fff', cursor: 'pointer',
-                      }}>
-                      Add times
-                    </button>
-                  </div>
-                )}
-              </>
-            )}
-
-            {/* What the sender has outstanding. It existed only in a
-                collapsed group on the other tab, so an invitation
-                sent from here disappeared into silence. Identity
-                stays hidden until both accept, so this shows the
-                state and the way out, never the person. */}
-            {outgoing.length > 0 && (
-              <>
-                <SectionTitle>
-                  {outgoing.length === 1
-                      ? 'Invitation you sent'
-                      : `Invitations you sent · ${outgoing.length}`}
-                </SectionTitle>
-                <InvitationsList pairings={pairings} busyId={busyId} only="outgoing"
-                  onAccept={accept} onDecline={decline} onWithdraw={withdraw} />
-                <p style={{
-                  margin: '0 16px', fontSize: 11.5, color: C.ink3,
-                  lineHeight: 1.5, fontFamily: FONT,
-                }}>
-                  You will hear back when they respond, or the invitation expires on its own.
-                </p>
-              </>
-            )}
-
-            {/* The partner list stays behind the Mock Interview
-                pathway, exactly as before. */}
-            {category === 'one_on_one' && myRequest && fitRows.length > 0 && (
-              <>
-                <div ref={partnersRef} aria-hidden="true" style={{ height: 1, scrollMarginTop: 14 }} />
-                <SectionTitle>Partners for you</SectionTitle>
-                <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-                  {fitRows.map((row) => (
-                    <PartnerCard key={row.request_id} row={row} myRequest={myRequest}
-                      busy={busyId === row.request_id} onInvite={invite} />
-                  ))}
-                </div>
-              </>
-            )}
+            {banner && <p role="alert" style={{ margin: '12px 16px', color: '#8A6E1E' }}>{banner}</p>}
+            {inlineNote && <p role="status" style={{ margin: '12px 16px', color: MATCHA_DEEP }}>{inlineNote}</p>}
+            <PracticeQuest request={myRequest} windowsStale={myWindowsStale} rows={fitRows}
+              pairings={pairings} names={namesById} passport={passport} saving={saving} busyId={busyId}
+              onPublish={quickPublish} onPreferences={() => setSetupOpen(1)} onTimes={() => setSetupOpen(3)}
+              onLeave={withdrawRequest} onInvite={invite} onAccept={accept} onDecline={decline} onWithdraw={withdraw}
+              onChat={onOpenChat} onPractice={(id) => { setView('mine'); setDetailId(id) }}
+              onProgress={() => { setPassportOpen(true); track('passport_opened') }} />
           </div>
         </AppScreen>
         {overlays}
@@ -1231,7 +1149,7 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
                   fontSize: 13.5, fontWeight: 700, fontFamily: FONT,
                   background: MATCHA_DEEP, color: '#fff', cursor: 'pointer',
                 }}>
-                Find a mock interview partner →
+                Find a teammate →
               </button>
             </div>
           ) : (
@@ -1255,7 +1173,7 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
                 <>
                   <SectionTitle>Upcoming</SectionTitle>
                   <div style={{ padding: '0 16px' }}>
-                    {upcoming.map((x) => <SessionRow key={x.p.id} {...x} titleFn={(n) => `Mock interview with ${n}`} />)}
+                    {upcoming.map((x) => <SessionRow key={x.p.id} {...x} titleFn={(n) => `Practice with ${n}`} />)}
                     {myJoinedUpcomingEvents.map((e) => <EventRow key={e.id} e={e} />)}
                   </div>
                 </>

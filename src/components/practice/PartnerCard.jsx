@@ -59,16 +59,16 @@ export default function PartnerCard({ row, myRequest, onInvite, busy }) {
           textTransform: 'uppercase', color: MATCHA_DEEP, background: MATCHA_SOFT,
           border: '1px solid #DDE3CE', borderRadius: 8, padding: '3px 10px', fontFamily: FONT,
         }}>
-          Mock interview
+          Practice Quest
         </span>
         <span style={{ fontSize: 11.5, fontWeight: 600, color: C.ink3, fontFamily: FONT }}>
-          Potential mock interview partner
+          Anonymous teammate
         </span>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
         <h3 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: C.ink, letterSpacing: '-0.01em', fontFamily: FONT }}>
-          {short(youPractise)} + {short(youHelpWith)} mock interview
+          {short(youPractise)} + {short(youHelpWith)}
         </h3>
         <span style={{
           display: 'inline-flex', alignItems: 'center', gap: 5,
@@ -78,7 +78,7 @@ export default function PartnerCard({ row, myRequest, onInvite, busy }) {
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={3.2} strokeLinecap="round" strokeLinejoin="round">
             <path d="M20 6L9 17l-5-5" />
           </svg>
-          Good practice fit
+          Two way practice
         </span>
       </div>
 

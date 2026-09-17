@@ -4,7 +4,7 @@ import { wallTimeToUtc } from '../../lib/practiceMatching'
 import { MATCHA_DEEP, MATCHA_SOFT } from '../../lib/matchaCta'
 
 // One-card setup: two questions, one CTA, under 15 seconds.
-//   I want to practise · I can help with → [ Show me partners ]
+//   I want to practise · I can help with → [ Find my teammate → ]
 // Preferred times are OPTIONAL (they never block matching — the
 // database has no availability requirement). Format, duration, and
 // context use sensible defaults and live under Edit preferences.
@@ -31,7 +31,7 @@ function TypeRow({ label, selected, onToggle }) {
         {PILOT_PRACTICE_TYPES.map((t) => {
           const on = selected.includes(t)
           return (
-            <button data-mutu-glass="" key={t} type="button" onClick={() => onToggle(t)}
+            <button data-mutu-glass="" key={t} type="button" aria-pressed={on} onClick={() => onToggle(t)}
               className="active:scale-95 transition-all"
               style={{
                 flex: 1, border: `1.5px solid ${on ? MATCHA_DEEP : C.line}`, borderRadius: 13,
@@ -76,10 +76,10 @@ export default function QuickSetupCard({ saving, onPublish }) {
       padding: '18px 18px 16px', boxShadow: '0 2px 10px rgba(0,0,0,0.04)',
     }}>
       <p style={{ margin: '0 0 3px', fontSize: 16, fontWeight: 700, color: C.ink, fontFamily: FONT }}>
-        Find a mock interview partner
+        Pick your quest
       </p>
       <p style={{ margin: '0 0 14px', fontSize: 12.5, color: C.ink2, lineHeight: 1.5, fontFamily: FONT }}>
-        You practise one round, they practise one round. Anonymous until you both accept.
+        One round each. Names unlock when you both accept.
       </p>
 
       <TypeRow label="I want to practise" selected={want} onToggle={toggle(want, setWant)} />
@@ -128,7 +128,7 @@ export default function QuickSetupCard({ saving, onPublish }) {
           cursor: !ready || saving ? 'default' : 'pointer', opacity: !ready ? 0.55 : saving ? 0.75 : 1,
           boxShadow: '0 2px 10px rgba(92,106,62,0.28)',
         }}>
-        {saving ? 'Finding partners…' : 'Show me partners'}
+        {saving ? 'Finding partners…' : 'Find my teammate →'}
       </button>
     </div>
   )

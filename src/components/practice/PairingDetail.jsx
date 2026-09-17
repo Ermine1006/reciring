@@ -38,7 +38,7 @@ function googleCalendarUrl(session, partnerName) {
   const end = new Date(start.getTime() + session.duration_minutes * 60_000)
   const params = new URLSearchParams({
     action: 'TEMPLATE',
-    text: `Mock interview with ${partnerName} · Mutu`,
+    text: `Practice with ${partnerName} · Mutu`,
     dates: `${fmt(start)}/${fmt(end)}`,
     details: 'Two rounds. One for you, one for your partner. Afterwards, confirm together in Mutu to unlock your shared Mutu Token.',
     location: session.location_type === 'in_person'
@@ -220,7 +220,7 @@ export default function PairingDetail({
           <PeerAvatar name={name} seed={partnerUserId || pairing?.id} size={40} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: C.ink, fontFamily: FONT }}>{name}</p>
-            <p style={{ margin: '1px 0 0', fontSize: 11.5, color: C.goldDark, fontFamily: FONT }}>Mock interview partner · identities revealed</p>
+            <p style={{ margin: '1px 0 0', fontSize: 11.5, color: C.goldDark, fontFamily: FONT }}>Practice teammate · Names unlocked</p>
           </div>
           {pairing?.match_id && (
             <button data-mutu-glass="" type="button" onClick={() => onOpenChat(pairing.match_id)}
@@ -266,6 +266,7 @@ export default function PairingDetail({
         </Card>
 
         {/* The agreed exchange (immutable snapshots) */}
+        <details style={{ marginBottom: 12 }}><summary style={{ minHeight: 44, color: '#596e43', cursor: 'pointer' }}>Your two rounds</summary>
         <Card>
           <SectionLabel>Your two rounds</SectionLabel>
           {snapLine(pairing?.my_snapshot, 'You', true)}
@@ -276,6 +277,8 @@ export default function PairingDetail({
             </p>
           )}
         </Card>
+
+        </details>
 
         {/* Scheduling */}
         {(state === 'scheduling' || (state === 'verified' && scheduleAgain)) && (
@@ -416,7 +419,7 @@ export default function PairingDetail({
                 if (!g.ok) {
                   return g.reason === 'format_not_recorded' ? (
                     <p style={{ margin: '0 0 10px', fontSize: 11.5, color: C.ink3, lineHeight: 1.5, fontFamily: FONT }}>
-                      Guided mock interview is unavailable because this session’s format was not recorded.
+                      Guided practice is unavailable because this session’s format was not recorded.
                     </p>
                   ) : null
                 }
@@ -429,7 +432,7 @@ export default function PairingDetail({
                       padding: '12px 0', fontSize: 13.5, fontWeight: 700, fontFamily: FONT,
                       cursor: 'pointer', minHeight: 44, ...matchaCta,
                     }}>
-                    {started ? 'Start guided mock interview' : 'Review guide'}
+                    {started ? 'Start guided practice' : 'Review guide'}
                   </button>
                 )
               })()}
@@ -459,7 +462,7 @@ export default function PairingDetail({
                 Cancel this session
               </button>
             </Card>
-            <Card>
+            <details><summary style={{ minHeight: 44, color: '#596e43', cursor: 'pointer' }}>Round guide</summary><Card>
               <SectionLabel>Your two-round agenda</SectionLabel>
               {SESSION_AGENDA.map((a, i) => (
                 <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'baseline', padding: '3px 0' }}>
@@ -473,7 +476,7 @@ export default function PairingDetail({
                 This is guidance, not a timer. You both practise and you both interview.
                 Decide who goes first when you meet.
               </p>
-            </Card>
+            </Card></details>
           </>
         )}
 
@@ -489,7 +492,7 @@ export default function PairingDetail({
                   background: C.white, color: C.ink2, borderRadius: 12, padding: '11px 0',
                   fontSize: 12.5, fontWeight: 650, fontFamily: FONT, cursor: 'pointer', minHeight: 44,
                 }}>
-                Open guided mock interview
+                Open guided practice
               </button>
             )
           })()}
@@ -522,7 +525,7 @@ export default function PairingDetail({
         {state === 'verified' && (
           <Card style={{ background: C.goldBg, border: `1px solid ${C.goldLight}` }}>
             <p style={{ margin: 0, fontSize: 15, fontWeight: 750, color: C.goldDark, fontFamily: FONT }}>
-              Mock interview verified
+              Quest complete
             </p>
             {(() => {
               const d = describeSession(session)
@@ -538,7 +541,7 @@ export default function PairingDetail({
               1 shared Token earned
             </p>
             <p style={{ margin: '2px 0 0', fontSize: 12, color: C.ink2, fontFamily: FONT }}>
-              Mock Interview Passport updated
+              Practice Passport updated
             </p>
             <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
               <button data-mutu-glass="" type="button" onClick={onViewProgress}

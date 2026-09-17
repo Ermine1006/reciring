@@ -142,9 +142,9 @@ export default function GuidedPractice({
 
   if (!availability.ok) {
     return (
-      <Shell onClose={onClose} title="Guided mock interview">
+      <Shell onClose={onClose} title="Guided practice">
         <p style={{ margin: 0, fontSize: 13, color: C.ink2, lineHeight: 1.55, fontFamily: FONT }}>
-          {availability.message || 'Guided mock interview is not available for this session.'}
+          {availability.message || 'Guided practice is not available for this session.'}
         </p>
         <p style={{ margin: '8px 0 0', fontSize: 12, color: C.ink3, lineHeight: 1.5, fontFamily: FONT }}>
           Your chat and the completion steps are unchanged.
@@ -159,7 +159,7 @@ export default function GuidedPractice({
       ? (roles.candidateUserId === userId ? 'You' : partnerName)
       : null
     return (
-      <Shell onClose={onClose} title="Guided mock interview">
+      <Shell onClose={onClose} title="Guided practice">
         <p style={{ margin: 0, fontSize: 15, fontWeight: 750, color: C.ink, fontFamily: FONT }}>
           {summary.title}
         </p>
@@ -268,7 +268,7 @@ export default function GuidedPractice({
             cursor: roles.resolved ? 'pointer' : 'not-allowed',
             opacity: roles.resolved ? 1 : 0.55, ...matchaCta,
           }}>
-          Start mock interview
+          Start this round
         </button>
         <p style={{ margin: '8px 0 0', fontSize: 11, color: C.ink3, textAlign: 'center', fontFamily: FONT, lineHeight: 1.45 }}>
           You can both open this guide. Each device moves at its own pace.
@@ -280,9 +280,9 @@ export default function GuidedPractice({
   // ── complete ──
   if (phase === 'done') {
     return (
-      <Shell onClose={onClose} title="Guided mock interview">
+      <Shell onClose={onClose} title="Guided practice">
         <p style={{ margin: 0, fontSize: 16, fontWeight: 750, color: C.ink, fontFamily: FONT }}>
-          Guided mock interview complete
+          Guided practice complete
         </p>
         <p style={{ margin: '6px 0 0', fontSize: 13, color: C.ink2, lineHeight: 1.55, fontFamily: FONT }}>
           When you are ready, confirm whether the agreed mock interview happened and both roles were completed.
@@ -299,7 +299,7 @@ export default function GuidedPractice({
             padding: '13px 0', fontSize: 14, fontWeight: 700, fontFamily: FONT,
             cursor: 'pointer', ...matchaCta,
           }}>
-          Confirm mock interview
+          Confirm practice
         </button>
         <button data-mutu-glass="" type="button" onClick={onClose}
           style={{
@@ -443,7 +443,7 @@ export default function GuidedPractice({
         }}>
         {stage.cta
           || (stageIndex === stages.length - 1
-              ? (round === 1 ? 'Switch roles' : 'Finish guided mock interview')
+              ? (round === 1 ? 'Switch roles' : 'Finish guided practice')
               : 'Next stage')}
       </button>
       {stage.skip && (

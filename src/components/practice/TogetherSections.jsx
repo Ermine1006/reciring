@@ -110,7 +110,7 @@ export function ActivitySummary({ passport, onOpen }) {
       </div>
 
       <p style={{ margin: '-2px 0 0', fontSize: 13, color: T.ink2, fontFamily: FONT }}>
-        {verified} verified mock interview{verified === 1 ? '' : 's'}
+        {verified} verified practice session{verified === 1 ? '' : 's'}
         {' · '}
         {partners} different partner{partners === 1 ? '' : 's'}
       </p>
