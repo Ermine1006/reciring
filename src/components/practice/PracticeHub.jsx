@@ -937,8 +937,35 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
     )
   }
 
+  const sessionNavigation = (
+        <div style={{ padding: '0 16px' }}>
+          <div role="tablist" style={{
+            display: 'flex', background: C.white, border: `1px solid ${C.line}`,
+            borderRadius: 99, padding: 4, gap: 4,
+          }}>
+            {[
+              { id: 'explore', label: 'For You' },
+              { id: 'mine', label: `My Sessions${actionableCount ? ` · ${actionableCount}` : ''}` },
+            ].map((t) => {
+              const on = view === t.id
+              return (
+                <button data-mutu-glass="" key={t.id} type="button" role="tab" aria-selected={on} onClick={() => setView(t.id)}
+                  style={{
+                    flex: 1, minHeight: 44, border: 'none', borderRadius: 99, padding: '10px 0',
+                    fontSize: 13.5, fontWeight: 650, fontFamily: FONT, cursor: 'pointer',
+                    background: on ? MATCHA_SOFT : 'transparent',
+                    color: on ? MATCHA_DEEP : C.ink2,
+                  }}>
+                  {t.label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+  )
+
   // ── Mock Interview: a page of its own ───────────────────────────
-  if (pathwayOpen && view === 'explore') {
+  if (pathwayOpen && view === 'explore' && !detailPairing) {
     return (
       <>
         <AppScreen>
@@ -964,6 +991,8 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
               </p>
             </div>
 
+            <div style={{ margin: '14px 0 8px' }}>{sessionNavigation}</div>
+
             <div ref={matchingRef} aria-hidden="true" style={{ height: 1, scrollMarginTop: 14 }} />
 
             {banner && <p role="alert" style={{ margin: '12px 16px', color: '#8A6E1E' }}>{banner}</p>}
@@ -972,7 +1001,7 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
               pairings={pairings} names={namesById} passport={passport} saving={saving} busyId={busyId}
               onPublish={quickPublish} onPreferences={() => setSetupOpen(1)} onTimes={() => setSetupOpen(3)}
               onLeave={withdrawRequest} onInvite={invite} onAccept={accept} onDecline={decline} onWithdraw={withdraw}
-              onChat={onOpenChat} onPractice={(id) => { setView('mine'); setDetailId(id) }}
+              onChat={onOpenChat} onPractice={(id) => setDetailId(id)}
               onProgress={() => { setPassportOpen(true); track('passport_opened') }} />
           </div>
         </AppScreen>
@@ -1053,31 +1082,7 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
           )}
         </div>
 
-        {/* For You | My Sessions */}
-        <div style={{ padding: '0 16px' }}>
-          <div role="tablist" style={{
-            display: 'flex', background: C.white, border: `1px solid ${C.line}`,
-            borderRadius: 99, padding: 4, gap: 4,
-          }}>
-            {[
-              { id: 'explore', label: 'For You' },
-              { id: 'mine', label: `My Sessions${actionableCount ? ` · ${actionableCount}` : ''}` },
-            ].map((t) => {
-              const on = view === t.id
-              return (
-                <button data-mutu-glass="" key={t.id} type="button" role="tab" aria-selected={on} onClick={() => setView(t.id)}
-                  style={{
-                    flex: 1, minHeight: 44, border: 'none', borderRadius: 99, padding: '10px 0',
-                    fontSize: 13.5, fontWeight: 650, fontFamily: FONT, cursor: 'pointer',
-                    background: on ? MATCHA_SOFT : 'transparent',
-                    color: on ? MATCHA_DEEP : C.ink2,
-                  }}>
-                  {t.label}
-                </button>
-              )
-            })}
-          </div>
-        </div>
+        {sessionNavigation}
 
         {banner && (
           <div role="status" onClick={() => setBanner(null)}
