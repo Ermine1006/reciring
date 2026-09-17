@@ -1018,6 +1018,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
           onTranscript={text => setInput(previous => previous + (previous && !/\s$/.test(previous) ? ' ' : '') + text)} />
         <textarea
           ref={composerRef}
+          data-voice-typing="off"
           aria-label="Message"
           readOnly={dictating}
           value={input}

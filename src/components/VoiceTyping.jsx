@@ -4,7 +4,7 @@ import { isNativeApp } from '../lib/platform'
 
 // Recognition produces a draft only. Native apps use OS keyboard dictation,
 // avoiding an additional recording service or native microphone permission.
-export default function VoiceTyping({ onTranscript, onActiveChange, inputRef }) {
+export default function VoiceTyping({ onTranscript, onActiveChange, inputRef, panelStyle, children, onOpenChange = () => {} }) {
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState(false)
   const [message, setMessage] = useState('')
@@ -76,8 +76,8 @@ export default function VoiceTyping({ onTranscript, onActiveChange, inputRef }) 
   }
   const buttonStyle = { minHeight: 44, padding: '8px 12px', border: '1px solid #CBDBCF', borderRadius: 12, background: '#EDF3EE', color: '#214E3A' }
   return <div style={{ position: 'relative', flexShrink: 0 }}>
-    <button type="button" aria-label="Voice typing" aria-expanded={open} onClick={() => setOpen(true)} style={buttonStyle}><Mic size={18} aria-hidden="true" /></button>
-    {open && <div role="region" aria-label="Voice typing controls" style={{ position: 'absolute', bottom: 52, left: 0, width: 'min(300px, calc(100vw - 48px))', padding: 16, border: '1px solid #E8D9A7', borderRadius: 16, background: '#fffdf7', boxShadow: '0 8px 28px #0002', zIndex: 30 }}>
+    <button type="button" aria-label="Voice typing" aria-expanded={open} onClick={() => { setOpen(true); onOpenChange(true) }} style={buttonStyle}><Mic size={18} aria-hidden="true" /></button>
+    {open && <div role="region" aria-label="Voice typing controls" style={{ position: 'absolute', bottom: 52, left: 0, width: 'min(300px, calc(100vw - 48px))', padding: 16, border: '1px solid #E8D9A7', borderRadius: 16, background: '#fffdf7', boxShadow: '0 8px 28px #0002', zIndex: 30, ...panelStyle }}>
       <strong>Voice typing</strong>
       {Recognition ? <>
         <p style={{ fontSize: 12, lineHeight: 1.5 }}>Speech becomes an editable draft. Your browser may send audio to its speech service. Mutu does not store audio.</p>
@@ -88,9 +88,10 @@ export default function VoiceTyping({ onTranscript, onActiveChange, inputRef }) 
         <button type="button" style={buttonStyle} onClick={active ? () => session.current?.stop() : start}>{active ? 'Stop listening' : 'Start voice typing'}</button>
       </> : <>
         <p style={{ fontSize: 13, lineHeight: 1.5 }}>Tap the microphone on your keyboard to turn speech into text. Review and edit it before sending. If the microphone is missing, enable dictation in your keyboard settings.</p>
-        <button type="button" style={buttonStyle} onClick={() => { inputRef.current?.focus(); setOpen(false) }}>Open keyboard</button>
+        <button type="button" style={buttonStyle} onClick={() => { inputRef.current?.focus(); setOpen(false); onOpenChange(false) }}>Open keyboard</button>
       </>}
-      <button type="button" style={{ ...buttonStyle, marginLeft: 8, background: '#fff' }} onClick={() => { dispose(); setActive(false); setInterim(''); onActiveChange(false); setOpen(false) }}>Close</button>
+      {children}
+      <button type="button" style={{ ...buttonStyle, marginLeft: 8, background: '#fff' }} onClick={() => { dispose(); setActive(false); setInterim(''); onActiveChange(false); setOpen(false); onOpenChange(false) }}>Close</button>
     </div>}
   </div>
 }
