@@ -146,10 +146,12 @@ export async function replaceAvailabilityWindows(requestId, windows) {
  */
 export async function browsePracticeRequests(communityId) {
   if (!isSupabaseConfigured || !communityId) return { data: [], error: null }
-  const { data, error } = await supabase.rpc('browse_practice_requests', {
-    p_community_id: communityId,
-  })
-  return { data: data || [], error }
+  const enhanced = await supabase.rpc('browse_practice_recommendations', { p_community_id: communityId })
+  if (!enhanced.error) return { data: enhanced.data || [], error: null, recommendationsSupported: true }
+  // Only a missing RPC permits legacy fallback. Network/permission failures remain errors.
+  if (!['PGRST202', '42883'].includes(enhanced.error.code)) return { data: [], error: enhanced.error }
+  const { data, error } = await supabase.rpc('browse_practice_requests', { p_community_id: communityId })
+  return { data: data || [], error, recommendationsSupported: false }
 }
 
 // ── Invitations / pairings ───────────────────────────────────────
@@ -507,4 +509,18 @@ export function fetchCommunityMapSummary(communityId) {
 
 export function fetchMyRelationshipGraph(communityId) {
   return rpcWithKind('my_relationship_graph', communityId)
+}
+
+// Private recommendation preferences. Database migration is applied manually by the founder.
+export async function fetchPracticeRecommendationPreferences(communityId) {
+  if (!isSupabaseConfigured || !communityId) return { data: null, supported: false }
+  const { data, error } = await supabase.rpc('practice_recommendation_preferences_get', { p_community_id: communityId })
+  return { data, error, supported: !error }
+}
+export async function savePracticeRecommendationPreferences(communityId, preferences) {
+  if (!isSupabaseConfigured || !communityId) return { error: new Error('Not connected') }
+  return supabase.rpc('practice_recommendation_preferences_save', {
+    p_community_id: communityId, p_support_skills: preferences.support_skills,
+    p_focus_skills: preferences.focus_skills, p_share_response: preferences.share_response,
+  })
 }

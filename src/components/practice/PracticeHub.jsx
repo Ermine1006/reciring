@@ -1,3 +1,6 @@
+import RecommendationPreferences from './RecommendationPreferences'
+import { feedbackFocusSuggestions } from '../../lib/practiceRecommendations'
+import { fetchPracticeRecommendationPreferences, savePracticeRecommendationPreferences } from '../../lib/practice'
 import PracticeQuest from './PracticeQuest'
 import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -270,6 +273,7 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
   const [modesSupported, setModesSupported] = useState(false)
   const [feedbackSupported, setFeedbackSupported] = useState(false)
   const [myFeedback, setMyFeedback] = useState([])
+  const [recommendationPreferences, setRecommendationPreferences] = useState(null)
   const [tokenModal, setTokenModal] = useState(null)
   const [edges, setEdges] = useState([])
 
@@ -356,7 +360,8 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
     if (member) {
       setBrowseLoading(true)
       try {
-        const { data: rows, error } = await browsePracticeRequests(comm.id)
+        const [{ data: rows, error }, prefs] = await Promise.all([browsePracticeRequests(comm.id), fetchPracticeRecommendationPreferences(comm.id)])
+        setRecommendationPreferences(prefs.supported ? prefs.data : null)
         setBrowseError(Boolean(error))
         setBrowseRows(error ? [] : (rows || []))
       } catch {
@@ -997,7 +1002,15 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
 
             {banner && <p role="alert" style={{ margin: '12px 16px', color: '#8A6E1E' }}>{banner}</p>}
             {inlineNote && <p role="status" style={{ margin: '12px 16px', color: MATCHA_DEEP }}>{inlineNote}</p>}
-            <PracticeQuest browseError={browseError} browseLoading={browseLoading} onRetry={loadAll} request={myRequest} windowsStale={myWindowsStale} rows={fitRows}
+            <PracticeQuest recommendationSettings={recommendationPreferences && myRequest ? <RecommendationPreferences
+              key={myRequest.id + JSON.stringify(myRequest.want_types) + JSON.stringify(myRequest.help_types)}
+              value={recommendationPreferences} request={myRequest}
+              suggestions={feedbackFocusSuggestions(myFeedback, sessions, userId)}
+              onSave={async value => {
+                const result = await savePracticeRecommendationPreferences(community.id, value)
+                if (!result.error) await loadAll()
+                return result
+              }} /> : null} browseError={browseError} browseLoading={browseLoading} onRetry={loadAll} request={myRequest} windowsStale={myWindowsStale} rows={fitRows}
               pairings={pairings} names={namesById} passport={passport} saving={saving} busyId={busyId}
               onPublish={quickPublish} onPreferences={() => setSetupOpen(1)} onTimes={() => setSetupOpen(3)}
               onLeave={withdrawRequest} onInvite={invite} onAccept={accept} onDecline={decline} onWithdraw={withdraw}

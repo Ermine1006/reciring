@@ -1,3 +1,4 @@
+import { skillName, responseRecord } from '../../lib/practiceRecommendations'
 import { useState } from 'react'
 import { mutualFit, formatWindow } from '../../lib/practiceMatching'
 import { PRACTICE_TYPE_SHORT } from '../../data/practiceOptions'
@@ -46,6 +47,10 @@ export default function PartnerCard({ row, myRequest, onInvite, busy }) {
 
   const youPractise = overlap(row.help_types, myRequest.want_types)[0]
   const youHelpWith = overlap(row.want_types, myRequest.help_types)[0]
+  const rec = row.recommendation
+  const response = responseRecord(rec?.response_record)
+  const relevant = (rec?.relevant_skills || []).map(skillName).filter(Boolean)
+  const skills = (rec?.support_skills || []).map(skillName).filter(Boolean)
   const slot = windows.find((w) => w.id === slotId) || null
 
   return (
@@ -82,20 +87,15 @@ export default function PartnerCard({ row, myRequest, onInvite, busy }) {
         </span>
       </div>
 
-      {/* Two rounds, one each — the small ↔ on the divider is the only
-          two-way indicator (turn-taking, not trade imagery). */}
-      <div style={{ display: 'flex', background: '#F7F5F0', borderRadius: 12, padding: '10px 0', marginBottom: 12 }}>
-        <div style={{ flex: 1, padding: '0 14px' }}>
-          <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: C.ink3, fontFamily: FONT }}>Your practice round</p>
-          <p style={{ margin: '3px 0 0', fontSize: 14.5, fontWeight: 650, color: C.ink, fontFamily: FONT }}>{short(youPractise)}</p>
-        </div>
-        <div style={{ width: 20, position: 'relative', display: 'grid', placeItems: 'center' }}>
-          <div style={{ position: 'absolute', top: 0, bottom: 0, left: '50%', width: 1, background: C.line }} />
-          <span aria-hidden="true" style={{ position: 'relative', background: '#F7F5F0', color: MATCHA_DEEP, fontSize: 12, fontWeight: 700, padding: '2px 0', fontFamily: FONT }}>↔</span>
-        </div>
-        <div style={{ flex: 1, padding: '0 14px' }}>
-          <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: C.ink3, fontFamily: FONT }}>Your support round</p>
-          <p style={{ margin: '3px 0 0', fontSize: 14.5, fontWeight: 650, color: C.ink, fontFamily: FONT }}>{short(youHelpWith)}</p>
+      <div className="quest-match-evidence" style={{ fontFamily: FONT, fontSize: 13, lineHeight: 1.5 }}>
+        <p style={{ color: MATCHA_DEEP, margin: '0 0 12px', fontWeight: 650 }}>{relevant.length ? `Can support your focus: ${relevant.join(', ')}` : `They can support your ${short(youPractise).toLowerCase()} practice. You can help with ${short(youHelpWith).toLowerCase()}.`}</p>
+        <div style={{ background: '#F7F5F0', borderRadius: 12, padding: 12, marginBottom: 12 }}>
+          <strong>Strong skills <span style={{ fontWeight: 400, color: C.ink2 }}>· Self selected</span></strong>
+          <p style={{ margin: '4px 0 12px', color: C.ink2 }}>{skills.length ? skills.join(' · ') : 'Specific skills not shared yet'}</p>
+          <strong>Responsiveness</strong>
+          <p style={{ margin: '4px 0', color: C.ink2 }}>{response || 'No shared response record yet'}</p>
+          {response && <small style={{ color: C.ink2 }}>Last 90 days · One invitation per sender · Accept or decline</small>}
+          {rec?.similar_response === true && response && <p style={{ margin: '6px 0 0', color: MATCHA_DEEP }}>Similar response habits to yours</p>}
         </div>
       </div>
 

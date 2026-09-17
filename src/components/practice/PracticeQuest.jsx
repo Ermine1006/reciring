@@ -16,7 +16,7 @@ const steps = [
 ]
 
 export default function PracticeQuest({ request, windowsStale, rows, pairings, names, passport, saving, busyId,
-  browseError = false, browseLoading = false, onRetry, onPublish, onPreferences, onTimes, onLeave, onInvite, onAccept, onDecline, onWithdraw, onChat, onPractice, onProgress }) {
+  recommendationSettings = null, browseError = false, browseLoading = false, onRetry, onPublish, onPreferences, onTimes, onLeave, onInvite, onAccept, onDecline, onWithdraw, onChat, onPractice, onProgress }) {
   const pending = pairings.filter(p => p.status === 'invited')
   const accepted = pairings.filter(p => p.status === 'accepted')
   const [step, setStep] = useState(null)
@@ -50,6 +50,8 @@ export default function PracticeQuest({ request, windowsStale, rows, pairings, n
         <InvitationsList pairings={pairings} busyId={busyId} only="incoming" onAccept={onAccept} onDecline={onDecline} onWithdraw={onWithdraw} />
         {!request ? <section className="quest-paper"><p>Choose what you want to practise.</p><button className="quest-primary" onClick={() => setStep(0)}>Pick a quest →</button></section> : <>
           <p className="quest-private"><LockKeyhole size={14} /> Names unlock when you both accept.</p>
+          {recommendationSettings}
+          {rows.length > 0 && !browseLoading && !browseError && <div className="quest-recommendation-heading"><h3>{rows.some(r => r.recommendation) ? 'Recommended for you' : 'Matches for your practice types'}</h3><p>{rows.some(r => r.recommendation) ? 'Your skill focus first. Similar response habits help order equally relevant matches.' : 'Skill and response recommendations are not connected yet.'}</p></div>}
           {browseLoading ? <p role="status">Looking for teammates…</p> : browseError ? <section className="quest-paper"><h3>Couldn’t load teammates</h3><p>Your preferences are saved. Please try again.</p><button className="quest-primary" onClick={onRetry}>Try again</button></section> : rows.length ? rows.map(row => <PartnerCard key={row.request_id} row={row} myRequest={request} busy={busyId === row.request_id} onInvite={onInvite} />) : <section className="quest-paper"><h3>{accepted.length ? 'Your teammate is already matched' : pending.length ? 'Your invitations are in progress' : 'No new practice matches right now'}</h3>
             <p>{accepted.length ? 'Open your existing partnership to chat or practise.' : pending.length ? 'Invited people are listed in your invitations below.' : 'No new requests currently match what you want to practise and can help with. Times are optional.'}</p>
             <button className="quest-primary" onClick={accepted.length ? () => setStep(2) : onPreferences}>{accepted.length ? 'Open my teammates' : 'Review practice types'}</button>
