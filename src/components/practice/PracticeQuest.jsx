@@ -34,6 +34,9 @@ export default function PracticeQuest({ request, windowsStale, rows, pairings, n
   }) : <section className="quest-paper"><h3>Find a teammate first</h3><p>Accept an invitation together to begin.</p><button className="quest-primary" onClick={() => setStep(1)}>Meet your teammate →</button></section>
   return <div className="practice-quest">
     <div className="quest-row quest-stats"><span><Sprout size={16} /> {passport.verified || 0} completed</span><button className="quest-link" onClick={onProgress}>My progress</button></div>
+    {pending.some(p => p.i_invited === false) && current !== 1 && <section className="quest-paper" role="status">
+      <h3>You have a practice invitation</h3><button className="quest-primary" onClick={() => setStep(1)}>Review invitation</button>
+    </section>}
     <div className="quest-map" aria-label="Your practice quest">
       {steps.map(({ title, sub, icon: Icon }, i) => <button key={title} type="button" className={`quest-node ${current === i ? 'is-current' : ''}`} onClick={() => setStep(i)} aria-current={current === i ? 'step' : undefined}>
         <span className="quest-node-icon"><Icon size={22} /></span><span><strong>{title}</strong>{current === i && <small>{sub}</small>}</span><span className="quest-node-num">{i + 1}</span>

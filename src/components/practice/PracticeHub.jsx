@@ -1,3 +1,4 @@
+import usePracticeSync from '../../lib/usePracticeSync'
 import RecommendationPreferences from './RecommendationPreferences'
 import { feedbackFocusSuggestions } from '../../lib/practiceRecommendations'
 import { fetchPracticeRecommendationPreferences, savePracticeRecommendationPreferences } from '../../lib/practice'
@@ -381,6 +382,8 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
   }, [userId, demoMode])
 
   useEffect(() => { loadAll() }, [loadAll])
+  usePracticeSync({ userId, enabled: !demoMode && !loading && !busyId && !saving,
+    pairings, sessions, onChange: loadAll })
 
   // ── Derived ────────────────────────────────────────────────────
   const sessionByPairing = useMemo(() => {
@@ -954,7 +957,7 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
             ].map((t) => {
               const on = view === t.id
               return (
-                <button data-mutu-glass="" key={t.id} type="button" role="tab" aria-selected={on} onClick={() => setView(t.id)}
+                <button data-mutu-glass="" key={t.id} type="button" role="tab" aria-selected={on} onClick={() => { setView(t.id); if (!demoMode) loadAll() }}
                   style={{
                     flex: 1, minHeight: 44, border: 'none', borderRadius: 99, padding: '10px 0',
                     fontSize: 13.5, fontWeight: 650, fontFamily: FONT, cursor: 'pointer',
@@ -966,6 +969,10 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
               )
             })}
           </div>
+          <button type="button" className="quest-link" onClick={loadAll} disabled={loading || Boolean(busyId)}
+            style={{ display: 'block', margin: '8px 0 0 auto', background: 'none', border: 0, color: MATCHA_DEEP, cursor: 'pointer', fontSize: 12 }}>
+            Refresh invitations & sessions
+          </button>
         </div>
   )
 

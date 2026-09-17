@@ -44,3 +44,10 @@ it('directs already matched people to their existing partnership', () => {
  fireEvent.click(screen.getByRole('button',{name:'Open my teammates'}))
  expect(screen.getByRole('button',{name:'Open Messages ↗'})).toBeTruthy()
 })
+
+it('surfaces a new invitation even when an existing teammate selects the practice step', () => {
+ render(<PracticeQuest {...base} request={{want_types:['case']}} pairings={[{id:'old',status:'accepted'}, {id:'new',status:'invited',i_invited:false}]} />)
+ expect(screen.getByText('You have a practice invitation')).toBeTruthy()
+ fireEvent.click(screen.getByRole('button',{name:'Review invitation'}))
+ expect(screen.getByRole('heading',{name:'Meet your teammate'})).toBeTruthy()
+})
