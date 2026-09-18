@@ -342,11 +342,14 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
           const meetingDayRevealed = shouldRevealIdentity(messages)
           const revealed = explicitlyRevealed || meetingDayRevealed
 
-          const peerName = revealed && (peerProfile?.name || peerProfile?.first_name)
+          // A peer who had already made their name public (public
+          // profile, named post) shows by first name from the start.
+          const peerName = (revealed && (peerProfile?.name || peerProfile?.first_name))
+            || (match?.peerNamePublic && match.peerName)
           const displayName = peerName || 'Anonymous Peer'
           const subtitle = explicitlyRevealed
             ? 'Identity revealed'
-            : (revealed && peerProfile?.program) || 'Active match'
+            : (revealed && peerProfile?.program) || (match?.peerNamePublic ? 'Public profile' : 'Active match')
           const subtitleColor = explicitlyRevealed ? C.goldDark : '#2E6B4F'
 
           const HeaderInner = (
@@ -562,7 +565,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
           <ExchangeNextStep
             matchId={match.id}
             currentUserId={currentUserId}
-            peerName={peerProfile?.name || peerProfile?.first_name || null}
+            peerName={peerProfile?.name || peerProfile?.first_name || (match?.peerNamePublic ? match.peerName : null)}
             onOpenDetails={onOpenPractice}
           />
           </>
@@ -649,7 +652,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
           <RecognitionCard
             matchId={match?.id}
             peerId={match?.peerId}
-            peerName={peerProfile?.name || peerProfile?.first_name || null}
+            peerName={peerProfile?.name || peerProfile?.first_name || (match?.peerNamePublic ? match.peerName : null)}
             currentUserId={currentUserId}
             onSeeImpact={onSeeImpact}
           />
@@ -684,7 +687,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
                     fontFamily: 'Inter, system-ui, sans-serif',
                     margin: '3px 0 0',
                   }}>
-                    Anonymous Peer is asking to share names and school emails.
+                    {match?.peerNamePublic && match.peerName ? match.peerName : 'Anonymous Peer'} is asking to share names and school emails.
                   </p>
                 </div>
               </div>

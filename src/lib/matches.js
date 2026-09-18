@@ -42,7 +42,7 @@ export async function fetchMyMatches(userId) {
       *,
       post:posts (
         id, need_text, offer_text, help_type, industry_tag,
-        time_commitment, urgency, created_by
+        time_commitment, urgency, created_by, is_anonymous
       ),
       marketplace:event_marketplace_posts (
         id, type, title, description, event_id
@@ -163,6 +163,27 @@ export async function openOrCreateDirectMatch({ myId, peerId, eventId }) {
 /**
  * Map a DB match row to the shape consumed by MatchesList / ChatView.
  */
+/**
+ * Was this peer's name ALREADY public to me before we connected?
+ * A connection never shows more than the peer chose to show:
+ *   - peer wrote the post → same rule as the Give & Ask card
+ *     (posterDisplay): named post, or unflagged post + public profile.
+ *     A public-profile member who posted anonymously stays anonymous.
+ *   - peer offered help on my post → their profile is public.
+ * Only post matches; other sources keep their own identity flows.
+ * Emails and the full profile still wait for the explicit reveal.
+ */
+export function isPeerNamePublic(row, peerId, peerVisibility) {
+  if ((row.source || 'post') !== 'post' || !row.post || !peerId) return false
+  const profilePublic = peerVisibility === 'public'
+  if (peerId === row.post.created_by) {
+    if (row.post.is_anonymous === false) return true
+    if (row.post.is_anonymous === true) return false
+    return profilePublic
+  }
+  return profilePublic
+}
+
 export function matchToUI(row, currentUserId) {
   const isHelper = row.helper_user_id === currentUserId
   const peerId = isHelper ? row.requester_user_id : row.helper_user_id

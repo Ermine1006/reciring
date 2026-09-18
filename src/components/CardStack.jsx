@@ -5,6 +5,7 @@ import RequestCard from './RequestCard'
 import EventPreviewCard from './EventPreviewCard'
 import RequestDetailModal from './RequestDetailModal'
 import MatchModal from './MatchModal'
+import { posterDisplay } from '../lib/visibility'
 import { rankRequests, filterRequests, DEFAULT_VIEWER_PROFILE } from '../data/matchRanking'
 import { INDUSTRIES, HELP_TYPES, TIME_OPTIONS } from '../data/requestOptions'
 import { useAuth } from '../context/AuthContext'
@@ -193,7 +194,9 @@ export default function CardStack({ toolbarActions, requests, eventPromos, unmat
       // left-swipe just advances. No separate flash pill.
       const result = (await onMatchConfirm?.(request)) || {}
       if (result.error || !result.matchId) return
-      setMatch({ id: result.matchId, request, peer: 'Anonymous Peer' })
+      // Same name the card itself showed: public posters stay named.
+      const shown = posterDisplay(request)
+      setMatch({ id: result.matchId, request, peer: shown.isPublic ? shown.primary : 'Anonymous Peer' })
     },
     [onSwipeRight, onMatchConfirm, markRecentlyActed, onOpenEventPromo, dismissPromo]
   )

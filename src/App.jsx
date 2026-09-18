@@ -42,7 +42,7 @@ import { HELP_TYPES, INDUSTRIES } from './data/requestOptions'
 import { backfillMatchingTags } from './lib/profileBackfill'
 import { fetchDiscoverEventPromos, logPromoEvent } from './lib/discoverPromos'
 import { fetchMyJoinedEventIds } from './lib/events'
-import { createMatch, fetchMyMatches, fetchMatchedPostIds, fetchUnmatchedPostIds, unmatchMatch, matchToUI, requestIdentityReveal, acceptIdentityReveal, declineIdentityReveal, fetchPeerProfile } from './lib/matches'
+import { createMatch, fetchMyMatches, fetchMatchedPostIds, fetchUnmatchedPostIds, unmatchMatch, matchToUI, requestIdentityReveal, acceptIdentityReveal, declineIdentityReveal, fetchPeerProfile, isPeerNamePublic } from './lib/matches'
 import { fetchUserInteractions, recordPostInteraction, clearSwipedLeft, unpassPost } from './lib/interactions'
 import { fetchCompletedMatchIds } from './lib/recognition'
 import { track } from './lib/analytics'
@@ -332,15 +332,24 @@ function AppShell() {
     if (error) { console.error('[ReciRing] Failed to load matches:', error); return }
     const ui = data.map(m => matchToUI(m, user.id))
     // Resolve the peer's real name for identity-revealed matches so the
-    // Matches list shows it (instead of always "Anonymous Peer").
-    const revealedPeerIds = [...new Set(ui.filter(m => m.reveal?.status === 'accepted' && m.peerId).map(m => m.peerId))]
-    if (revealedPeerIds.length) {
-      const { data: profs } = await supabase.from('profiles').select('id, name, avatar_url').in('id', revealedPeerIds)
+    // Matches list shows it (instead of always "Anonymous Peer"), and for
+    // post matches whose peer had ALREADY made their name public (see
+    // isPeerNamePublic) — first name only, like the Give & Ask card.
+    const lookupIds = [...new Set(ui.filter(m => m.peerId && (m.reveal?.status === 'accepted' || m.source === 'post')).map(m => m.peerId))]
+    if (lookupIds.length) {
+      const { data: profs } = await supabase.from('profiles').select('id, name, avatar_url, visibility').in('id', lookupIds)
       const byId = Object.fromEntries((profs || []).map(p => [p.id, p]))
-      for (const m of ui) {
-        const p = m.reveal?.status === 'accepted' ? byId[m.peerId] : null
-        if (p) { m.peerName = p.name || null; m.peerAvatarUrl = /^https?:/.test(p.avatar_url || '') ? p.avatar_url : null }
-      }
+      ui.forEach((m, i) => {
+        const p = byId[m.peerId]
+        if (!p?.name) return
+        const avatar = /^https?:/.test(p.avatar_url || '') ? p.avatar_url : null
+        if (m.reveal?.status === 'accepted') {
+          m.peerName = p.name; m.peerAvatarUrl = avatar
+        } else if (isPeerNamePublic(data[i], m.peerId, p.visibility)) {
+          m.peerName = p.name.trim().split(/\s+/)[0]; m.peerAvatarUrl = avatar
+          m.peerNamePublic = true
+        }
+      })
     }
     setMatches(ui)
     // Refresh which of my matches are "completed" (both tapped "We met"), so the
