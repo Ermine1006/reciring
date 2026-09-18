@@ -1,3 +1,4 @@
+import AnonymousAvatar from '../AnonymousAvatar'
 import { teammateTraitName } from '../../data/practiceTeammateTraits'
 import { skillName, responseRecord } from '../../lib/practiceRecommendations'
 import { useState } from 'react'
@@ -52,61 +53,46 @@ export default function PartnerCard({ row, myRequest, onInvite, busy }) {
   const response = responseRecord(rec?.response_record)
   const relevant = ([...new Set([...(rec?.peer_relevant_skills || []), ...(rec?.relevant_skills || [])])]).map(skillName).filter(Boolean)
   const skills = (rec?.support_skills || []).map(skillName).filter(Boolean)
+  const history = rec?.practice_history && Number.isInteger(rec.practice_history.sessions) && Number.isInteger(rec.practice_history.partners) && rec.practice_history.sessions >= rec.practice_history.partners && rec.practice_history.partners >= 0 ? rec.practice_history : null
+  const evidence = (rec?.peer_strengths || []).filter(e => Number.isInteger(e.partners) && e.partners > 0)
+  const peerSkills = evidence.filter(e => skillName(e.skill))
+  const traits = evidence.filter(e => teammateTraitName(e.skill))
   const slot = windows.find((w) => w.id === slotId) || null
 
   return (
     <div style={{
-      background: C.white, borderRadius: 18, border: `1px solid ${C.line}`,
-      padding: '16px 16px 14px', boxShadow: '0 2px 10px rgba(0,0,0,0.04)',
+      background: C.white, borderRadius: 24, border: `1px solid ${C.line}`,
+      padding: '22px 20px', boxShadow: '0 2px 10px rgba(0,0,0,0.04)',
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-        <span style={{
-          fontSize: 10, fontWeight: 700, letterSpacing: '0.09em',
-          textTransform: 'uppercase', color: MATCHA_DEEP, background: MATCHA_SOFT,
-          border: '1px solid #DDE3CE', borderRadius: 8, padding: '3px 10px', fontFamily: FONT,
-        }}>
-          Practice Quest
-        </span>
-        <span style={{ fontSize: 11.5, fontWeight: 600, color: C.ink3, fontFamily: FONT }}>
-          Anonymous teammate
-        </span>
-      </div>
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
-        <h3 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: C.ink, letterSpacing: '-0.01em', fontFamily: FONT }}>
-          {short(youPractise)} + {short(youHelpWith)}
-        </h3>
-        <span style={{
-          display: 'inline-flex', alignItems: 'center', gap: 5,
-          fontSize: 11.5, fontWeight: 700, fontFamily: FONT,
-          color: '#fff', background: MATCHA_DEEP, borderRadius: 99, padding: '4px 11px',
-        }}>
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={3.2} strokeLinecap="round" strokeLinejoin="round">
-            <path d="M20 6L9 17l-5-5" />
-          </svg>
-          Two way practice
-        </span>
-      </div>
-
-      <div className="quest-match-evidence" style={{ fontFamily: FONT, fontSize: 13, lineHeight: 1.5 }}>
-        <p style={{ color: MATCHA_DEEP, margin: '0 0 12px', fontWeight: 650 }}>{relevant.length ? `Can support your focus: ${relevant.join(', ')}` : `They can support your ${short(youPractise).toLowerCase()} practice. You can help with ${short(youHelpWith).toLowerCase()}.`}</p>
-        <div style={{ background: '#F7F5F0', borderRadius: 12, padding: 12, marginBottom: 12 }}>
-          {rec?.peer_strengths?.some(e => skillName(e.skill) && e.partners > 0) && <div style={{ marginBottom: 12 }}><strong>Recognised by practice partners</strong>
-            {rec.peer_strengths.filter(e => skillName(e.skill) && Number.isInteger(e.partners) && e.partners > 0).map(e => <p key={e.skill} style={{ margin: '4px 0', color: C.ink2 }}>{skillName(e.skill)} · {e.partners} {e.partners === 1 ? 'partner' : 'partners'}</p>)}
-            <small>From mutually confirmed practice</small>
-          </div>}
-          {rec?.peer_strengths?.some(e => teammateTraitName(e.skill) && e.partners > 0) && <div style={{ marginBottom: 12 }}>
-            <strong>Teammate qualities · Partner recognised</strong>
-            {rec.peer_strengths.filter(e => teammateTraitName(e.skill) && Number.isInteger(e.partners) && e.partners > 0).map(e => <p key={e.skill} style={{ margin: '4px 0', color: C.ink2 }}>{teammateTraitName(e.skill)} · {e.partners} {e.partners === 1 ? 'partner' : 'partners'}</p>)}
-            {rec.shared_teammate_traits?.length > 0 && <small>Shared teammate qualities: {rec.shared_teammate_traits.map(teammateTraitName).filter(Boolean).join(', ')}</small>}
-          </div>}
-          <strong>Strong skills <span style={{ fontWeight: 400, color: C.ink2 }}>· Self selected</span></strong>
-          <p style={{ margin: '4px 0 12px', color: C.ink2 }}>{skills.length ? skills.join(' · ') : 'Specific skills not shared yet'}</p>
-          <strong>Invitation response record</strong>
-          <p style={{ margin: '4px 0', color: C.ink2 }}>{response || 'No shared response record yet'}</p>
-          {response && <small style={{ color: C.ink2 }}>Last 90 days · One invitation per sender · Accept or decline</small>}
-          {rec?.similar_response === true && response && <p style={{ margin: '6px 0 0', color: MATCHA_DEEP }}>Similar response habits to yours</p>}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}>
+        <div style={{ flexShrink: 0 }}><AnonymousAvatar seed={`practice:${row.request_id}`} size={64} /></div>
+        <div style={{ minWidth: 0 }}><h3 style={{ margin: '0 0 5px', fontSize: 21, color: C.ink }}>Your next teammate</h3>
+          <p style={{ margin: 0, color: C.ink2, fontSize: 13 }}>{short(youPractise)} practice · Community member</p>
+          <p style={{ margin: '6px 0 0', color: C.ink2, fontSize: 12 }}>Identity hidden until you both accept</p>
         </div>
+      </div>
+      {history && <div style={{ display: 'flex', gap: 28, paddingBottom: 16, marginBottom: 18, borderBottom: `1px solid ${C.line}` }}>
+        <div><strong style={{ fontSize: 24 }}>{history.sessions}</strong><div style={{ color: C.ink2, fontSize: 12 }}>practices completed</div></div>
+        <div><strong style={{ fontSize: 24 }}>{history.partners}</strong><div style={{ color: C.ink2, fontSize: 12 }}>different partners</div></div>
+      </div>}
+      <div style={{ background: MATCHA_SOFT, color: MATCHA_DEEP, borderRadius: 14, padding: 14, marginBottom: 18, fontSize: 13, lineHeight: 1.5 }}>
+        <strong style={{ display: 'block', fontSize: 11, marginBottom: 5 }}>WHY YOU COULD HELP EACH OTHER</strong>
+        {relevant.length ? `They can support your focus: ${relevant.join(', ')}.` : `They can support your ${short(youPractise).toLowerCase()} practice.`} You can help with {short(youHelpWith).toLowerCase()}.
+      </div>
+      <div style={{ fontFamily: FONT, fontSize: 13, lineHeight: 1.5 }}>
+        {peerSkills.length > 0 && <BadgeGroup title="Skills recognised by partners" entries={peerSkills} label={skillName} />}
+        {traits.length > 0 && <BadgeGroup title="What partners appreciate" entries={traits} label={teammateTraitName} green />}
+        {skills.length > 0 && <div style={{ marginBottom: 18 }}><p style={{ margin: '0 0 8px', color: C.ink2 }}>Happy to help with</p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>{skills.map(s => <span key={s} style={{ padding: '6px 10px', background: '#F7F5F0', borderRadius: 10 }}>{s}</span>)}</div>
+          <small style={{ color: C.ink2 }}>Chosen by this member</small></div>}
+        {!peerSkills.length && !traits.length && <p style={{ color: C.ink2 }}>No shared partner feedback yet</p>}
+        <p style={{ margin: '16px 0 4px' }}>{response ? `Answered ${rec.response_record.prompt} of ${rec.response_record.total} invitations within 48h` : 'No shared invitation response history yet'}</p>
+        {response && <small style={{ color: C.ink2 }}>Accepting or declining both count · Last 90 days</small>}
+        {rec?.similar_response === true && response && <p style={{ color: MATCHA_DEEP }}>Similar invitation response habits</p>}
+        <details style={{ color: C.ink2, fontSize: 12, margin: '14px 0 18px' }}><summary style={{ cursor: 'pointer', minHeight: 32 }}>What these signals mean</summary>
+          <p>Practice totals count sessions confirmed by both people in this community. Each partner counts once per badge. Responsive is partner feedback about coordination. Invitation responses do not measure chat reply speed.</p>
+          <p>Members choose what to share. Missing records do not mean poor performance. Improvement tips stay private.</p>
+        </details>
       </div>
 
       {/* Their times as selectable chips */}
@@ -128,20 +114,6 @@ export default function PartnerCard({ row, myRequest, onInvite, busy }) {
           })}
         </div>
       )}
-
-      <p style={{ margin: '0 0 5px', fontSize: 12.5, color: C.ink2, fontFamily: FONT, display: 'flex', alignItems: 'center', gap: 7 }}>
-        <svg width="13" height="13" fill="none" stroke={C.ink3} viewBox="0 0 24 24" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-          <rect x="4" y="10" width="16" height="11" rx="2" /><path d="M8 10V7a4 4 0 018 0v3" />
-        </svg>
-        Anonymous until you both accept
-      </p>
-      <p style={{ margin: '0 0 12px', fontSize: 12.5, fontWeight: 650, color: C.goldDark, fontFamily: FONT, display: 'flex', alignItems: 'center', gap: 7 }}>
-        <svg width="15" height="11" viewBox="0 0 44 32" fill="none" style={{ flexShrink: 0 }}>
-          <circle cx="15" cy="16" r="11" stroke="#C9A33B" strokeWidth="4" />
-          <circle cx="29" cy="16" r="11" stroke="#A6822A" strokeWidth="4" opacity="0.7" />
-        </svg>
-        Complete both rounds · Unlock a Mutu Token together
-      </p>
 
       {/* Your own past decline, said plainly and without judgement.
           It sits directly above the CTA because that is the moment
@@ -194,4 +166,10 @@ export default function PartnerCard({ row, myRequest, onInvite, busy }) {
       )}
     </div>
   )
+}
+
+function BadgeGroup({ title, entries, label, green = false }) {
+  return <div style={{ marginBottom: 18 }}><p style={{ margin: '0 0 8px', color: C.ink2 }}>{title}</p>
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>{entries.map(e => <span key={e.skill} style={{ borderRadius: 10, padding: '7px 10px', background: green ? MATCHA_SOFT : C.goldBg, color: green ? MATCHA_DEEP : C.goldDark, border: `1px solid ${green ? '#DDE3CE' : C.goldLight}` }}>✓ {label(e.skill)} <small>· {e.partners} {e.partners === 1 ? 'partner' : 'partners'}</small></span>)}</div>
+  </div>
 }

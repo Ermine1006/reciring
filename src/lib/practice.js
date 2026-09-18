@@ -557,3 +557,8 @@ export async function fetchTeammateFeedbackSupport() {
   const { data, error } = await supabase.rpc('practice_teammate_feedback_supported')
   return { supported: !error && data === true }
 }
+
+export async function practiceHistorySharing(communityId, share = null) {
+  if (!isSupabaseConfigured) return notConfigured()
+  return supabase.rpc('practice_history_sharing', { p_community_id: communityId, p_share: share })
+}
