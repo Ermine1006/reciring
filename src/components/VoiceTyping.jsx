@@ -1,9 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { Mic } from 'lucide-react'
+import { Capacitor, registerPlugin } from '@capacitor/core'
 import { isNativeApp } from '../lib/platform'
 
-// Recognition produces a draft only. Native apps use OS keyboard dictation,
-// avoiding an additional recording service or native microphone permission.
+// Recognition produces a draft only. The web uses the browser's speech
+// service; the iOS app uses Apple speech recognition through the in-app
+// MutuSpeech plugin (on device when possible). Anywhere neither exists,
+// the panel falls back to explaining keyboard dictation.
+const NativeSpeech = isNativeApp && Capacitor.getPlatform() === 'ios' ? registerPlugin('MutuSpeech') : null
 export default function VoiceTyping({ onTranscript, onActiveChange, inputRef, panelStyle, children, onOpenChange = () => {} }) {
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState(false)
@@ -14,9 +18,17 @@ export default function VoiceTyping({ onTranscript, onActiveChange, inputRef, pa
   const callbacks = useRef({ onTranscript, onActiveChange })
   callbacks.current = { onTranscript, onActiveChange }
   const Recognition = !isNativeApp && (window.SpeechRecognition || window.webkitSpeechRecognition)
+  const [nativeReady, setNativeReady] = useState(false)
+  useEffect(() => {
+    let alive = true
+    NativeSpeech?.available().then(r => { if (alive) setNativeReady(Boolean(r?.available)) }).catch(() => {})
+    return () => { alive = false }
+  }, [])
+  const canListen = Boolean(Recognition) || nativeReady
   const dispose = () => {
     const recognition = session.current
     session.current = null
+    if (recognition?.native) { recognition.discard(); return }
     if (recognition) {
       recognition.onresult = recognition.onerror = recognition.onend = null
       recognition.abort()
@@ -34,8 +46,51 @@ export default function VoiceTyping({ onTranscript, onActiveChange, inputRef, pa
     document.addEventListener('visibilitychange', hide)
     return () => { document.removeEventListener('visibilitychange', hide); dispose(); callbacks.current.onActiveChange(false) }
   }, [])
+  // iOS: one session streams the full transcript so far; the latest text
+  // becomes the draft when listening stops (Stop, silence, or an error).
+  const startNative = async () => {
+    if (session.current) return
+    setMessage('')
+    setInterim('')
+    let latest = ''
+    let delivered = false
+    const handles = []
+    const release = () => { handles.splice(0).forEach(h => h.remove()) }
+    const own = {
+      native: true,
+      stop: () => { NativeSpeech.stop().catch(() => {}) },
+      discard: () => { delivered = true; release(); NativeSpeech.stop().catch(() => {}) },
+    }
+    session.current = own
+    const end = () => {
+      if (!delivered && latest) callbacks.current.onTranscript(latest)
+      delivered = true
+      release()
+      if (session.current === own) session.current = null
+      setActive(false)
+      setInterim('')
+      callbacks.current.onActiveChange(false)
+    }
+    handles.push(await NativeSpeech.addListener('result', ({ text }) => {
+      latest = String(text || '').trim()
+      setInterim(latest)
+    }))
+    handles.push(await NativeSpeech.addListener('end', end))
+    setActive(true)
+    callbacks.current.onActiveChange(true)
+    try {
+      await NativeSpeech.start({ language })
+    } catch (error) {
+      delivered = true
+      end()
+      setMessage(error?.code === 'not-allowed'
+        ? 'Microphone or speech recognition is off for Mutu. You can turn both on in Settings, or keep typing.'
+        : 'Voice input could not start. Try again, or keep typing.')
+    }
+  }
   const start = () => {
-    if (session.current || !Recognition) return
+    if (!Recognition) return startNative()
+    if (session.current) return
     setMessage('')
     setInterim('')
     const recognition = new Recognition()
@@ -79,8 +134,10 @@ export default function VoiceTyping({ onTranscript, onActiveChange, inputRef, pa
     <button type="button" aria-label="Voice typing" aria-expanded={open} onClick={() => { setOpen(true); onOpenChange(true) }} style={buttonStyle}><Mic size={18} aria-hidden="true" /></button>
     {open && <div role="region" aria-label="Voice typing controls" style={{ position: 'absolute', bottom: 52, left: 0, width: 'min(300px, calc(100vw - 48px))', padding: 16, border: '1px solid #E8D9A7', borderRadius: 16, background: '#fffdf7', boxShadow: '0 8px 28px #0002', zIndex: 30, ...panelStyle }}>
       <strong>Voice typing</strong>
-      {Recognition ? <>
-        <p style={{ fontSize: 12, lineHeight: 1.5 }}>Speech becomes an editable draft. Your browser may send audio to its speech service. Mutu does not store audio.</p>
+      {canListen ? <>
+        <p style={{ fontSize: 12, lineHeight: 1.5 }}>{Recognition
+          ? 'Speech becomes an editable draft. Your browser may send audio to its speech service. Mutu does not store audio.'
+          : 'Speech becomes an editable draft. Apple speech recognition turns it into text, on your iPhone when it can. Mutu does not store audio.'}</p>
         <label style={{ fontSize: 13 }}>Language <select aria-label="Dictation language" value={language} disabled={active} onChange={e => setLanguage(e.target.value)}>
           <option value="en-US">English</option><option value="zh-CN">中文</option><option value="fr-CA">Français</option>
         </select></label>
