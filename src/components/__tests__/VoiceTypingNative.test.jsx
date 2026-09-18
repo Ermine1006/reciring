@@ -16,25 +16,48 @@ const { default: VoiceTyping } = await import('../VoiceTyping')
 
 afterEach(() => { cleanup(); vi.clearAllMocks() })
 
-it('listens in the iOS app and turns speech into an editable draft', async () => {
-  const onTranscript = vi.fn()
-  render(<VoiceTyping inputRef={{ current: null }} onTranscript={onTranscript} onActiveChange={() => {}} />)
+async function ready() {
+  // the mic listens only once the in-app plugin reports it is available
+  await vi.waitFor(() => expect(plugin.available).toHaveBeenCalled())
+  await act(async () => {})
+}
+
+it('listens on one tap in the iOS app and streams words into the box', async () => {
+  const onDraft = vi.fn(), onActive = vi.fn()
+  render(<VoiceTyping inputRef={{ current: null }} onDraft={onDraft} onActiveChange={onActive} />)
+  await ready()
   fireEvent.click(screen.getByRole('button', { name: 'Voice typing' }))
-  fireEvent.click(await screen.findByRole('button', { name: 'Start voice typing' }))
   await vi.waitFor(() => expect(plugin.start).toHaveBeenCalledWith({ language: expect.any(String) }))
+  expect(onActive).toHaveBeenLastCalledWith(true)
+  act(() => listeners.result({ text: 'Happy to help', isFinal: false }))
+  expect(onDraft).toHaveBeenLastCalledWith('Happy to help')
   act(() => listeners.result({ text: 'Happy to help with your case', isFinal: false }))
-  expect(screen.getByRole('status').textContent).toContain('Happy to help with your case')
-  fireEvent.click(screen.getByRole('button', { name: 'Stop listening' }))
+  expect(onDraft).toHaveBeenLastCalledWith('Happy to help with your case')
+  fireEvent.click(screen.getByRole('button', { name: 'Stop voice typing' }))
   expect(plugin.stop).toHaveBeenCalled()
   act(() => listeners.end())
-  expect(onTranscript).toHaveBeenCalledWith('Happy to help with your case')
-  expect(onTranscript).toHaveBeenCalledTimes(1)
+  expect(onActive).toHaveBeenLastCalledWith(false)
+  expect(screen.getByRole('button', { name: 'Voice typing' })).toBeTruthy()
+})
+
+it('switches language while listening and remembers it', async () => {
+  render(<VoiceTyping inputRef={{ current: null }} onDraft={() => {}} onActiveChange={() => {}} />)
+  await ready()
+  fireEvent.click(screen.getByRole('button', { name: 'Voice typing' }))
+  await vi.waitFor(() => expect(plugin.start).toHaveBeenCalledTimes(1))
+  const first = plugin.start.mock.calls[0][0].language
+  fireEvent.click(screen.getByRole('button', { name: /Voice language/ }))
+  act(() => listeners.end())
+  await vi.waitFor(() => expect(plugin.start).toHaveBeenCalledTimes(2))
+  const second = plugin.start.mock.calls[1][0].language
+  expect(second).not.toBe(first)
+  expect(localStorage.getItem('mutu:voiceLanguage')).toBe(second)
 })
 
 it('explains how to allow access when the permission is off', async () => {
   plugin.start.mockRejectedValueOnce(Object.assign(new Error('no'), { code: 'not-allowed' }))
-  render(<VoiceTyping inputRef={{ current: null }} onTranscript={() => {}} onActiveChange={() => {}} />)
+  render(<VoiceTyping inputRef={{ current: null }} onDraft={() => {}} onActiveChange={() => {}} />)
+  await ready()
   fireEvent.click(screen.getByRole('button', { name: 'Voice typing' }))
-  fireEvent.click(await screen.findByRole('button', { name: 'Start voice typing' }))
   expect(await screen.findByText(/turn both on in Settings/)).toBeTruthy()
 })

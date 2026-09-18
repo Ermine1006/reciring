@@ -15,7 +15,7 @@ it('updates controlled React state at the selected range without submitting', ()
   render(<Form />)
   const field = screen.getByLabelText('Ask Mutu')
   act(() => expect(insertVoiceText(field, 'Serene', { start: 6, end: 12 })).toBe(''))
-  expect(screen.getByRole('status').textContent).toBe('Hello Serene')
+  expect(document.querySelector('output').textContent).toBe('Hello Serene')
 })
 it('rejects over-limit text intact and protects credentials and structured fields', () => {
   render(<Form />)
@@ -31,22 +31,22 @@ it('rejects over-limit text intact and protects credentials and structured field
   field.readOnly = true
   expect(isVoiceField(field)).toBe(false)
 })
-it('offers voice typing in a focused field and inserts only after review', () => {
+it('writes the words live into the focused field at the cursor', () => {
   let recognition
-  window.SpeechRecognition = class { constructor() { recognition = this } start = vi.fn(); abort = vi.fn() }
-  render(<Form />)
+  window.SpeechRecognition = class { constructor() { recognition = this } start = vi.fn(); abort = vi.fn(); stop = vi.fn() }
+  const { container } = render(<Form />)
   const field = screen.getByLabelText('Ask Mutu')
   field.setSelectionRange(12, 12)
   fireEvent.focusIn(field)
   fireEvent.click(screen.getByRole('button', { name: 'Voice typing' }))
-  fireEvent.click(screen.getByRole('button', { name: 'Start voice typing' }))
+  act(() => recognition.onresult({ resultIndex: 0, results: [Object.assign([{ transcript: 'How are' }], { isFinal: false })] }))
+  expect(field.value).toBe('Hello friend How are')
   act(() => recognition.onresult({ resultIndex: 0, results: [Object.assign([{ transcript: 'How are you?' }], { isFinal: true })] }))
-  expect(field.value).toBe('Hello friend')
-  expect(screen.getByRole('button', { name: 'Insert text' }).disabled).toBe(true)
-  act(() => recognition.onend())
-  fireEvent.click(screen.getByRole('button', { name: 'Insert text' }))
   expect(field.value).toBe('Hello friend How are you?')
-  expect(screen.getByRole('status').textContent).toBe('Hello friend How are you?')
+  expect(container.querySelector('output').textContent).toBe('Hello friend How are you?')
+  fireEvent.click(screen.getByRole('button', { name: 'Stop voice typing' }))
+  act(() => recognition.onend())
+  expect(field.value).toBe('Hello friend How are you?')
 })
 it('stops an active microphone when switching fields and discards late events', () => {
   let recognition
@@ -54,7 +54,6 @@ it('stops an active microphone when switching fields and discards late events', 
   render(<Form />)
   fireEvent.focusIn(screen.getByLabelText('Ask Mutu'))
   fireEvent.click(screen.getByRole('button', { name: 'Voice typing' }))
-  fireEvent.click(screen.getByRole('button', { name: 'Start voice typing' }))
   fireEvent.focusIn(screen.getByLabelText('Other'))
   expect(recognition.abort).toHaveBeenCalledOnce()
   expect(recognition.onresult).toBeNull()

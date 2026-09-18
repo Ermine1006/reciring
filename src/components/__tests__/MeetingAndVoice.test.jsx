@@ -33,39 +33,41 @@ it('does not send an invalid link and preserves input after a save failure', asy
   await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('could not be sent'))
   expect(screen.getByLabelText('Meeting link').value).toBe('https://zoom.us/j/123')
 })
-it('requires starting recognition, appends only final text, and releases it on close', () => {
+it('starts listening on one tap, streams the words live, and stops on a second tap', () => {
   let recognition
   window.SpeechRecognition = class { constructor() { recognition = this } start = vi.fn(); abort = vi.fn(); stop = vi.fn() }
-  const append = vi.fn(), active = vi.fn()
-  render(<VoiceTyping onTranscript={append} onActiveChange={active} inputRef={{ current: null }} />)
+  const draft = vi.fn(), active = vi.fn()
+  render(<VoiceTyping onDraft={draft} onActiveChange={active} inputRef={{ current: null }} />)
   fireEvent.click(screen.getByRole('button', { name: 'Voice typing' }))
-  expect(recognition).toBeUndefined()
-  fireEvent.click(screen.getByRole('button', { name: 'Start voice typing' }))
+  expect(recognition.start).toHaveBeenCalledOnce()
+  expect(recognition.continuous).toBe(true)
   expect(active).toHaveBeenLastCalledWith(true)
+  expect(screen.getByRole('status').textContent).toContain('Listening')
   const provisional = Object.assign([{ transcript: 'Hello' }], { isFinal: false })
   act(() => recognition.onresult({ resultIndex: 0, results: [provisional] }))
-  expect(append).not.toHaveBeenCalled()
+  expect(draft).toHaveBeenLastCalledWith('Hello')
   const final = Object.assign([{ transcript: 'Hello there' }], { isFinal: true })
-  act(() => recognition.onresult({ resultIndex: 0, results: [final] }))
-  expect(append).toHaveBeenCalledExactlyOnceWith('Hello there')
-  fireEvent.click(screen.getByRole('button', { name: 'Close' }))
-  expect(recognition.abort).toHaveBeenCalledOnce()
-  expect(recognition.onresult).toBeNull()
+  const more = Object.assign([{ transcript: ' friend' }], { isFinal: false })
+  act(() => recognition.onresult({ resultIndex: 1, results: [final, more] }))
+  expect(draft).toHaveBeenLastCalledWith('Hello there friend')
+  fireEvent.click(screen.getByRole('button', { name: 'Stop voice typing' }))
+  expect(recognition.stop).toHaveBeenCalledOnce()
+  act(() => recognition.onend())
   expect(active).toHaveBeenLastCalledWith(false)
+  expect(screen.getByRole('button', { name: 'Voice typing' })).toBeTruthy()
 })
-it('offers keyboard dictation on unsupported devices', () => {
+it('opens the keyboard on devices without speech recognition', () => {
   const focus = vi.fn()
-  render(<VoiceTyping onTranscript={vi.fn()} onActiveChange={vi.fn()} inputRef={{ current: { focus } }} />)
+  render(<VoiceTyping onDraft={vi.fn()} onActiveChange={vi.fn()} inputRef={{ current: { focus } }} />)
   fireEvent.click(screen.getByRole('button', { name: 'Voice typing' }))
-  fireEvent.click(screen.getByRole('button', { name: 'Open keyboard' }))
   expect(focus).toHaveBeenCalledOnce()
+  expect(screen.getByRole('status').textContent).toContain('microphone on your keyboard')
 })
 it('shows permission errors and aborts recognition when unmounted', () => {
   let recognition
-  window.SpeechRecognition = class { constructor() { recognition = this } start = vi.fn(); abort = vi.fn() }
-  const { unmount } = render(<VoiceTyping onTranscript={vi.fn()} onActiveChange={vi.fn()} inputRef={{ current: null }} />)
+  window.SpeechRecognition = class { constructor() { recognition = this } start = vi.fn(); abort = vi.fn(); stop = vi.fn() }
+  const { unmount } = render(<VoiceTyping onDraft={vi.fn()} onActiveChange={vi.fn()} inputRef={{ current: null }} />)
   fireEvent.click(screen.getByRole('button', { name: 'Voice typing' }))
-  fireEvent.click(screen.getByRole('button', { name: 'Start voice typing' }))
   act(() => recognition.onerror({ error: 'not-allowed' }))
   expect(screen.getByRole('status').textContent).toContain('not allowed')
   unmount()

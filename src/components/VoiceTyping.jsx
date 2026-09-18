@@ -1,154 +1,177 @@
 import { useEffect, useRef, useState } from 'react'
-import { Mic } from 'lucide-react'
+import { Mic, Square } from 'lucide-react'
 import { Capacitor, registerPlugin } from '@capacitor/core'
 import { isNativeApp } from '../lib/platform'
 
-// Recognition produces a draft only. The web uses the browser's speech
-// service; the iOS app uses Apple speech recognition through the in-app
-// MutuSpeech plugin (on device when possible). Anywhere neither exists,
-// the panel falls back to explaining keyboard dictation.
+// Tap the mic and it listens at once; the words appear live in the text
+// box. Tap again to stop. The text stays an editable draft, never sent
+// automatically. The web uses the browser's speech service; the iOS app
+// uses Apple speech recognition through the in-app MutuSpeech plugin (on
+// device when possible). Where neither exists, tapping opens the keyboard
+// so its own microphone can be used.
 const NativeSpeech = isNativeApp && Capacitor.getPlatform() === 'ios' ? registerPlugin('MutuSpeech') : null
-export default function VoiceTyping({ onTranscript, onActiveChange, inputRef, panelStyle, children, onOpenChange = () => {} }) {
-  const [open, setOpen] = useState(false)
+
+export const VOICE_LANGUAGES = [
+  { id: 'en-US', label: 'English' },
+  { id: 'zh-CN', label: '中文' },
+  { id: 'fr-CA', label: 'Français' },
+]
+const LANGUAGE_KEY = 'mutu:voiceLanguage'
+function initialLanguage() {
+  try {
+    const saved = localStorage.getItem(LANGUAGE_KEY)
+    if (VOICE_LANGUAGES.some(l => l.id === saved)) return saved
+  } catch {}
+  const nav = (navigator.language || '').toLowerCase()
+  return nav.startsWith('zh') ? 'zh-CN' : nav.startsWith('fr') ? 'fr-CA' : 'en-US'
+}
+
+const DENIED_NATIVE = 'Microphone or speech recognition is off for Mutu. You can turn both on in Settings, or keep typing.'
+const DENIED_WEB = 'Microphone access was not allowed. You can keep typing.'
+const FAILED = 'Voice typing could not start. Try again, or keep typing.'
+
+export default function VoiceTyping({ onDraft = () => {}, onActiveChange = () => {}, inputRef }) {
   const [active, setActive] = useState(false)
-  const [message, setMessage] = useState('')
-  const [interim, setInterim] = useState('')
-  const [language, setLanguage] = useState(navigator.language?.startsWith('zh') ? 'zh-CN' : 'en-US')
-  const session = useRef(null)
-  const callbacks = useRef({ onTranscript, onActiveChange })
-  callbacks.current = { onTranscript, onActiveChange }
-  const Recognition = !isNativeApp && (window.SpeechRecognition || window.webkitSpeechRecognition)
+  const [note, setNote] = useState('')
+  const [language, setLanguage] = useState(initialLanguage)
   const [nativeReady, setNativeReady] = useState(false)
+  const session = useRef(null)
+  const restartWith = useRef(null)
+  const callbacks = useRef({ onDraft, onActiveChange })
+  callbacks.current = { onDraft, onActiveChange }
+  const Recognition = !isNativeApp && (window.SpeechRecognition || window.webkitSpeechRecognition)
+  const canListen = Boolean(Recognition) || nativeReady
+
   useEffect(() => {
     let alive = true
     NativeSpeech?.available().then(r => { if (alive) setNativeReady(Boolean(r?.available)) }).catch(() => {})
     return () => { alive = false }
   }, [])
-  const canListen = Boolean(Recognition) || nativeReady
-  const dispose = () => {
-    const recognition = session.current
-    session.current = null
-    if (recognition?.native) { recognition.discard(); return }
-    if (recognition) {
-      recognition.onresult = recognition.onerror = recognition.onend = null
-      recognition.abort()
-    }
-  }
+
   useEffect(() => {
-    const hide = () => {
-      if (document.hidden) {
-        dispose()
-        setActive(false)
-        setInterim('')
-        callbacks.current.onActiveChange(false)
-      }
-    }
-    document.addEventListener('visibilitychange', hide)
-    return () => { document.removeEventListener('visibilitychange', hide); dispose(); callbacks.current.onActiveChange(false) }
-  }, [])
-  // iOS: one session streams the full transcript so far; the latest text
-  // becomes the draft when listening stops (Stop, silence, or an error).
-  const startNative = async () => {
-    if (session.current) return
-    setMessage('')
-    setInterim('')
-    let latest = ''
-    let delivered = false
-    const handles = []
-    const release = () => { handles.splice(0).forEach(h => h.remove()) }
+    if (!note) return undefined
+    const t = setTimeout(() => setNote(''), 5000)
+    return () => clearTimeout(t)
+  }, [note])
+
+  const finish = own => {
+    if (session.current !== own) return
+    session.current = null
+    setActive(false)
+    callbacks.current.onActiveChange(false)
+    const next = restartWith.current
+    restartWith.current = null
+    if (next) begin(next)
+  }
+
+  const startWeb = lang => {
+    const recognition = new Recognition()
     const own = {
-      native: true,
-      stop: () => { NativeSpeech.stop().catch(() => {}) },
-      discard: () => { delivered = true; release(); NativeSpeech.stop().catch(() => {}) },
+      stop: () => recognition.stop(),
+      discard: () => { recognition.onresult = recognition.onerror = recognition.onend = null; recognition.abort() },
     }
     session.current = own
-    const end = () => {
-      if (!delivered && latest) callbacks.current.onTranscript(latest)
-      delivered = true
-      release()
-      if (session.current === own) session.current = null
-      setActive(false)
-      setInterim('')
-      callbacks.current.onActiveChange(false)
-    }
-    handles.push(await NativeSpeech.addListener('result', ({ text }) => {
-      latest = String(text || '').trim()
-      setInterim(latest)
-    }))
-    handles.push(await NativeSpeech.addListener('end', end))
-    setActive(true)
-    callbacks.current.onActiveChange(true)
-    try {
-      await NativeSpeech.start({ language })
-    } catch (error) {
-      delivered = true
-      end()
-      setMessage(error?.code === 'not-allowed'
-        ? 'Microphone or speech recognition is off for Mutu. You can turn both on in Settings, or keep typing.'
-        : 'Voice input could not start. Try again, or keep typing.')
-    }
-  }
-  const start = () => {
-    if (!Recognition) return startNative()
-    if (session.current) return
-    setMessage('')
-    setInterim('')
-    const recognition = new Recognition()
-    session.current = recognition
-    recognition.lang = language
-    recognition.continuous = false
+    recognition.lang = lang
+    recognition.continuous = true
     recognition.interimResults = true
     recognition.onresult = event => {
-      let pending = ''
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const text = event.results[i][0].transcript.trim()
-        if (event.results[i].isFinal && text) callbacks.current.onTranscript(text)
-        else pending += text
-      }
-      setInterim(pending)
+      let text = ''
+      for (let i = 0; i < event.results.length; i++) text += event.results[i][0].transcript
+      callbacks.current.onDraft(text.trim())
     }
     recognition.onerror = event => {
-      setMessage(event.error === 'not-allowed' || event.error === 'service-not-allowed'
-        ? 'Microphone access was not allowed. You can keep typing or use keyboard dictation.'
-        : 'Voice input could not finish. Try again or use keyboard dictation.')
+      if (event.error === 'not-allowed' || event.error === 'service-not-allowed') setNote(DENIED_WEB)
+      else if (event.error !== 'no-speech' && event.error !== 'aborted') setNote(FAILED)
     }
-    recognition.onend = () => {
-      session.current = null
-      setActive(false)
-      setInterim('')
-      callbacks.current.onActiveChange(false)
+    recognition.onend = () => finish(own)
+    setActive(true)
+    callbacks.current.onActiveChange(true)
+    try { recognition.start() } catch { own.discard(); finish(own); setNote(FAILED) }
+  }
+
+  // iOS: each result carries the full transcript of this session so far.
+  const startNative = async lang => {
+    const handles = []
+    const release = () => { handles.splice(0).forEach(h => h.remove()) }
+    let guard = null
+    const own = {
+      stop: () => {
+        NativeSpeech.stop().catch(() => {})
+        guard = setTimeout(() => { release(); finish(own) }, 3000)   // never stay stuck listening
+      },
+      discard: () => { release(); NativeSpeech.stop().catch(() => {}) },
     }
+    session.current = own
+    setActive(true)
+    callbacks.current.onActiveChange(true)
+    handles.push(await NativeSpeech.addListener('result', ({ text }) => {
+      if (session.current === own) callbacks.current.onDraft(String(text || '').trim())
+    }))
+    handles.push(await NativeSpeech.addListener('end', () => { clearTimeout(guard); release(); finish(own) }))
+    if (session.current !== own) { release(); return }
     try {
-      setActive(true)
-      callbacks.current.onActiveChange(true)
-      recognition.start()
-    } catch {
-      dispose()
-      setActive(false)
-      callbacks.current.onActiveChange(false)
-      setMessage('Voice input is unavailable here. Use your keyboard microphone or keep typing.')
+      await NativeSpeech.start({ language: lang })
+    } catch (error) {
+      release()
+      finish(own)
+      setNote(error?.code === 'not-allowed' ? DENIED_NATIVE : FAILED)
     }
   }
-  const buttonStyle = { minHeight: 44, padding: '8px 12px', border: '1px solid #CBDBCF', borderRadius: 12, background: '#EDF3EE', color: '#214E3A' }
+
+  const begin = lang => (Recognition ? startWeb : startNative)(lang)
+
+  const toggle = () => {
+    setNote('')
+    if (session.current) { restartWith.current = null; session.current.stop(); return }
+    if (!canListen) {
+      inputRef?.current?.focus()
+      setNote('Tap the microphone on your keyboard to speak.')
+      return
+    }
+    begin(language)
+  }
+
+  const switchLanguage = () => {
+    const i = VOICE_LANGUAGES.findIndex(l => l.id === language)
+    const next = VOICE_LANGUAGES[(i + 1) % VOICE_LANGUAGES.length].id
+    setLanguage(next)
+    try { localStorage.setItem(LANGUAGE_KEY, next) } catch {}
+    if (session.current) { restartWith.current = next; session.current.stop() }
+  }
+
+  useEffect(() => {
+    const drop = () => {
+      const own = session.current
+      if (!own) return
+      restartWith.current = null
+      own.discard()
+      session.current = null
+      setActive(false)
+      callbacks.current.onActiveChange(false)
+    }
+    const hide = () => { if (document.hidden) drop() }
+    document.addEventListener('visibilitychange', hide)
+    return () => { document.removeEventListener('visibilitychange', hide); drop() }
+  }, [])
+
+  const label = VOICE_LANGUAGES.find(l => l.id === language)?.label
+  const buttonStyle = {
+    minHeight: 44, minWidth: 44, padding: '8px 12px', borderRadius: 12,
+    border: `1px solid ${active ? '#49603B' : '#CBDBCF'}`,
+    background: active ? '#49603B' : '#EDF3EE', color: active ? '#fff' : '#214E3A',
+  }
   return <div style={{ position: 'relative', flexShrink: 0 }}>
-    <button type="button" aria-label="Voice typing" aria-expanded={open} onClick={() => { setOpen(true); onOpenChange(true) }} style={buttonStyle}><Mic size={18} aria-hidden="true" /></button>
-    {open && <div role="region" aria-label="Voice typing controls" style={{ position: 'absolute', bottom: 52, left: 0, width: 'min(300px, calc(100vw - 48px))', padding: 16, border: '1px solid #E8D9A7', borderRadius: 16, background: '#fffdf7', boxShadow: '0 8px 28px #0002', zIndex: 30, ...panelStyle }}>
-      <strong>Voice typing</strong>
-      {canListen ? <>
-        <p style={{ fontSize: 12, lineHeight: 1.5 }}>{Recognition
-          ? 'Speech becomes an editable draft. Your browser may send audio to its speech service. Mutu does not store audio.'
-          : 'Speech becomes an editable draft. Apple speech recognition turns it into text, on your iPhone when it can. Mutu does not store audio.'}</p>
-        <label style={{ fontSize: 13 }}>Language <select aria-label="Dictation language" value={language} disabled={active} onChange={e => setLanguage(e.target.value)}>
-          <option value="en-US">English</option><option value="zh-CN">中文</option><option value="fr-CA">Français</option>
-        </select></label>
-        <p role="status" style={{ fontSize: 13 }}>{message || (active ? `Listening… ${interim}` : 'Review the words before you send.')}</p>
-        <button type="button" style={buttonStyle} onClick={active ? () => session.current?.stop() : start}>{active ? 'Stop listening' : 'Start voice typing'}</button>
-      </> : <>
-        <p style={{ fontSize: 13, lineHeight: 1.5 }}>Tap the microphone on your keyboard to turn speech into text. Review and edit it before sending. If the microphone is missing, enable dictation in your keyboard settings.</p>
-        <button type="button" style={buttonStyle} onClick={() => { inputRef.current?.focus(); setOpen(false); onOpenChange(false) }}>Open keyboard</button>
-      </>}
-      {children}
-      <button type="button" style={{ ...buttonStyle, marginLeft: 8, background: '#fff' }} onClick={() => { dispose(); setActive(false); setInterim(''); onActiveChange(false); setOpen(false); onOpenChange(false) }}>Close</button>
+    {(active || note) && <div role="status" aria-live="polite" style={{
+      position: 'absolute', bottom: 52, left: 0, zIndex: 30,
+      width: note ? 'min(260px, calc(100vw - 48px))' : 'max-content',
+      padding: '6px 10px', borderRadius: 12, border: '1px solid #E8D9A7',
+      background: '#fffdf7', boxShadow: '0 4px 16px #0002', fontSize: 12.5, lineHeight: 1.45, color: '#214E3A',
+    }}>
+      {note || <>Listening · <button type="button" onClick={switchLanguage} aria-label={`Voice language: ${label}. Tap to change`}
+        style={{ border: 0, background: 'none', padding: 0, font: 'inherit', fontWeight: 700, color: '#49603B', textDecoration: 'underline', cursor: 'pointer' }}>{label}</button></>}
     </div>}
+    <button type="button" aria-label={active ? 'Stop voice typing' : 'Voice typing'} aria-pressed={active} onClick={toggle} style={buttonStyle}>
+      {active ? <Square size={16} fill="currentColor" aria-hidden="true" /> : <Mic size={18} aria-hidden="true" />}
+    </button>
   </div>
 }

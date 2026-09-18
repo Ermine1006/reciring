@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import VoiceTyping from './VoiceTyping'
-import { isVoiceField, insertVoiceText } from '../lib/voiceFields'
+import { isVoiceField, writeVoiceDraft } from '../lib/voiceFields'
 
 // One focus-aware entry point covers native text inputs, shared UI fields,
 // lazy-loaded pages and modal portals without altering their form layout.
@@ -31,11 +31,8 @@ function targetKey(target) {
 
 function FieldVoice({ target, onDismiss }) {
   const [position, setPosition] = useState(null)
-  const [draft, setDraft] = useState('')
-  const [error, setError] = useState('')
-  const [active, setActive] = useState(false)
   const selection = useRef({ start: target.selectionStart, end: target.selectionEnd })
-  const baseline = useRef(target.value)
+  const live = useRef(null)   // { before, after, caret } while voice typing
   const dismiss = useRef(onDismiss)
   dismiss.current = onDismiss
   useEffect(() => {
@@ -51,7 +48,7 @@ function FieldVoice({ target, onDismiss }) {
         panelTop: Math.max(top + 8, Math.min(rect.top - 360, top + height - 370)),
         panelLeft: Math.max(left + 8, Math.min(rect.right - 320, left + width - 328)), panelHeight: height - 24 })
     }
-    const remember = () => { selection.current = { start: target.selectionStart, end: target.selectionEnd }; baseline.current = target.value }
+    const remember = () => { if (!live.current) selection.current = { start: target.selectionStart, end: target.selectionEnd } }
     update()
     const observer = new MutationObserver(update)
     observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['disabled', 'readonly', 'hidden', 'class', 'open'] })
@@ -73,22 +70,20 @@ function FieldVoice({ target, onDismiss }) {
   }, [target])
   if (!position) return null
   return createPortal(<div data-voice-ui="" style={{ position: 'fixed', top: position.top, left: position.left, zIndex: 2147483647 }}>
-    <VoiceTyping inputRef={{ current: target }} onActiveChange={setActive}
-      onTranscript={text => setDraft(previous => previous + (previous ? ' ' : '') + text)}
-      panelStyle={{ position: 'fixed', top: position.panelTop, left: position.panelLeft, bottom: 'auto', width: 'min(320px, calc(100vw - 24px))', maxHeight: position.panelHeight, overflowY: 'auto', boxSizing: 'border-box' }}>
-      {draft && <div style={{ margin: '12px 0' }}>
-        <label style={{ display: 'block', fontSize: 13 }}>Review your words
-          <textarea aria-label="Voice draft" value={draft} onChange={e => { setDraft(e.target.value); setError('') }} rows={3}
-            style={{ display: 'block', width: '100%', boxSizing: 'border-box', marginTop: 6, padding: 8, fontSize: 16, borderRadius: 8, border: '1px solid #CBDBCF' }} />
-        </label>
-        {error && <p role="alert" style={{ fontSize: 12, color: '#B42318' }}>{error}</p>}
-        <button type="button" disabled={active || !draft.trim()} onClick={() => {
-          if (target.value !== baseline.current) { setError('The field changed. Close and try again to use its latest text.'); return }
-          const issue = insertVoiceText(target, draft, selection.current)
-          if (issue) setError(issue)
-          else { setDraft(''); dismiss.current() }
-        }} style={{ minHeight: 44, padding: '8px 12px', borderRadius: 12, background: '#49603B', color: '#fff', border: 0, marginTop: 8 }}>Insert text</button>
-      </div>}
-    </VoiceTyping>
+    <VoiceTyping inputRef={{ current: target }}
+      onActiveChange={on => {
+        if (on) {
+          const value = target.value
+          const from = Math.min(selection.current.start ?? value.length, value.length)
+          const to = Math.min(selection.current.end ?? from, value.length)
+          live.current = { before: value.slice(0, from), after: value.slice(to), caret: from }
+        } else if (live.current) {
+          const { caret } = live.current
+          live.current = null
+          if (target.isConnected) { target.focus(); target.setSelectionRange(caret, caret) }
+          selection.current = { start: caret, end: caret }
+        }
+      }}
+      onDraft={text => { if (live.current && target.isConnected) live.current.caret = writeVoiceDraft(target, live.current, text) }} />
   </div>, target.closest('dialog[open]') || document.body)
 }

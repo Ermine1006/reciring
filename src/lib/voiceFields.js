@@ -26,3 +26,18 @@ export function insertVoiceText(field, text, selection) {
   field.setSelectionRange(before.length + insert.length, before.length + insert.length)
   return ''
 }
+
+// Live voice typing: rewrite the field as before + words + after on every
+// update, so the words appear while the person speaks. Clipped to the
+// field's maxLength. Returns the caret position just after the words.
+export function writeVoiceDraft(field, { before, after }, text) {
+  const words = String(text || '').trim()
+  const lead = before && words && !/\s$/.test(before) ? ' ' : ''
+  const tail = after && words && !/^\s|^[.,!?;:，。！？]/.test(after) ? ' ' : ''
+  let next = before + lead + words + tail + after
+  if (field.maxLength >= 0 && next.length > field.maxLength) next = next.slice(0, field.maxLength)
+  const prototype = field instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype
+  Object.getOwnPropertyDescriptor(prototype, 'value').set.call(field, next)
+  field.dispatchEvent(new Event('input', { bubbles: true }))
+  return Math.min(next.length, (before + lead + words).length)
+}

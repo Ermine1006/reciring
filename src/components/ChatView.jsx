@@ -245,6 +245,7 @@ function shouldRevealIdentity(messages) {
 
 export default function ChatView({ match, messages, onSend, onProposeMeeting, onMeetingResponse, onBack, autoOpenSchedule, onScheduleOpened, scheduleFeedback, currentUserId, onSeeImpact, peerProfile, onReport, onBlock, onUnmatch, onRequestReveal, onAcceptReveal, onDeclineReveal, onOpenPractice }) {
   const composerRef = useRef(null)
+  const voiceBase = useRef('')   // composer text before voice typing began
   const [dictating, setDictating] = useState(false)
   const [input, setInput]               = useState('')
   const [showCoffee, setShowCoffee]     = useState(false)
@@ -1017,8 +1018,12 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
         padding: '8px 16px 14px',
         background: C.white, flexShrink: 0,
       }}>
-        <VoiceTyping inputRef={composerRef} onActiveChange={setDictating}
-          onTranscript={text => setInput(previous => previous + (previous && !/\s$/.test(previous) ? ' ' : '') + text)} />
+        <VoiceTyping inputRef={composerRef}
+          onActiveChange={on => { if (on) voiceBase.current = composerRef.current?.value || ''; setDictating(on) }}
+          onDraft={text => {
+            const base = voiceBase.current
+            setInput(base + (base && text && !/\s$/.test(base) ? ' ' : '') + text)
+          }} />
         <textarea
           ref={composerRef}
           data-voice-typing="off"
