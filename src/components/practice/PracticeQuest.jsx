@@ -37,6 +37,7 @@ export default function PracticeQuest({ request, windowsStale, rows, pairings, n
     {pending.some(p => p.i_invited === false) && current !== 1 && <section className="quest-paper" role="status">
       <h3>You have a practice invitation</h3><button className="quest-primary" onClick={() => setStep(1)}>Review invitation</button>
     </section>}
+    <button type="button" className="quest-link" onClick={() => setStep(1)}>View demo profiles</button>
     <div className="quest-map" aria-label="Your practice quest">
       {steps.map(({ title, sub, icon: Icon }, i) => <button key={title} type="button" className={`quest-node ${current === i ? 'is-current' : ''}`} onClick={() => setStep(i)} aria-current={current === i ? 'step' : undefined}>
         <span className="quest-node-icon"><Icon size={22} /></span><span><strong>{title}</strong>{current === i && <small>{sub}</small>}</span><span className="quest-node-num">{i + 1}</span>
@@ -50,6 +51,13 @@ export default function PracticeQuest({ request, windowsStale, rows, pairings, n
       </section>)}
       {current === 1 && <>
         <h2>Meet your teammate</h2>
+        <details open className="quest-paper">
+          <summary style={{ fontWeight: 650, cursor: 'pointer' }}>Demo profiles · Sample data</summary>
+          <p>Explore three fictional teammates. Demo actions do not send real invitations.</p>
+          <a href="/practice-demo.html" target="_blank" rel="noopener noreferrer" className="quest-link">Open presentation view ↗</a>
+          <iframe title="Mutu practice demo profiles" src="/practice-demo.html" sandbox="allow-scripts" style={{ width: '100%', height: 1080, border: 0, borderRadius: 20, display: 'block', marginTop: 12 }} />
+        </details>
+        <h3>Your community teammates</h3>
         <InvitationsList pairings={pairings} busyId={busyId} only="incoming" onAccept={onAccept} onDecline={onDecline} onWithdraw={onWithdraw} />
         {!request ? <section className="quest-paper"><p>Choose what you want to practise.</p><button className="quest-primary" onClick={() => setStep(0)}>Pick a quest →</button></section> : <>
           <p className="quest-private"><LockKeyhole size={14} /> Names unlock when you both accept.</p>
