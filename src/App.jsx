@@ -270,22 +270,38 @@ function AppShell() {
     } catch {}
   }, [ackKey, loadAckSet])
 
-  // Load posts from Supabase (or fall back to mock data)
-  useEffect(() => {
+  // Load posts from Supabase (or fall back to mock data). Posts used to
+  // load once per app launch, so a post published after that (e.g. by a
+  // new member) never reached people whose app stayed open in the
+  // background. Refetch on arriving at Give & Ask and on returning to
+  // the app, never mid-swipe.
+  const loadPosts = useCallback(async () => {
     if (!isSupabaseConfigured) {
       setRequests(MOCK_REQUESTS)
       return
     }
-    fetchPosts().then(({ data, error }) => {
-      if (error) {
-        console.error('[ReciRing] Failed to load posts:', error)
-        setRequests(MOCK_REQUESTS) // graceful fallback
-        return
-      }
-      // If DB has no posts yet, show mock data so the UI isn't empty
-      setRequests(data && data.length > 0 ? data : MOCK_REQUESTS)
-    })
+    const { data, error } = await fetchPosts()
+    if (error) {
+      console.error('[ReciRing] Failed to load posts:', error)
+      // graceful fallback, but a failed refresh keeps the posts we have
+      setRequests((prev) => (prev.length > 0 ? prev : MOCK_REQUESTS))
+      return
+    }
+    // If DB has no posts yet, show mock data so the UI isn't empty
+    setRequests(data && data.length > 0 ? data : MOCK_REQUESTS)
   }, [])
+
+  useEffect(() => { loadPosts() }, [loadPosts, user?.id])
+
+  useEffect(() => {
+    if (tab === 'discover') loadPosts()
+  }, [tab, loadPosts])
+
+  useEffect(() => {
+    const onVisible = () => { if (document.visibilityState === 'visible') loadPosts() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [loadPosts])
 
   // Load promotable event-marketplace previews for the Discover deck. Gated
   // server-side by the discover_event_promos view (both consent flags, still

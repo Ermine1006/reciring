@@ -202,8 +202,13 @@ export default function CommunityNetworkGraph({ userId, userName, communityName 
       setView('map')
       return
     }
-    const { data: community } = await fetchCommunityBySlug('rotman')
-    const res = await fetchCommunityMapSummary(community?.id)
+    let res
+    try {
+      const { data: community } = await fetchCommunityBySlug('rotman')
+      res = await fetchCommunityMapSummary(community?.id)
+    } catch (e) {
+      res = { errorKind: 'error' }                      // offline: show Try again, never spin forever
+    }
     if (res.errorKind) {
       setMap({ loading: false, errorKind: res.errorKind, model: null })
       return                                            // live default stays My Circle
@@ -265,7 +270,9 @@ export default function CommunityNetworkGraph({ userId, userName, communityName 
 
   const layout = useMemo(() => {
     if (isMap) {
-      if (!model) return {}
+      // No map yet (still loading, not eligible, or failed): render the
+      // calm "couldn't load" state below instead of crashing on fields.
+      if (!model) return { pos: {}, fields: [] }
       const rank = (id) => {
         if (id === mapMeId) return 0
         const m = model.members.find((x) => x.id === id)
