@@ -2,6 +2,16 @@
 
 ## Production entry
 
+### Correcting a year selection
+
+Run `scripts/migration-buddy-change-year.sql` after `migration-buddy-assigned.sql` in Supabase SQL Editor. No production SQL is run by the assistant.
+
+Students can open **Change year** below the Buddy Program heading, select **First year** or **Second year / upper year**, and press **Save year**. Cancel or Back returns to the previous Buddy view without saving. Radio changes are drafts until Save. The current saved year stays visible; the button disables while saving, and failures keep the selection available to retry. Existing signup still requires an explicit selection.
+
+The new authenticated RPC changes only the caller's active membership in this program. It rejects paused access, nonmembers and invalid roles. An incompatible pending/confirmed school pairing, an active community invitation/connection, or a published post must be resolved before changing year. These records and private conversations are never silently removed. A school pairing in the chosen role does not prevent correcting an accidental selection. Missing SQL shows a setup message and preserves the current role.
+
+UX: the old flow made an accidental choice feel permanent. Agency and ease guide this change: notice a wrong year → Change year → choose → Save → return to the right Buddy view and continue connecting. The compact text action uses existing matcha styling with no new animation. Success means users recover from selection mistakes and resume useful Buddy interactions. Existing avatars, navigation, consent, community boundaries and tokens are unchanged; year changes create no reputation or progress reward.
+
 ### My Buddies release
 
 The default student view is now **My Buddy** or **My Buddies**. School assignments are separate from community offers. The entry card uses the same 16px title, 12px description, square art and row spacing as the other Together cards. The new assigned view uses concise cards, a sprout accent, real names and direct replies. Bottom navigation and existing avatars are unchanged.
