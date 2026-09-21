@@ -1,0 +1,29 @@
+/* Use the shared Together row, square artwork and glass treatment. */
+.mutu-connection-card.buddy-entry {
+  margin: 12px 16px;
+  min-width: 0;
+  font-family: inherit;
+}
+.mutu-connection-card.buddy-entry > h3 {
+  font-size: 16px;
+  font-weight: 750;
+  line-height: 1.2;
+  letter-spacing: -.01em;
+  color: #68764a;
+  overflow-wrap: anywhere;
+}
+.mutu-connection-card.buddy-entry > p {
+  font-size: 12px;
+  line-height: 1.45;
+  color: #696c60;
+}
+.mutu-connection-card.buddy-entry > button {
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  border: none;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
