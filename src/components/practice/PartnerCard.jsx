@@ -71,10 +71,19 @@ export default function PartnerCard({ row, myRequest, onInvite, busy }) {
           <p style={{ margin: '6px 0 0', color: C.ink2, fontSize: 12 }}>Identity hidden until you both accept</p>
         </div>
       </div>
-      {history && <div style={{ display: 'flex', gap: 28, paddingBottom: 16, marginBottom: 18, borderBottom: `1px solid ${C.line}` }}>
-        <div><strong style={{ fontSize: 24 }}>{history.sessions}</strong><div style={{ color: C.ink2, fontSize: 12 }}>practices completed</div></div>
-        <div><strong style={{ fontSize: 24 }}>{history.partners}</strong><div style={{ color: C.ink2, fontSize: 12 }}>different partners</div></div>
-      </div>}
+      {/* A shared count of zero says "beginner" to anyone reading the
+          card, which is wrong for the many members who arrive mid cycle
+          having practised elsewhere, and it is the discouraging empty
+          state our own principles rule out. Someone with nothing
+          confirmed yet gets a plain, neutral line instead of a 0. */}
+      {history && (history.sessions > 0
+        ? <div style={{ display: 'flex', gap: 28, paddingBottom: 16, marginBottom: 18, borderBottom: `1px solid ${C.line}` }}>
+            <div><strong style={{ fontSize: 24 }}>{history.sessions}</strong><div style={{ color: C.ink2, fontSize: 12 }}>practices completed</div></div>
+            <div><strong style={{ fontSize: 24 }}>{history.partners}</strong><div style={{ color: C.ink2, fontSize: 12 }}>different partners</div></div>
+          </div>
+        : <div style={{ paddingBottom: 16, marginBottom: 18, borderBottom: `1px solid ${C.line}` }}>
+            <p style={{ margin: 0, fontSize: 13, color: C.ink2 }}>New to practising on Mutu</p>
+          </div>)}
       <div style={{ background: MATCHA_SOFT, color: MATCHA_DEEP, borderRadius: 14, padding: 14, marginBottom: 18, fontSize: 13, lineHeight: 1.5 }}>
         <strong style={{ display: 'block', fontSize: 11, marginBottom: 5 }}>WHY YOU COULD HELP EACH OTHER</strong>
         {relevant.length ? `They can support your focus: ${relevant.join(', ')}.` : `They can support your ${short(youPractise).toLowerCase()} practice.`} You can help with {short(youHelpWith).toLowerCase()}.

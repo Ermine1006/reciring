@@ -4,15 +4,24 @@ import {
   DEFAULT_DURATION_MINUTES, DEFAULT_TIMEZONE,
 } from '../../data/practiceOptions'
 import { wallTimeToUtc } from '../../lib/practiceMatching'
+import { AVAILABILITY_PRESETS, presetToWindows, isPresetAutomatic } from '../../lib/practiceAvailability'
 import { MATCHA_DEEP } from '../../lib/matchaCta'
 
-// ── Three-step progressive setup ─────────────────────────────────
-//   1 · What do you want to practise?   (type required)
-//   2 · What can you help with?         (type required)
-//   3 · When are you free?              (one window required)
-// Focus text, help context, extra windows, and format live behind
-// "Add more details". Virtual is the default format. One sentence of
-// anonymity copy, a labeled step header (no bare progress bar).
+// ── Two-step progressive setup ───────────────────────────────────
+//   1 · What you practise and what you help with  (both required)
+//   2 · When you are free                         (one tap)
+//
+// This was three steps, with the two practice questions on separate
+// screens and three typed fields per availability window. Testers
+// stalled: the questions read as one decision, and typing dates was
+// the single slowest moment in the flow. Now they share a screen, and
+// availability is a preset ("Weekday evenings this week") that expands
+// into real windows, with the typed form kept behind "Pick exact times"
+// for anyone who wants it.
+//
+// Focus text, help context and format still live behind "Add more
+// details". Virtual is the default format. One sentence of anonymity
+// copy, a labeled step header (no bare progress bar).
 
 const C = {
   gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7', goldBg: '#F8F3E5',
@@ -39,9 +48,9 @@ function isoToWall(iso, timeZone) {
   }
 }
 
-function TypeChips({ selected, onToggle }) {
+function TypeChips({ selected, onToggle, label }) {
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9 }}>
+    <div role="group" aria-label={label} style={{ display: 'flex', flexWrap: 'wrap', gap: 9 }}>
       {PILOT_PRACTICE_TYPES.map((t) => {
         const on = selected.includes(t)
         return (
@@ -57,6 +66,34 @@ function TypeChips({ selected, onToggle }) {
         )
       })}
     </div>
+  )
+}
+
+const LAST_STEP = 2
+
+function PresetOption({ preset, selected, onSelect, tzLabel }) {
+  return (
+    <button data-mutu-glass="" type="button" role="radio" aria-checked={selected}
+      onClick={() => onSelect(preset.id)}
+      className="active:scale-[0.98] transition-all"
+      style={{
+        width: '100%', textAlign: 'left', minHeight: 64, padding: '13px 15px',
+        border: `1.5px solid ${selected ? MATCHA_DEEP : C.line}`, borderRadius: 16,
+        background: selected ? '#F0F2E8' : C.white, cursor: 'pointer',
+        display: 'flex', alignItems: 'center', gap: 12, fontFamily: FONT,
+      }}>
+      <span aria-hidden="true" style={{
+        width: 20, height: 20, borderRadius: '50%', boxSizing: 'border-box', flexShrink: 0,
+        border: selected ? `6px solid ${MATCHA_DEEP}` : `1.5px solid ${C.ink3}`,
+        background: C.white,
+      }} />
+      <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+        <span style={{ fontSize: 14.5, fontWeight: 700, color: C.ink }}>{preset.label}</span>
+        <span style={{ fontSize: 12.5, color: C.ink2 }}>
+          {preset.detail}{preset.id === 'exact' ? '' : ` ${tzLabel}`}
+        </span>
+      </span>
+    </button>
   )
 }
 
@@ -78,8 +115,10 @@ function MoreDetails({ open, onToggle, children }) {
 export default function PracticeSetupFlow({ existing, existingWindows = [], onSave, onCancel, saving, initialStep = 1 }) {
   const tz = existing?.timezone || DEFAULT_TIMEZONE
   // Deep-linking into a step only makes sense when a request already
-  // exists (e.g. "Add more times" → step 3); first-timers always start at 1.
-  const [step, setStep] = useState(existing ? initialStep : 1)
+  // exists (e.g. "Add more times" → the availability step); first-timers
+  // always start at 1. Callers still pass the old step-3 id for times,
+  // so anything past the last step lands on it rather than nowhere.
+  const [step, setStep] = useState(existing ? Math.min(Math.max(initialStep, 1), LAST_STEP) : 1)
   const [wantTypes, setWantTypes] = useState(existing?.want_types || [])
   const [wantFocus, setWantFocus] = useState(existing?.want_focus || '')
   const [helpTypes, setHelpTypes] = useState(existing?.help_types || [])
@@ -97,6 +136,10 @@ export default function PracticeSetupFlow({ existing, existingWindows = [], onSa
   const [more1, setMore1] = useState(Boolean(existing?.want_focus))
   const [more2, setMore2] = useState(Boolean(existing?.help_focus || existing?.help_context))
   const [more3, setMore3] = useState(false)
+  // Someone who already typed windows keeps seeing them; a first-timer
+  // gets the common answer pre-selected, and still has to press Publish
+  // before any of it becomes real availability.
+  const [preset, setPreset] = useState(existingWindows.length ? 'exact' : 'weekday_evenings')
   const [err, setErr] = useState(null)
 
   const toggle = (list, set) => (t) => set(list.includes(t) ? list.filter((x) => x !== t) : [...list, t])
@@ -104,8 +147,8 @@ export default function PracticeSetupFlow({ existing, existingWindows = [], onSa
 
   const next = () => {
     setErr(null)
-    if (step === 1 && wantTypes.length === 0) return setErr('Pick at least one.')
-    if (step === 2 && helpTypes.length === 0) return setErr('Pick at least one. Both people practise, both people help!')
+    if (wantTypes.length === 0) return setErr('Pick at least one thing you want to practise.')
+    if (helpTypes.length === 0) return setErr('Pick at least one. Both people practise, both people help!')
     setStep(step + 1)
   }
 
@@ -113,7 +156,10 @@ export default function PracticeSetupFlow({ existing, existingWindows = [], onSa
     setErr(null)
     // Times are OPTIONAL: matching works without them (they only let
     // partners book you instantly). The database has no requirement.
-    const valid = windows.filter((w) => w.date && w.start && w.end)
+    // A preset expands into the same wall-time shape the typed form
+    // produces, so everything below this line is unchanged by it.
+    const source = isPresetAutomatic(preset) ? presetToWindows(preset, tz) : windows
+    const valid = source.filter((w) => w.date && w.start && w.end)
     const converted = []
     for (const w of valid) {
       const starts_at = wallTimeToUtc(w.date, w.start, tz)
@@ -127,15 +173,14 @@ export default function PracticeSetupFlow({ existing, existingWindows = [], onSa
     })
   }
 
+  const tzLabel = tz.replace('America/', '').replace(/_/g, ' ')
   const TITLES = {
-    1: 'What do you want to practise?',
-    2: 'What can you help with?',
-    3: 'When are you free?',
+    1: 'What would you like to practise?',
+    2: 'When could you practise?',
   }
   const SUBS = {
-    1: 'Your partner runs this round for you.',
-    2: "You run your partner's round and give feedback.",
-    3: `Optional, but times let partners book you instantly (${tz.replace('America/', '')} time).`,
+    1: 'One round for you, one round for them. Both answers help us find your match.',
+    2: `Pick what suits you. You and your partner settle the exact time together (${tzLabel} time).`,
   }
 
   return (
@@ -152,7 +197,7 @@ export default function PracticeSetupFlow({ existing, existingWindows = [], onSa
             </svg>
           </button>
           <span style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: C.ink3, fontFamily: FONT }}>
-            Step {step} of 3
+            Step {step} of {LAST_STEP}
           </span>
         </div>
         <h2 style={{ fontSize: 20, fontWeight: 700, color: C.ink, margin: '0 0 4px', letterSpacing: '-0.01em', fontFamily: FONT }}>
@@ -164,18 +209,28 @@ export default function PracticeSetupFlow({ existing, existingWindows = [], onSa
 
         {step === 1 && (
           <>
-            <TypeChips selected={wantTypes} onToggle={toggle(wantTypes, setWantTypes)} />
+            <h3 style={{ fontSize: 14, fontWeight: 700, color: C.ink, margin: '0 0 4px', fontFamily: FONT }}>
+              You want to practise
+            </h3>
+            <p style={{ fontSize: 12.5, color: C.ink2, margin: '0 0 10px', fontFamily: FONT }}>
+              Your partner runs this round for you.
+            </p>
+            <TypeChips label="You want to practise" selected={wantTypes} onToggle={toggle(wantTypes, setWantTypes)} />
             <MoreDetails open={more1} onToggle={() => setMore1(!more1)}>
               <input style={inputStyle} value={wantFocus} maxLength={140}
                 onChange={(e) => setWantFocus(e.target.value)}
                 placeholder="Your target, like MBB first rounds" />
             </MoreDetails>
-          </>
-        )}
 
-        {step === 2 && (
-          <>
-            <TypeChips selected={helpTypes} onToggle={toggle(helpTypes, setHelpTypes)} />
+            <div style={{ height: 1, background: C.line, margin: '22px 0' }} />
+
+            <h3 style={{ fontSize: 14, fontWeight: 700, color: C.ink, margin: '0 0 4px', fontFamily: FONT }}>
+              You can run a round on
+            </h3>
+            <p style={{ fontSize: 12.5, color: C.ink2, margin: '0 0 10px', fontFamily: FONT }}>
+              You run your partner&rsquo;s round and give feedback.
+            </p>
+            <TypeChips label="You can run a round on" selected={helpTypes} onToggle={toggle(helpTypes, setHelpTypes)} />
             <MoreDetails open={more2} onToggle={() => setMore2(!more2)}>
               <input style={inputStyle} value={helpFocus} maxLength={140}
                 onChange={(e) => setHelpFocus(e.target.value)}
@@ -187,7 +242,23 @@ export default function PracticeSetupFlow({ existing, existingWindows = [], onSa
           </>
         )}
 
-        {step === 3 && (
+        {step === 2 && (
+          <>
+            <div role="radiogroup" aria-label="When you are free"
+              style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
+              {AVAILABILITY_PRESETS.map((p) => (
+                <PresetOption key={p.id} preset={p} tzLabel={tzLabel}
+                  selected={preset === p.id} onSelect={setPreset} />
+              ))}
+            </div>
+
+            {preset !== 'exact' && (
+              <p style={{ fontSize: 12.5, color: C.ink2, margin: '0 0 4px', lineHeight: 1.5, fontFamily: FONT }}>
+                We will offer {presetToWindows(preset, tz).length} windows from this. You can change them any time.
+              </p>
+            )}
+
+            {preset === 'exact' && (
           <>
             {windows.map((w, i) => (
               <div key={i} style={{
@@ -214,16 +285,19 @@ export default function PracticeSetupFlow({ existing, existingWindows = [], onSa
                 </div>
               </div>
             ))}
+                <button data-mutu-glass="" type="button"
+                  onClick={() => setWindows((ws) => [...ws, { date: '', start: '', end: '' }])}
+                  style={{
+                    alignSelf: 'flex-start', border: `1px dashed ${C.goldLight}`, background: C.goldBg,
+                    color: C.goldDark, borderRadius: 10, padding: '8px 14px',
+                    fontSize: 12.5, fontWeight: 600, fontFamily: FONT, cursor: 'pointer',
+                  }}>
+                  + Add another window
+                </button>
+              </>
+            )}
+
             <MoreDetails open={more3} onToggle={() => setMore3(!more3)}>
-              <button data-mutu-glass="" type="button"
-                onClick={() => setWindows((ws) => [...ws, { date: '', start: '', end: '' }])}
-                style={{
-                  alignSelf: 'flex-start', border: `1px dashed ${C.goldLight}`, background: C.goldBg,
-                  color: C.goldDark, borderRadius: 10, padding: '8px 14px',
-                  fontSize: 12.5, fontWeight: 600, fontFamily: FONT, cursor: 'pointer',
-                }}>
-                + Add another window
-              </button>
               <div style={{ display: 'flex', gap: 8 }}>
                 <select style={{ ...inputStyle, flex: 1 }} value={locationType} onChange={(e) => setLocationType(e.target.value)}>
                   <option value="virtual">Virtual (default)</option>
@@ -241,7 +315,7 @@ export default function PracticeSetupFlow({ existing, existingWindows = [], onSa
         {err && <p role="alert" style={{ margin: '14px 0 0', fontSize: 12.5, color: '#B4232A', fontFamily: FONT }}>{err}</p>}
 
         <button data-mutu-glass="" type="button" disabled={saving}
-          onClick={step === 3 ? submit : next}
+          onClick={step === LAST_STEP ? submit : next}
           className="active:scale-[0.98] transition-all"
           style={{
             width: '100%', marginTop: 20, border: 'none', borderRadius: 14,
@@ -250,7 +324,7 @@ export default function PracticeSetupFlow({ existing, existingWindows = [], onSa
             cursor: saving ? 'wait' : 'pointer', opacity: saving ? 0.7 : 1,
             boxShadow: '0 2px 10px rgba(92,106,62,0.30)',
           }}>
-          {step === 3
+          {step === LAST_STEP
             ? (saving ? 'Publishing…' : existing ? 'Save changes' : 'Publish and find partners')
             : <>Continue <span style={{ color: C.goldLight }}>→</span></>}
         </button>
