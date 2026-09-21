@@ -53,7 +53,7 @@ it.each(['first','upper'])('lets a student explicitly join as %s without coordin
  })
  render(<BuddyChoiceProgram onBack={()=>{}}/>);
  expect((await screen.findByRole('button',{name:'Join Buddy Program'})).disabled).toBe(true)
- fireEvent.click(screen.getByRole('radio',{name:role==='upper'?/I am an upper/:/I am a first/}))
+ fireEvent.click(screen.getByRole('radio',{name:role==='upper'?/I am a second/:/I am a first/}))
  fireEvent.click(screen.getByRole('button',{name:role==='upper'?'Join as a mentor':'Join as a student'}))
  await screen.findByRole('heading',{name:role==='upper'?'Meet your Buddy crew':'Your Buddy, right here.'})
  expect(rpc).toHaveBeenCalledWith(role==='upper'?'buddy_choice_join_upper':'buddy_choice_join',{p_program:'p'})
@@ -62,7 +62,56 @@ it.each(['first','upper'])('lets a student explicitly join as %s without coordin
 it('keeps signup available for retry when the open signup migration is missing',async()=>{
  rpc.mockImplementation(async(name,args)=>{if(name==='buddy_choice_join_upper')throw new Error('buddy_choice_join_upper missing from schema cache');return args?.p_program?base:{programs:[{id:'p'}]}})
  render(<BuddyChoiceProgram onBack={()=>{}}/>);
- fireEvent.click(await screen.findByRole('radio',{name:/I am an upper/}));fireEvent.click(screen.getByRole('button',{name:'Join as a mentor'}))
+ fireEvent.click(await screen.findByRole('radio',{name:/I am a second/}));fireEvent.click(screen.getByRole('button',{name:'Join as a mentor'}))
  await screen.findByText(/Open signup is waiting for a program update/)
  expect(screen.getByRole('button',{name:'Join as a mentor'}).disabled).toBe(false);expect(screen.queryByRole('button',{name:'Browse posts',exact:true})).toBeNull()
+})
+
+it.each(['first','upper'])('corrects a saved %s year and keeps it after reopening',async initial=>{
+ let saved=initial
+ rpc.mockImplementation(async(name,args)=>{
+  if(name==='buddy_choice_change_year'){saved=args.p_role;return null}
+  return args?.p_program?{...base,role:saved}:{programs:[{id:'p'}]}
+ })
+ const app=render(<BuddyChoiceProgram onBack={()=>{}}/>);
+ fireEvent.click(await screen.findByRole('button',{name:'Change year'}))
+ expect(screen.getByRole('button',{name:'Save year'}).disabled).toBe(true)
+ fireEvent.click(screen.getByRole('radio',{name:initial==='first'?/I am a second/:/I am a first/}))
+ expect(saved).toBe(initial)
+ fireEvent.click(screen.getByRole('button',{name:'Save year'}))
+ await screen.findByText('Your year is updated.')
+ const next=initial==='first'?'upper':'first'
+ expect(rpc).toHaveBeenCalledWith('buddy_choice_change_year',{p_program:'p',p_role:next})
+ expect(screen.getByRole('heading',{name:next==='upper'?'Meet your Buddy crew':'Your Buddy, right here.'})).toBeTruthy()
+ app.unmount();render(<BuddyChoiceProgram onBack={()=>{}}/>);
+ fireEvent.click(await screen.findByRole('button',{name:'Change year'}))
+ expect(screen.getByRole('radio',{name:next==='upper'?/I am a second/:/I am a first/}).checked).toBe(true)
+})
+
+it.each(['Cancel','‹ Back'])('returns without saving via %s',async action=>{
+ const back=vi.fn()
+ rpc.mockImplementation(async(name,args)=>args?.p_program?{...base,role:'first'}:{programs:[{id:'p'}]})
+ render(<BuddyChoiceProgram onBack={back}/>);
+ fireEvent.click(await screen.findByRole('button',{name:'Change year'}))
+ fireEvent.click(screen.getByRole('radio',{name:/I am a second/}))
+ fireEvent.click(screen.getByRole('button',{name:action}))
+ await screen.findByRole('heading',{name:'Your Buddy, right here.'})
+ expect(rpc.mock.calls.some(([name])=>name==='buddy_choice_change_year')).toBe(false)
+ expect(back).not.toHaveBeenCalled()
+})
+
+it('keeps the old year and selected correction when saving fails, then allows retry',async()=>{
+ let fail=true,role='upper'
+ rpc.mockImplementation(async(name,args)=>{
+  if(name==='buddy_choice_change_year'){if(fail)throw new Error('buddy_choice_change_year missing from schema cache');role=args.p_role;return null}
+  return args?.p_program?{...base,role}:{programs:[{id:'p'}]}
+ })
+ render(<BuddyChoiceProgram onBack={()=>{}}/>);
+ fireEvent.click(await screen.findByRole('button',{name:'Change year'}));fireEvent.click(screen.getByRole('radio',{name:/I am a first/}))
+ fireEvent.click(screen.getByRole('button',{name:'Save year'}))
+ await screen.findByText(/Your current year is unchanged/)
+ expect(role).toBe('upper');expect(screen.getByRole('radio',{name:/I am a first/}).checked).toBe(true)
+ expect(screen.getByRole('button',{name:'Save year'}).disabled).toBe(false)
+ fail=false;fireEvent.click(screen.getByRole('button',{name:'Save year'}))
+ await screen.findByText('Your year is updated.');expect(role).toBe('first')
 })

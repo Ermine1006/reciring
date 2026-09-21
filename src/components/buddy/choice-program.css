@@ -40,3 +40,7 @@
 .bc-program .bc-filter p{flex:1;min-width:140px;line-height:1.5}
 .bc-program button:focus-visible,.bc-program summary:focus-visible{outline:2px solid #65754b;outline-offset:3px}
 @media(max-width:380px){.bc-program .bc-intro{padding:16px}.bc-program .bc-intro h2{font-size:24px}.bc-program .bc-toolbar{flex-wrap:wrap}.bc-program .br-actions{padding-left:0}}
+
+.bc-program .bc-year-setting{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0;color:#6b7061;font-size:12px}
+.bc-program .bc-year-setting .bc-button{min-height:44px;padding:8px 12px;background:transparent;border:0;color:#536738;font-size:13px}
+.bc-program .bc-join>.bc-button+.bc-button{margin-top:8px}
