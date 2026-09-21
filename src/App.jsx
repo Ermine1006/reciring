@@ -1505,7 +1505,7 @@ function AppShell() {
   )
 }
 
-const BuddyDemo = lazy(() => import('./components/buddy/BuddyChoiceDemo'))
+const BuddyDemo = lazy(() => import('./components/buddy/BuddyAssignedDemo'))
 
 /* ─── Root App — auth gate ─────────────────────────────────────── */
 function AppRoot() {

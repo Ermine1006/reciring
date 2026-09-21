@@ -2,7 +2,7 @@
 .bc-program{padding-top:8px;color:#24271f}
 .bc-program-header{margin-bottom:18px}
 .bc-program .bc-back{display:block;min-height:44px;padding:8px 0;border:0;background:transparent;color:#65754b;font-size:14px;font-weight:700;cursor:pointer}
-.bc-program-header h1{font-family:Inter,system-ui,sans-serif;font-size:28px;line-height:1.2;margin:5px 0 8px;letter-spacing:-.6px}
+.bc-program-header h1{font-family:Inter,system-ui,sans-serif;font-size:24px;line-height:1.2;margin:5px 0 8px;letter-spacing:-.4px}
 .bc-program-header>p{font-size:15px;line-height:1.5;color:#6f7166;margin:0;max-width:44ch}
 .bc-program .bc-tabs{flex-wrap:wrap;gap:4px;padding:4px;background:#fff;border:1px solid #e8e2d6;border-radius:24px;margin:16px 0 20px}
 .bc-program .bc-tabs .bc-button{flex:1;white-space:nowrap;border:0;border-radius:20px;background:transparent;color:#68685e}

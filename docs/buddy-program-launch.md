@@ -2,6 +2,24 @@
 
 ## Production entry
 
+### My Buddies release
+
+The default student view is now **My Buddy** or **My Buddies**. School assignments are separate from community offers. The entry card uses the same 16px title, 12px description, square art and row spacing as the other Together cards. The new assigned view uses concise cards, a sprout accent, real names and direct replies. Bottom navigation and existing avatars are unchanged.
+
+Before testing real accounts, the founder runs `scripts/migration-buddy-assigned.sql` after the choice and open-access migrations. This adds pairing records, private requests, replies and aggregate reporting. Do not execute production SQL on the founder's behalf. No existing posts are changed or imported, no seed data is inserted and no emails are sent.
+
+1. Mentor: Together → Buddy Program → My Buddies → Add my Buddies. Paste school names and emails, review, then add.
+2. Student: sign in with the verified school email, join the same community and choose first year. My Buddy shows the pending pairing. Confirm it or mark it for correction.
+3. Student: Ask my Buddy. Mentor: Open/Reply. Only the student can mark the question resolved or reopen it. Resolution does not mint a token or count as a verified meeting.
+4. Active pages refresh every ten seconds and on window focus; Refresh is also available. This is polling, not a live message subscription. Drafts survive refresh and failed sends. Navigation warns about unsent changes.
+5. Coordinators can load aggregate assigned, pending, request, answered and resolved counts. The report excludes names and message bodies.
+
+Manual pairing claims do not expose account existence. The matching email's verified owner must confirm before either party can read private requests. Access continues to enforce community membership, active roles and blocks. A student can have one confirmed school mentor per program. Declined or conflicting assignments require coordinator correction. A bulk school-roster import UI is not part of this release.
+
+`/buddy-demo` uses the same assigned component with an in-memory API and no authentication requirement. Start from adding, or select **Load sample requests**. Use the Mentor/Student selector to test confirmation, direct replies and resolution. Milan Patel, Thomas Peng and Arza Sireen Ahmed are demo roster labels with the supplied `rotman.utoronto.ca` addresses; all requests and replies are synthetic. Nothing is automatically added to the real user's account. Demo state resets on reload.
+
+UX intent: ease and agency. The useful loop is an assigned student's question → mentor reply → student resolution → later follow-up. The next action stays visible without long onboarding instructions, invented progress or urgency. Success is answered/resolved requests and useful exchanges, not page visits. Existing community posts keep their original visibility; the new school-assigned area is named by design.
+
 Together → Buddy Program now loads `BuddyChoiceProgram`, not the older automatic-pairing page. It uses real RPCs and never loads sample posts or silently switches to the demo. If the new schema is missing, it shows a setup message and a retry button.
 
 ## Founder-run SQL
