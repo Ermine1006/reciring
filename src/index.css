@@ -67,8 +67,20 @@ body {
    fix never reached it. The 2rem floor matches the largest base padding
    any of these screens sets (py-8); env() is 0 in a desktop browser. */
 .safe-screen {
+  /* A BOUNDED height (not just min-height) is what makes overflow-y:auto
+     actually scroll. In the native app html/body/#root are all height:100%
+     with overscroll-behavior:none, so the document itself never scrolls;
+     a container that only sets min-height:100dvh grows past #root and its
+     top gets clipped and unreachable (the "Welcome to Mutu" logo hidden
+     behind the Dynamic Island after the keyboard opens, with no way to
+     scroll back up). Capping the height makes .safe-screen its own scroll
+     container: the card anchors to the top, and scrollTop snaps back to 0
+     when the keyboard closes and the content fits again. */
+  height: 100dvh;
+  max-height: 100dvh;
   align-items: flex-start;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   padding-top: max(2rem, env(safe-area-inset-top));
   padding-bottom: max(2rem, env(safe-area-inset-bottom));
 }
