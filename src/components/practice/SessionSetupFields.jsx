@@ -66,7 +66,7 @@ export default function SessionSetupFields({ value, onChange, supported = true, 
       )}
 
       <div>
-        <Label>Mock interview mode</Label>
+        <Label>Practice format</Label>
         <div style={{ display: 'grid', gap: 8 }}>
           {SESSION_MODE_KEYS.map((k) => {
             const m = SESSION_MODES[k]
@@ -88,9 +88,9 @@ export default function SessionSetupFields({ value, onChange, supported = true, 
                     {m.durationLabel}
                   </span>
                 </span>
-                <span style={{ display: 'block', marginTop: 3, fontSize: 11.5, color: C.ink2, lineHeight: 1.45 }}>
+                {(!compact || on) && <span style={{ display: 'block', marginTop: 3, fontSize: 11.5, color: C.ink2, lineHeight: 1.45 }}>
                   {m.description}
-                </span>
+                </span>}
               </button>
             )
           })}

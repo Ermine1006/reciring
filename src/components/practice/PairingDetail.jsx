@@ -113,8 +113,6 @@ export default function PairingDetail({
   const [date, setDate] = useState('')
   const [time, setTime] = useState('')
   const [duration, setDuration] = useState(pairing?.my_snapshot?.duration_minutes || 60)
-  const [locationType, setLocationType] = useState('virtual')
-  const [locationDetail, setLocationDetail] = useState('')
   const [err, setErr] = useState(null)
   // nothing is preselected: the user chooses a mode deliberately
   const [setup, setSetup] = useState({
@@ -151,7 +149,9 @@ export default function PairingDetail({
       // the mode decides the length people should expect
       durationMinutes: sessionModesSupported && setup.mode
         ? SESSION_MODES[setup.mode].approxMinutes : duration,
-      timezone: tz, locationType, locationDetail,
+      timezone: tz,
+      locationType: setup.meetingMethod === 'in_person' ? 'in_person' : 'virtual',
+      locationDetail: setup.meetingMethod === 'in_person' ? setup.meetingLocation : setup.meetingUrl,
       ...(sessionModesSupported
         ? { sessionMode: setup.mode, interviewCategory: setup.category, skillFocus: setup.skillFocus }
         : {}),
@@ -281,7 +281,7 @@ export default function PairingDetail({
         {/* Scheduling */}
         {(state === 'scheduling' || (state === 'verified' && scheduleAgain)) && (
           <Card>
-            <SectionLabel>Pick a time: one proposes, the other confirms</SectionLabel>
+            <SectionLabel>Plan your practice</SectionLabel>
             {shared.length > 0 && (
               <div style={{ marginBottom: 10 }}>
                 <p style={{ margin: '0 0 4px', fontSize: 11.5, color: C.ink2, fontFamily: FONT }}>You're both free:</p>
@@ -299,20 +299,11 @@ export default function PairingDetail({
               </div>
             )}
             <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
-              <input type="date" style={{ ...inputStyle, flex: 1.3 }} value={date} onChange={(e) => setDate(e.target.value)} />
-              <input type="time" style={{ ...inputStyle, flex: 1 }} value={time} onChange={(e) => setTime(e.target.value)} />
-              <select style={{ ...inputStyle, flex: 1 }} value={duration} onChange={(e) => setDuration(Number(e.target.value))}>
+              <input aria-label="Practice date" type="date" style={{ ...inputStyle, flex: 1.3 }} value={date} onChange={(e) => setDate(e.target.value)} />
+              <input aria-label="Practice time" type="time" style={{ ...inputStyle, flex: 1 }} value={time} onChange={(e) => setTime(e.target.value)} />
+              {!sessionModesSupported && <select aria-label="Duration" style={{ ...inputStyle, flex: 1 }} value={duration} onChange={(e) => setDuration(Number(e.target.value))}>
                 {DURATION_OPTIONS.map((d) => <option key={d} value={d}>{d} min</option>)}
-              </select>
-            </div>
-            <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
-              <select style={{ ...inputStyle, flex: 1 }} value={locationType} onChange={(e) => setLocationType(e.target.value)}>
-                <option value="virtual">Virtual</option>
-                <option value="in_person">In person</option>
-              </select>
-              <input style={{ ...inputStyle, flex: 1.6 }} value={locationDetail} maxLength={120}
-                onChange={(e) => setLocationDetail(e.target.value)}
-                placeholder={locationType === 'virtual' ? 'Zoom / Meet / Teams link' : 'Where?'} />
+              </select>}
             </div>
             <p style={{ margin: '0 0 10px', fontSize: 11, color: C.ink3, fontFamily: FONT }}>
               Times are in {tz.replace('America/', '')} time.
