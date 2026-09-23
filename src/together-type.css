@@ -1,6 +1,24 @@
 /* A calm, consistent heading system for Together's feature cards and pages.
    Local fonts avoid a font download and keep Chinese fallbacks available. */
 :root { --mutu-feature-font: 'Avenir Next', Avenir, ui-rounded, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+/* These views contain legacy inline font declarations. Override the family
+   consistently for text and form controls, while preserving icon SVGs. */
+:is(.mutu-together,.practice-quest,.mutu-story-garden,.bc-shell,.ba-root,.bc-dialog,.garden-dialog),
+:is(.mutu-together,.practice-quest,.mutu-story-garden,.bc-shell,.ba-root,.bc-dialog,.garden-dialog) :is(h1,h2,h3,h4,p,span,small,strong,em,label,legend,summary,button,input,textarea,select,a,li,dt,dd) {
+  font-family:var(--mutu-feature-font)!important;
+}
+:root .mutu-connection-card>h3 {
+  font-family:var(--mutu-feature-font)!important; font-size:16px!important;
+  font-weight:650!important; line-height:1.3!important; letter-spacing:-.015em!important;
+}
+:root .mutu-connection-card>p {
+  font-family:var(--mutu-feature-font)!important; font-size:12px!important;
+  font-weight:400!important; line-height:1.5!important; letter-spacing:normal!important;
+}
+:root .mutu-connection-card>button {
+  font-family:var(--mutu-feature-font)!important; font-size:13px!important;
+  font-weight:650!important; line-height:1.4!important; letter-spacing:normal!important;
+}
 :root .mutu-story-garden h1,
 .bc-shell.bc-program .bc-program-header h1 {
   font-family:var(--mutu-feature-font); font-size:26px; font-weight:650;

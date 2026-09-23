@@ -1,6 +1,6 @@
 /* Use the shared Together row, square artwork and glass treatment. */
 .mutu-connection-card.buddy-entry > .mutu-connection-art {
-  background-image: url('/illustrations/buddy-campus-walk.webp');
+  background-image: url('/illustrations/buddy-campus-pixel.webp');
   background-size: cover;
   background-position: center;
 }
