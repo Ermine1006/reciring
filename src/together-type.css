@@ -1,0 +1,32 @@
+/* A calm, consistent heading system for Together's feature cards and pages.
+   Local fonts avoid a font download and keep Chinese fallbacks available. */
+:root { --mutu-feature-font: 'Avenir Next', Avenir, ui-rounded, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+:root .mutu-story-garden h1,
+.bc-shell.bc-program .bc-program-header h1 {
+  font-family:var(--mutu-feature-font); font-size:26px; font-weight:650;
+  line-height:1.25; letter-spacing:-.025em; color:#35452f;
+}
+:root .mutu-story-garden h2,
+:root .mutu-story-garden .g-paper h2,
+:root .mutu-story-garden .g-collection h2,
+.bc-shell.bc-program .bc-intro h2,
+.bc-shell .ba-root .ba-hero h2,
+.practice-quest h2 {
+  font-family:var(--mutu-feature-font); font-size:22px; font-weight:650;
+  line-height:1.3; letter-spacing:-.02em; color:#35452f;
+}
+:root .mutu-story-garden .g-home-entry h2 { font-size:23px; margin:10px 0 8px; }
+.bc-shell .ba-root .ba-hero h2 { max-width:22ch; margin:8px 0; }
+.bc-shell .ba-root .ba-card h3,
+.mutu-connection-card>h3,
+.mutu-connection-card.buddy-entry>h3 {
+  font-family:var(--mutu-feature-font); font-size:18px; font-weight:650;
+  line-height:1.3; letter-spacing:-.015em;
+}
+.mutu-story-garden .g-eyebrow { font-size:10px; letter-spacing:.1em; font-weight:600; }
+.mutu-story-garden .g-home-entry>p { font-size:14px; line-height:1.55; margin:8px 0 16px; }
+.bc-shell.bc-program .bc-program-header>p { font-size:14px; }
+@media(max-width:380px) {
+  :root .mutu-story-garden h1,.bc-shell.bc-program .bc-program-header h1 { font-size:24px; }
+  .bc-shell .ba-root .ba-hero h2,:root .mutu-story-garden .g-home-entry h2 { font-size:21px; }
+}
