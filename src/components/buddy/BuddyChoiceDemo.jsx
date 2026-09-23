@@ -5,6 +5,7 @@ import AppScreen from '../AppScreen'
 import { HELP_TYPES } from '../../data/requestOptions'
 import { matchaCta } from '../../lib/matchaCta'
 import './choice-demo.css'
+import './buddy-actions.css'
 import { RecommendationCards, DEMO_BUDDIES } from './BuddyRecommendations'
 
 const sampleDraft = { title: 'Finding my feet at Rotman and exploring finance', details: 'I’m a first-year MBA student moving from engineering into finance. I’d love advice on recruiting, choosing clubs and settling into Toronto.', offers: 'Happy to share Python skills and practical AI tools for coursework.', helpType: ['Coffee Chat', 'Advice'], industry: ['Finance'] }
@@ -13,7 +14,7 @@ const initialPosts = [
  { id:'consulting', needs:'Getting started with consulting recruiting\n\nI’m new to case interviews and would love an upper-year buddy’s perspective on planning practice alongside first-year classes.', offers:'Happy to share consumer research experience and help with presentation design.', time:'30 min', helpType:['Advice'], tags:['Advice','Consulting'], is_anonymous:true },
  { id:'community', needs:'Finding my community at Rotman\n\nI’ve just moved to Toronto. I’d love to hear how you made friends, chose clubs and found your routine during the first term.', offers:'I enjoy cooking and would be happy to share easy recipes or practise conversational Mandarin.', time:'15 min', helpType:['Coffee Chat'], tags:['Coffee Chat'], is_anonymous:true },
 ]
-export function Button({ primary, children, ...props }) { return <button className="bc-button" style={primary?matchaCta:undefined} type="button" {...props}>{children}</button> }
+export function Button({ primary, children, className = '', style, ...props }) { return <button type="button" {...props} className={`bc-button ${primary ? 'bc-button-primary' : ''} ${className}`} style={{ ...(primary ? matchaCta : {}), ...style }}>{children}</button> }
 export function Post({ post }) { return <><div className="bc-meta"><span>{post.helpType?.[0] || 'Advice'}</span><span>{post.time}</span><small>{post.is_anonymous?'First-year student':`${post.name || 'First-year student'} · First-year student`}</small></div><p className="bc-label">Looking for</p><p className="bc-copy">{post.needs}</p><p className="bc-label bc-give">Also happy to help with</p><p className="bc-copy">{post.offers || 'Open to discovering how I can help.'}</p><div className="bc-tags">{post.tags?.map(t=><span key={t}>{t}</span>)}</div></> }
 export function Preview({post,onClose,children}) {
  const ref=useRef(null)

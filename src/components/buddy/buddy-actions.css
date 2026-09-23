@@ -1,0 +1,47 @@
+/* Clear action surfaces across Buddy views, including portalled previews.
+   Matcha indicates the next action; quiet controls still look tappable. */
+.bc-shell .bc-button,.ba-root .bc-button,.bc-dialog .bc-button,
+.bc-shell .br-section>header button,.bc-shell .br-actions button {
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  min-height:44px; padding:10px 16px; border:1px solid #d9dfcd;
+  border-radius:15px; background:linear-gradient(145deg,#fffef9,#f0f3e9);
+  color:#4d603b; font:600 13px/1.4 Inter,system-ui,sans-serif;
+  box-shadow:inset 0 1px 1px #fff,0 3px 8px #3445220b;
+  text-decoration:none; cursor:pointer; white-space:normal; text-align:center;
+  transition:background-color .15s,box-shadow .15s,transform .15s;
+}
+.bc-shell.bc-program .bc-back,.bc-shell.bc-program .bc-year-setting .bc-button,
+.ba-root .ba-footer .bc-button { padding:10px 14px; border:1px solid #d9dfcd; background:linear-gradient(145deg,#fffef9,#f0f3e9); }
+.bc-shell.bc-program .bc-back { display:inline-flex; margin-bottom:12px; }
+.bc-shell.bc-program .bc-tabs { display:grid; grid-template-columns:repeat(auto-fit,minmax(105px,1fr)); padding:5px; gap:6px; border-radius:20px; background:#faf9f3; }
+.bc-shell.bc-program .bc-tabs .bc-button { border:1px solid #e5e4da; background:#fffef9; border-radius:14px; white-space:normal; padding:11px 8px; }
+.bc-shell.bc-program .bc-tabs .bc-button[aria-pressed=true] { color:#fff; background:linear-gradient(145deg,#87966a,#627448); border-color:#75865a; box-shadow:inset 0 2px 2px #ffffff55,0 2px 6px #56673520; }
+.bc-shell .bc-year-setting { flex-wrap:wrap; padding:10px 12px; border-radius:16px; background:#fffdf8; border:1px solid #ebe5d7; }
+.bc-shell .bc-year-setting>span { flex:1; min-width:110px; }
+.bc-shell .br-profile>summary,.bc-shell .br-content details>summary,.ba-root .ba-report>summary {
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  min-height:48px; padding:12px 14px; box-sizing:border-box; list-style:none;
+  border:1px solid #dedcc9; border-radius:14px; background:#fffdf6;
+  color:#4e603e; font-size:13px; font-weight:650; cursor:pointer;
+  box-shadow:0 2px 6px #4a542510;
+}
+.bc-shell .br-profile>summary::-webkit-details-marker,.bc-shell .br-content details>summary::-webkit-details-marker,.ba-root .ba-report>summary::-webkit-details-marker { display:none; }
+.bc-shell .br-profile>summary::after,.bc-shell .br-content details>summary::after,.ba-root .ba-report>summary::after { content:'⌄'; font-size:20px; line-height:1; flex-shrink:0; }
+.bc-shell .br-profile[open]>summary::after,.bc-shell .br-content details[open]>summary::after,.ba-root .ba-report[open]>summary::after { transform:rotate(180deg); }
+.bc-shell .br-profile { padding:12px; border:1px solid #e4dfcf; }
+.bc-shell .br-profile>summary { margin:0; }
+.bc-shell .br-profile>.bc-button { margin-top:12px; }
+.bc-shell .bc-preview-link { display:inline-flex; align-items:center; justify-content:center; min-height:44px; margin-top:14px; padding:8px 14px; border:1px solid #cfd9bf; border-radius:14px; color:#4d603b; background:#eef3e6; font-weight:650; box-sizing:border-box; }
+.bc-shell .bc-open { border-radius:12px; }
+.bc-shell .bc-actions { gap:10px; align-items:stretch; }
+.bc-shell .bc-actions>.bc-button-primary { width:100%; }
+.ba-root .ba-card>.bc-button { display:flex; width:100%; margin:0; }
+.ba-root .ba-footer { flex-wrap:wrap; }
+.ba-root .ba-footer .bc-button { flex:1; }
+.ba-root .ba-cta { background:linear-gradient(145deg,#89986b,#64774b); border:1px solid #75865a; box-shadow:inset 0 2px 3px #ffffff60,0 3px 8px #56673518; border-radius:15px; }
+.ba-root .ba-request { cursor:pointer; box-shadow:0 3px 8px #3445220b; min-height:48px; }
+.bc-shell button:focus-visible,.bc-dialog button:focus-visible,.ba-root summary:focus-visible,.bc-shell summary:focus-visible { outline:3px solid #687e4d; outline-offset:3px; }
+.bc-shell button:disabled,.ba-root button:disabled,.bc-dialog button:disabled { opacity:.5; cursor:not-allowed; }
+@media(hover:hover) { .bc-shell .bc-button:not(:disabled):hover,.ba-root .bc-button:not(:disabled):hover { box-shadow:0 4px 12px #34452224; } }
+@media(max-width:480px) { .bc-shell .br-card { flex-wrap:wrap; }.bc-shell .br-actions { width:100%; flex-direction:row; padding-left:0; }.bc-shell .br-actions button { flex:1; }.bc-shell .br-section>header { flex-wrap:wrap; }.bc-shell .bc-toolbar { flex-wrap:wrap; } }
+@media(prefers-reduced-motion:reduce) { .bc-shell .bc-button,.ba-root .bc-button { transition:none; } }
