@@ -68,7 +68,7 @@ export default function BuddyAssigned({program,role,rpc=buddyRpc,initialRoster='
     </>}
    </>}
   </>:<>
-   <div className="ba-hero"><div><span className="ba-eyebrow">School assigned</span><h2>{upper?'Meet your Buddy crew':'Your Buddy, right here.'}</h2><p>A little help goes a long way.</p></div><Sprout className="ba-sprout" aria-hidden="true"/></div>
+   <div className="ba-hero"><div><span className="ba-eyebrow">School assigned</span><h2>{upper?'Meet your Buddy crew':'Your Buddy, right here.'}</h2><p>A little help goes a long way.</p></div><span className="ba-hero-art" aria-hidden="true"/></div>
    {upper&&!pairs.length&&<Button primary disabled={busy} onClick={()=>setAdd(true)}>Add my Buddies →</Button>}
    {pairs.map(p=>{const needs=p.requests?.find(r=>!r.resolved&&!r.replied),latest=needs||p.requests?.[0];return <article className="ba-card" key={p.id}><div className="ba-card-head"><h3>{p.name}</h3><span className="ba-status">{p.status==='pending'?'Confirm pairing':p.status==='declined'?'Check pairing':status(latest)}</span></div><p>{p.status==='confirmed'?(latest?.body||'A little help starts here.'):(upper?'Waiting to connect your accounts.':'Your school pairing is ready.')}</p><Button primary={p.status==='confirmed'&&!!needs} disabled={busy} onClick={()=>move(()=>{setPairId(p.id);setRequestId(latest?.id||null);setAsking(false)})}>{p.status==='pending'&&!upper?'Confirm':needs&&upper?'Reply →':'Open →'}</Button></article>})}
    {!upper&&!pairs.length&&!error&&<div className="ba-empty"><h3>Ready when you are.</h3><p>Your mentor can add your verified school email.</p></div>}

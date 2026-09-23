@@ -6,6 +6,7 @@ import { HELP_TYPES } from '../../data/requestOptions'
 import { matchaCta } from '../../lib/matchaCta'
 import './choice-demo.css'
 import './buddy-actions.css'
+import './buddy-ivory.css'
 import { RecommendationCards, DEMO_BUDDIES } from './BuddyRecommendations'
 
 const sampleDraft = { title: 'Finding my feet at Rotman and exploring finance', details: 'I’m a first-year MBA student moving from engineering into finance. I’d love advice on recruiting, choosing clubs and settling into Toronto.', offers: 'Happy to share Python skills and practical AI tools for coursework.', helpType: ['Coffee Chat', 'Advice'], industry: ['Finance'] }
