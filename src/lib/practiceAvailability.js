@@ -38,7 +38,8 @@ const PRESETS = {
 }
 
 export const AVAILABILITY_PRESETS = [
-  { id: 'weekday_evenings', label: 'Weekday evenings this week', detail: 'Mon to Fri · 6 to 9 PM' },
+  { id: 'none', label: 'Decide together', detail: 'Arrange a time after matching' },
+  { id: 'weekday_evenings', label: 'Weekday evenings', detail: 'Mon to Fri · 6 to 9 PM' },
   { id: 'weekend_mornings', label: 'Weekend mornings',           detail: 'Sat and Sun · 9 AM to 12 PM' },
   { id: 'exact',            label: 'Pick exact times',           detail: 'Choose your own dates and hours' },
 ]

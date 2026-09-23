@@ -1,3 +1,4 @@
+import PresetOption from './AvailabilityPresetOption'
 import { useState } from 'react'
 import {
   PILOT_PRACTICE_TYPES, PRACTICE_TYPE_LABELS, DURATION_OPTIONS,
@@ -71,31 +72,6 @@ function TypeChips({ selected, onToggle, label }) {
 
 const LAST_STEP = 2
 
-function PresetOption({ preset, selected, onSelect, tzLabel }) {
-  return (
-    <button data-mutu-glass="" type="button" role="radio" aria-checked={selected}
-      onClick={() => onSelect(preset.id)}
-      className="active:scale-[0.98] transition-all"
-      style={{
-        width: '100%', textAlign: 'left', minHeight: 64, padding: '13px 15px',
-        border: `1.5px solid ${selected ? MATCHA_DEEP : C.line}`, borderRadius: 16,
-        background: selected ? '#F0F2E8' : C.white, cursor: 'pointer',
-        display: 'flex', alignItems: 'center', gap: 12, fontFamily: FONT,
-      }}>
-      <span aria-hidden="true" style={{
-        width: 20, height: 20, borderRadius: '50%', boxSizing: 'border-box', flexShrink: 0,
-        border: selected ? `6px solid ${MATCHA_DEEP}` : `1.5px solid ${C.ink3}`,
-        background: C.white,
-      }} />
-      <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-        <span style={{ fontSize: 14.5, fontWeight: 700, color: C.ink }}>{preset.label}</span>
-        <span style={{ fontSize: 12.5, color: C.ink2 }}>
-          {preset.detail}{preset.id === 'exact' ? '' : ` ${tzLabel}`}
-        </span>
-      </span>
-    </button>
-  )
-}
 
 function MoreDetails({ open, onToggle, children }) {
   return (
@@ -158,7 +134,7 @@ export default function PracticeSetupFlow({ existing, existingWindows = [], onSa
     // partners book you instantly). The database has no requirement.
     // A preset expands into the same wall-time shape the typed form
     // produces, so everything below this line is unchanged by it.
-    const source = isPresetAutomatic(preset) ? presetToWindows(preset, tz) : windows
+    const source = isPresetAutomatic(preset) ? presetToWindows(preset, tz) : preset === 'exact' ? windows : []
     const valid = source.filter((w) => w.date && w.start && w.end)
     const converted = []
     for (const w of valid) {
@@ -255,9 +231,9 @@ export default function PracticeSetupFlow({ existing, existingWindows = [], onSa
               ))}
             </div>
 
-            {preset !== 'exact' && (
+            {isPresetAutomatic(preset) && (
               <p style={{ fontSize: 12.5, color: C.ink2, margin: '0 0 4px', lineHeight: 1.5, fontFamily: FONT }}>
-                We will offer {presetToWindows(preset, tz).length} windows from this. You can change them any time.
+                Upcoming dates: {presetToWindows(preset, tz).map(w => w.date).join(', ')}. You can change them any time.
               </p>
             )}
 

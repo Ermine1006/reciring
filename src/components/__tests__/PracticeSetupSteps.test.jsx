@@ -46,7 +46,7 @@ describe('practice setup, two steps', () => {
     openFlow()
     completeStepOne()
     expect(screen.getByText('Step 2 of 2')).toBeTruthy()
-    expect(screen.getByRole('radio', { name: /Weekday evenings this week/ }).getAttribute('aria-checked')).toBe('true')
+    expect(screen.getByRole('radio', { name: /Weekday evenings/ }).getAttribute('aria-checked')).toBe('true')
     expect(screen.getByRole('radio', { name: /Pick exact times/ })).toBeTruthy()
     // The typed date fields stay out of the way until asked for.
     expect(document.querySelector('input[type="date"]')).toBeNull()

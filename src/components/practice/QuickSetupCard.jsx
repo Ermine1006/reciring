@@ -3,6 +3,8 @@ import { PILOT_PRACTICE_TYPES, PRACTICE_TYPE_SHORT } from '../../data/practiceOp
 import { wallTimeToUtc } from '../../lib/practiceMatching'
 import { MATCHA_DEEP, MATCHA_SOFT } from '../../lib/matchaCta'
 import PracticePreferenceFields, { practicePreferenceDraft } from './PracticePreferenceFields'
+import AvailabilityPresetOption from './AvailabilityPresetOption'
+import { AVAILABILITY_PRESETS, presetToWindows, isPresetAutomatic } from '../../lib/practiceAvailability'
 
 // One-card setup: two questions, one CTA, under 15 seconds.
 //   I want to practise · I can help with → [ Find my teammate → ]
@@ -53,12 +55,12 @@ export default function QuickSetupCard({ saving, onPublish, preferenceValue }) {
   const [help, setHelp] = useState([])
   const [showTimes, setShowTimes] = useState(false)
   const [windows, setWindows] = useState([])
+  const [timePreset, setTimePreset] = useState('none')
   const [err, setErr] = useState(null)
   const [preferences, setPreferences] = useState(preferenceValue || {})
   const [confirmedPreferences, setConfirmedPreferences] = useState(preferenceValue || {})
   const [preferenceStatus, setPreferenceStatus] = useState('')
   const personalise = useRef(null)
-  const practiceTypes = useRef(null)
   const request = { want_types: want, help_types: help }
   const draft = practicePreferenceDraft(preferences, request)
   const confirmedDraft = practicePreferenceDraft(confirmedPreferences, request)
@@ -83,7 +85,8 @@ export default function QuickSetupCard({ saving, onPublish, preferenceValue }) {
   const publish = () => {
     setErr(null)
     const converted = []
-    for (const w of windows.filter((x) => x.date && x.start && x.end)) {
+    const source = isPresetAutomatic(timePreset) ? presetToWindows(timePreset, 'America/Toronto') : timePreset === 'exact' ? windows : []
+    for (const w of source.filter((x) => x.date && x.start && x.end)) {
       const starts_at = wallTimeToUtc(w.date, w.start, 'America/Toronto')
       const ends_at = wallTimeToUtc(w.date, w.end, 'America/Toronto')
       if (ends_at <= starts_at) return setErr('Each time must end after it starts.')
@@ -105,10 +108,8 @@ export default function QuickSetupCard({ saving, onPublish, preferenceValue }) {
         One round each. Names unlock when you both accept.
       </p>
 
-      <div ref={practiceTypes}>
       <TypeRow label="I want to practise" selected={want} onToggle={toggle(want, setWant)} />
       <TypeRow label="I can help with" selected={help} onToggle={toggle(help, setHelp)} />
-      </div>
 
       {preferenceValue && <>
         <details ref={personalise} className="quest-setup-personalise">
@@ -121,11 +122,9 @@ export default function QuickSetupCard({ saving, onPublish, preferenceValue }) {
           </div>
           <p className="quest-setup-preference-status">Saved with Find my teammate.</p>
           </> : <div className="quest-setup-preference-empty">
-            <p>Choose what you want to practise and can help with first.</p>
-            <button type="button" className="quest-secondary" onClick={() => {
-              const rows = practiceTypes.current.children
-              rows[want.length ? 1 : 0].querySelector('button')?.focus()
-            }}>Choose practice types</button>
+            <p>Choose below to see your skill options.</p>
+            {!want.length && <TypeRow label="I want to practise" selected={want} onToggle={toggle(want, setWant)} />}
+            {!help.length && <TypeRow label="I can help with" selected={help} onToggle={toggle(help, setHelp)} />}
           </div>}
         </details>
         {(choicesChanged || preferenceStatus) && <p className="quest-setup-preference-status" role="status">{choicesChanged ? 'Choices not confirmed yet. Find my teammate will save them.' : preferenceStatus}</p>}
@@ -138,6 +137,15 @@ export default function QuickSetupCard({ saving, onPublish, preferenceValue }) {
       </button>
       {showTimes && (
         <div style={{ marginTop: 9 }}>
+          <div role="radiogroup" aria-label="When you are free" style={{ display: 'grid', gap: 8 }}>
+            {AVAILABILITY_PRESETS.map(preset =>
+              <AvailabilityPresetOption key={preset.id} preset={preset} selected={timePreset === preset.id}
+                tzLabel={preset.id === 'none' ? '' : 'Toronto'} onSelect={setTimePreset} />)}
+          </div>
+          {isPresetAutomatic(timePreset) && <p className="quest-setup-preference-status">
+            Upcoming dates: {presetToWindows(timePreset, 'America/Toronto').map(w => w.date).join(', ')}. Saved with Find my teammate.
+          </p>}
+          {timePreset === 'exact' && <>
           {windows.map((w, i) => (
             <div key={i} style={{ background: '#FAF9F5', border: `1px solid ${C.line}`, borderRadius: 12, padding: 8, marginBottom: 7 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
@@ -157,8 +165,9 @@ export default function QuickSetupCard({ saving, onPublish, preferenceValue }) {
             style={{ border: `1px dashed ${C.goldLight}`, background: C.goldBg, color: C.goldDark, borderRadius: 9, padding: '7px 12px', fontSize: 12, fontWeight: 600, fontFamily: FONT, cursor: 'pointer' }}>
             + Another time
           </button>
+          </>}
           <p style={{ margin: '6px 0 0', fontSize: 11, color: C.ink3, fontFamily: FONT }}>
-            Toronto time. Times help partners book you instantly, but matching works without them.
+            Toronto time. Availability is optional.
           </p>
         </div>
       )}

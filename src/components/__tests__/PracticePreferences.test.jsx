@@ -7,6 +7,25 @@ import QuickSetupCard from '../practice/QuickSetupCard'
 import { practicePreferenceDraft } from '../practice/PracticePreferenceFields'
 
 afterEach(cleanup)
+it('publishes future weekday evenings and lets users clear availability', () => {
+  const publish = vi.fn()
+  render(<QuickSetupCard onPublish={publish} />)
+  screen.getAllByRole('button', { name: 'Case' }).forEach(button => fireEvent.click(button))
+  fireEvent.click(screen.getByRole('button', { name: /Add preferred times/ }))
+  expect(document.querySelector('input[type="date"]')).toBeNull()
+  fireEvent.click(screen.getByRole('radio', { name: /Weekday evenings/ }))
+  fireEvent.click(screen.getByRole('button', { name: 'Find my teammate →' }))
+  expect(publish.mock.calls[0][0].windows).toHaveLength(3)
+  for (const window of publish.mock.calls[0][0].windows) {
+    expect(new Date(window.starts_at).getTime()).toBeGreaterThan(Date.now())
+    expect(new Intl.DateTimeFormat('en-US', { timeZone: 'America/Toronto', hour: 'numeric', hour12: false }).format(new Date(window.starts_at))).toBe('18')
+  }
+  fireEvent.click(screen.getByRole('radio', { name: /Pick exact times/ }))
+  expect(document.querySelector('input[type="date"]')).toBeTruthy()
+  fireEvent.click(screen.getByRole('radio', { name: /Decide together/ }))
+  fireEvent.click(screen.getByRole('button', { name: 'Find my teammate →' }))
+  expect(publish.mock.calls[1][0].windows).toEqual([])
+})
 it('returns focus and preserves a draft when the preferences sheet closes', () => {
   render(<RecommendationPreferences value={{ focus_skills: [], support_skills: [] }} request={{want_types:['case'],help_types:['case']}} />)
   const trigger = screen.getByRole('button', { name: /Personalise my practice/ })
@@ -82,22 +101,27 @@ it('allows optional skills and starting experience before the first request', ()
   expect(publish).toHaveBeenCalledWith({ wantTypes: ['case'], helpTypes: ['case'], windows: [],
     preferences: { ...value, focus_skills: ['synthesis'], prior_practice: { case: '11_to_20' } } })
 })
-it('replaces empty skill cards with a prompt that focuses the missing practice type', () => {
-  render(<QuickSetupCard preferenceValue={value} onPublish={vi.fn()} />)
+it('lets users choose missing types inside personalisation and immediately shows skills', () => {
+  const publish = vi.fn()
+  render(<QuickSetupCard preferenceValue={value} onPublish={publish} />)
   fireEvent.click(screen.getByText('Personalise my practice · Optional'))
   expect(document.querySelector('fieldset')).toBeNull()
   expect(screen.queryByRole('button', { name: 'Confirm choices' })).toBeNull()
-  const cases = screen.getAllByRole('button', { name: 'Case' })
-  fireEvent.click(screen.getByRole('button', { name: 'Choose practice types' }))
-  expect(document.activeElement).toBe(cases[0])
-  fireEvent.click(cases[0])
+  const panel = within(screen.getByText('Personalise my practice · Optional').closest('details'))
+  fireEvent.click(panel.getAllByRole('button', { name: 'Case' })[0])
+  expect(screen.getByRole('button', { name: '✓ Case' }).getAttribute('aria-pressed')).toBe('true')
   expect(document.querySelector('fieldset')).toBeNull()
-  fireEvent.click(screen.getByRole('button', { name: 'Choose practice types' }))
-  expect(document.activeElement).toBe(cases[1])
-  fireEvent.click(cases[1])
+  fireEvent.click(panel.getByRole('button', { name: 'Behavioural' }))
   expect(screen.getByRole('group', { name: 'What would you like to work on?' })).toBeTruthy()
   expect(screen.getByRole('combobox', { name: 'Case interview' })).toBeTruthy()
   expect(screen.queryByRole('button', { name: 'Choose practice types' })).toBeNull()
+  fireEvent.click(focusButton('Synthesis'))
+  fireEvent.click(screen.getByRole('button', { name: 'Story selection' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Find my teammate →' }))
+  expect(publish).toHaveBeenCalledWith(expect.objectContaining({
+    wantTypes: ['case'], helpTypes: ['behavioural'],
+    preferences: expect.objectContaining({ focus_skills: ['synthesis'], support_skills: ['story_selection'] }),
+  }))
 })
 it('confirms optional choices locally and cancels later edits without publishing', () => {
   const publish = vi.fn()
