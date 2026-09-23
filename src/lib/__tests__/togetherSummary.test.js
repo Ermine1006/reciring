@@ -28,10 +28,10 @@ describe('page identity and positioning (tests 1, 2, 3, 4)', () => {
     const ids = CONNECTION_CARDS.map((c) => c.id)
     expect(ids).toEqual(['one_on_one', 'groups'])
     const [mock, groups] = CONNECTION_CARDS
-    expect(mock.title).toBe('Practice Quest')
+    expect(mock.title).toBe('Practice Together')
     expect(groups.title).toBe('Groups & Events')
     // both are real cards with their own call to action
-    expect(mock.cta).toBe('Let’s play')
+    expect(mock.cta).toBe('Find my teammate')
     expect(groups.cta).toBe('Explore events')
     expect(Object.keys(mock).sort()).toEqual(Object.keys(groups).sort())
   })
@@ -42,7 +42,7 @@ describe('page identity and positioning (tests 1, 2, 3, 4)', () => {
     for (const t of ['consulting', 'case interview', 'mock']) expect(words).not.toContain(t)
     expect(groups.sub).toBe('Learn, share interests and meet your community')
     // ...while Mock Interview is allowed to say what it is
-    expect(CONNECTION_CARDS.find((c) => c.id === 'one_on_one').sub).toContain('teammate')
+    expect(CONNECTION_CARDS.find((c) => c.id === 'one_on_one').sub).toContain('practice partner')
   })
 
   it('routes each card to the flow that already exists (tests 5, 6)', () => {

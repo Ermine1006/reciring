@@ -275,6 +275,7 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
   const [feedbackSupported, setFeedbackSupported] = useState(false)
   const [myFeedback, setMyFeedback] = useState([])
   const [recommendationPreferences, setRecommendationPreferences] = useState(null)
+  const [preferenceLoadError, setPreferenceLoadError] = useState(false)
   const [tokenModal, setTokenModal] = useState(null)
   const [edges, setEdges] = useState([])
 
@@ -362,11 +363,13 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
       setBrowseLoading(true)
       try {
         const [{ data: rows, error }, prefs] = await Promise.all([browsePracticeRequests(comm.id), fetchPracticeRecommendationPreferences(comm.id)])
-        setRecommendationPreferences(prefs.supported ? prefs.data : null)
+        if (prefs.supported) setRecommendationPreferences(prefs.data)
+        setPreferenceLoadError(!prefs.supported)
         setBrowseError(Boolean(error))
         setBrowseRows(error ? [] : (rows || []))
       } catch {
         setBrowseError(true)
+        setPreferenceLoadError(true)
         setBrowseRows([])
       } finally { setBrowseLoading(false) }
     }
@@ -548,7 +551,7 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
   // ── Actions ────────────────────────────────────────────────────
   // Quick publish from the one-card setup: sensible defaults, saved in
   // the background, results replace the card in place.
-  const quickPublish = async ({ wantTypes, helpTypes, windows }) => {
+  const quickPublish = async ({ wantTypes, helpTypes, windows, preferences }) => {
     setSaving(true); setBanner(null)
     if (demoMode) {
       setMyRequest({
@@ -557,6 +560,7 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
         duration_minutes: DEFAULT_DURATION_MINUTES, timezone: DEFAULT_TIMEZONE, status: 'active',
       })
       setMyWindows(windows.map((w, i) => ({ id: `demo-w-mine-${i}`, ...w })))
+      if (preferences) setRecommendationPreferences(preferences)
       setSaving(false)
       flashInline("You're now available for matching. (Demo mode: nothing was saved.)")
       return
@@ -567,14 +571,22 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
       locationType: 'virtual', durationMinutes: DEFAULT_DURATION_MINUTES, timezone: DEFAULT_TIMEZONE,
     })
     if (fail(error)) { setSaving(false); return }
+    let detailsFailed = false
     if (windows.length > 0) {
       const { error: winErr } = await replaceAvailabilityWindows(req.id, windows)
-      if (winErr) console.warn('[Exchange] windows save failed:', winErr.message || winErr)
+      detailsFailed = Boolean(winErr)
+    }
+    if (preferences) {
+      try {
+        const result = await savePracticeRecommendationPreferences(community.id, preferences)
+        detailsFailed = detailsFailed || Boolean(result.error)
+      } catch { detailsFailed = true }
     }
     track('practice_request_created', { community_id: community.id })
     await loadAll()
     setSaving(false)
-    flashInline("You're now available for matching.")
+    if (detailsFailed) setBanner('Your practice types are saved. Some optional details could not be saved. Open Personalise my practice to review them.')
+    else flashInline("You're now available for matching.")
   }
 
   // Advanced editor (Edit preferences) still saves the full shape.
@@ -996,7 +1008,7 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
                 Together
               </button>
               <h1 style={{ margin: '2px 0 0', fontSize: 24, fontWeight: 750, color: C.ink, letterSpacing: '-0.02em', fontFamily: FONT }}>
-                Practice Quest
+                Practice Together
               </h1>
               <p style={{ margin: '4px 0 0', fontSize: 13, color: C.ink2, lineHeight: 1.45, fontFamily: FONT }}>
                 Interview practice. Better together.
@@ -1009,19 +1021,24 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
 
             {banner && <p role="alert" style={{ margin: '12px 16px', color: '#8A6E1E' }}>{banner}</p>}
             {inlineNote && <p role="status" style={{ margin: '12px 16px', color: MATCHA_DEEP }}>{inlineNote}</p>}
+            {preferenceLoadError && recommendationPreferences && <p role="alert" style={{ margin: '12px 16px', color: C.ink2 }}>Could not refresh preferences. Your current edits are still here.</p>}
             <PracticeQuest recommendationSettings={recommendationPreferences && myRequest ? <RecommendationPreferences communityId={community.id} onSharingChange={loadAll}
               key={myRequest.id + JSON.stringify(myRequest.want_types) + JSON.stringify(myRequest.help_types)}
               value={recommendationPreferences} request={myRequest}
+              onEditTypes={() => setSetupOpen(1)} onTimes={() => setSetupOpen(3)}
               suggestions={feedbackFocusSuggestions(myFeedback, sessions, userId)}
               onSave={async value => {
                 const result = await savePracticeRecommendationPreferences(community.id, value)
-                if (!result.error) await loadAll()
+                if (!result.error) { setRecommendationPreferences(value); await loadAll() }
                 return result
-              }} /> : null} browseError={browseError} browseLoading={browseLoading} onRetry={loadAll} request={myRequest} windowsStale={myWindowsStale} rows={fitRows}
+              }} /> : null} preferenceValue={recommendationPreferences}
+              recommendationKey={JSON.stringify(recommendationPreferences)}
+              browseError={browseError} browseLoading={browseLoading} onRetry={loadAll} request={myRequest} windowsStale={myWindowsStale} rows={fitRows}
               pairings={pairings} names={namesById} passport={passport} saving={saving} busyId={busyId}
               onPublish={quickPublish} onPreferences={() => setSetupOpen(1)} onTimes={() => setSetupOpen(3)}
               onLeave={withdrawRequest} onInvite={invite} onAccept={accept} onDecline={decline} onWithdraw={withdraw}
               onChat={onOpenChat} onPractice={(id) => setDetailId(id)}
+              onSessions={() => setView('mine')}
               onProgress={() => { setPassportOpen(true); track('passport_opened') }} />
           </div>
         </AppScreen>

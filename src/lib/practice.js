@@ -516,14 +516,22 @@ export function fetchMyRelationshipGraph(communityId) {
 // Private recommendation preferences. Database migration is applied manually by the founder.
 export async function fetchPracticeRecommendationPreferences(communityId) {
   if (!isSupabaseConfigured || !communityId) return { data: null, supported: false }
+  // The additive RPC includes private starting experience. Only a missing
+  // function permits legacy fallback; auth/network failures stay visible.
+  const extended = await supabase.rpc('practice_personal_preferences_get', { p_community_id: communityId })
+  if (!['PGRST202', '42883'].includes(extended.error?.code)) {
+    return { ...extended, supported: !extended.error }
+  }
   const { data, error } = await supabase.rpc('practice_recommendation_preferences_get', { p_community_id: communityId })
   return { data, error, supported: !error }
 }
 export async function savePracticeRecommendationPreferences(communityId, preferences) {
   if (!isSupabaseConfigured || !communityId) return { error: new Error('Not connected') }
-  return supabase.rpc('practice_recommendation_preferences_save', {
+  const extended = preferences.prior_practice_supported === true
+  return supabase.rpc(extended ? 'practice_personal_preferences_save' : 'practice_recommendation_preferences_save', {
     p_community_id: communityId, p_support_skills: preferences.support_skills,
     p_focus_skills: preferences.focus_skills, p_share_response: preferences.share_response,
+    ...(extended ? { p_prior_practice: preferences.prior_practice || {} } : {}),
   })
 }
 

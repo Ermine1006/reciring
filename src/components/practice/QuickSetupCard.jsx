@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { PILOT_PRACTICE_TYPES, PRACTICE_TYPE_SHORT } from '../../data/practiceOptions'
 import { wallTimeToUtc } from '../../lib/practiceMatching'
 import { MATCHA_DEEP, MATCHA_SOFT } from '../../lib/matchaCta'
+import PracticePreferenceFields, { practicePreferenceDraft } from './PracticePreferenceFields'
 
 // One-card setup: two questions, one CTA, under 15 seconds.
 //   I want to practise · I can help with → [ Find my teammate → ]
@@ -47,12 +48,15 @@ function TypeRow({ label, selected, onToggle }) {
   )
 }
 
-export default function QuickSetupCard({ saving, onPublish }) {
+export default function QuickSetupCard({ saving, onPublish, preferenceValue }) {
   const [want, setWant] = useState([])
   const [help, setHelp] = useState([])
   const [showTimes, setShowTimes] = useState(false)
   const [windows, setWindows] = useState([])
   const [err, setErr] = useState(null)
+  const [preferences, setPreferences] = useState(preferenceValue || {})
+  const request = { want_types: want, help_types: help }
+  const draft = practicePreferenceDraft(preferences, request)
 
   const toggle = (list, set) => (t) => set(list.includes(t) ? list.filter((x) => x !== t) : [...list, t])
   const setWin = (i, k, v) => setWindows((ws) => ws.map((w, j) => (j === i ? { ...w, [k]: v } : w)))
@@ -67,7 +71,8 @@ export default function QuickSetupCard({ saving, onPublish }) {
       if (ends_at <= starts_at) return setErr('Each time must end after it starts.')
       converted.push({ starts_at, ends_at })
     }
-    onPublish({ wantTypes: want, helpTypes: help, windows: converted })
+    onPublish({ wantTypes: want, helpTypes: help, windows: converted,
+      ...(preferenceValue ? { preferences: draft } : {}) })
   }
 
   return (
@@ -84,6 +89,11 @@ export default function QuickSetupCard({ saving, onPublish }) {
 
       <TypeRow label="I want to practise" selected={want} onToggle={toggle(want, setWant)} />
       <TypeRow label="I can help with" selected={help} onToggle={toggle(help, setHelp)} />
+
+      {preferenceValue && <details className="quest-setup-personalise">
+        <summary>Personalise my practice · Optional</summary>
+        <PracticePreferenceFields draft={draft} request={request} onChange={setPreferences} disabled={saving} />
+      </details>}
 
       {/* Optional preferred times — never required for matching */}
       <button type="button" onClick={() => { setShowTimes(!showTimes); if (!showTimes && windows.length === 0) setWindows([{ date: '', start: '', end: '' }]) }}

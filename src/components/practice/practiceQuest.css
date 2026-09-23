@@ -13,3 +13,58 @@
 .practice-quest .quest-response-choice { display: flex; align-items: flex-start; gap: 8px; margin: 16px 0 8px; font-size: 13px; }
 .practice-quest .quest-response-choice input { flex-shrink: 0; margin-top: 3px; }
 .practice-quest .quest-recommendation-settings .quest-primary { margin-top: 14px; }
+
+/* The garden belongs to Practice Together only. Existing app navigation,
+   Messages, session sheets and Buddy styling remain untouched. */
+.practice-quest .quest-primary { width:100%; border:1px solid #77855d; background:linear-gradient(135deg,#869569,#536b3b); color:white; padding:13px; border-radius:16px; font-weight:600; box-shadow:inset 0 2px 3px #ffffff60,0 5px 10px #56663518; }
+.practice-quest .quest-secondary { border:1px solid #d4dbc7; background:#f0f3e9; color:#49603b; border-radius:14px; padding:10px 14px; }
+.practice-quest .quest-recommendation-settings { border:1px solid #ddcf9f; border-radius:20px; background:linear-gradient(120deg,#fffefa,#f5f3e6); margin:8px 0 18px; box-shadow:0 3px 12px #735c1610; }
+.practice-quest .quest-recommendation-settings>summary { padding:14px; gap:12px; list-style:none; color:#303c27; }
+.practice-quest .quest-recommendation-settings>summary::-webkit-details-marker { display:none; }
+.quest-recommendation-settings>summary>span:nth-child(2) { flex:1; min-width:0; }
+.quest-recommendation-settings summary strong { display:block; font-size:15px; }
+.practice-quest .quest-recommendation-settings summary small { display:block; color:#666b5d; font-size:11px; margin-top:4px; }
+.quest-preference-icon { display:grid; place-items:center; width:38px; height:38px; flex-shrink:0; color:#ae8b28; border:1px solid #e3d4a0; border-radius:12px; font-size:22px; }
+.quest-preference-edit { font-size:12px; color:#586c40; white-space:nowrap; }
+.quest-preference-body { padding:0 16px 18px; border-top:1px solid #e9e3cf; }
+.quest-preference-body>p:first-child { padding-top:10px; }
+.quest-preference-shortcuts { display:flex; flex-wrap:wrap; gap:4px 18px; }
+.practice-quest .quest-setup-personalise { margin:4px 0 16px; border:1px solid #ddd7bc; border-radius:14px; padding:0 12px; background:#faf9f3; }
+.practice-quest .practice-preference-fields fieldset { border:0; padding:12px 0; margin:0; min-width:0; }
+.practice-preference-fields legend { font-size:14px; font-weight:650; }
+.practice-quest .practice-preference-fields p { font-size:12px; margin:6px 0; }
+.quest-experience-choice { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:10px 0; font-size:13px; }
+.quest-experience-choice>span { flex:1; min-width:120px; }
+.quest-experience-choice select { min-height:44px; max-width:100%; border:1px solid #d5d7c8; border-radius:10px; background:white; padding:8px; color:#34442b; font:inherit; }
+.quest-availability-notice { display:flex; flex-wrap:wrap; align-items:center; gap:10px; border:1px solid #ded09d; background:#faf5e6; padding:14px; margin-bottom:14px; border-radius:16px; font-size:13px; }
+.quest-availability-notice>div { flex:1; min-width:170px; }
+.practice-quest .quest-availability-notice p { margin:4px 0 0; font-size:12px; }
+.quest-journey>summary { font-size:12px; color:#68764a; }
+.practice-quest .quest-journey { margin:0 0 6px; }
+.garden-toolbar { display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:space-between; }
+.garden-type-options { display:flex; flex-wrap:wrap; gap:5px; }
+.garden-type-options button { background:#fffdf7; color:#637049; border:1px solid #dfddcf; border-radius:12px; padding:8px 10px; font-size:12px; }
+.garden-type-options button[aria-pressed=true] { background:#ebefdf; border-color:#728354; color:#354926; }
+.practice-quest .garden-filter-hint { margin:4px 0 12px; font-size:11px; }
+.garden-stage { position:relative; isolation:isolate; height:280px; border:2px solid #fff; border-radius:24px; overflow:hidden; background:linear-gradient(#faf0bb,#d8e6bb); box-shadow:0 4px 16px #555c2a15; }
+.garden-stage>img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:50% 68%; image-rendering:pixelated; z-index:-1; }
+.garden-caption { position:absolute; top:12px; left:12px; right:12px; padding:12px; background:#fffdf0ec; border:1px solid #eadba8; border-radius:14px; }
+.garden-caption span { font-family:ui-monospace,monospace; font-size:10px; color:#866a25; letter-spacing:.1em; }
+.practice-quest .garden-caption h3 { font-size:15px; margin:4px 0 0; }
+.garden-walker { position:absolute; left:24%; bottom:17%; filter:drop-shadow(0 3px 1px #28463340); }
+.garden-stage.has-encounter .garden-walker { left:58%; }
+.garden-stage.is-walking .garden-walker { animation:practice-garden-walk .85s steps(10,end) forwards; }
+.garden-stage.is-walking .garden-walker svg { animation:practice-garden-step .15s steps(2,end) 6; }
+.garden-sign { position:absolute; left:72%; bottom:19%; color:#8a671f; background:#fff9df; border:2px solid #a38954; box-shadow:2px 2px #c5b281; padding:2px 6px; font-size:20px; }
+.garden-walk-actions { margin:12px 0 16px; }
+.practice-quest .garden-walk-actions>p { text-align:center; font-size:11px; margin:8px 0; }
+.garden-end { text-align:center; padding:8px; }
+.garden-partner-list { display:grid; gap:14px; }
+.garden-encounter { animation:practice-garden-reveal .22s ease-out; }
+.practice-quest .garden-encounter>h3 { margin:0 0 10px; color:#657345; }
+.practice-quest button:focus-visible,.practice-quest summary:focus-visible,.practice-quest select:focus-visible { outline:3px solid #647e4c; outline-offset:3px; }
+@keyframes practice-garden-walk { to { left:58%; } }
+@keyframes practice-garden-step { 50% { transform:translateY(-3px); } }
+@keyframes practice-garden-reveal { from { transform:translateY(12px); opacity:0; } to { transform:none; opacity:1; } }
+@media(max-width:360px) { .quest-preference-edit { display:none; } .garden-stage { height:260px; } }
+@media(prefers-reduced-motion:reduce) { .garden-stage.is-walking .garden-walker,.garden-stage.is-walking .garden-walker svg,.garden-encounter { animation:none; } .garden-stage.is-walking .garden-walker { left:58%; } }

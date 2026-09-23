@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { mutualFit, formatWindow } from '../../lib/practiceMatching'
 import { PRACTICE_TYPE_SHORT } from '../../data/practiceOptions'
 import { MATCHA_DEEP, MATCHA_SOFT } from '../../lib/matchaCta'
+import { SKILLS_BY_CATEGORY } from '../../data/practiceModes'
 
 // One potential practice partner. Answers exactly five things:
 // what I practise, what I support, when we can meet, what tapping
@@ -51,7 +52,9 @@ export default function PartnerCard({ row, myRequest, onInvite, busy }) {
   const youHelpWith = overlap(row.want_types, myRequest.help_types)[0]
   const rec = row.recommendation
   const response = responseRecord(rec?.response_record)
-  const relevant = ([...new Set([...(rec?.peer_relevant_skills || []), ...(rec?.relevant_skills || [])])]).map(skillName).filter(Boolean)
+  const focusKeys = (myRequest.want_types || []).flatMap(type => (SKILLS_BY_CATEGORY[type] || []).map(skill => skill.key))
+  const relevant = ([...new Set([...(rec?.peer_relevant_skills || []), ...(rec?.relevant_skills || [])])])
+    .filter(key => focusKeys.includes(key)).map(skillName).filter(Boolean)
   const skills = (rec?.support_skills || []).map(skillName).filter(Boolean)
   const history = rec?.practice_history && Number.isInteger(rec.practice_history.sessions) && Number.isInteger(rec.practice_history.partners) && rec.practice_history.sessions >= rec.practice_history.partners && rec.practice_history.partners >= 0 ? rec.practice_history : null
   const evidence = (rec?.peer_strengths || []).filter(e => Number.isInteger(e.partners) && e.partners > 0)

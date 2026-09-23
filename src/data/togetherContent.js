@@ -61,9 +61,9 @@ export const CONNECTION_CARDS = [
   {
     id: 'one_on_one',
     action: 'practice',
-    title: 'Practice Quest',
-    sub: 'Pick a quest. Find a teammate. Grow together.',
-    cta: 'Let’s play',
+    title: 'Practice Together',
+    sub: 'Find a practice partner. One round each.',
+    cta: 'Find my teammate',
     tone: 'matcha',
     art: '/illustrations/mock-interview.png',
   },

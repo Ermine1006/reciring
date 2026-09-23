@@ -13,3 +13,9 @@ it('shows truthful history and peer badges while preserving invitation actions',
 it('does not turn unavailable or unshared history into a zero record',()=>{
  render(<PartnerCard row={base} myRequest={base} onInvite={vi.fn()}/>);expect(screen.queryByText('practices completed')).toBeNull();expect(screen.getByText('No shared partner feedback yet')).toBeTruthy();expect(screen.queryByText(/Self selected/)).toBeNull()
 })
+it('explains the selected category rather than a different saved focus',()=>{
+ render(<PartnerCard row={{...base,help_types:['case','behavioural'],recommendation:{relevant_skills:['synthesis']}}}
+   myRequest={{want_types:['behavioural'],help_types:['case']}} onInvite={vi.fn()}/>);
+ expect(screen.getByText(/They can support your behavioural practice/)).toBeTruthy()
+ expect(screen.queryByText(/your focus: Synthesis/)).toBeNull()
+})
