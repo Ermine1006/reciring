@@ -58,6 +58,7 @@ export default function QuickSetupCard({ saving, onPublish, preferenceValue }) {
   const [confirmedPreferences, setConfirmedPreferences] = useState(preferenceValue || {})
   const [preferenceStatus, setPreferenceStatus] = useState('')
   const personalise = useRef(null)
+  const practiceTypes = useRef(null)
   const request = { want_types: want, help_types: help }
   const draft = practicePreferenceDraft(preferences, request)
   const confirmedDraft = practicePreferenceDraft(confirmedPreferences, request)
@@ -104,19 +105,28 @@ export default function QuickSetupCard({ saving, onPublish, preferenceValue }) {
         One round each. Names unlock when you both accept.
       </p>
 
+      <div ref={practiceTypes}>
       <TypeRow label="I want to practise" selected={want} onToggle={toggle(want, setWant)} />
       <TypeRow label="I can help with" selected={help} onToggle={toggle(help, setHelp)} />
+      </div>
 
       {preferenceValue && <>
         <details ref={personalise} className="quest-setup-personalise">
           <summary>Personalise my practice · Optional</summary>
-          <div className="quest-setup-preference-actions">
-            <p>{choicesChanged ? 'Unconfirmed changes' : 'Optional. You can leave these fields blank.'}</p>
-            <div><button type="button" className="quest-primary" disabled={saving} onClick={confirmChoices}>Confirm choices</button>
-            <button type="button" className="quest-secondary" disabled={saving} onClick={cancelChoices}>Cancel</button></div>
-            <small>Find my teammate saves your choices, even if you skip confirmation here.</small>
-          </div>
+          {ready ? <>
           <PracticePreferenceFields draft={draft} request={request} onChange={next => { setPreferences(next); setPreferenceStatus('') }} disabled={saving} />
+          <div className="quest-setup-preference-actions">
+            <button type="button" className="quest-primary" disabled={saving} onClick={confirmChoices}>Confirm choices</button>
+            <button type="button" className="quest-secondary" disabled={saving} onClick={cancelChoices}>Cancel</button>
+          </div>
+          <p className="quest-setup-preference-status">Saved with Find my teammate.</p>
+          </> : <div className="quest-setup-preference-empty">
+            <p>Choose what you want to practise and can help with first.</p>
+            <button type="button" className="quest-secondary" onClick={() => {
+              const rows = practiceTypes.current.children
+              rows[want.length ? 1 : 0].querySelector('button')?.focus()
+            }}>Choose practice types</button>
+          </div>}
         </details>
         {(choicesChanged || preferenceStatus) && <p className="quest-setup-preference-status" role="status">{choicesChanged ? 'Choices not confirmed yet. Find my teammate will save them.' : preferenceStatus}</p>}
       </>}
