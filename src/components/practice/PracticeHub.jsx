@@ -1,5 +1,6 @@
 import usePracticeSync from '../../lib/usePracticeSync'
 import './together-ivory.css'
+import './practice-ivory.css'
 import RecommendationPreferences from './RecommendationPreferences'
 import { feedbackFocusSuggestions } from '../../lib/practiceRecommendations'
 import { fetchPracticeRecommendationPreferences, savePracticeRecommendationPreferences } from '../../lib/practice'
@@ -991,7 +992,7 @@ export default function PracticeHub({ userId, avatarSeed, onOpenChat, onOpenEven
       <>
         <AppScreen>
           <TogetherStyles />
-          <div className={TOGETHER_CLASS}
+          <div className={`${TOGETHER_CLASS} practice-ui practice-discover`}
             style={{ maxWidth: 560, margin: '0 auto', width: '100%', boxSizing: 'border-box', paddingBottom: 28 }}>
 
             <div style={{ padding: '10px 16px 2px' }}>
@@ -1008,7 +1009,7 @@ export default function PracticeHub({ userId, avatarSeed, onOpenChat, onOpenEven
                 Practice Together
               </h1>
               <p style={{ margin: '4px 0 0', fontSize: 13, color: C.ink2, lineHeight: 1.45, fontFamily: FONT }}>
-                Interview practice. Better together.
+                Find a partner. Practise and grow.
               </p>
             </div>
 
@@ -1080,7 +1081,7 @@ export default function PracticeHub({ userId, avatarSeed, onOpenChat, onOpenEven
   return (
     <AppScreen>
       <TogetherStyles />
-      <div className={`${TOGETHER_CLASS} together-ivory`}
+      <div className={`${TOGETHER_CLASS} together-ivory ${view === 'mine' ? 'practice-ui practice-sessions' : ''}`}
         style={{ maxWidth: 560, margin: '0 auto', width: '100%', boxSizing: 'border-box', paddingBottom: 28 }}>
 
         {/* Header: title + subtitle + real Token pill. The subtitle

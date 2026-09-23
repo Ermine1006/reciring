@@ -23,7 +23,7 @@ export default function SessionTimeChange({session,currentUserId,onSaved}) {
     if(!start || !Number.isFinite(new Date(start).getTime()) || new Date(start)<=new Date() || new Date(start).getTime()===new Date(session.scheduled_start).getTime()){setError('Choose a different time in the future.');return}
     act(()=>proposePracticeTimeChange(session.id,start))
   }
-  return <div style={{marginTop:12,fontSize:13}}>
+  return <div className="practice-ui practice-time-change" style={{marginTop:12,fontSize:13}}>
     {pending ? <div style={{background:'#F8F3E5',padding:12,borderRadius:12}}>
       <strong>{mine?'Time change sent':'Your partner suggested a new time'}</strong>
       <p>{formatSessionTime(session.time_change_start,session.duration_minutes,tz)}</p>

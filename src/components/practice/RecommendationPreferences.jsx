@@ -1,4 +1,5 @@
 import PeerStrengthSharing from './PeerStrengthSharing'
+import PracticePreferencesSheet from './PracticePreferencesSheet'
 import { useEffect, useState } from 'react'
 import PracticePreferenceFields, { practicePreferenceDraft, skillsForTypes, togglePracticeSkill } from './PracticePreferenceFields'
 import { skillName } from '../../lib/practiceRecommendations'
@@ -8,6 +9,7 @@ export default function RecommendationPreferences({ value, request, suggestions 
   const [dirty, setDirty] = useState(false)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
+  const [open, setOpen] = useState(false)
   // Live invitation polling must not overwrite an unfinished preference edit.
   const saved = JSON.stringify(practicePreferenceDraft(value, request))
   useEffect(() => { if (!dirty) setDraft(JSON.parse(saved)) }, [saved, dirty])
@@ -25,11 +27,12 @@ export default function RecommendationPreferences({ value, request, suggestions 
     catch { setMessage('Could not save. Please try again.') }
     finally { setSaving(false) }
   }
-  return <details className="quest-recommendation-settings"><summary>
+  return <><button type="button" className="quest-recommendation-settings practice-preference-entry" onClick={() => setOpen(true)}>
     <span className="quest-preference-icon" aria-hidden="true">✦</span>
     <span><strong>Personalise my practice</strong><small>My focus, strengths & practice experience</small></span>
     <span className="quest-preference-edit" aria-hidden="true">Edit ›</span>
-  </summary>
+  </button>
+    <PracticePreferencesSheet open={open} busy={saving} onClose={() => setOpen(false)}>
     <div className="quest-preference-body">
     <p>Your focus stays private. Support skills you save appear on your anonymous card as chosen by you.</p>
     <div className="quest-preference-shortcuts">
@@ -44,5 +47,5 @@ export default function RecommendationPreferences({ value, request, suggestions 
     <button type="button" className="quest-primary" disabled={saving} onClick={save}>{saving ? 'Saving…' : 'Save & refresh recommendations'}</button>
     {message && <p role="status">{message}</p>}
     </div>
-  </details>
+    </PracticePreferencesSheet></>
 }

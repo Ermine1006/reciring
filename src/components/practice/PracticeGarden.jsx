@@ -115,7 +115,7 @@ function GardenResults({ rows, request, type, view, setView, busyId, onInvite, o
   return <>
     <div className={`garden-stage ${walkingTo ? 'is-walking' : ''} ${encounter ? 'has-encounter' : ''}`}>
       {!failedImages.includes(scene.image) && <img key={scene.image} src={`/illustrations/${scene.image}`} alt="" onError={() => setFailedImages(previous => [...previous, scene.image])} />}
-      <div className="garden-caption"><span>{scene.name}</span><h3>A little walk. A useful connection.</h3></div>
+      <div className="garden-caption"><span>{scene.name}</span></div>
       <div className="garden-walker"><GardenWalker avatarSeed={avatarSeed} /></div>
       <span className="garden-sign" aria-hidden="true">✦</span>
     </div>
@@ -150,7 +150,7 @@ function EncounterDialog({ children, scene, onClose, onContinue, hasNext, busy, 
       returnRef.current?.focus({ preventScroll: true })
     }
   }, [returnRef])
-  return createPortal(<dialog ref={dialogRef} className="garden-dialog" aria-labelledby={titleId}
+  return createPortal(<dialog ref={dialogRef} className="garden-dialog practice-ui" aria-labelledby={titleId}
     onCancel={event => { event.preventDefault(); onClose() }}
     onClick={event => { if (event.target === event.currentTarget) onClose() }}>
     <div className="garden-dialog-layout">

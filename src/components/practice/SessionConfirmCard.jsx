@@ -64,7 +64,7 @@ const CheckRow = ({ checked, onChange, label }) => (
 )
 
   const Frame = ({ children }) => (
-    <div style={{
+    <div className="practice-ui practice-feedback practice-paper" style={{
       margin: '0 16px 16px', background: '#FBFAF7', border: `1px solid ${C.line}`,
       borderRadius: 16, padding: '14px 16px 16px',
     }}>
@@ -201,7 +201,7 @@ export default function SessionConfirmCard({
     return (
       <Frame>
         {strengthSupported && <section style={{ marginBottom: 20 }}>
-          <h3 style={{ margin: '0 0 6px', fontSize: 17 }}>What did your partner do well?</h3>
+          <h3 style={{ margin: '0 0 6px', fontSize: 17 }}>What went well?</h3>
           <p style={{ fontSize: 13, color: C.ink2 }}>Optional · Pick up to 3 strengths you observed.</p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {strengthOptions.map(skill => <button type="button" key={skill.key} aria-pressed={strengthSkills.includes(skill.key)}

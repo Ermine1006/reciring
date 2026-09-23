@@ -23,7 +23,7 @@ function daysLeft(expiresAt) {
 function Row({ p, incoming, onAccept, onDecline, onWithdraw, busy }) {
   const snap = p.their_snapshot || {}
   return (
-    <div style={{
+    <div className="practice-ui practice-paper practice-invitation" style={{
       background: C.white, borderRadius: 14, border: `1px solid ${C.line}`,
       padding: '12px 14px', marginBottom: 10,
     }}>

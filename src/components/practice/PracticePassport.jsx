@@ -135,10 +135,10 @@ export function PassportDetail({ passport, onClose, onCta, sessionById = {}, onR
   const recorded = p.structuredRecorded
 
   return (
-    <div style={{ paddingBottom: 26 }}>
+    <div className="practice-ui practice-progress" style={{ paddingBottom: 26 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '2px 16px 0' }}>
         <h2 style={{ margin: 0, fontSize: 17, fontWeight: 750, color: C.ink, fontFamily: FONT, letterSpacing: '-0.015em' }}>
-          Practice Passport
+          My progress
         </h2>
         <span style={{ flex: 1 }} />
         {onClose && (

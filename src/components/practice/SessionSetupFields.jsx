@@ -52,7 +52,7 @@ export default function SessionSetupFields({ value, onChange, supported = true, 
   }
 
   return (
-    <div style={{ display: 'grid', gap: compact ? 12 : 14 }}>
+    <div className="practice-ui practice-session-fields" style={{ display: 'grid', gap: compact ? 12 : 14 }}>
       {!supported && (
         <div style={{
           background: C.goldBg, border: `1px solid ${C.goldLight}`, borderRadius: 12,

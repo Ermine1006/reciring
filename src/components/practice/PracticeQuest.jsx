@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { Sprout, Flag, Users, Repeat2, MessageCircle, Leaf, LockKeyhole, ChevronDown, ArrowRight, LogOut, Mail } from 'lucide-react'
-import { matchaCta } from '../../lib/matchaCta'
 import QuickSetupCard from './QuickSetupCard'
 import PracticeGarden from './PracticeGarden'
 import InvitationsList from './InvitationsList'
@@ -35,7 +34,6 @@ export default function PracticeQuest({ request, windowsStale, rows, pairings, n
     </section>
   }) : <section className="quest-paper"><h3>Find a teammate first</h3><p>Accept an invitation together to begin.</p><button className="quest-primary" onClick={() => setStep(1)}>Meet your teammate →</button></section>
   return <div className="practice-quest">
-    <div className="quest-row quest-stats"><span><Sprout size={16} /> {passport.verified || 0} completed</span><button className="quest-link" onClick={onProgress}>My progress</button></div>
     {request && (recommendationSettings || <section className="quest-paper">
       <h3>Personalise my practice</h3><p>Practice types and available times</p>
       <button type="button" className="quest-secondary" onClick={onPreferences}>Edit preferences</button>
@@ -45,9 +43,9 @@ export default function PracticeQuest({ request, windowsStale, rows, pairings, n
     {pending.some(p => p.i_invited === false) && current !== 1 && <section className="quest-paper" role="status">
       <h3>You have a practice invitation</h3><button className="quest-primary" onClick={() => setStep(1)}>Review invitation</button>
     </section>}
-    <div className="quest-shortcuts">
-    {accepted.length > 0 && current === 1 && <button type="button" className="quest-continue" style={matchaCta} onClick={onSessions || (() => setStep(2))}><Users size={18} aria-hidden="true" /> Continue practice <ArrowRight size={16} aria-hidden="true" /></button>}
-    <details className="quest-journey"><summary><Flag size={17} aria-hidden="true" /> Practice steps <ChevronDown className="quest-disclosure-chevron" size={16} aria-hidden="true" /></summary>
+    <div className="quest-shortcuts quest-after-discovery">
+    <button type="button" className="quest-secondary quest-progress-entry" onClick={onProgress}><Sprout size={18} aria-hidden="true" /> My progress <span>{passport.verified || 0} completed</span><ArrowRight size={16} aria-hidden="true" /></button>
+    <details className="quest-journey"><summary><Flag size={17} aria-hidden="true" /> How it works <ChevronDown className="quest-disclosure-chevron" size={16} aria-hidden="true" /></summary>
     <div className="quest-map" aria-label="Your practice quest">
       {steps.map(({ title, sub, icon: Icon }, i) => <button key={title} type="button" className={`quest-node ${current === i ? 'is-current' : ''}`} onClick={() => setStep(i)} aria-current={current === i ? 'step' : undefined}>
         <span className="quest-node-icon"><Icon size={22} /></span><span><strong>{title}</strong>{current === i && <small>{sub}</small>}</span><span className="quest-node-num">{i + 1}</span>
@@ -62,15 +60,14 @@ export default function PracticeQuest({ request, windowsStale, rows, pairings, n
         <button className="quest-link" onClick={onPreferences}>Change preferences</button>
       </section>)}
       {current === 1 && <>
-        <h2>Meet your teammate</h2>
+        <h2>Find your teammate</h2>
         <InvitationsList pairings={pairings} busyId={busyId} only="incoming" onAccept={onAccept} onDecline={onDecline} onWithdraw={onWithdraw} />
         {!request ? <section className="quest-paper"><p>Choose what you want to practise.</p><button className="quest-primary" onClick={() => setStep(0)}>Pick a quest →</button></section> : <>
           <p className="quest-private"><LockKeyhole size={14} /> Names unlock when you both accept.</p>
-          {rows.length > 0 && !browseError && <div className="quest-recommendation-heading"><h3>{rows.some(r => r.recommendation) ? 'Recommended for you' : 'Matches for your practice types'}</h3><p>{rows.some(r => r.recommendation) ? 'Matched to your focus and shared strengths.' : 'Skill and response recommendations are not connected yet.'}</p></div>}
           {browseLoading && rows.length > 0 && <p role="status">Refreshing teammates…</p>}
           {browseLoading && !rows.length ? <p role="status">Looking for teammates…</p> : browseError ? <section className="quest-paper"><h3>Couldn’t load teammates</h3><p>Your preferences are saved. Please try again.</p><button className="quest-primary" onClick={onRetry}>Try again</button></section> : rows.length ? <PracticeGarden rows={rows} request={request} busyId={busyId} onInvite={onInvite} onPreferences={onPreferences} resetKey={recommendationKey} avatarSeed={avatarSeed} /> : <section className="quest-paper"><h3>{accepted.length ? 'Your teammate is already matched' : pending.length ? 'Your invitations are in progress' : 'No new practice matches right now'}</h3>
             <p>{accepted.length ? 'Open your existing partnership to chat or practise.' : pending.length ? 'Invited people are listed in your invitations below.' : 'No new requests currently match what you want to practise and can help with. Times are optional.'}</p>
-            <button className="quest-primary" onClick={accepted.length ? () => setStep(2) : onPreferences}>{accepted.length ? 'Open my teammates' : 'Review practice types'}</button>
+            <button className="quest-primary" onClick={accepted.length ? (onSessions || (() => setStep(2))) : onPreferences}>{accepted.length ? 'Open my teammates' : 'Review practice types'}</button>
             <button className="quest-link" onClick={onRetry}>Refresh teammates</button></section>}
           <div className="quest-pool-actions">
             {pending.some(p => p.i_invited) && <details className="quest-invitations"><summary><Mail size={17} aria-hidden="true" /> Sent invitations <span className="quest-action-count">{pending.filter(p => p.i_invited).length}</span><ChevronDown className="quest-disclosure-chevron" size={16} aria-hidden="true" /></summary><InvitationsList pairings={pairings} busyId={busyId} only="outgoing" onAccept={onAccept} onDecline={onDecline} onWithdraw={onWithdraw} /></details>}

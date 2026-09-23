@@ -23,7 +23,7 @@ export default function SessionMeetingLinkEditor({ session, onSaved }) {
     }catch{setError('Could not save the link. Please try again.')}
     finally{setBusy(false)}
   }
-  return <div style={{marginTop:10,fontSize:13}}>
+  return <div className="practice-ui practice-meeting-editor" style={{marginTop:10,fontSize:13}}>
     {!open ? <button type="button" onClick={()=>{setValue(existing);setError('');setOpen(true)}} style={{...matchaCta,width:'100%',border:0,borderRadius:12,padding:12,cursor:'pointer'}}>{existing ? 'Edit meeting link' : 'Add meeting link'}</button> :
       <form onSubmit={save}>
         <label style={{display:'block',fontWeight:650}}>Virtual meeting link

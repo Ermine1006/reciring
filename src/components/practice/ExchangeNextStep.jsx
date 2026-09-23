@@ -61,7 +61,7 @@ const quietLink = {
 }
 
 const Shell = ({ label, children, err, onOpenDetails }) => (
-    <div style={{
+    <div className="practice-ui practice-paper practice-chat-plan" style={{
       margin: '0 16px 16px', background: C.white, borderRadius: 16,
       padding: '12px 16px 14px', border: `1px solid ${C.goldLight}`,
       boxShadow: '0 2px 8px rgba(201,163,59,0.08)',

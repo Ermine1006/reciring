@@ -204,7 +204,7 @@ export default function PairingDetail({
   }
 
   return (
-    <div className="flex-1 phone-scroll" style={{ background: 'var(--mutu-canvas, #F9F7F4)' }}>
+    <div className="flex-1 phone-scroll practice-ui practice-session-detail" style={{ background: 'var(--mutu-canvas, #F9F7F4)' }}>
       <div style={{ padding: '10px 16px 28px', maxWidth: 560, margin: '0 auto' }}>
 
         {/* Header */}

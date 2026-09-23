@@ -184,7 +184,7 @@ export default function PracticeSetupFlow({ existing, existingWindows = [], onSa
   }
 
   return (
-    <div className="flex-1 phone-scroll" style={{ background: 'var(--mutu-canvas, #F9F7F4)' }}>
+    <div className="flex-1 phone-scroll practice-ui practice-setup" style={{ background: 'var(--mutu-canvas, #F9F7F4)' }}>
       <div style={{ padding: '10px 20px 28px', maxWidth: 560, margin: '0 auto' }}>
 
         {/* Labeled step header */}
@@ -208,9 +208,10 @@ export default function PracticeSetupFlow({ existing, existingWindows = [], onSa
         </p>
 
         {step === 1 && (
-          <>
+          <div className="practice-setup-cards">
+            <section className="practice-paper">
             <h3 style={{ fontSize: 14, fontWeight: 700, color: C.ink, margin: '0 0 4px', fontFamily: FONT }}>
-              You want to practise
+              I want to practise
             </h3>
             <p style={{ fontSize: 12.5, color: C.ink2, margin: '0 0 10px', fontFamily: FONT }}>
               Your partner runs this round for you.
@@ -222,10 +223,11 @@ export default function PracticeSetupFlow({ existing, existingWindows = [], onSa
                 placeholder="Your target, like MBB first rounds" />
             </MoreDetails>
 
-            <div style={{ height: 1, background: C.line, margin: '22px 0' }} />
+            </section>
+            <section className="practice-paper">
 
             <h3 style={{ fontSize: 14, fontWeight: 700, color: C.ink, margin: '0 0 4px', fontFamily: FONT }}>
-              You can run a round on
+              I can help with
             </h3>
             <p style={{ fontSize: 12.5, color: C.ink2, margin: '0 0 10px', fontFamily: FONT }}>
               You run your partner&rsquo;s round and give feedback.
@@ -239,7 +241,8 @@ export default function PracticeSetupFlow({ existing, existingWindows = [], onSa
                 onChange={(e) => setHelpContext(e.target.value)}
                 placeholder="A little context, like 2 yrs consulting pre-MBA (no names)" />
             </MoreDetails>
-          </>
+            </section>
+          </div>
         )}
 
         {step === 2 && (

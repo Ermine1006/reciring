@@ -7,6 +7,18 @@ import QuickSetupCard from '../practice/QuickSetupCard'
 import { practicePreferenceDraft } from '../practice/PracticePreferenceFields'
 
 afterEach(cleanup)
+it('returns focus and preserves a draft when the preferences sheet closes', () => {
+  render(<RecommendationPreferences value={{ focus_skills: [], support_skills: [] }} request={{want_types:['case'],help_types:['case']}} />)
+  const trigger = screen.getByRole('button', { name: /Personalise my practice/ })
+  trigger.focus()
+  fireEvent.click(trigger)
+  fireEvent.click(within(screen.getByRole('group', {name: 'What would you like to work on?'})).getByRole('button', {name: 'Structuring'}))
+  fireEvent.click(screen.getByRole('button', {name: 'Close preferences'}))
+  expect(document.activeElement).toBe(trigger)
+  expect(document.body.style.overflow).not.toBe('hidden')
+  fireEvent.click(trigger)
+  expect(screen.getByRole('button', {name: '✓ Structuring'}).getAttribute('aria-pressed')).toBe('true')
+})
 const value = { support_skills: [], focus_skills: [], share_response: false, prior_practice_supported: true, prior_practice: {} }
 const request = { want_types: ['case', 'behavioural'], help_types: ['case'] }
 function focusButton(name) {

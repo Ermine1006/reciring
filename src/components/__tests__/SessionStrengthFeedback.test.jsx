@@ -16,7 +16,7 @@ it('offers strengths in the chat completion path, allows deselection, and submit
  screen.getAllByRole('checkbox').forEach(c => fireEvent.click(c))
  await waitFor(() => expect(screen.getByText('Continue').disabled).toBe(false))
  fireEvent.click(screen.getByText('Continue'))
- await screen.findByText('What did your partner do well?')
+ await screen.findByText('What went well?')
  const skill = screen.getByRole('button', { name: 'Structuring' })
  fireEvent.click(skill); expect(skill.getAttribute('aria-pressed')).toBe('true')
  fireEvent.click(skill); expect(skill.getAttribute('aria-pressed')).toBe('false')

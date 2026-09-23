@@ -160,7 +160,7 @@ export default function GuidedPractice({
       ? (roles.candidateUserId === userId ? 'You' : partnerName)
       : null
     return (
-      <Shell onClose={onClose} title="Guided practice" footer={
+      <Shell onClose={onClose} title="Your practice" currentStep={1} footer={
           <div style={{ padding: '0 16px 12px' }}>
         <button data-mutu-glass="" type="button" disabled={!roles.resolved}
           onClick={() => {
@@ -279,7 +279,7 @@ export default function GuidedPractice({
   // ── complete ──
   if (phase === 'done') {
     return (
-      <Shell onClose={onClose} title="Guided practice">
+      <Shell onClose={onClose} title="Your practice" currentStep={3}>
         <p style={{ margin: 0, fontSize: 16, fontWeight: 750, color: C.ink, fontFamily: FONT }}>
           Guided practice complete
         </p>
@@ -318,7 +318,7 @@ export default function GuidedPractice({
   // ── switch roles, between the two rounds ──
   if (phase === 'switch') {
     return (
-      <Shell onClose={onClose} title={`${summary.title} · Round 2`}>
+      <Shell onClose={onClose} title={`${summary.title} · Round 2`} currentStep={2}>
         <p style={{ margin: 0, fontSize: 16, fontWeight: 750, color: C.ink, fontFamily: FONT }}>
           Switch roles
         </p>
@@ -379,7 +379,7 @@ export default function GuidedPractice({
   }
 
   return (
-    <Shell onClose={onClose} title={`${summary.title} · Round ${round}`}>
+    <Shell onClose={onClose} title={`${summary.title} · Round ${round}`} currentStep={round}>
       {/* role + progress: words, never colour alone */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
         <span style={{
@@ -467,9 +467,9 @@ export default function GuidedPractice({
   )
 }
 
-function Shell({ title, onClose, children, footer }) {
+function Shell({ title, onClose, children, footer, currentStep }) {
   return (
-    <AppScreen footer={footer}>
+    <AppScreen className="practice-ui practice-guide" footer={footer}>
     <div style={{ padding: '10px 16px 24px', maxWidth: 560, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <h2 style={{ margin: 0, fontSize: 13, fontWeight: 700, letterSpacing: '0.02em', color: C.ink3, fontFamily: FONT }}>
@@ -485,6 +485,9 @@ function Shell({ title, onClose, children, footer }) {
           Close
         </button>
       </div>
+      {currentStep && <ol className="practice-guide-steps" aria-label="Practice progress">
+        {['Round 1', 'Round 2', 'Feedback'].map((label, index) => <li key={label} aria-current={currentStep === index + 1 ? 'step' : undefined}><span>{index + 1}</span>{label}</li>)}
+      </ol>}
       <div style={{ marginTop: 12 }}>{children}</div>
     </div>
     </AppScreen>
