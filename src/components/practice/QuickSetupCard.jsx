@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { PILOT_PRACTICE_TYPES, PRACTICE_TYPE_SHORT } from '../../data/practiceOptions'
 import { wallTimeToUtc } from '../../lib/practiceMatching'
 import { MATCHA_DEEP, MATCHA_SOFT } from '../../lib/matchaCta'
@@ -55,8 +55,25 @@ export default function QuickSetupCard({ saving, onPublish, preferenceValue }) {
   const [windows, setWindows] = useState([])
   const [err, setErr] = useState(null)
   const [preferences, setPreferences] = useState(preferenceValue || {})
+  const [confirmedPreferences, setConfirmedPreferences] = useState(preferenceValue || {})
+  const [preferenceStatus, setPreferenceStatus] = useState('')
+  const personalise = useRef(null)
   const request = { want_types: want, help_types: help }
   const draft = practicePreferenceDraft(preferences, request)
+  const confirmedDraft = practicePreferenceDraft(confirmedPreferences, request)
+  const choicesChanged = JSON.stringify(draft) !== JSON.stringify(confirmedDraft)
+  const confirmChoices = () => {
+    setConfirmedPreferences(draft)
+    setPreferenceStatus('Choices confirmed. Saved when you select Find my teammate.')
+    personalise.current.open = false
+    personalise.current.querySelector('summary')?.focus()
+  }
+  const cancelChoices = () => {
+    setPreferences(confirmedDraft)
+    setPreferenceStatus('Changes cancelled. Your previous choices are kept.')
+    personalise.current.open = false
+    personalise.current.querySelector('summary')?.focus()
+  }
 
   const toggle = (list, set) => (t) => set(list.includes(t) ? list.filter((x) => x !== t) : [...list, t])
   const setWin = (i, k, v) => setWindows((ws) => ws.map((w, j) => (j === i ? { ...w, [k]: v } : w)))
@@ -90,10 +107,19 @@ export default function QuickSetupCard({ saving, onPublish, preferenceValue }) {
       <TypeRow label="I want to practise" selected={want} onToggle={toggle(want, setWant)} />
       <TypeRow label="I can help with" selected={help} onToggle={toggle(help, setHelp)} />
 
-      {preferenceValue && <details className="quest-setup-personalise">
-        <summary>Personalise my practice · Optional</summary>
-        <PracticePreferenceFields draft={draft} request={request} onChange={setPreferences} disabled={saving} />
-      </details>}
+      {preferenceValue && <>
+        <details ref={personalise} className="quest-setup-personalise">
+          <summary>Personalise my practice · Optional</summary>
+          <div className="quest-setup-preference-actions">
+            <p>{choicesChanged ? 'Unconfirmed changes' : 'Optional. You can leave these fields blank.'}</p>
+            <div><button type="button" className="quest-primary" disabled={saving} onClick={confirmChoices}>Confirm choices</button>
+            <button type="button" className="quest-secondary" disabled={saving} onClick={cancelChoices}>Cancel</button></div>
+            <small>Find my teammate saves your choices, even if you skip confirmation here.</small>
+          </div>
+          <PracticePreferenceFields draft={draft} request={request} onChange={next => { setPreferences(next); setPreferenceStatus('') }} disabled={saving} />
+        </details>
+        {(choicesChanged || preferenceStatus) && <p className="quest-setup-preference-status" role="status">{choicesChanged ? 'Choices not confirmed yet. Find my teammate will save them.' : preferenceStatus}</p>}
+      </>}
 
       {/* Optional preferred times — never required for matching */}
       <button type="button" onClick={() => { setShowTimes(!showTimes); if (!showTimes && windows.length === 0) setWindows([{ date: '', start: '', end: '' }]) }}
