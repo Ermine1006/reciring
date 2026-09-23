@@ -1223,6 +1223,7 @@ function AppShell() {
             <PracticeHub
               key={user?.id || 'demo'}
               userId={user?.id}
+              avatarSeed={resolveAvatarSeed(profile?.avatar_url)}
               registerNavigationGuard={registerNavigationGuard}
               focusMatchId={practiceFocusMatchId}
               focusPairingId={practiceFocusPairingId}

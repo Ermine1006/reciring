@@ -68,3 +68,31 @@
 @keyframes practice-garden-reveal { from { transform:translateY(12px); opacity:0; } to { transform:none; opacity:1; } }
 @media(max-width:360px) { .quest-preference-edit { display:none; } .garden-stage { height:260px; } }
 @media(prefers-reduced-motion:reduce) { .garden-stage.is-walking .garden-walker,.garden-stage.is-walking .garden-walker svg,.garden-encounter { animation:none; } .garden-stage.is-walking .garden-walker { left:58%; } }
+
+/* Visible action surfaces, scoped to the practice page. The Personalise
+   disclosure intentionally keeps its approved gold outlined treatment. */
+.practice-quest .quest-link { display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:44px; padding:10px 15px; border:1px solid #fff; border-radius:16px; background:linear-gradient(145deg,#f9faf4,#e8eddd); color:#50643a; box-shadow:inset 0 1px 2px #fff,0 3px 9px #48562712; font-size:12px; font-weight:650; text-decoration:none; box-sizing:border-box; }
+.practice-quest .quest-shortcuts { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); align-items:start; gap:10px; margin:12px 0 18px; }
+.practice-quest .quest-continue { display:flex; align-items:center; justify-content:center; gap:8px; min-height:50px; padding:12px; border:1px solid #fff; border-radius:17px; font-size:13px; font-weight:650; }
+.practice-quest .quest-journey { margin:0; }
+.practice-quest .quest-journey[open] { grid-column:1 / -1; }
+.practice-quest details:not(.quest-recommendation-settings)>summary { display:flex; gap:9px; align-items:center; min-height:48px; padding:11px 14px; border:1px solid #fff; border-radius:16px; background:linear-gradient(145deg,#fffef9,#f2efe5); color:#5b6845; box-shadow:inset 0 1px 2px #fff,0 3px 9px #48562712; font-size:13px; font-weight:650; list-style:none; box-sizing:border-box; }
+.practice-quest details:not(.quest-recommendation-settings)>summary::-webkit-details-marker { display:none; }
+.practice-quest details:not(.quest-recommendation-settings)>summary:not(:has(.quest-disclosure-chevron))::after { content:'＋'; margin-left:auto; }
+.practice-quest details[open]:not(.quest-recommendation-settings)>summary:not(:has(.quest-disclosure-chevron))::after { content:'−'; }
+.quest-disclosure-chevron { margin-left:auto; flex-shrink:0; transition:transform .15s; }
+details[open]>summary>.quest-disclosure-chevron { transform:rotate(180deg); }
+.practice-quest .quest-map { gap:8px; margin:12px 0 0; }
+.quest-map::before { display:none; }
+.practice-quest .quest-node { border:1px solid #e5e8dc; border-radius:16px; padding:8px; background:#fffef9; box-shadow:0 2px 5px #48562708; }
+.practice-quest .quest-node.is-current { background:#eef2e4; border-color:#c6d0b2; }
+.quest-pool-actions { display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding:12px 0; }
+.practice-quest .quest-invitations { flex:1 1 200px; margin:0; }
+.practice-quest .quest-invitations[open] { flex-basis:100%; }
+.quest-action-count { padding:2px 7px; border-radius:99px; background:#e7ebdc; font-size:11px; }
+.practice-quest .quest-exit { display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:10px 14px; border:1px solid #e6d6cf; border-radius:16px; color:#825a4b; background:#faf3ef; font-size:12px; font-weight:600; }
+.practice-quest .quest-preference-shortcuts { margin:8px 0 14px; gap:8px; }
+.garden-toolbar { margin-bottom:14px; }
+.practice-quest .quest-link:hover:not(:disabled),.practice-quest summary:hover { filter:brightness(.98); }
+.practice-quest .quest-link:active:not(:disabled),.practice-quest .quest-continue:active:not(:disabled),.practice-quest .quest-exit:active:not(:disabled) { transform:translateY(1px); }
+@media(prefers-reduced-motion:reduce) { .quest-disclosure-chevron { transition:none; } }

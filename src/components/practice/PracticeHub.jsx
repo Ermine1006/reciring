@@ -215,7 +215,7 @@ function SectionTitle({ children, right }) {
   )
 }
 
-export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEventsList, focusMatchId = null, focusPairingId = null, onFocusHandled, registerNavigationGuard }) {
+export default function PracticeHub({ userId, avatarSeed, onOpenChat, onOpenEvent, onOpenEventsList, focusMatchId = null, focusPairingId = null, onFocusHandled, registerNavigationGuard }) {
   const demoMode = !isSupabaseConfigured
   const [loading, setLoading] = useState(true)
   const [community, setCommunity] = useState(null)
@@ -981,10 +981,6 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
               )
             })}
           </div>
-          <button type="button" className="quest-link" onClick={loadAll} disabled={loading || Boolean(busyId)}
-            style={{ display: 'block', margin: '8px 0 0 auto', background: 'none', border: 0, color: MATCHA_DEEP, cursor: 'pointer', fontSize: 12 }}>
-            Refresh invitations & sessions
-          </button>
         </div>
   )
 
@@ -1031,7 +1027,7 @@ export default function PracticeHub({ userId, onOpenChat, onOpenEvent, onOpenEve
                 const result = await savePracticeRecommendationPreferences(community.id, value)
                 if (!result.error) { setRecommendationPreferences(value); await loadAll() }
                 return result
-              }} /> : null} preferenceValue={recommendationPreferences}
+              }} /> : null} preferenceValue={recommendationPreferences} avatarSeed={avatarSeed}
               recommendationKey={JSON.stringify(recommendationPreferences)}
               browseError={browseError} browseLoading={browseLoading} onRetry={loadAll} request={myRequest} windowsStale={myWindowsStale} rows={fitRows}
               pairings={pairings} names={namesById} passport={passport} saving={saving} busyId={busyId}

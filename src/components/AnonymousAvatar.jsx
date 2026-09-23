@@ -76,14 +76,18 @@ const renderAccessory = (variant, p) => {
 }
 
 /* ── Component ───────────────────────────────────────────────────── */
+// Share the chosen palette and accessory with the garden's pixel character.
+// The existing avatar rendering and deterministic seed mapping stay identical.
+export function avatarAppearance(seed = 'anon') {
+  const h = djb2(seed)
+  return { palette: PALETTES[h % PALETTES.length], accessory: (h >> 6) % 5, mouthWide: (h >> 10) % 2 }
+}
+
 export default function AnonymousAvatar({ seed = 'anon', size = 36 }) {
   const uid    = useId()
   const gradId = `av-${uid}`
 
-  const h   = djb2(seed)
-  const p   = PALETTES[h % PALETTES.length]
-  const acc = (h >> 6) % 5          // 0–4  accessory variant
-  const mouthWide = (h >> 10) % 2  // 0 = wide smile, 1 = softer
+  const { palette: p, accessory: acc, mouthWide } = avatarAppearance(seed)
 
   // Bow & flower sit ON TOP of the head — draw after body rect
   const accOnHead  = acc === 1 || acc === 2

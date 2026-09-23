@@ -3,6 +3,8 @@ import React from 'react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import PracticeGarden, { gardenCandidates } from '../practice/PracticeGarden'
+import { avatarAppearance } from '../AnonymousAvatar'
+import PRESET_AVATARS from '../../data/presetAvatars'
 
 vi.mock('../practice/PartnerCard', () => ({ default: ({ row, onInvite }) =>
   <button type="button" onClick={() => onInvite(row, null)}>Invite {row.request_id}</button> }))
@@ -95,4 +97,18 @@ it('offers recovery for an unselected type and an image failure', () => {
   expect(screen.getByText('Add this practice type to your preferences')).toBeTruthy()
   fireEvent.click(screen.getByRole('button', { name: 'Edit practice types' }))
   expect(edit).toHaveBeenCalledOnce()
+})
+
+it('uses the selected profile avatar palette and accessory, including live changes', () => {
+  const { rerender } = render(<PracticeGarden rows={rows} request={request} avatarSeed="av-12" />)
+  expect(document.querySelector('.garden-walker svg').getAttribute('data-avatar-body')).toBe('#FFC0CC')
+  for (const avatar of PRESET_AVATARS) {
+    rerender(<PracticeGarden rows={rows} request={request} avatarSeed={avatar.seed} />)
+    const sprite = document.querySelector('.garden-walker svg')
+    const appearance = avatarAppearance(avatar.seed)
+    expect(sprite.getAttribute('data-avatar-body')).toBe(appearance.palette.body)
+    expect(sprite.getAttribute('data-avatar-accessory')).toBe(String(appearance.accessory))
+  }
+  rerender(<PracticeGarden rows={rows} request={request} />)
+  expect(document.querySelector('.garden-walker svg').getAttribute('data-avatar-body')).toBe('#AADDF8')
 })

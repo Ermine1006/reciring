@@ -18,7 +18,7 @@ it('starts with quest selection and keeps progress server sourced', () => {
 it('opens the existing platform messages using the real match ID', () => {
  const chat=vi.fn(), practice=vi.fn()
  render(<PracticeQuest {...base} request={{ want_types: ['case'] }} pairings={[{id:'pair',status:'accepted',match_id:'match',counterpart_user_id:'peer'}]} names={{peer:'Maya'}} onChat={chat} onPractice={practice} />)
- fireEvent.click(screen.getByRole('button', {name:'Continue with my existing teammates →'}))
+ fireEvent.click(screen.getByRole('button', {name:'Continue practice'}))
  fireEvent.click(screen.getByRole('button', {name:'Open Messages ↗'}))
  expect(chat).toHaveBeenCalledWith('match')
  expect(screen.queryByRole('textbox')).toBeNull()
@@ -48,7 +48,7 @@ it('directs already matched people to their existing partnership', () => {
 
 it('surfaces a new invitation when the user is away from discovery', () => {
  render(<PracticeQuest {...base} request={{want_types:['case']}} pairings={[{id:'old',status:'accepted'}, {id:'new',status:'invited',i_invited:false}]} />)
- fireEvent.click(screen.getByRole('button',{name:'Continue with my existing teammates →'}))
+ fireEvent.click(screen.getByRole('button',{name:'Continue practice'}))
  expect(screen.getByText('You have a practice invitation')).toBeTruthy()
  fireEvent.click(screen.getByRole('button',{name:'Review invitation'}))
  expect(screen.getByRole('heading',{name:'Meet your teammate'})).toBeTruthy()
@@ -58,7 +58,7 @@ it('keeps preferences visible across the journey and routes existing partners to
  const sessions=vi.fn()
  render(<PracticeQuest {...base} request={{want_types:['case']}} pairings={[{id:'p',status:'accepted'}]}
    recommendationSettings={<button>Personalise my practice</button>} onSessions={sessions} windowsStale />)
- fireEvent.click(screen.getByRole('button',{name:'Continue with my existing teammates →'}))
+ fireEvent.click(screen.getByRole('button',{name:'Continue practice'}))
  expect(sessions).toHaveBeenCalledOnce()
  fireEvent.click(screen.getByRole('button',{name:/Grow together/}))
  expect(screen.getByRole('button',{name:'Personalise my practice'})).toBeTruthy()
