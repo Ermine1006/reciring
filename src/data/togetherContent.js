@@ -43,8 +43,8 @@ export const MIN_TAP = 44
 
 export const PAGE = {
   title: 'Together',
-  subtitle: 'Practise, learn and connect with your community.',
-  connectHeading: 'How do you want to connect?',
+  subtitle: 'Practise, learn and connect.',
+  connectHeading: 'How would you like to connect?',
   activityTitle: 'Your activity',
   activityAction: 'View progress',
   upcomingHeading: 'Upcoming for you',
@@ -62,7 +62,7 @@ export const CONNECTION_CARDS = [
     id: 'one_on_one',
     action: 'practice',
     title: 'Practice Together',
-    sub: 'Find a practice partner. One round each.',
+    sub: 'Find a partner. Practise and grow.',
     cta: 'Find my teammate',
     tone: 'matcha',
     art: '/illustrations/mock-interview.png',
@@ -71,7 +71,7 @@ export const CONNECTION_CARDS = [
     id: 'groups',
     action: 'events',
     title: 'Groups & Events',
-    sub: 'Learn, share interests and meet your community',
+    sub: 'Meet people who share your interests.',
     cta: 'Explore events',
     tone: 'gold',
     art: '/illustrations/groups-events.png',

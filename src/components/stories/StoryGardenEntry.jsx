@@ -1,7 +1,14 @@
-import { NotebookPen } from 'lucide-react'
+import { NotebookPen, ChevronRight } from 'lucide-react'
 import './StoryGarden.css'
 
-export default function StoryGardenEntry({ onOpen }) {
+export default function StoryGardenEntry({ onOpen, compact = false }) {
+  if (compact) return (
+    <button type="button" className="together-story-entry" onClick={onOpen}>
+      <span className="together-story-flower" aria-hidden="true">✿</span>
+      <span>Story Garden</span>
+      <ChevronRight size={22} aria-hidden="true" />
+    </button>
+  )
   return (
     <div className="mutu-story-garden" style={{ padding: '0 16px' }}>
       <section className="g-home-entry" aria-labelledby="garden-entry-title">

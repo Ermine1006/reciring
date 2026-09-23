@@ -1,0 +1,88 @@
+/* Together landing: ivory bevels and gold hairlines from the approved concept.
+   Scoped so practice, scheduling and the shared app chrome keep their layouts. */
+.together-ivory {
+  --together-gold: #b38d32;
+  --together-edge: #d7bd77;
+}
+.together-ivory .together-ivory-heading { padding: 18px 20px 18px !important; }
+.together-ivory .together-ivory-heading h1 {
+  font-size: 29px !important; font-weight: 600 !important;
+  line-height: 1.2; letter-spacing: -.025em !important; color: #22271c !important;
+}
+.together-ivory .together-ivory-heading p { font-size: 14px !important; line-height: 1.5 !important; margin-top: 6px !important; }
+.together-ivory .together-ivory-heading > button {
+  border: 1px solid #fff !important;
+  background: linear-gradient(145deg,#fffef9,#f3eedf) !important;
+  box-shadow: inset 0 1px 3px #fff, 0 5px 12px #65532c14;
+}
+.together-ivory .together-session-tabs {
+  padding: 5px !important; gap: 6px !important;
+  border: 1px solid #ded3bb !important;
+  background: #fffdf7b8 !important;
+  box-shadow: inset 0 2px 2px #fff, 0 4px 10px #6758320c;
+}
+.together-ivory .together-session-tabs button {
+  min-height: 46px !important; font-weight: 600 !important;
+  border: 1px solid white !important;
+  box-shadow: inset 0 2px 4px #fff, 0 2px 5px #695c3310;
+  background: linear-gradient(145deg,#fffefb,#f9f6ed) !important;
+}
+.together-ivory .together-session-tabs button[aria-selected=true] {
+  background: linear-gradient(145deg,#f1f3e9,#e7ecdd) !important;
+  color: #405737 !important;
+}
+.together-ivory .together-connect-heading {
+  font-size: 17px !important; font-weight: 600 !important;
+  margin: 24px 18px 13px !important; line-height: 1.4;
+}
+.together-ivory .together-connection-list { gap: 14px !important; }
+:root .together-ivory .mutu-connection-card {
+  position: relative;
+  grid-template-columns: minmax(0, 42%) minmax(0, 1fr);
+  grid-template-rows: auto 1fr auto;
+  gap: 0 15px; padding: 11px !important;
+  border: 1px solid var(--together-edge) !important; border-radius: 23px !important;
+  background: linear-gradient(125deg,#fffefb 8%,#fcfaf1 75%,#f5f2e6) !important;
+  box-shadow: inset 0 0 0 2px #fffef9, inset 0 0 0 3px #e9ddbd,
+    0 3px 0 #e5d9b84d, 0 8px 16px #6c5b2914 !important;
+}
+:root .together-ivory .mutu-connection-card > span { width: 100%; align-self: stretch; display: flex !important; align-items: center; }
+:root .together-ivory .mutu-connection-art {
+  width: 100%; border-radius: 15px; aspect-ratio: 1 / 1;
+  overflow: hidden; box-shadow: inset 0 0 0 1px #8b793029;
+}
+:root .together-ivory .mutu-connection-card > h3 {
+  font-size: 16px !important; font-weight: 600 !important;
+  line-height: 1.3 !important; color: #3e5838; padding-top: 7px;
+}
+:root .together-ivory .mutu-connection-card[data-tone=gold] > h3 { color: #98721f; }
+:root .together-ivory .mutu-connection-card > p {
+  font-size: 12px !important; line-height: 1.5 !important;
+  margin: 7px 0 13px !important; color: #746f69;
+}
+:root .together-ivory .mutu-connection-card > button {
+  min-height: 44px; border-radius: 17px !important; border: 1px solid #fffdf1 !important;
+  font-size: 13px !important; font-weight: 600 !important;
+  padding: 10px 6px !important; margin-bottom: 5px;
+  box-shadow: inset 0 2px 4px #ffffffa3, inset 0 -2px 3px #35452b1c, 0 5px 9px #73633118 !important;
+  background: linear-gradient(155deg,#a4b28b 0%,#718652 48%,#566d3d 83%,#7b8d5d) !important;
+}
+:root .together-ivory .mutu-connection-card[data-tone=gold] > button {
+  background: linear-gradient(155deg,#d0b87a 0%,#af903f 48%,#947127 83%,#bea052) !important;
+}
+.together-ivory .buddy-entry { margin: 14px 16px; }
+.together-ivory .together-story-entry {
+  width: calc(100% - 32px); margin: 0 16px; min-height: 64px;
+  display: flex; align-items: center; gap: 14px; padding: 12px 18px;
+  border: 1px solid #e2d7bd; border-radius: 20px;
+  background: linear-gradient(130deg,#fffefa,#f7f3e8);
+  box-shadow: inset 0 0 0 2px #fff, 0 5px 12px #67583212;
+  color: #292d22; font-size: 16px; font-weight: 600; text-align: left; cursor: pointer;
+}
+.together-story-entry > svg { margin-left: auto; color: #ad8627; flex-shrink: 0; }
+.together-story-flower { color: #a17f28; font-size: 29px; text-shadow: 1px 2px #e6d6a5; }
+@media (max-width: 360px) {
+  :root .together-ivory .mutu-connection-card { grid-template-columns: minmax(0,36%) minmax(0,1fr); column-gap: 10px; }
+  :root .together-ivory .mutu-connection-card > h3 { font-size: 15px !important; }
+  .together-ivory .together-ivory-heading { padding-left: 16px !important; padding-right: 16px !important; }
+}

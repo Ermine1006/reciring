@@ -18,7 +18,7 @@ describe('page identity and positioning (tests 1, 2, 3, 4)', () => {
   })
 
   it('subtitles the whole community hub, not one feature', () => {
-    expect(PAGE.subtitle).toBe('Practise, learn and connect with your community.')
+    expect(PAGE.subtitle).toBe('Practise, learn and connect.')
     expect(PAGE.subtitle.toLowerCase()).not.toContain('consulting')
     expect(PAGE.title.toLowerCase()).not.toContain('consulting')
     expect(PAGE.title.toLowerCase()).not.toContain('practice')
@@ -40,9 +40,9 @@ describe('page identity and positioning (tests 1, 2, 3, 4)', () => {
     const groups = CONNECTION_CARDS.find((c) => c.id === 'groups')
     const words = `${groups.title} ${groups.sub} ${groups.cta}`.toLowerCase()
     for (const t of ['consulting', 'case interview', 'mock']) expect(words).not.toContain(t)
-    expect(groups.sub).toBe('Learn, share interests and meet your community')
+    expect(groups.sub).toBe('Meet people who share your interests.')
     // ...while Mock Interview is allowed to say what it is
-    expect(CONNECTION_CARDS.find((c) => c.id === 'one_on_one').sub).toContain('practice partner')
+    expect(CONNECTION_CARDS.find((c) => c.id === 'one_on_one').sub).toBe('Find a partner. Practise and grow.')
   })
 
   it('routes each card to the flow that already exists (tests 5, 6)', () => {

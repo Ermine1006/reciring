@@ -1,4 +1,5 @@
 import usePracticeSync from '../../lib/usePracticeSync'
+import './together-ivory.css'
 import RecommendationPreferences from './RecommendationPreferences'
 import { feedbackFocusSuggestions } from '../../lib/practiceRecommendations'
 import { fetchPracticeRecommendationPreferences, savePracticeRecommendationPreferences } from '../../lib/practice'
@@ -959,7 +960,7 @@ export default function PracticeHub({ userId, avatarSeed, onOpenChat, onOpenEven
 
   const sessionNavigation = (
         <div style={{ padding: '0 16px' }}>
-          <div role="tablist" style={{
+          <div className="together-session-tabs" role="tablist" style={{
             display: 'flex', background: C.white, border: `1px solid ${C.line}`,
             borderRadius: 99, padding: 4, gap: 4,
           }}>
@@ -1079,12 +1080,12 @@ export default function PracticeHub({ userId, avatarSeed, onOpenChat, onOpenEven
   return (
     <AppScreen>
       <TogetherStyles />
-      <div className={TOGETHER_CLASS}
+      <div className={`${TOGETHER_CLASS} together-ivory`}
         style={{ maxWidth: 560, margin: '0 auto', width: '100%', boxSizing: 'border-box', paddingBottom: 28 }}>
 
         {/* Header: title + subtitle + real Token pill. The subtitle
             names the WHOLE hub, not one feature inside it. */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, padding: '14px 16px 12px' }}>
+        <div className="together-ivory-heading" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, padding: '14px 16px 12px' }}>
           <div style={{ minWidth: 0 }}>
             <h1 style={{ margin: 0, fontSize: 27, fontWeight: 750, color: C.ink, letterSpacing: '-0.02em', fontFamily: FONT }}>
               {PAGE.title}
@@ -1150,7 +1151,7 @@ export default function PracticeHub({ userId, avatarSeed, onOpenChat, onOpenEven
                 presented as secondary or as consulting-specific. */}
             <ConnectionCards selectedId={null} onSelect={chooseConnection} />
             {isBuddyEnabled() && <BuddyEntry onOpen={() => setBuddyOpen(true)} />}
-            {isStoriesEnabled() && <StoryGardenEntry onOpen={() => setStoriesOpen(true)} />}
+            {isStoriesEnabled() && <StoryGardenEntry compact onOpen={() => setStoriesOpen(true)} />}
 
             {/* ── Groups & Events ── */}
             <div ref={groupsRef} aria-hidden="true" style={{ height: 1, scrollMarginTop: 14 }} />

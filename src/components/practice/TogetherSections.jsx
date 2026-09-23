@@ -232,13 +232,13 @@ function CardArt({ card }) {
 export function ConnectionCards({ onSelect, selectedId }) {
   return (
     <>
-      <h2 style={{
+      <h2 className="together-connect-heading" style={{
         fontSize: 17, fontWeight: 700, color: T.ink,
         margin: '22px 16px 11px', letterSpacing: '-0.01em', fontFamily: FONT,
       }}>
         {PAGE.connectHeading}
       </h2>
-      <div style={{
+      <div className="together-connection-list" style={{
         display: 'grid', gridTemplateColumns: '1fr', gap: 12, padding: '0 16px',
         alignItems: 'stretch',
       }}>
