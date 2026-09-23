@@ -15,6 +15,8 @@ const rows = [
   { request_id: 'not-reciprocal', help_types: ['case'], want_types: ['behavioural'] },
 ]
 beforeEach(() => {
+  HTMLDialogElement.prototype.showModal = function () { this.open = true }
+  HTMLDialogElement.prototype.close = function () { this.open = false }
   vi.useFakeTimers()
   vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() })))
 })
@@ -36,11 +38,32 @@ it('walks through the server order once and sends the existing invitation payloa
   walk('Explore the garden')
   fireEvent.click(screen.getByRole('button', { name: 'Invite ranked-first' }))
   expect(invite).toHaveBeenCalledWith(rows[0], null)
-  walk('Meet the next teammate')
+  walk('Continue exploring')
   expect(screen.queryByText('Invite ranked-first')).toBeNull()
   expect(screen.getByText('Invite ranked-second')).toBeTruthy()
   expect(screen.getByText('You’ve explored these recommendations.')).toBeTruthy()
   expect(screen.queryByRole('button', { name: 'Meet the next teammate' })).toBeNull()
+})
+
+it('opens a dismissible modal and moves through four distinct campus scenes', () => {
+  const candidates = Array.from({ length: 4 }, (_, i) => ({ ...rows[1], request_id: `peer-${i}` }))
+  render(<PracticeGarden rows={candidates} request={request} />)
+  walk('Explore the garden')
+  expect(screen.getByRole('dialog').textContent).toContain('Campus garden')
+  expect(document.body.style.overflow).toBe('hidden')
+  fireEvent.click(screen.getByRole('button', { name: 'Close teammate card' }))
+  expect(screen.queryByRole('dialog')).toBeNull()
+  expect(document.body.style.overflow).toBe('')
+  expect(document.activeElement.textContent).toBe('Meet the next teammate')
+  walk('Meet the next teammate')
+  expect(screen.getByRole('dialog').textContent).toContain('Campus library')
+  walk('Continue exploring')
+  expect(screen.getByRole('dialog').textContent).toContain('Study room')
+  walk('Continue exploring')
+  expect(screen.getByRole('dialog').textContent).toContain('Fifth floor patio')
+  expect(document.querySelector('.garden-stage img').src).toContain('practice-patio.webp')
+  fireEvent(screen.getByRole('dialog'), new Event('cancel', { bubbles: false, cancelable: true }))
+  expect(screen.queryByRole('dialog')).toBeNull()
 })
 it('lets users bypass the walk and keeps list filters real', () => {
   render(<PracticeGarden rows={rows} request={request} />)

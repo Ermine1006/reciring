@@ -1,9 +1,17 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { PILOT_PRACTICE_TYPES, PRACTICE_TYPE_SHORT } from '../../data/practiceOptions'
 import { mutualFit } from '../../lib/practiceMatching'
 import PartnerCard from './PartnerCard'
 import { avatarAppearance } from '../AnonymousAvatar'
-import { List, Sprout } from 'lucide-react'
+import { List, Sprout, X } from 'lucide-react'
+
+const SCENES = [
+  { name: 'Campus garden', image: 'practice-garden.webp' },
+  { name: 'Campus library', image: 'practice-library.webp' },
+  { name: 'Study room', image: 'practice-study-room.webp' },
+  { name: 'Fifth floor patio', image: 'practice-patio.webp' },
+]
 
 // Preserve the server's evidence based order. Walking changes presentation,
 // never eligibility, identity, scores or the invitation/acceptance contract.
@@ -59,12 +67,20 @@ function GardenResults({ rows, request, type, view, setView, busyId, onInvite, o
   const [seen, setSeen] = useState([])
   const [encounterId, setEncounterId] = useState(null)
   const [walkingTo, setWalkingTo] = useState(null)
-  const [imageFailed, setImageFailed] = useState(false)
-  const headingRef = useRef(null)
+  const [failedImages, setFailedImages] = useState([])
+  const [sceneIndex, setSceneIndex] = useState(0)
+  const actionRef = useRef(null)
+  const scene = SCENES[sceneIndex % SCENES.length]
   const walkingAvailable = rows.some(row => row.request_id === walkingTo)
   const encounter = rows.find(row => row.request_id === encounterId)
   const next = rows.find(row => !seen.includes(row.request_id))
   const displayedRequest = type === 'all' ? request : { ...request, want_types: [type] }
+  const startWalk = () => {
+    if (!next || busyId) return
+    setSceneIndex(seen.length)
+    setEncounterId(null)
+    setWalkingTo(next.request_id)
+  }
 
   useEffect(() => {
     if (!walkingTo) return
@@ -86,12 +102,6 @@ function GardenResults({ rows, request, type, view, setView, busyId, onInvite, o
       reduced?.removeEventListener?.('change', stop)
     }
   }, [walkingTo, walkingAvailable, view])
-  useEffect(() => {
-    if (encounterId && view === 'garden') {
-      headingRef.current?.focus({ preventScroll: true })
-      headingRef.current?.scrollIntoView?.({ block: 'nearest', behavior: 'auto' })
-    }
-  }, [encounterId, view])
 
   if (!rows.length) return <div className="quest-paper">
     <h3>{type !== 'all' && !request.want_types?.includes(type) ? 'Add this practice type to your preferences' : 'No partners for this filter right now'}</h3>
@@ -104,22 +114,50 @@ function GardenResults({ rows, request, type, view, setView, busyId, onInvite, o
 
   return <>
     <div className={`garden-stage ${walkingTo ? 'is-walking' : ''} ${encounter ? 'has-encounter' : ''}`}>
-      {!imageFailed && <img src="/illustrations/practice-garden.webp" alt="" onError={() => setImageFailed(true)} />}
-      <div className="garden-caption"><span>THE PRACTICE GARDEN</span><h3>A little walk. A useful connection.</h3></div>
+      {!failedImages.includes(scene.image) && <img key={scene.image} src={`/illustrations/${scene.image}`} alt="" onError={() => setFailedImages(previous => [...previous, scene.image])} />}
+      <div className="garden-caption"><span>{scene.name}</span><h3>A little walk. A useful connection.</h3></div>
       <div className="garden-walker"><GardenWalker avatarSeed={avatarSeed} /></div>
       <span className="garden-sign" aria-hidden="true">✦</span>
     </div>
     <div className="garden-walk-actions">
-      {next ? <button type="button" className="quest-primary" disabled={Boolean(walkingTo || busyId)}
-        onClick={() => { setEncounterId(null); setWalkingTo(next.request_id) }}>
+      {next ? <button ref={actionRef} type="button" className="quest-primary" disabled={Boolean(walkingTo || busyId)}
+        onClick={startWalk}>
         {walkingTo ? 'Walking…' : seen.length ? 'Meet the next teammate' : 'Explore the garden'}
       </button> : <div className="garden-end"><p>You’ve explored these recommendations.</p>
-        <button type="button" className="quest-secondary" onClick={() => setView('list')}>See all partners</button></div>}
+        <button ref={actionRef} type="button" className="quest-secondary" onClick={() => setView('list')}>See all partners</button></div>}
+      <small className="garden-scene-note">Campus scenes are for exploring. Arrange your meeting together.</small>
     </div>
     {walkingTo && <p role="status">Meeting your next recommended teammate…</p>}
-    {encounter && <div className="garden-encounter">
-      <h3 ref={headingRef} tabIndex={-1}>Meet your teammate</h3>
-      <PartnerCard key={encounter.request_id} row={encounter} myRequest={displayedRequest} onInvite={onInvite} busy={busyId === encounter.request_id} />
-    </div>}
+    {encounter && <EncounterDialog key={encounter.request_id} scene={scene.name} returnRef={actionRef}
+      onClose={() => setEncounterId(null)} onContinue={next ? startWalk : () => setView('list')}
+      hasNext={Boolean(next)} busy={Boolean(busyId)}>
+      <PartnerCard compact row={encounter} myRequest={displayedRequest} onInvite={onInvite} busy={Boolean(busyId)} />
+    </EncounterDialog>}
   </>
+}
+
+function EncounterDialog({ children, scene, onClose, onContinue, hasNext, busy, returnRef }) {
+  const dialogRef = useRef(null)
+  const titleId = useId()
+  useEffect(() => {
+    const dialog = dialogRef.current
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    dialog.showModal()
+    return () => {
+      dialog.close()
+      document.body.style.overflow = previousOverflow
+      returnRef.current?.focus({ preventScroll: true })
+    }
+  }, [returnRef])
+  return createPortal(<dialog ref={dialogRef} className="garden-dialog" aria-labelledby={titleId}
+    onCancel={event => { event.preventDefault(); onClose() }}
+    onClick={event => { if (event.target === event.currentTarget) onClose() }}>
+    <div className="garden-dialog-layout">
+      <header><div><small>{scene}</small><h2 id={titleId}>Meet your teammate</h2></div>
+        <button autoFocus type="button" aria-label="Close teammate card" onClick={onClose}><X size={20} /></button></header>
+      <div className="garden-dialog-body">{children}</div>
+      <footer><button type="button" disabled={busy} onClick={onContinue}>{hasNext ? 'Continue exploring' : 'See all partners'}</button></footer>
+    </div>
+  </dialog>, document.body)
 }

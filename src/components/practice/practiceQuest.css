@@ -93,6 +93,23 @@ details[open]>summary>.quest-disclosure-chevron { transform:rotate(180deg); }
 .practice-quest .quest-exit { display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:10px 14px; border:1px solid #e6d6cf; border-radius:16px; color:#825a4b; background:#faf3ef; font-size:12px; font-weight:600; }
 .practice-quest .quest-preference-shortcuts { margin:8px 0 14px; gap:8px; }
 .garden-toolbar { margin-bottom:14px; }
+.garden-scene-note { display:block; text-align:center; margin-top:10px; color:#737569; font-size:11px; line-height:1.5; }
+.garden-dialog { padding:0; width:min(460px,calc(100vw - 28px)); max-width:none; max-height:calc(100dvh - 40px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); margin:auto; border:1px solid #dcca93; border-radius:24px; background:#fffdf5; color:#28291f; font-family:Inter,system-ui,sans-serif; box-shadow:0 20px 70px #18271655; overflow:hidden; }
+.garden-dialog::backdrop { background:#18271c80; backdrop-filter:blur(3px); }
+.garden-dialog-layout { display:flex; flex-direction:column; max-height:inherit; }
+.garden-dialog header { flex-shrink:0; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:16px 18px 12px; border-bottom:1px solid #eee6d2; }
+.garden-dialog header small { color:#866a25; font-size:11px; }
+.garden-dialog h2 { font-size:19px; margin:4px 0 0; }
+.garden-dialog button { font:inherit; cursor:pointer; min-height:44px; }
+.garden-dialog header button { display:grid; place-items:center; width:44px; flex-shrink:0; border:1px solid #e2dcc9; border-radius:50%; color:#52633f; background:#f6f5ec; }
+.garden-dialog-body { min-height:0; overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; padding:4px 0; }
+.garden-dialog .garden-compact-partner { background:transparent!important; border:0!important; box-shadow:none!important; padding:16px 18px!important; }
+.garden-partner-signals { margin-bottom:14px; }
+.garden-partner-signals>summary { min-height:44px; cursor:pointer; padding:10px 12px; border:1px solid #dce1cf; border-radius:12px; background:#f1f3e9; color:#52643e; box-sizing:border-box; }
+.garden-dialog footer { padding:12px 18px 16px; border-top:1px solid #eee6d2; flex-shrink:0; }
+.garden-dialog footer button { width:100%; padding:10px; border:1px solid #a3b18c; border-radius:14px; background:#f1f4ea; color:#4d623b; font-weight:600; }
+.garden-dialog button:disabled { opacity:.5; cursor:wait; }
+.garden-dialog button:focus-visible,.garden-dialog summary:focus-visible { outline:3px solid #657b4b; outline-offset:2px; }
 .practice-quest .quest-link:hover:not(:disabled),.practice-quest summary:hover { filter:brightness(.98); }
 .practice-quest .quest-link:active:not(:disabled),.practice-quest .quest-continue:active:not(:disabled),.practice-quest .quest-exit:active:not(:disabled) { transform:translateY(1px); }
 @media(prefers-reduced-motion:reduce) { .quest-disclosure-chevron { transition:none; } }

@@ -41,7 +41,8 @@ function chipTime(w, tz) {
   return `${day} ${time}`
 }
 
-export default function PartnerCard({ row, myRequest, onInvite, busy }) {
+export default function PartnerCard({ row, myRequest, onInvite, busy, compact = false }) {
+  const Signals = compact ? 'details' : 'div'
   const windows = (Array.isArray(row.windows) ? row.windows : [])
     .filter((w) => new Date(w.starts_at) > new Date(Date.now() + 2 * 60_000))
   const [slotId, setSlotId] = useState(windows[0]?.id || null)
@@ -63,7 +64,7 @@ export default function PartnerCard({ row, myRequest, onInvite, busy }) {
   const slot = windows.find((w) => w.id === slotId) || null
 
   return (
-    <div style={{
+    <div className={compact ? 'garden-compact-partner' : undefined} style={{
       background: C.white, borderRadius: 24, border: `1px solid ${C.line}`,
       padding: '22px 20px', boxShadow: '0 2px 10px rgba(0,0,0,0.04)',
     }}>
@@ -91,7 +92,8 @@ export default function PartnerCard({ row, myRequest, onInvite, busy }) {
         <strong style={{ display: 'block', fontSize: 11, marginBottom: 5 }}>WHY YOU COULD HELP EACH OTHER</strong>
         {relevant.length ? `They can support your focus: ${relevant.join(', ')}.` : `They can support your ${short(youPractise).toLowerCase()} practice.`} You can help with {short(youHelpWith).toLowerCase()}.
       </div>
-      <div style={{ fontFamily: FONT, fontSize: 13, lineHeight: 1.5 }}>
+      <Signals className={compact ? 'garden-partner-signals' : undefined} style={{ fontFamily: FONT, fontSize: 13, lineHeight: 1.5 }}>
+        {compact && <summary>Skills & response history</summary>}
         {peerSkills.length > 0 && <BadgeGroup title="Skills recognised by partners" entries={peerSkills} label={skillName} />}
         {traits.length > 0 && <BadgeGroup title="What partners appreciate" entries={traits} label={teammateTraitName} green />}
         {skills.length > 0 && <div style={{ marginBottom: 18 }}><p style={{ margin: '0 0 8px', color: C.ink2 }}>Happy to help with</p>
@@ -105,7 +107,7 @@ export default function PartnerCard({ row, myRequest, onInvite, busy }) {
           <p>Practice totals count sessions confirmed by both people in this community. Each partner counts once per badge. Responsive is partner feedback about coordination. Invitation responses do not measure chat reply speed.</p>
           <p>Members choose what to share. Missing records do not mean poor performance. Improvement tips stay private.</p>
         </details>
-      </div>
+      </Signals>
 
       {/* Their times as selectable chips */}
       {windows.length > 0 && (
