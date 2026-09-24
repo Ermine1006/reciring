@@ -141,3 +141,17 @@ it('confirms optional choices locally and cancels later edits without publishing
   fireEvent.click(screen.getByRole('button', { name: 'Find my teammate →' }))
   expect(publish.mock.calls[0][0].preferences.focus_skills).toEqual(['synthesis'])
 })
+
+it('saves Leadership in both case preference fields and excludes it from behavioural', async () => {
+ const save = vi.fn().mockResolvedValue({})
+ const { rerender } = render(<RecommendationPreferences value={value} request={{want_types:['case'],help_types:['case']}} onSave={save} />)
+ fireEvent.click(screen.getByText('Personalise my practice'))
+ for (const group of ['What would you like to work on?', 'What can you help a partner with?']) {
+   fireEvent.click(within(screen.getByRole('group', {name:group})).getByRole('button', {name:'Leadership'}))
+ }
+ fireEvent.click(screen.getByRole('button', {name:'Save & refresh recommendations'}))
+ expect(save).toHaveBeenCalledWith(expect.objectContaining({focus_skills:['leadership'],support_skills:['leadership']}))
+ await screen.findByText('Preferences saved.')
+ rerender(<RecommendationPreferences value={value} request={{want_types:['behavioural'],help_types:['behavioural']}} onSave={save} />)
+ expect(screen.queryByRole('button', {name:/Leadership/})).toBeNull()
+})

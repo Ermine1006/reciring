@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
 import React from 'react'
-import { it, expect, vi, afterEach } from 'vitest'
+import { it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react'
 import SessionConfirmCard from '../practice/SessionConfirmCard'
 import PeerStrengthSharing from '../practice/PeerStrengthSharing'
-const api = vi.hoisted(() => ({ feedback: vi.fn(), strengths: vi.fn(), teammate: vi.fn().mockResolvedValue({ supported: true }), share: vi.fn() }))
-vi.mock('../../lib/practice', () => ({ fetchFeedbackSupport: api.feedback, fetchPeerStrengthSupport: api.strengths, fetchTeammateFeedbackSupport: api.teammate, peerStrengthSharing: api.share }))
+const api = vi.hoisted(() => ({ feedback: vi.fn(), strengths: vi.fn(), teammate: vi.fn().mockResolvedValue({ supported: true }), ratings: vi.fn(), share: vi.fn() }))
+vi.mock('../../lib/practice', () => ({ fetchSkillRatingsSupport: api.ratings, fetchFeedbackSupport: api.feedback, fetchPeerStrengthSupport: api.strengths, fetchTeammateFeedbackSupport: api.teammate, peerStrengthSharing: api.share }))
+beforeEach(() => { api.ratings.mockResolvedValue({ supported: false }) })
 afterEach(() => { cleanup(); vi.resetAllMocks() })
 it('offers strengths in the chat completion path, allows deselection, and submits them with confirmation', async () => {
  api.teammate.mockResolvedValue({ supported: true }); api.feedback.mockResolvedValue({ supported: true }); api.strengths.mockResolvedValue({ supported: true })
@@ -42,4 +43,22 @@ it('requires explicit sharing consent and retains the saved state on failure', a
  const checkbox = await screen.findByRole('checkbox'); expect(checkbox.checked).toBe(false)
  fireEvent.click(checkbox); await screen.findByRole('alert'); expect(checkbox.checked).toBe(false)
  expect(api.share).toHaveBeenLastCalledWith('c', true)
+})
+
+it('submits private ratings and Leadership with completion, without converting scores to badges', async () => {
+ api.ratings.mockResolvedValue({ supported: true }); api.feedback.mockResolvedValue({ supported: true }); api.strengths.mockResolvedValue({ supported: true }); api.teammate.mockResolvedValue({ supported: true })
+ const submit = vi.fn()
+ render(<SessionConfirmCard myUserId="a" partnerUserId="b" session={{ interview_category: 'case' }} onSubmit={submit} />)
+ fireEvent.click(screen.getByText('Yes, we completed it')); fireEvent.click(screen.getByText('Continue'))
+ screen.getAllByRole('checkbox').forEach(c => fireEvent.click(c))
+ await waitFor(() => expect(screen.getByText('Continue').disabled).toBe(false))
+ fireEvent.click(screen.getByText('Continue'))
+ fireEvent.click(await screen.findByRole('button', { name: 'Leadership' }))
+ fireEvent.click(screen.getByText('Rate observed skills · Optional'))
+ fireEvent.change(screen.getByLabelText('Rate Leadership'), { target: { value: '4' } })
+ fireEvent.change(screen.getByLabelText('Rate Structuring'), { target: { value: '2' } })
+ fireEvent.click(screen.getByText('Continue'))
+ expect(screen.getByText('Private rating: Leadership 4/5')).toBeTruthy()
+ fireEvent.click(screen.getByText('Submit confirmation'))
+ expect(submit).toHaveBeenCalledWith(expect.objectContaining({ skillRatings: { leadership: 4, structuring: 2 }, strengthSkills: ['leadership'] }))
 })

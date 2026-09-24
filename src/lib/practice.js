@@ -370,7 +370,7 @@ export async function fetchSessionConfirmations(sessionId) {
  */
 export async function submitPracticeConfirmation({
   sessionId, outcome, completedOwnRound = false, completedPartnerRound = false, noShowOf = null,
-  suggestionCode = null, note = '', strengthSkills = [],
+  suggestionCode = null, note = '', strengthSkills = [], skillRatings = {},
 }) {
   if (!isSupabaseConfigured) return notConfigured()
   const base = {
@@ -387,10 +387,27 @@ export async function submitPracticeConfirmation({
   const args = suggestionCode
     ? { ...base, p_suggestion_code: suggestionCode, p_note: (note || '').slice(0, 280) }
     : base
+  if (Object.keys(skillRatings).length) {
+    return supabase.rpc('submit_practice_confirmation_with_ratings', {
+      ...base, p_suggestion_code: suggestionCode, p_note: note || '',
+      p_strength_skills: strengthSkills, p_skill_ratings: skillRatings,
+    })
+  }
   const { data, error } = strengthSkills.length
     ? await supabase.rpc('submit_practice_confirmation_with_strengths', { ...base, p_suggestion_code: suggestionCode, p_note: note || '', p_strength_skills: strengthSkills })
     : await supabase.rpc('submit_practice_confirmation', args)
   return { data, error }
+}
+
+export async function fetchSkillRatingsSupport() {
+  if (!isSupabaseConfigured) return { supported: false }
+  const { data, error } = await supabase.rpc('practice_skill_ratings_supported')
+  return { supported: !error && data === true }
+}
+
+export async function fetchSessionSkillRatings(sessionId) {
+  if (!isSupabaseConfigured) return notConfigured()
+  return supabase.from('practice_skill_ratings').select('author_user_id,recipient_user_id,ratings').eq('session_id', sessionId)
 }
 
 /**

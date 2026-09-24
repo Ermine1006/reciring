@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import PeerAvatar from '../PeerAvatar'
 import SessionConfirmCard from './SessionConfirmCard'
+import SessionSkillRatings from './SessionSkillRatings'
 import ExchangeProgress from './ExchangeProgress'
 import {
   deriveDisplayState, overlapWindows, formatWindow, formatSessionTime, wallTimeToUtc,
@@ -497,6 +498,7 @@ export default function PairingDetail({
           </>
         )}
 
+        <SessionSkillRatings session={session} myUserId={myUserId} />
         {state === 'waiting_for_partner' && (
           <Card style={{ background: C.sageBg, border: '1px solid #D7E7DC' }}>
             <p style={{ margin: 0, fontSize: 13.5, fontWeight: 700, color: C.sage, fontFamily: FONT }}>

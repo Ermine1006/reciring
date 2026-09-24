@@ -2,6 +2,7 @@ import SessionTimeChange from './SessionTimeChange'
 import SessionMeetingLinkEditor from './SessionMeetingLinkEditor'
 import { useState, useEffect, useCallback } from 'react'
 import SessionConfirmCard from './SessionConfirmCard'
+import SessionSkillRatings from './SessionSkillRatings'
 import TokenUnlockModal from './TokenUnlockModal'
 import {
   fetchMyPairings, fetchMySessions, fetchSessionConfirmations,
@@ -356,6 +357,7 @@ export default function ExchangeNextStep({ matchId, currentUserId, peerName, onO
         </Shell>
       )}
 
+      <SessionSkillRatings session={session} myUserId={currentUserId} />
       {st === 'verified' && (
         <Shell err={err} onOpenDetails={onOpenDetails} label="Token earned">
           <p style={{ margin: 0, fontSize: 13.5, fontWeight: 650, color: C.goldDark, fontFamily: FONT }}>

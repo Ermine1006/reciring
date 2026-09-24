@@ -1,7 +1,7 @@
 import { SKILLS_BY_CATEGORY } from '../data/practiceModes'
 import { SUGGESTIONS } from '../data/practiceFeedback'
 
-export const skillName = key => Object.values(SKILLS_BY_CATEGORY).flat().find(s => s.key === key)?.label || null
+export const skillName = key => key === 'leadership' ? 'Leadership' : Object.values(SKILLS_BY_CATEGORY).flat().find(s => s.key === key)?.label || null
 
 // Only the recipient's unreported, mutually verified feedback can suggest a focus.
 // These suggestions remain private until the recipient explicitly saves a focus.

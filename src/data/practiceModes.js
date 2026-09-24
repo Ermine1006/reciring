@@ -60,6 +60,7 @@ export const SKILLS_BY_CATEGORY = {
     { key: 'synthesis', label: 'Synthesis' },
     { key: 'final_recommendation', label: 'Final recommendation' },
     { key: 'communication', label: 'Communication' },
+    { key: 'leadership', label: 'Leadership' },
   ],
   behavioural: [
     { key: 'story_selection', label: 'Story selection' },
