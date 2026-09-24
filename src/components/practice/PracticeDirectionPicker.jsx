@@ -18,12 +18,11 @@ export function useFinancePracticeSupport() {
 
 export default function PracticeDirectionPicker({ value, onChange, disabled = false, finance }) {
   return <section className="practice-direction-picker" aria-label="Career direction">
-    <p className="practice-direction-label">Your career direction</p>
+    <p className="practice-direction-label">Career direction</p>
     <div className="practice-direction-options">
       {PRACTICE_DIRECTIONS.map(item => <button type="button" key={item.key}
         disabled={disabled} aria-label={item.label} aria-pressed={value === item.key} onClick={() => onChange(item.key)}>
-        <span aria-hidden="true">{item.key === 'consulting' ? '✧' : '▥'}</span>
-        <span><strong>{item.label}</strong><small>{item.key === 'consulting' ? 'Case & behavioural' : 'Technical, markets & behavioural'}</small></span>
+        {item.label}
       </button>)}
     </div>
     {value === 'finance' && !finance.supported && <p role="status" className="practice-direction-status">
