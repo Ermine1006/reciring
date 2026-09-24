@@ -12,18 +12,25 @@ export const PRACTICE_TYPES = [
   'technical',
   'product',
   'finance',
+  'finance_debt',
+  'finance_markets',
+  'finance_behavioural',
   'other',
 ]
 
 // What the pilot request composer actually shows (consulting focus).
 export const PILOT_PRACTICE_TYPES = ['case', 'behavioural']
+export const FINANCE_PRACTICE_TYPES = ['finance', 'finance_debt', 'finance_markets', 'finance_behavioural']
 
 export const PRACTICE_TYPE_LABELS = {
   case:        'Case interview',
   behavioural: 'Behavioural / fit',
   technical:   'Technical',
   product:     'Product',
-  finance:     'Finance',
+  finance:     'Core technical',
+  finance_debt: 'Debt & lending',
+  finance_markets: 'Markets & stock pitch',
+  finance_behavioural: 'Finance behavioural',
   other:       'Other',
 }
 
@@ -34,7 +41,10 @@ export const PRACTICE_TYPE_SHORT = {
   behavioural: 'Behavioural',
   technical:   'Technical',
   product:     'Product',
-  finance:     'Finance',
+  finance:     'Core technical',
+  finance_debt: 'Debt & lending',
+  finance_markets: 'Markets & stock pitch',
+  finance_behavioural: 'Finance behavioural',
   other:       'Other',
 }
 

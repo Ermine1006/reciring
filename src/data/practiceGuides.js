@@ -17,6 +17,8 @@
 // Mutu supplies no cases, exhibits or questions. Every guide tells
 // people to bring something they are permitted to share.
 
+import { SKILLS_BY_CATEGORY, INTERVIEW_CATEGORIES } from './practiceModes'
+
 export const GUIDE_VERSION = 'g1'
 
 /** Shown wherever a guide asks people to bring their own material. */
@@ -236,6 +238,13 @@ const FULL_MOCK_BEHAVIOURAL = {
 const drill = (d) => ({ reps: 1, time: '10-12 min', ...d })
 
 export const CASE_DRILLS = {
+  leadership: drill({
+    title: 'Leadership', objective: 'Guide the discussion and respond thoughtfully to input.',
+    setup: ['Choose a case question you are permitted to share.'],
+    steps: ['Agree on the objective.', 'Propose a clear next step and explain your reasoning.', 'Invite input and adapt your approach.', 'Summarise the decision and switch roles.'],
+    observe: ['Was the direction clear?', 'Did the candidate respond to input?', 'Were decisions explained?'],
+    completion: 'You have both practised guiding a case discussion.',
+  }),
   problem_clarification: drill({
     title: 'Problem clarification',
     objective: 'Get to the real question before doing any analysis.',
@@ -461,4 +470,37 @@ export const DRILLS_BY_CATEGORY = { case: CASE_DRILLS, behavioural: BEHAVIOURAL_
 export const FULL_MOCK_GUIDES = {
   case: FULL_MOCK_CASE,
   behavioural: FULL_MOCK_BEHAVIOURAL,
+}
+
+// Finance follows the same two-round facilitator. No answer bank or automated grading.
+const FINANCE_OBSERVE = ['Was the answer accurate?', 'Was the reasoning explained?', 'Was there an example of applying it in real analysis?']
+for (const category of ['finance', 'finance_debt', 'finance_markets']) {
+  DRILLS_BY_CATEGORY[category] = Object.fromEntries(SKILLS_BY_CATEGORY[category].map(skill => [skill.key, drill({
+    title: skill.label,
+    objective: 'Practise one topic, explain your thinking and give each other useful feedback.',
+    setup: ['Bring questions you are permitted to share.', 'Agree on the topic and who starts.'],
+    steps: skill.key === 'finance_stock_pitch'
+      ? ['Deliver a stock pitch in about 2 to 5 minutes.', 'Discuss the thesis, supporting evidence and risks.', 'Answer follow up questions, then switch roles.']
+      : ['Answer a question on your chosen topic.', 'Explain the reasoning and assumptions.', 'Describe an example from your own analysis, if you have one.', 'Discuss one useful next step, then switch roles.'],
+    observe: FINANCE_OBSERVE,
+    note: 'Verbal discussion does not certify spreadsheet proficiency or job readiness.',
+    completion: 'You have both practised this finance topic.',
+  })]))
+  FULL_MOCK_GUIDES[category] = {
+    key: `full_mock_swap:${category}`, mode: 'full_mock_swap', category,
+    title: 'Full Mock Swap', subtitle: INTERVIEW_CATEGORIES[category].label,
+    prepare: ['Questions you are permitted to share', 'Paper or a spreadsheet if useful', 'A quiet place for feedback'],
+    stages: [
+      { key: 'set_up', title: 'Choose your questions', shared: ['Agree on topics and who starts.', 'Each person takes one candidate round.', 'Allow time for feedback before switching roles.'], cta: 'Begin the round' },
+      { key: 'practise', title: 'Know it. Explain it. Apply it.', time: '25 to 30 min', candidate: ['Answer clearly.', 'Explain your reasoning.', 'Describe relevant real analysis where possible.'], interviewer: ['Ask questions from your agreed topics.', 'Explore the reasoning with follow up questions.', 'Allow your partner to explain their thinking.'], observe: FINANCE_OBSERVE },
+      { key: 'feedback', title: 'Share feedback', time: '5 min', shared: FEEDBACK_PROMPTS, cta: 'Finish round' },
+    ],
+  }
+}
+DRILLS_BY_CATEGORY.finance_behavioural = Object.fromEntries(Object.entries(BEHAVIOURAL_DRILLS).map(([key, guide]) => ['finance_' + key, {
+  ...guide, setup: [...guide.setup, 'Use a finance interview prompt, such as why this industry or a resume walkthrough.'],
+}]))
+FULL_MOCK_GUIDES.finance_behavioural = { ...FULL_MOCK_BEHAVIOURAL,
+  key: 'full_mock_swap:finance_behavioural', category: 'finance_behavioural', subtitle: 'Finance behavioural interview',
+  prepare: [...FULL_MOCK_BEHAVIOURAL.prepare, 'A finance motivation question and examples from your experience'],
 }

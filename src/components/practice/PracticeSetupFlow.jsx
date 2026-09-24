@@ -1,3 +1,5 @@
+import PracticeDirectionPicker, { PracticeTypeChoices, useFinancePracticeSupport } from './PracticeDirectionPicker'
+import { directionForTypes, isFinanceType, practiceTypeLabel } from '../../data/practiceDirections'
 import PresetOption from './AvailabilityPresetOption'
 import { useState } from 'react'
 import {
@@ -49,26 +51,6 @@ function isoToWall(iso, timeZone) {
   }
 }
 
-function TypeChips({ selected, onToggle, label }) {
-  return (
-    <div role="group" aria-label={label} style={{ display: 'flex', flexWrap: 'wrap', gap: 9 }}>
-      {PILOT_PRACTICE_TYPES.map((t) => {
-        const on = selected.includes(t)
-        return (
-          <button data-mutu-glass="" key={t} type="button" onClick={() => onToggle(t)}
-            className="active:scale-95 transition-all"
-            style={{
-              border: `1.5px solid ${on ? MATCHA_DEEP : C.line}`, borderRadius: 14,
-              padding: '13px 20px', fontSize: 14, fontWeight: 650, fontFamily: FONT,
-              background: on ? '#F0F2E8' : C.white, color: on ? MATCHA_DEEP : C.ink2, cursor: 'pointer',
-            }}>
-            {on ? '✓ ' : ''}{PRACTICE_TYPE_LABELS[t]}
-          </button>
-        )
-      })}
-    </div>
-  )
-}
 
 const LAST_STEP = 2
 
@@ -89,6 +71,8 @@ function MoreDetails({ open, onToggle, children }) {
 }
 
 export default function PracticeSetupFlow({ existing, existingWindows = [], onSave, onCancel, saving, initialStep = 1 }) {
+  const [direction, setDirection] = useState(directionForTypes(existing?.want_types))
+  const finance = useFinancePracticeSupport()
   const tz = existing?.timezone || DEFAULT_TIMEZONE
   // Deep-linking into a step only makes sense when a request already
   // exists (e.g. "Add more times" → the availability step); first-timers
@@ -123,6 +107,7 @@ export default function PracticeSetupFlow({ existing, existingWindows = [], onSa
 
   const next = () => {
     setErr(null)
+    if ([...wantTypes, ...helpTypes].some(isFinanceType) && !finance.supported) return setErr('Finance practice is not enabled yet. Please try again later.')
     if (wantTypes.length === 0) return setErr('Pick at least one thing you want to practise.')
     if (helpTypes.length === 0) return setErr('Pick at least one. Both people practise, both people help!')
     setStep(step + 1)
@@ -130,6 +115,7 @@ export default function PracticeSetupFlow({ existing, existingWindows = [], onSa
 
   const submit = () => {
     setErr(null)
+    if ([...wantTypes, ...helpTypes].some(isFinanceType) && !finance.supported) return setErr('Finance practice is not enabled yet. Please try again later.')
     // Times are OPTIONAL: matching works without them (they only let
     // partners book you instantly). The database has no requirement.
     // A preset expands into the same wall-time shape the typed form
@@ -185,6 +171,8 @@ export default function PracticeSetupFlow({ existing, existingWindows = [], onSa
 
         {step === 1 && (
           <div className="practice-setup-cards">
+            <PracticeDirectionPicker value={direction} onChange={setDirection} finance={finance} disabled={saving} />
+            <p className="quest-setup-preference-status">Selected: practise {wantTypes.map(practiceTypeLabel).join(', ') || 'not chosen'} · help with {helpTypes.map(practiceTypeLabel).join(', ') || 'not chosen'}</p>
             <section className="practice-paper">
             <h3 style={{ fontSize: 14, fontWeight: 700, color: C.ink, margin: '0 0 4px', fontFamily: FONT }}>
               I want to practise
@@ -192,7 +180,7 @@ export default function PracticeSetupFlow({ existing, existingWindows = [], onSa
             <p style={{ fontSize: 12.5, color: C.ink2, margin: '0 0 10px', fontFamily: FONT }}>
               Your partner runs this round for you.
             </p>
-            <TypeChips label="You want to practise" selected={wantTypes} onToggle={toggle(wantTypes, setWantTypes)} />
+            <PracticeTypeChoices direction={direction} disabled={saving || (direction === 'finance' && !finance.supported)} label="You want to practise" selected={wantTypes} onToggle={toggle(wantTypes, setWantTypes)} />
             <MoreDetails open={more1} onToggle={() => setMore1(!more1)}>
               <input style={inputStyle} value={wantFocus} maxLength={140}
                 onChange={(e) => setWantFocus(e.target.value)}
@@ -208,7 +196,7 @@ export default function PracticeSetupFlow({ existing, existingWindows = [], onSa
             <p style={{ fontSize: 12.5, color: C.ink2, margin: '0 0 10px', fontFamily: FONT }}>
               You run your partner&rsquo;s round and give feedback.
             </p>
-            <TypeChips label="You can run a round on" selected={helpTypes} onToggle={toggle(helpTypes, setHelpTypes)} />
+            <PracticeTypeChoices direction={direction} disabled={saving || (direction === 'finance' && !finance.supported)} label="You can run a round on" selected={helpTypes} onToggle={toggle(helpTypes, setHelpTypes)} />
             <MoreDetails open={more2} onToggle={() => setMore2(!more2)}>
               <input style={inputStyle} value={helpFocus} maxLength={140}
                 onChange={(e) => setHelpFocus(e.target.value)}

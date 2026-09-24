@@ -1,3 +1,6 @@
+import { useEffect, useState } from 'react'
+import PracticeDirectionPicker, { useFinancePracticeSupport } from './PracticeDirectionPicker'
+import { directionForTypes, TYPES_BY_DIRECTION } from '../../data/practiceDirections'
 import {
   SESSION_MODES, SESSION_MODE_KEYS, INTERVIEW_CATEGORIES, INTERVIEW_CATEGORY_KEYS,
   skillsFor, validateSessionSetup, describeSession,
@@ -38,6 +41,9 @@ const Label = ({ children }) => (
  */
 export default function SessionSetupFields({ value, onChange, supported = true, compact = false }) {
   const { mode, category, skillFocus } = value
+  const [direction, setDirection] = useState(directionForTypes([category]))
+  const finance = useFinancePracticeSupport()
+  useEffect(() => { if (category) setDirection(directionForTypes([category])) }, [category])
   const modeMeta = SESSION_MODES[mode]
   const skills = skillsFor(category)
   const disabled = !supported
@@ -98,12 +104,13 @@ export default function SessionSetupFields({ value, onChange, supported = true, 
       </div>
 
       <div>
+        <PracticeDirectionPicker value={direction} onChange={next => { if (next === direction) return; setDirection(next); onChange({ ...value, category: null, skillFocus: null }) }} finance={finance} disabled={disabled} />
         <Label>Interview type</Label>
-        <div style={{ display: 'flex', gap: 8 }}>
-          {INTERVIEW_CATEGORY_KEYS.map((k) => {
+        <div className="practice-type-choices">
+          {TYPES_BY_DIRECTION[direction].map((k) => {
             const on = category === k
             return (
-              <button data-mutu-glass="" key={k} type="button" disabled={disabled}
+              <button data-mutu-glass="" key={k} type="button" disabled={disabled || (direction === 'finance' && !finance.supported)}
                 onClick={() => set({ category: k })}
                 aria-pressed={on}
                 style={{

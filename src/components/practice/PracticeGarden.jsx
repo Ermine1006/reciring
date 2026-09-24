@@ -5,6 +5,8 @@ import { mutualFit } from '../../lib/practiceMatching'
 import PartnerCard from './PartnerCard'
 import { avatarAppearance } from '../AnonymousAvatar'
 import { List, Sprout, X } from 'lucide-react'
+import PracticeDirectionPicker, { useFinancePracticeSupport } from './PracticeDirectionPicker'
+import { directionForTypes, TYPES_BY_DIRECTION } from '../../data/practiceDirections'
 
 const SCENES = [
   { name: 'Campus garden', image: 'practice-garden.webp' },
@@ -44,11 +46,16 @@ export function GardenWalker({ avatarSeed }) {
 export default function PracticeGarden({ rows, request, busyId, onInvite, onPreferences, avatarSeed, resetKey = '' }) {
   const [view, setView] = useState('garden')
   const [type, setType] = useState('all')
+  const [direction, setDirection] = useState(directionForTypes(request.want_types))
+  const finance = useFinancePracticeSupport()
+  const visibleTypes = TYPES_BY_DIRECTION[direction]
+  const scopedRequest = { ...request, want_types: (request.want_types || []).filter(key => visibleTypes.includes(key)) }
   const typesKey = JSON.stringify([request.want_types, request.help_types])
   return <section className="practice-garden" aria-label="Find a practice partner">
+    <PracticeDirectionPicker value={direction} onChange={next => { setDirection(next); setType('all') }} finance={finance} disabled={Boolean(busyId)} />
     <div className="garden-toolbar">
       <div className="garden-type-options" role="group" aria-label="Filter by what I want to practise">
-        {['all', ...PILOT_PRACTICE_TYPES].map(key => <button key={key} type="button"
+        {['all', ...visibleTypes].map(key => <button key={key} type="button"
           aria-pressed={type === key} disabled={Boolean(busyId)} onClick={() => setType(key)}>
           {key === 'all' ? 'All' : PRACTICE_TYPE_SHORT[key]}
         </button>)}
@@ -58,7 +65,7 @@ export default function PracticeGarden({ rows, request, busyId, onInvite, onPref
         {view === 'garden' ? 'List view' : 'Garden view'}
       </button>
     </div>
-    <GardenResults key={`${type}:${typesKey}:${resetKey}`} view={view} setView={setView} rows={gardenCandidates(rows, request, type)}
+    <GardenResults key={`${direction}:${type}:${typesKey}:${resetKey}`} view={view} setView={setView} rows={gardenCandidates(rows, scopedRequest, type)}
       request={request} type={type} busyId={busyId} onInvite={onInvite} onPreferences={onPreferences} avatarSeed={avatarSeed} />
   </section>
 }

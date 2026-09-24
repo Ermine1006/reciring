@@ -389,7 +389,7 @@ describe('session mode configuration and validation (tests 1-6)', () => {
   })
 
   it('offers only the skills of the chosen category', () => {
-    expect(skillsFor('case')).toHaveLength(8)
+    expect(skillsFor('case')).toHaveLength(9)
     expect(skillsFor('behavioural')).toHaveLength(8)
     expect(skillsFor('case').map((s) => s.label)).toContain('Exhibit interpretation')
     expect(skillsFor('behavioural').map((s) => s.label)).toContain('Executive presence')
@@ -423,7 +423,7 @@ describe('session mode configuration and validation (tests 1-6)', () => {
       expect(m.description).not.toMatch(/ready|mastered|expert|guarantee/i)
     }
     expect(Object.values(INTERVIEW_CATEGORIES).map((c) => c.label))
-      .toEqual(['Case interview', 'Behavioural interview'])
+      .toEqual(['Case interview', 'Behavioural interview', 'Core technical', 'Debt & lending', 'Markets & stock pitch', 'Finance behavioural'])
   })
 
   it('names the completion steps for the mode that was practised', () => {

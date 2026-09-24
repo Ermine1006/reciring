@@ -39,6 +39,20 @@ export const SUGGESTIONS = {
   ],
 }
 
+// Finance reuses compatible existing suggestion codes so old clients can read notes.
+for (const category of ['finance', 'finance_debt', 'finance_markets']) {
+  SUGGESTIONS[category] = [
+    { code: 'explain_calculations', label: 'Explain calculations and assumptions more clearly', skills: [] },
+    { code: 'connect_insight_to_question', label: 'Connect the answer to the financial question', skills: [] },
+    { code: 'add_evidence_of_impact', label: 'Add a specific example from real analysis', skills: [] },
+    { code: 'communicate_concisely', label: 'Communicate more concisely', skills: [] },
+    { code: 'other', label: 'Other', skills: [] },
+  ]
+}
+SUGGESTIONS.finance_behavioural = SUGGESTIONS.behavioural.map(item => ({
+  ...item, skills: item.skills.map(key => 'finance_' + key),
+}))
+
 export const ALL_SUGGESTION_CODES = Object.values(SUGGESTIONS)
   .flat().map((s) => s.code)
 

@@ -1,3 +1,6 @@
+import FinanceObservations from './FinanceObservations'
+import { usesFinanceObservations } from '../../data/financeObservations'
+import { useFinancePracticeSupport } from './PracticeDirectionPicker'
 import { TEAMMATE_TRAITS } from '../../data/practiceTeammateTraits'
 import { fetchFeedbackSupport, fetchPeerStrengthSupport, fetchTeammateFeedbackSupport } from '../../lib/practice'
 import { SKILLS_BY_CATEGORY } from '../../data/practiceModes'
@@ -91,6 +94,9 @@ export default function SessionConfirmCard({
   const [strengthSkills, setStrengthSkills] = useState([])
   const [ratingsSupported, setRatingsSupported] = useState(false)
   const [skillRatings, setSkillRatings] = useState({})
+  const [financeObservations, setFinanceObservations] = useState({})
+  const finance = useFinancePracticeSupport()
+  const validObservations = Object.fromEntries(Object.entries(financeObservations).filter(([key]) => skillRatings[key] != null))
   useEffect(() => {
     let active = true
     fetchSkillRatingsSupport().then(result => { if (active) setRatingsSupported(result.supported) }).catch(() => {})
@@ -103,7 +109,7 @@ export default function SessionConfirmCard({
     }).catch(() => {}).finally(() => { if (active) setCheckingFeedback(false) })
     return () => { active = false }
   }, [initialFeedbackSupported])
-  const strengthOptions = session?.interview_category ? feedbackSkills(session.interview_category, ratingsSupported) : Object.values(SKILLS_BY_CATEGORY).flat()
+  const strengthOptions = session?.interview_category ? feedbackSkills(session.interview_category, ratingsSupported) : [...SKILLS_BY_CATEGORY.case, ...SKILLS_BY_CATEGORY.behavioural]
   const [step, setStep] = useState('happened')     // happened | roles | feedback | review
   const [answer, setAnswer] = useState(null)       // nothing preselected
   const [ownRound, setOwnRound] = useState(false)
@@ -224,6 +230,7 @@ export default function SessionConfirmCard({
           <p style={{ fontSize: 12, color: C.ink2 }}>After you both confirm, these can support their next recommendations and anonymous card if they choose to share.</p>
         </section>}
         {ratingsSupported && session?.interview_category && <SkillRatings category={session.interview_category} value={skillRatings} onChange={setSkillRatings} disabled={busy} />}
+        {finance.supported && usesFinanceObservations(session?.interview_category) && <FinanceObservations category={session.interview_category} ratings={skillRatings} value={validObservations} onChange={setFinanceObservations} disabled={busy} />}
         {teammateSupported && <section style={{ marginBottom: 20 }}>
           <h3 style={{ fontSize: 17 }}>What made them a good teammate?</h3>
           <p style={{ fontSize: 13, color: C.ink2 }}>Optional · Choose what you observed. Tap again to remove.</p>
@@ -272,6 +279,7 @@ export default function SessionConfirmCard({
 
   // ── review, then an immutable submission ──
   const lines = reviewLines({ session, answer, suggestionCode, note, reasonCode })
+  if (answer === 'completed') for (const [key, observations] of Object.entries(validObservations)) lines.push(`Private observations: ${strengthOptions.find(s => s.key === key)?.label || key} · ${observations.join(', ').toUpperCase()}`)
   if (answer === 'completed') for (const [key, score] of Object.entries(skillRatings)) lines.push(`Private rating: ${strengthOptions.find(s => s.key === key)?.label || key} ${score}/5`)
   if (answer === 'completed' && strengthSkills.length) lines.push(`Partner strengths: ${strengthOptions.filter(s => strengthSkills.includes(s.key)).map(s => s.label).join(', ')}`)
   if (answer === 'completed' && teammateTraits.length) lines.push(`Teammate recognition: ${TEAMMATE_TRAITS.filter(t => teammateTraits.includes(t.key)).map(t => t.label).join(', ')}`)
@@ -288,7 +296,7 @@ export default function SessionConfirmCard({
       <p style={{ margin: '0 0 11px', fontSize: 12, color: C.ink2, fontFamily: FONT, lineHeight: 1.5 }}>
         You cannot edit this confirmation after submitting.
       </p>
-      <Primary disabled={!submission} onClick={() => onSubmit?.({ ...submission, skillRatings: answer === 'completed' ? skillRatings : {}, strengthSkills: answer === 'completed' ? [...strengthSkills, ...teammateTraits] : [] })}>
+      <Primary disabled={!submission} onClick={() => onSubmit?.({ ...submission, financeObservations: answer === 'completed' ? validObservations : {}, skillRatings: answer === 'completed' ? skillRatings : {}, strengthSkills: answer === 'completed' ? [...strengthSkills, ...teammateTraits] : [] })}>
         {busy ? 'Submitting…' : 'Submit confirmation'}
       </Primary>
       <Back to={answer === 'completed' ? ((feedbackSupported || strengthSupported) ? 'feedback' : 'roles') : 'happened'} />

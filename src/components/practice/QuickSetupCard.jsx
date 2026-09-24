@@ -1,3 +1,5 @@
+import PracticeDirectionPicker, { PracticeTypeChoices, useFinancePracticeSupport } from './PracticeDirectionPicker'
+import { isFinanceType, practiceTypeLabel } from '../../data/practiceDirections'
 import { useRef, useState } from 'react'
 import { PILOT_PRACTICE_TYPES, PRACTICE_TYPE_SHORT } from '../../data/practiceOptions'
 import { wallTimeToUtc } from '../../lib/practiceMatching'
@@ -24,33 +26,20 @@ const inputStyle = {
   outline: 'none', boxSizing: 'border-box', minWidth: 0,
 }
 
-function TypeRow({ label, selected, onToggle }) {
+function TypeRow({ label, selected, onToggle, direction, disabled }) {
   return (
     <div style={{ marginBottom: 14 }}>
       <p style={{ margin: '0 0 7px', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, color: C.ink3, fontFamily: FONT }}>
         {label}
       </p>
-      <div style={{ display: 'flex', gap: 9 }}>
-        {PILOT_PRACTICE_TYPES.map((t) => {
-          const on = selected.includes(t)
-          return (
-            <button data-mutu-glass="" key={t} type="button" aria-pressed={on} onClick={() => onToggle(t)}
-              className="active:scale-95 transition-all"
-              style={{
-                flex: 1, border: `1.5px solid ${on ? MATCHA_DEEP : C.line}`, borderRadius: 13,
-                padding: '13px 0', fontSize: 14.5, fontWeight: 700, fontFamily: FONT,
-                background: on ? MATCHA_SOFT : C.white, color: on ? MATCHA_DEEP : C.ink2, cursor: 'pointer',
-              }}>
-              {on ? '✓ ' : ''}{PRACTICE_TYPE_SHORT[t]}
-            </button>
-          )
-        })}
-      </div>
+      <PracticeTypeChoices compact direction={direction} disabled={disabled} selected={selected} onToggle={onToggle} label={label} />
     </div>
   )
 }
 
 export default function QuickSetupCard({ saving, onPublish, preferenceValue }) {
+  const [direction, setDirection] = useState('consulting')
+  const finance = useFinancePracticeSupport()
   const [want, setWant] = useState([])
   const [help, setHelp] = useState([])
   const [showTimes, setShowTimes] = useState(false)
@@ -80,7 +69,7 @@ export default function QuickSetupCard({ saving, onPublish, preferenceValue }) {
 
   const toggle = (list, set) => (t) => set(list.includes(t) ? list.filter((x) => x !== t) : [...list, t])
   const setWin = (i, k, v) => setWindows((ws) => ws.map((w, j) => (j === i ? { ...w, [k]: v } : w)))
-  const ready = want.length > 0 && help.length > 0
+  const ready = want.length > 0 && help.length > 0 && (![...want, ...help].some(isFinanceType) || finance.supported)
 
   const publish = () => {
     setErr(null)
@@ -108,9 +97,11 @@ export default function QuickSetupCard({ saving, onPublish, preferenceValue }) {
         One round each. Names unlock when you both accept.
       </p>
 
-      <TypeRow label="I want to practise" selected={want} onToggle={toggle(want, setWant)} />
-      <TypeRow label="I can help with" selected={help} onToggle={toggle(help, setHelp)} />
+      <PracticeDirectionPicker value={direction} onChange={setDirection} finance={finance} disabled={saving} />
+      <TypeRow direction={direction} disabled={saving || (direction === 'finance' && !finance.supported)} label="I want to practise" selected={want} onToggle={toggle(want, setWant)} />
+      <TypeRow direction={direction} disabled={saving || (direction === 'finance' && !finance.supported)} label="I can help with" selected={help} onToggle={toggle(help, setHelp)} />
 
+      {(want.length > 0 || help.length > 0) && <p className="quest-setup-preference-status">Selected: practise {want.map(practiceTypeLabel).join(', ') || 'not chosen'} · help with {help.map(practiceTypeLabel).join(', ') || 'not chosen'}</p>}
       {preferenceValue && <>
         <details ref={personalise} className="quest-setup-personalise">
           <summary>Personalise my practice · Optional</summary>
@@ -123,8 +114,8 @@ export default function QuickSetupCard({ saving, onPublish, preferenceValue }) {
           <p className="quest-setup-preference-status">Saved with Find my teammate.</p>
           </> : <div className="quest-setup-preference-empty">
             <p>Choose below to see your skill options.</p>
-            {!want.length && <TypeRow label="I want to practise" selected={want} onToggle={toggle(want, setWant)} />}
-            {!help.length && <TypeRow label="I can help with" selected={help} onToggle={toggle(help, setHelp)} />}
+            {!want.length && <TypeRow direction={direction} disabled={saving || (direction === 'finance' && !finance.supported)} label="I want to practise" selected={want} onToggle={toggle(want, setWant)} />}
+            {!help.length && <TypeRow direction={direction} disabled={saving || (direction === 'finance' && !finance.supported)} label="I can help with" selected={help} onToggle={toggle(help, setHelp)} />}
           </div>}
         </details>
         {(choicesChanged || preferenceStatus) && <p className="quest-setup-preference-status" role="status">{choicesChanged ? 'Choices not confirmed yet. Find my teammate will save them.' : preferenceStatus}</p>}

@@ -78,6 +78,7 @@ export default function PracticeQuest({ request, windowsStale, rows, pairings, n
           <summary>Demo profiles · Sample data</summary>
           <p>Fictional teammates for presentations. No real invitations are sent.</p>
           <a href="/practice-demo.html" target="_blank" rel="noopener noreferrer" className="quest-link">Open presentation view ↗</a>
+          <a href="/finance-ui/" target="_blank" rel="noopener noreferrer" className="quest-secondary">Consulting & Finance flow · Interactive demo ↗</a>
           {showDemo && <iframe title="Mutu practice demo profiles" src="/practice-demo.html" sandbox="allow-scripts" loading="lazy" style={{ width: '100%', height: 720, border: 0, borderRadius: 20, display: 'block', marginTop: 12 }} />}
         </details>
       </>}

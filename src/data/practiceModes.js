@@ -46,6 +46,10 @@ export const SESSION_MODE_KEYS = Object.keys(SESSION_MODES)
 export const INTERVIEW_CATEGORIES = {
   case: { key: 'case', label: 'Case interview' },
   behavioural: { key: 'behavioural', label: 'Behavioural interview' },
+  finance: { key: 'finance', label: 'Core technical' },
+  finance_debt: { key: 'finance_debt', label: 'Debt & lending' },
+  finance_markets: { key: 'finance_markets', label: 'Markets & stock pitch' },
+  finance_behavioural: { key: 'finance_behavioural', label: 'Finance behavioural' },
 }
 export const INTERVIEW_CATEGORY_KEYS = Object.keys(INTERVIEW_CATEGORIES)
 
@@ -72,7 +76,28 @@ export const SKILLS_BY_CATEGORY = {
     { key: 'follow_up_questions', label: 'Follow-up questions' },
     { key: 'executive_presence', label: 'Executive presence' },
   ],
+  finance: [
+    { key: 'finance_accounting', label: 'Accounting' },
+    { key: 'finance_valuation', label: 'Valuation · Comps & precedents' },
+    { key: 'finance_dcf', label: 'DCF' },
+    { key: 'finance_ma', label: 'M&A' },
+    { key: 'finance_lbo', label: 'LBO' },
+  ],
+  finance_debt: [
+    { key: 'finance_underwriting', label: 'Underwriting' },
+    { key: 'finance_origination', label: 'Origination' },
+    { key: 'finance_debt_metrics', label: 'Debt metrics' },
+  ],
+  finance_markets: [
+    { key: 'finance_market_discussion', label: 'Market discussion' },
+    { key: 'finance_stock_pitch', label: 'Stock pitch' },
+  ],
 }
+
+// Separate keys preserve finance context without changing historic behavioural records.
+SKILLS_BY_CATEGORY.finance_behavioural = SKILLS_BY_CATEGORY.behavioural.map(skill => ({
+  ...skill, key: `finance_${skill.key}`,
+}))
 
 /** Every canonical skill key, whatever its category. */
 export const ALL_SKILL_KEYS = Object.values(SKILLS_BY_CATEGORY)

@@ -1,3 +1,4 @@
+import { FINANCE_OBSERVATIONS } from '../../data/financeObservations'
 import { useEffect, useState } from 'react'
 import { fetchSkillRatingsSupport, fetchSessionSkillRatings } from '../../lib/practice'
 import { feedbackSkills, RATING_ANCHORS } from '../../data/practiceSkillRatings'
@@ -25,6 +26,7 @@ export default function SessionSkillRatings({ session, myUserId }) {
     <p>From this session. Visible only to you and your partner.</p>
     {Object.entries(received.ratings).map(([skill, score]) => <p key={skill}>
       <strong>{feedbackSkills(session.interview_category).find(s => s.key === skill)?.label || skill}: {score}/5</strong><br />{RATING_ANCHORS[score - 1]}
+      {received.finance_observations?.[skill]?.length > 0 && <small style={{ display: 'block' }}>Observed: {received.finance_observations[skill].map(key => FINANCE_OBSERVATIONS.find(item => item.key === key)?.label || key).join(' · ')}</small>}
     </p>)}
   </section>
 }
