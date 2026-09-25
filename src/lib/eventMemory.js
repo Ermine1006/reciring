@@ -211,8 +211,11 @@ export async function clearAskHistory(userId) {
 
 // Build the compact, private grounding context for Ask Mutu from the user's
 // own encounters + events. Only fields the user already owns.
-export function buildAssistantContext({ encounters = [], events = [], connections = [], me = null, eventMatches = {}, practice = null }) {
+export function buildAssistantContext({ encounters = [], events = [], connections = [], me = null, eventMatches = {}, practice = null, myPosts = null }) {
   return {
+    // What they asked the community for, and whether it worked. Only
+    // their own posts: see src/lib/askMutuPosts.js.
+    ...(myPosts && myPosts.length ? { my_posts: myPosts } : {}),
     // The user's OWN profile — lets Mutu reason about fit ("who should I
     // connect with", "is this event worth attending") instead of punting.
     me: me ? {

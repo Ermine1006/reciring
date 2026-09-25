@@ -8,10 +8,13 @@ import { fetchEventPrepCandidates } from '../lib/eventMatch'
 import {
   fetchMyPracticeRequest, fetchMyAvailabilityWindows, fetchMyPairings, fetchMySessions,
   fetchMyExchangeTokens, fetchMyPracticeConfirmations, fetchProfilesByIds,
-  fetchFeedbackSupport, fetchMyPracticeFeedback, fetchCommunityBySlug,
+  fetchFeedbackSupport, fetchMyPracticeFeedback, fetchCommunityBySlug, fetchMyPracticeEdges,
 } from '../lib/practice'
 import { computePassport } from '../lib/practicePassport'
 import { buildPracticeContext } from '../lib/askMutuPractice'
+import { buildPostsContext } from '../lib/askMutuPosts'
+import { fetchPosts } from '../lib/posts'
+import { fetchMatchedPostIds } from '../lib/matches'
 import { isPracticeEnabled } from '../lib/featureFlags'
 import { useAuth } from '../context/AuthContext'
 import { matchaCta } from '../lib/matchaCta'
@@ -31,8 +34,15 @@ const C = {
   ink: '#14110C', sub: '#6B6152', muted: '#9C9789', white: 'var(--mutu-surface, #FFFFFF)', border: '#E5E7EB',
 }
 
-// Quick free-text prompts under the three primary actions.
+// Quick free-text prompts under the primary actions. Interview ones
+// come first: mock interviews are what the community uses Mutu for
+// during recruiting season, and these are the questions members
+// actually arrive with.
 const SUGGESTIONS = [
+  'What should I practise next?',
+  'Who should I practise with?',
+  'How is my interview prep going?',
+  'Am I ready for my interview?',
   'Who did I meet looking for co-founders?',
   'What introductions did I promise?',
 ]
@@ -40,13 +50,15 @@ const SUGGESTIONS = [
 // Crafted questions behind the primary action cards.
 const Q_SUMMARY = 'Give me a quick summary of my network right now: any follow-ups due, who I met recently, and the single best next step I should take.'
 const Q_ATTEND  = 'Based on my profile and interests, which upcoming event should I attend, and why?'
-const qPrep = (title) => `I'm attending "${title}". Help me prepare, who should I connect with there, why each, and how should I open the conversation?`
+const Q_PRACTICE = 'Where am I with my mock interview practice? What have I completed, what have my partners suggested I work on, and what should I book next?'
+const qPrep = (title) > `I'm attending "${title}". Help me prepare, who should I connect with there, why each, and how should I open the conversation?`
 
 // The three primary actions Ask Mutu opens to. `kind` drives the click handler.
 const ACTIONS = [
   { kind: 'summary', short: 'Summary',  title: 'Your networking summary', sub: 'Follow-ups due, who you met recently, next step' },
   { kind: 'attend',  short: 'Attend',   title: 'What event should I attend?', sub: 'Best upcoming events for your goals' },
   { kind: 'prep',    short: 'Prepare',  title: 'Prepare for an event', sub: 'Who to connect with there, and how to open' },
+  { kind: 'practice', short: 'Practise', title: 'My interview practice', sub: 'What you have done, and what to book next' },
 ]
 
 // Granola-style shortcut pill sitting in the row just above the composer.
@@ -58,6 +70,8 @@ function ActionIcon({ kind }) {
   if (kind === 'summary') return <svg {...p}><path d="M3 20h18M6 20v-6M11 20V8M16 20v-9" /></svg>
   if (kind === 'attend')  return <svg {...p}><circle cx="12" cy="12" r="9" /><path d="M15.5 8.5l-2.2 5-4.8 2.2 2.2-5 4.8-2.2z" /></svg>
   if (kind === 'prep')    return <svg {...p}><path d="M21 12c0 4.2-4 7.5-9 7.5a10 10 0 01-4-.8L3 20l1.2-3.8A7.7 7.7 0 013 12c0-4.2 4-7.5 9-7.5s9 3.3 9 7.5z" /></svg>
+  // Two interlocking rings: one round each, the Mutu practice mark.
+  if (kind === 'practice') return <svg {...p}><circle cx="9" cy="12" r="6" /><circle cx="15" cy="12" r="6" /></svg>
   return null
 }
 function SparkIcon() {
@@ -84,13 +98,18 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
     setInput('')
     setView('home')
     ;(async () => {
-      const [{ data: enc }, { data: hist }, { data: conns }, { data: myEvents }, { data: discover }] = await Promise.all([
+      const [{ data: enc }, { data: hist }, { data: conns }, { data: myEvents }, { data: discover }, postsRes, matchedRes] = await Promise.all([
         fetchEncounters(userId),
         fetchAskHistory(userId),
         fetchConnections(userId),
         fetchMyEvents(userId),
         fetchUpcomingEvents(),
+        fetchPosts().catch(() => ({ data: [] })),
+        fetchMatchedPostIds(userId).catch(() => ({ data: [] })),
       ])
+      const myPosts = buildPostsContext({
+        posts: postsRes?.data || [], userId, matchedPostIds: matchedRes?.data || [],
+      })
       // Merge: the user's own joined/hosted events (joined:true) plus discoverable
       // upcoming events they have NOT joined (joined:false), so Ask Mutu can both
       // recall what they're registered for AND recommend new events to attend.
@@ -152,7 +171,30 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
           })
         } catch { practice = null }
       }
-      setCtx(buildAssistantContext({ encounters: enc, events: allEvents, connections: conns, me: profile, eventMatches, practice }))
+      // Buddy, Story Garden and relationship strength. Each is wrapped
+      // on its own: a member without Buddy, or a community without the
+      // Story migration run, must still get every other answer.
+      let buddy = null, stories = null, circle = null
+      try {
+        const programs = await buddyRpc('buddy_state')
+        const list = programs?.programs || []
+        const first = list.find((x) => x?.enabled !== false) || list[0]
+        const state = first?.id ? await buddyRpc('buddy_state', { p_program: first.id }).catch(() => null) : null
+        buddy = buildBuddyContext({ programs: list, state })
+      } catch { buddy = null }
+      try {
+        const { data: comm } = await fetchCommunityBySlug('rotman')
+        if (comm?.id) {
+          const mine = await fetchStories({ communityId: comm.id, view: 'mine', limit: 10 }).catch(() => null)
+          stories = buildStoriesContext({ stories: mine?.stories || mine?.data || [], userId })
+          const edges = await fetchMyPracticeEdges().catch(() => ({ data: [] }))
+          const peerIds = (edges?.data || []).flatMap((e) => [e.user_lo, e.user_hi]).filter((id) => id && id !== userId)
+          const profs = peerIds.length ? await fetchProfilesByIds(peerIds).catch(() => ({})) : {}
+          circle = buildCircleContext({ edges: edges?.data || [], namesById: profs || {}, userId })
+        }
+      } catch { /* stories and circle stay null */ }
+
+      setCtx(buildAssistantContext({ encounters: enc, events: allEvents, connections: conns, me: profile, eventMatches, practice, myPosts, buddy, stories, circle }))
       setMsgs((hist || []).map(m => ({ role: m.role, text: m.text })))
     })()
   }, [open, userId, profile]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -181,6 +223,7 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
     if (busy) return
     if (kind === 'summary') return send(Q_SUMMARY)
     if (kind === 'attend')  return send(Q_ATTEND)
+    if (kind === 'practice') return send(Q_PRACTICE)
     if (kind === 'prep')    return setView('pickEvent')
   }
 
