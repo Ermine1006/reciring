@@ -170,3 +170,28 @@ it('keeps the per-partner numbers summing to the total', () => {
   const sum = ctx.practised_with.reduce((n, p) => n + p.verified_practices_together, 0)
   expect(sum).toBe(ctx.record.verified_practices)
 })
+
+it('accounts for practices with a partner whose name is missing, instead of leaving them loose', () => {
+  const ctx = buildPracticeContext({
+    myRequest: null,
+    pairings: [{ id: 'pair-macie', status: 'accepted', counterpart_user_id: 'macie' }],
+    sessions: [],
+    // The four were with someone no longer in any pairing, so no name.
+    passport: { verified: 4, partners: 1, verifiedByPartner: { 'ex-partner': 4 } },
+    namesById: { macie: 'Macie' },
+    userId: 'me',
+  })
+
+  expect(ctx.practised_with).toEqual([])
+  expect(ctx.verified_with_partners_not_named).toBe(4)
+  expect(ctx.partners.find((p) => p.name === 'Macie').verified_practices_together).toBe(0)
+})
+
+it('says nothing about unnamed partners when every practice has an owner', () => {
+  const ctx = buildPracticeContext({
+    myRequest: null, pairings: [], sessions: [],
+    passport: { verified: 2, partners: 1, verifiedByPartner: { a: 2 } },
+    namesById: { a: 'Maya Khan' }, userId: 'me',
+  })
+  expect('verified_with_partners_not_named' in ctx).toBe(false)
+})

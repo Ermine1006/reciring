@@ -155,7 +155,14 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
           const pairings = prsRes?.data || []
           const [{ data: wins }, { data: profs }, fbRes] = await Promise.all([
             myRequest ? fetchMyAvailabilityWindows(myRequest.id) : Promise.resolve({ data: [] }),
-            fetchProfilesByIds(pairings.map(p => p.counterpart_user_id).filter(Boolean)),
+            // Everyone the member has practised with, not only their
+            // CURRENT partners: a partnership that ended still owns the
+            // practices you did together, and an unnamed owner is how a
+            // total ends up pinned on whoever is still listed.
+            fetchProfilesByIds([...new Set([
+              ...pairings.map(p => p.counterpart_user_id),
+              ...(sess || []).flatMap(x => [x.participant_a_user_id, x.participant_b_user_id]),
+            ])].filter(id => id && id !== userId)),
             fbSupport?.supported ? fetchMyPracticeFeedback() : Promise.resolve({ data: [] }),
           ])
           const namesById = Object.fromEntries(

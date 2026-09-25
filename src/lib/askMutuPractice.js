@@ -89,6 +89,17 @@ export function buildPracticeContext({
       .filter((x) => x.name && x.verified_practices_together > 0)
       .sort((a, b) => b.verified_practices_together - a.verified_practices_together),
 
+    // When a partner's name cannot be resolved, their practices are
+    // still accounted for HERE rather than left to be guessed at. The
+    // parts plus this number always equal the total.
+    ...(() => {
+      const named = Object.entries(passport?.verifiedByPartner || {})
+        .filter(([id]) => nameOf(id))
+        .reduce((n, [, count]) => n + count, 0)
+      const rest = (passport?.verified || 0) - named
+      return rest > 0 ? { verified_with_partners_not_named: rest } : {}
+    })(),
+
     partners: accepted.map((p) => {
       const s = sessionsByPairing.get(p.id) || null
       return {
