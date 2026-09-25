@@ -43,3 +43,10 @@
 .practice-direction-status { font-size: 12px; line-height: 1.6; color: #777a6d; }
 .practice-direction-status button { margin-left: 8px; min-height: 44px; border: 1px solid #d8c895; border-radius: 10px; background: #fffdf5; color: #53663d; padding: 8px; }
 .practice-direction-picker button:focus-visible, .practice-type-choices button:focus-visible { outline: 3px solid #7d925e; outline-offset: 3px; }
+
+/* A type kept from the direction you switched away from: still yours,
+   still removable, but clearly not part of the direction on screen. */
+.practice-type-choices .practice-type-elsewhere{
+  opacity:.78;
+  border-style:dashed;
+}

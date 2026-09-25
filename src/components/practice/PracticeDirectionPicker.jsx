@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { PRACTICE_DIRECTIONS, TYPES_BY_DIRECTION, practiceTypeLabel } from '../../data/practiceDirections'
+import { PRACTICE_DIRECTIONS, TYPES_BY_DIRECTION, practiceTypeLabel, typesInDirection } from '../../data/practiceDirections'
 import { fetchFinancePracticeSupport } from '../../lib/practiceFinance'
 import { PRACTICE_TYPE_SHORT } from '../../data/practiceOptions'
 import './practice-directions.css'
@@ -33,10 +33,27 @@ export default function PracticeDirectionPicker({ value, onChange, disabled = fa
 }
 
 export function PracticeTypeChoices({ direction, selected, onToggle, disabled, label, compact = false }) {
+  // A member may practise across both directions on purpose, so
+  // switching direction keeps what they picked under the other one.
+  // It must still be VISIBLE: a selection you cannot see is one you
+  // cannot undo, and it silently drives what the rest of the app shows
+  // you, which is how finance skills ended up in front of someone who
+  // had switched to consulting. Shown here, named by its direction,
+  // and removable in one tap.
+  const elsewhere = PRACTICE_DIRECTIONS
+    .filter(item => item.key !== direction)
+    .flatMap(item => typesInDirection(selected, item.key).map(type => ({ type, direction: item.label })))
+
   return <div className="practice-type-choices" role="group" aria-label={label}>
     {TYPES_BY_DIRECTION[direction].map(type => <button type="button" key={type} disabled={disabled}
       aria-pressed={selected.includes(type)} onClick={() => onToggle(type)}>
       {selected.includes(type) ? '✓ ' : ''}{compact ? PRACTICE_TYPE_SHORT[type] : practiceTypeLabel(type)}
+    </button>)}
+    {elsewhere.map(({ type, direction: name }) => <button type="button" key={type}
+      className="practice-type-elsewhere" disabled={disabled} aria-pressed="true"
+      title={`Also selected under ${name}. Tap to remove.`}
+      onClick={() => onToggle(type)}>
+      ✓ {compact ? PRACTICE_TYPE_SHORT[type] : practiceTypeLabel(type)} · {name} ✕
     </button>)}
   </div>
 }
