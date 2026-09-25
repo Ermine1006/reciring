@@ -39,7 +39,11 @@ export default function BuddyAssigned({program,role,rpc=buddyRpc,initialRoster='
  },[refresh])
  useEffect(()=>()=>onDirtyChange?.(false),[onDirtyChange])
  function changed(value){dirty.current=value;onDirtyChange?.(value)}
- function move(fn){if(dirty.current&&!window.confirm('Leave without sending your changes?'))return;changed(false);setDraft('');setError('');fn()}
+ // The prompt names the button that would keep the work. "Sending"
+ // was doubly wrong here: no button said send, and the screen itself
+ // promises that no email is sent.
+ const LEAVE_PROMPT='Leave without saving? Your Buddy list will not be kept.'
+ function move(fn){if(dirty.current&&!window.confirm(LEAVE_PROMPT))return;changed(false);setDraft('');setError('');fn()}
  async function act(name,args,message,done){if(lock.current)return;lock.current=true;setBusy(true);setError('');try{await rpc(name,args);if(!live.current)return;changed(false);await refresh();setNotice(message);done?.()}catch(e){if(live.current)setError(e.message)}finally{lock.current=false;if(live.current)setBusy(false)}}
  async function report(){try{setSummary(await rpc('buddy_assigned_summary',{p_program:program}));setSummaryError('')}catch(e){setSummaryError(e.message)}}
  const reset=()=>{setPairId(null);setRequestId(null);setAsking(false);setAdd(false);setReview(null)}
@@ -49,7 +53,7 @@ export default function BuddyAssigned({program,role,rpc=buddyRpc,initialRoster='
   {loading?<p role="status">Finding your crew…</p>:add?<>
    <Button disabled={busy} onClick={()=>move(reset)}>‹ My Buddies</Button>
    <h2>{review?'Your Buddy crew':'Add my Buddies'}</h2>
-   {review?<><p className="ba-muted">Check your school pairing.</p>{review.map(s=><article className="ba-person" key={s.email}><strong>{s.name||s.email}</strong><small>{s.email}</small></article>)}<Button primary disabled={busy} onClick={()=>act('buddy_assigned_add',{p_program:program,p_students:review},'Added. Each student can confirm in My Buddy.',reset)}>Add {review.length} {review.length===1?'Buddy':'Buddies'}</Button><Button disabled={busy} onClick={()=>setReview(null)}>Edit list</Button><p className="ba-muted">They confirm with their school account. No email is sent.</p></>:<form onSubmit={e=>{e.preventDefault();try{setReview(parseBuddyList(roster));setError('')}catch(e){setError(e.message)}}}>
+   {review?<><p className="ba-muted">Check your school pairing.</p>{review.map(s=><article className="ba-person" key={s.email}><strong>{s.name||s.email}</strong><small>{s.email}</small></article>)}<Button primary disabled={busy} onClick={()=>act('buddy_assigned_add',{p_program:program,p_students:review},'Added. Each student can confirm in My Buddy.',reset)}>Add {review.length} {review.length===1?'Buddy':'Buddies'}</Button><Button disabled={busy} onClick={()=>setReview(null)}>Edit list</Button><p className="ba-muted">Nothing is saved until you tap Add {review.length} {review.length===1?'Buddy':'Buddies'}. They then confirm with their school account, and no email is sent.</p></>:<form onSubmit={e=>{e.preventDefault();try{setReview(parseBuddyList(roster));setError('')}catch(e){setError(e.message)}}}>
     <label className="ba-field">School names and emails<textarea required value={roster} disabled={busy} onChange={e=>{setRoster(e.target.value);changed(true)}} placeholder={'Name <student@rotman.utoronto.ca>\nOne student per line'}/></label>
     <p className="ba-muted">Paste the list your school sent you.</p><button className="ba-cta" type="submit">Review my Buddies →</button>
    </form>}

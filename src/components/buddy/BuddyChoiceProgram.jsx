@@ -9,6 +9,10 @@ import './choice-demo.css'
 import './choice-program.css'
 import BuddyRecommendations, { UpperBuddyProfile } from './BuddyRecommendations'
 
+// Guarding a post that is not published and a Buddy list that is not
+// added. Neither sends anything, so the prompt does not say "sending".
+const LEAVE_PROMPT='Leave without saving? Your changes will not be kept.'
+
 export default function BuddyChoiceProgram({onBack,registerNavigationGuard}) {
  const [programs,setPrograms]=useState([]),[program,setProgram]=useState(null),[data,setData]=useState(null)
  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('')
@@ -17,7 +21,7 @@ export default function BuddyChoiceProgram({onBack,registerNavigationGuard}) {
  const [retry,setRetry]=useState(0),[formKey,setFormKey]=useState(0)
  const root=useRef(null),dirty=useRef(false),working=useRef(false),yearReturn=useRef('buddies')
  const setAssignedDirty=useCallback(value=>{dirty.current=value},[])
- useEffect(()=>registerNavigationGuard?.(proceed=>{if(!dirty.current||window.confirm('Leave without sending your changes?'))proceed()}),[registerNavigationGuard])
+ useEffect(()=>registerNavigationGuard?.(proceed=>{if(!dirty.current||window.confirm(LEAVE_PROMPT))proceed()}),[registerNavigationGuard])
  useLayoutEffect(()=>{
   // scrollTo may return a Promise; effects must return only a cleanup function.
   root.current?.closest('.phone-scroll')?.scrollTo({top:0})
@@ -28,7 +32,7 @@ export default function BuddyChoiceProgram({onBack,registerNavigationGuard}) {
   if(result.programs?.length===1){const id=result.programs[0].id;const next=await buddyRpc('buddy_choice_state',{p_program:id});if(mounted){setProgram(id);setData(next);setView(next.role?'buddies':next.coordinator?'access':'new')}}
  }).catch(e=>{if(mounted)setError(/buddy_choice|schema cache|function/i.test(e.message)?'The new Buddy Program is waiting for its database update. Please ask the program coordinator to finish setup.':e.message)}).finally(()=>{if(mounted)setLoading(false)});return()=>{mounted=false}},[retry])
  async function run(task,message){if(working.current)return;working.current=true;setBusy(true);setError('');try{await task();await refresh();setPreview(null);if(message)setNotice(message);return true}catch(e){setError(e.message);return false}finally{working.current=false;setBusy(false)}}
- function navigate(next){if(working.current)return false;if(dirty.current&&!window.confirm('Leave without sending your changes?'))return;dirty.current=false;setView(next);return true}
+ function navigate(next){if(working.current)return false;if(dirty.current&&!window.confirm(LEAVE_PROMPT))return;dirty.current=false;setView(next);return true}
  function editYear(){if(navigate('year')){yearReturn.current=view;setJoinRole(data.role);setError('');setNotice('')}}
  function cancelYear(){if(navigate(yearReturn.current)){setJoinRole(data.role);setError('')}}
  async function saveYear(){
@@ -58,7 +62,7 @@ export default function BuddyChoiceProgram({onBack,registerNavigationGuard}) {
   {!upper&&<Button disabled={busy} onClick={()=>{if(window.confirm('Remove this post and end its buddy invitations?'))run(()=>buddyRpc('buddy_choice_remove',{p_post:post.id}),'Post removed.')}}>Remove post</Button>}
  </div>}
  return <AppScreen background="transparent"><main className="bc-shell bc-program" ref={root}>
- <header className="bc-program-header"><Button className="bc-back" disabled={busy} onClick={()=>{if(view==='year'){cancelYear();return}if(!dirty.current||window.confirm('Leave without sending your changes?'))onBack()}}>{view==='year'?'‹ Back':'‹ Together'}</Button><h1>Buddy Program</h1><p>{upper?'Your crew. A little help, together.':role==='first'?'A little help goes a long way.':'Ask for support or share what you have learned.'}</p></header>
+ <header className="bc-program-header"><Button className="bc-back" disabled={busy} onClick={()=>{if(view==='year'){cancelYear();return}if(!dirty.current||window.confirm(LEAVE_PROMPT))onBack()}}>{view==='year'?'‹ Back':'‹ Together'}</Button><h1>Buddy Program</h1><p>{upper?'Your crew. A little help, together.':role==='first'?'A little help goes a long way.':'Ask for support or share what you have learned.'}</p></header>
  {error&&<section className="bc-card" role="alert"><p>{error}</p><Button disabled={busy} onClick={()=>{if(program)run(()=>Promise.resolve());else setRetry(r=>r+1)}}>Try again</Button></section>}
  {notice&&<p className="bc-notice" role="status">{notice}</p>}
  {loading?<p role="status">Opening Buddy Program…</p>:!data?<section className="bc-card"><h2>Support that goes both ways</h2><p>First year students share what they need and can offer. All upper year students in the community can join to help.</p>{programs.length?programs.map(p=><Button key={p.id} onClick={async()=>{setLoading(true);try{const next=await refresh(p.id);setProgram(p.id);setView(next.role?'buddies':next.coordinator?'access':'new')}catch(e){setError(e.message)}finally{setLoading(false)}}}>{p.name}</Button>):!error&&<p>Join your student community to access its Buddy Program.</p>}</section>:<>
