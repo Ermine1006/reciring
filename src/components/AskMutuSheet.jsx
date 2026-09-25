@@ -51,7 +51,7 @@ const SUGGESTIONS = [
 const Q_SUMMARY = 'Give me a quick summary of my network right now: any follow-ups due, who I met recently, and the single best next step I should take.'
 const Q_ATTEND  = 'Based on my profile and interests, which upcoming event should I attend, and why?'
 const Q_PRACTICE = 'Where am I with my mock interview practice? What have I completed, what have my partners suggested I work on, and what should I book next?'
-const qPrep = (title) > `I'm attending "${title}". Help me prepare, who should I connect with there, why each, and how should I open the conversation?`
+const qPrep = (title) => `I'm attending "${title}". Help me prepare, who should I connect with there, why each, and how should I open the conversation?`
 
 // The three primary actions Ask Mutu opens to. `kind` drives the click handler.
 const ACTIONS = [
