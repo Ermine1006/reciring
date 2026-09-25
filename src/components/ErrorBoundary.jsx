@@ -1,4 +1,5 @@
 import { Component } from 'react'
+import { isStaleBuildError, reloadForStaleBuild } from '../lib/staleBuild'
 
 export default class ErrorBoundary extends Component {
   constructor(props) {
@@ -12,6 +13,10 @@ export default class ErrorBoundary extends Component {
 
   componentDidCatch(error, info) {
     console.error('[ReciRing] ErrorBoundary caught:', error, info)
+    // A lazily loaded screen failing to import usually means this tab
+    // is on the previous build, not that the screen is broken. Reload
+    // once rather than showing an error for something that works.
+    if (isStaleBuildError(error)) reloadForStaleBuild()
   }
 
   reset = () => {
