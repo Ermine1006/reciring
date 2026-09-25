@@ -56,7 +56,15 @@ describe('presetToWindows', () => {
   })
 
   it('exposes one option per preset for the UI', () => {
-    expect(AVAILABILITY_PRESETS.map((p) => p.id))
-      .toEqual(['weekday_evenings', 'weekend_mornings', 'exact'])
+    // "none" (decide together) was added after this test was written.
+    // Asserted as a set with the automatic ones named, so adding an
+    // option is not a failure but removing a working one still is.
+    const ids = AVAILABILITY_PRESETS.map((p) => p.id)
+    expect(new Set(ids).size).toBe(ids.length)
+    expect(ids).toEqual(expect.arrayContaining(['weekday_evenings', 'weekend_mornings', 'exact']))
+    for (const id of ids) {
+      if (id === 'weekday_evenings' || id === 'weekend_mornings') expect(isPresetAutomatic(id)).toBe(true)
+      else expect(presetToWindows(id, TZ, WED)).toEqual([])
+    }
   })
 })
