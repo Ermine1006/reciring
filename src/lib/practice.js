@@ -368,6 +368,11 @@ export async function fetchSessionConfirmations(sessionId) {
  * both round attestations true (the DB CHECK enforces it too).
  * Verification + token minting happen atomically inside the RPC.
  */
+/** PostgREST / Postgres for "that function does not exist here". */
+function isMissingFunction(error) {
+  return Boolean(error) && ['PGRST202', '42883'].includes(error.code)
+}
+
 export async function submitPracticeConfirmation({
   sessionId, outcome, completedOwnRound = false, completedPartnerRound = false, noShowOf = null,
   suggestionCode = null, note = '', strengthSkills = [], skillRatings = {}, financeObservations = {},
@@ -387,22 +392,44 @@ export async function submitPracticeConfirmation({
   const args = suggestionCode
     ? { ...base, p_suggestion_code: suggestionCode, p_note: (note || '').slice(0, 280) }
     : base
+  // The richer variants live behind their own migrations. When one has
+  // not been run, PostgREST answers "function not found" and, without a
+  // fallback, the whole confirmation is lost: the session stays
+  // `scheduled`, both people believe they confirmed, and no Token is
+  // ever minted. Losing optional ratings is a far smaller harm than
+  // losing the completion, so each variant falls back to the next
+  // simplest form until the plain confirmation goes through.
+  const attempts = []
   if (Object.keys(financeObservations).length) {
-    return supabase.rpc('submit_practice_confirmation_with_finance', {
+    attempts.push(['submit_practice_confirmation_with_finance', {
       ...base, p_suggestion_code: suggestionCode, p_note: note || '',
       p_strength_skills: strengthSkills, p_skill_ratings: skillRatings, p_observations: financeObservations,
-    })
+    }])
   }
   if (Object.keys(skillRatings).length) {
-    return supabase.rpc('submit_practice_confirmation_with_ratings', {
+    attempts.push(['submit_practice_confirmation_with_ratings', {
       ...base, p_suggestion_code: suggestionCode, p_note: note || '',
       p_strength_skills: strengthSkills, p_skill_ratings: skillRatings,
-    })
+    }])
   }
-  const { data, error } = strengthSkills.length
-    ? await supabase.rpc('submit_practice_confirmation_with_strengths', { ...base, p_suggestion_code: suggestionCode, p_note: note || '', p_strength_skills: strengthSkills })
-    : await supabase.rpc('submit_practice_confirmation', args)
-  return { data, error }
+  if (strengthSkills.length) {
+    attempts.push(['submit_practice_confirmation_with_strengths', {
+      ...base, p_suggestion_code: suggestionCode, p_note: note || '', p_strength_skills: strengthSkills,
+    }])
+  }
+  attempts.push(['submit_practice_confirmation', args])
+
+  let last = { data: null, error: null }
+  for (const [fn, fnArgs] of attempts) {
+    last = await supabase.rpc(fn, fnArgs)
+    if (!last.error) return last
+    // Only a MISSING function may be retried. A refusal by the RPC
+    // itself (already confirmed, not a participant, too early) is a
+    // real answer and must surface unchanged.
+    if (!isMissingFunction(last.error)) return last
+    console.warn(`[Practice] ${fn} is not available; falling back.`)
+  }
+  return last
 }
 
 export async function fetchSkillRatingsSupport() {

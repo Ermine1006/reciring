@@ -130,3 +130,43 @@ describe('what it does carry, and only from real rows', () => {
     }
   })
 })
+
+// The Sara case, 2026-09-24. Ask Mutu answered "4 verified practices
+// with Macie". All four were with Serine Lyu; the only session with
+// Macie was still scheduled. The total was free-floating and the
+// partner list carried no numbers, so the two could be glued together.
+it('never leaves a total that can be pinned on the wrong partner', () => {
+  const ctx = buildPracticeContext({
+    myRequest: null,
+    pairings: [
+      { id: 'pair-serine', status: 'accepted', counterpart_user_id: 'serine' },
+      { id: 'pair-macie', status: 'accepted', counterpart_user_id: 'macie' },
+    ],
+    sessions: [{ id: 's-macie', pairing_id: 'pair-macie', status: 'scheduled',
+      scheduled_start: new Date(Date.now() + 864e5).toISOString(),
+      participant_a_user_id: 'me', participant_b_user_id: 'macie' }],
+    passport: { verified: 4, partners: 1, verifiedByPartner: { serine: 4 } },
+    namesById: { serine: 'Serine Lyu', macie: 'Macie' },
+    userId: 'me',
+  })
+
+  expect(ctx.record.verified_practices).toBe(4)
+  expect(ctx.practised_with).toEqual([{ name: 'Serine Lyu', verified_practices_together: 4 }])
+
+  const macie = ctx.partners.find((p) => p.name === 'Macie')
+  expect(macie.verified_practices_together).toBe(0)
+  expect(macie.has_upcoming_session).toBe(true)
+
+  const serine = ctx.partners.find((p) => p.name === 'Serine Lyu')
+  expect(serine.verified_practices_together).toBe(4)
+})
+
+it('keeps the per-partner numbers summing to the total', () => {
+  const ctx = buildPracticeContext({
+    myRequest: null, pairings: [], sessions: [],
+    passport: { verified: 5, partners: 2, verifiedByPartner: { a: 3, b: 2 } },
+    namesById: { a: 'Maya Khan', b: 'Noah Adeyemi' }, userId: 'me',
+  })
+  const sum = ctx.practised_with.reduce((n, p) => n + p.verified_practices_together, 0)
+  expect(sum).toBe(ctx.record.verified_practices)
+})

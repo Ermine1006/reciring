@@ -131,11 +131,19 @@ export function computePassport({
     if (c.completed_own_round && c.completed_partner_round) reciprocalSessions += 1
   }
 
-  // 3. partners, deduplicated
+  // 3. partners, deduplicated, and how many verified practices belong
+  //    to each. Counted in the SAME loop, from the SAME eligible set, so
+  //    the per-partner numbers can never disagree with the total: a
+  //    total with no owner is what let an assistant answer say "4
+  //    verified practices with Macie" when all four were with someone
+  //    else and Macie's only session was still scheduled.
   const partnerIds = new Set()
+  const verifiedByPartner = new Map()
   let lastVerifiedAt = null
   for (const s of eligible.values()) {
-    partnerIds.add(partnerOf(s))
+    const partner = partnerOf(s)
+    partnerIds.add(partner)
+    verifiedByPartner.set(partner, (verifiedByPartner.get(partner) || 0) + 1)
     const at = s.verified_at || s.completed_at || null
     if (at && (!lastVerifiedAt || new Date(at) > new Date(lastVerifiedAt))) lastVerifiedAt = at
   }
@@ -188,6 +196,8 @@ export function computePassport({
     eligibleSessionIds: new Set(eligible.keys()),
     partners: partnerIds.size,
     partnerIds: [...partnerIds],
+    // id → verified practices with that person. Sums to `verified`.
+    verifiedByPartner: Object.fromEntries(verifiedByPartner),
     // callers pass either id → 'Name' or id → profile row
     partnerNames: [...partnerIds]
       .map((id) => (typeof namesById[id] === 'string' ? namesById[id] : namesById[id]?.name) || null)

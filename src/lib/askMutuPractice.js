@@ -79,10 +79,24 @@ export function buildPracticeContext({
       shared_tokens:      passport.tokenCount || 0,
     } : null,
 
+    // WHO the verified practices were actually with. Every number here
+    // is owned by a name, and they sum to record.verified_practices, so
+    // the total can never be pinned on whoever happens to be listed
+    // first. A current partner with nothing verified yet appears in
+    // `partners` below with zero, never here.
+    practised_with: Object.entries(passport?.verifiedByPartner || {})
+      .map(([id, count]) => ({ name: nameOf(id), verified_practices_together: count }))
+      .filter((x) => x.name && x.verified_practices_together > 0)
+      .sort((a, b) => b.verified_practices_together - a.verified_practices_together),
+
     partners: accepted.map((p) => {
       const s = sessionsByPairing.get(p.id) || null
       return {
         name: nameOf(p.counterpart_user_id),
+        // Stated for every current partner, including zero. A partner
+        // you have booked but not yet completed anything with is the
+        // exact case that used to get miscounted.
+        verified_practices_together: Number(passport?.verifiedByPartner?.[p.counterpart_user_id] || 0),
         // what is true between the two of them right now
         has_upcoming_session: Boolean(s && s.status === 'scheduled'),
         awaiting_confirmation: Boolean(s && s.status === 'completed_pending_confirmation'),
