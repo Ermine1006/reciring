@@ -36,7 +36,10 @@
 -- ============================================================
 
 
--- ── STEP 1 · Find the session. Run this ALONE first. ─────────
+-- ── STEP 1 · Find the session ────────────────────────────────
+-- Run the whole file: only this lookup runs, and it changes nothing.
+-- (In the Supabase editor you can also highlight one statement and
+-- press Run to execute just that.)
 -- Never repair by name matching: two members can share a first name,
 -- and the wrong id would put a false record on somebody else.
 -- Read the result, satisfy yourself it is the right row, and copy its
@@ -65,11 +68,17 @@ SELECT s.id                AS session_id,
 
 
 -- ── STEP 2 · Repair that one session ─────────────────────────
--- Paste the id from STEP 1 into v_session below, then run this block.
--- It refuses rather than guesses: a session that is already verified,
--- disputed, cancelled, or still in the future stops the block with a
--- message and changes nothing.
+-- DELIBERATELY COMMENTED OUT. Running this whole file does the lookup
+-- above and nothing else, because the natural thing to do in the SQL
+-- editor is to press Run on everything, and that must never be how a
+-- repair happens.
+--
+-- To repair: paste the id from STEP 1 into v_session, delete the /*
+-- and */ around the block, and run it. It refuses rather than guesses:
+-- a session that is already verified, disputed, cancelled, or still in
+-- the future stops the block with a message and changes nothing.
 
+/*
 DO $$
 DECLARE
   -- ⬇⬇⬇  PASTE THE SESSION ID FROM STEP 1  ⬇⬇⬇
@@ -83,7 +92,7 @@ DECLARE
 BEGIN
   SELECT * INTO v_s FROM public.practice_sessions WHERE id = v_session FOR UPDATE;
   IF NOT FOUND THEN
-    RAISE EXCEPTION 'No session with id %. Did you paste the id from STEP 1?', v_session;
+    RAISE EXCEPTION 'No session with id %. Run STEP 1 on its own, copy a session_id from the result, and paste it into v_session.', v_session;
   END IF;
 
   IF v_s.status = 'verified' THEN
@@ -141,6 +150,7 @@ BEGIN
 
   RAISE NOTICE 'Repaired %. Added % confirmation row(s); session is verified and the Token is minted.', v_session, v_added;
 END $$;
+*/
 
 
 -- ── STEP 3 · Check it, and check nothing else moved ──────────
