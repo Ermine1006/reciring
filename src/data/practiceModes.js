@@ -56,10 +56,11 @@ export const INTERVIEW_CATEGORY_KEYS = Object.keys(INTERVIEW_CATEGORIES)
 // Two separate rubrics. They are never merged, never offered together.
 export const SKILLS_BY_CATEGORY = {
   case: [
-    { key: 'problem_clarification', label: 'Problem clarification' },
+    { key: 'problem_clarification', label: 'Asking clarifying questions' },
     { key: 'hypothesis_development', label: 'Hypothesis development' },
     { key: 'structuring', label: 'Structuring' },
     { key: 'quantitative_reasoning', label: 'Quantitative reasoning' },
+    { key: 'mental_math', label: 'Mental math' },
     { key: 'exhibit_interpretation', label: 'Exhibit interpretation' },
     { key: 'synthesis', label: 'Synthesis' },
     { key: 'final_recommendation', label: 'Final recommendation' },
@@ -72,7 +73,7 @@ export const SKILLS_BY_CATEGORY = {
     { key: 'personal_actions', label: 'Personal actions' },
     { key: 'results_and_impact', label: 'Results and impact' },
     { key: 'reflection_and_learning', label: 'Reflection and learning' },
-    { key: 'concision', label: 'Concision' },
+    { key: 'concision', label: 'Conciseness' },
     { key: 'follow_up_questions', label: 'Follow-up questions' },
     { key: 'executive_presence', label: 'Executive presence' },
   ],

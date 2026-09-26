@@ -20,9 +20,9 @@ export const NOTE_LABEL = 'Add a specific example'
 // disability or any protected characteristic.
 export const SUGGESTIONS = {
   case: [
-    { code: 'clarify_objective_earlier', label: 'Clarify the objective earlier', skills: ['problem_clarification'] },
+    { code: 'clarify_objective_earlier', label: 'Ask clarifying questions earlier', skills: ['problem_clarification'] },
     { code: 'tailor_structure', label: 'Make the structure more tailored', skills: ['structuring', 'hypothesis_development'] },
-    { code: 'explain_calculations', label: 'Explain calculations more clearly', skills: ['quantitative_reasoning'] },
+    { code: 'explain_calculations', label: 'Explain calculations more clearly', skills: ['quantitative_reasoning', 'mental_math'] },
     { code: 'connect_insight_to_question', label: 'Connect insights to the business question', skills: ['exhibit_interpretation', 'synthesis'] },
     { code: 'recommendation_more_direct', label: 'Make the recommendation more direct', skills: ['final_recommendation'] },
     { code: 'communicate_concisely', label: 'Communicate more concisely', skills: ['communication'] },

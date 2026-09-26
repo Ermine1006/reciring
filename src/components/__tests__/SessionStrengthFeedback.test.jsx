@@ -45,7 +45,7 @@ it('requires explicit sharing consent and retains the saved state on failure', a
  expect(api.share).toHaveBeenLastCalledWith('c', true)
 })
 
-it('submits private ratings and Leadership with completion, without converting scores to badges', async () => {
+it('keeps consulting feedback skill based even when rating support exists', async () => {
  api.ratings.mockResolvedValue({ supported: true }); api.feedback.mockResolvedValue({ supported: true }); api.strengths.mockResolvedValue({ supported: true }); api.teammate.mockResolvedValue({ supported: true })
  const submit = vi.fn()
  render(<SessionConfirmCard myUserId="a" partnerUserId="b" session={{ interview_category: 'case' }} onSubmit={submit} />)
@@ -54,11 +54,9 @@ it('submits private ratings and Leadership with completion, without converting s
  await waitFor(() => expect(screen.getByText('Continue').disabled).toBe(false))
  fireEvent.click(screen.getByText('Continue'))
  fireEvent.click(await screen.findByRole('button', { name: 'Leadership' }))
- fireEvent.click(screen.getByText('Rate observed skills · Optional'))
- fireEvent.change(screen.getByLabelText('Rate Leadership'), { target: { value: '4' } })
- fireEvent.change(screen.getByLabelText('Rate Structuring'), { target: { value: '2' } })
+ expect(screen.queryByText('Rate observed skills · Optional')).toBeNull()
  fireEvent.click(screen.getByText('Continue'))
- expect(screen.getByText('Private rating: Leadership 4/5')).toBeTruthy()
+ expect(screen.queryByText(/Private rating:/)).toBeNull()
  fireEvent.click(screen.getByText('Submit confirmation'))
- expect(submit).toHaveBeenCalledWith(expect.objectContaining({ skillRatings: { leadership: 4, structuring: 2 }, strengthSkills: ['leadership'] }))
+ expect(submit).toHaveBeenCalledWith(expect.objectContaining({ skillRatings: {}, strengthSkills: ['leadership'] }))
 })

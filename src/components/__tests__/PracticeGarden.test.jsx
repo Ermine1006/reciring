@@ -34,7 +34,9 @@ it('filters by what the user wants to practise without reranking or inventing pe
 it('walks through the server order once and sends the existing invitation payload', () => {
   const invite = vi.fn()
   render(<PracticeGarden rows={rows} request={request} onInvite={invite} />)
-  expect(screen.queryByText('Invite ranked-first')).toBeNull()
+  expect(screen.getByText('Top matches for you')).toBeTruthy()
+  expect(screen.getByText('Invite ranked-first')).toBeTruthy()
+  fireEvent.click(screen.getByRole('button', { name: 'Explore garden' }))
   walk('Explore the garden')
   fireEvent.click(screen.getByRole('button', { name: 'Invite ranked-first' }))
   expect(invite).toHaveBeenCalledWith(rows[0], null)
@@ -48,6 +50,7 @@ it('walks through the server order once and sends the existing invitation payloa
 it('opens a dismissible modal and moves through four distinct campus scenes', () => {
   const candidates = Array.from({ length: 4 }, (_, i) => ({ ...rows[1], request_id: `peer-${i}` }))
   render(<PracticeGarden rows={candidates} request={request} />)
+  fireEvent.click(screen.getByRole('button', { name: 'Explore garden' }))
   walk('Explore the garden')
   expect(screen.getByRole('dialog').textContent).toContain('Campus garden')
   expect(document.body.style.overflow).toBe('hidden')
@@ -67,6 +70,7 @@ it('opens a dismissible modal and moves through four distinct campus scenes', ()
 })
 it('lets users bypass the walk and keeps list filters real', () => {
   render(<PracticeGarden rows={rows} request={request} />)
+  fireEvent.click(screen.getByRole('button', { name: 'Explore garden' }))
   fireEvent.click(screen.getByRole('button', { name: 'List view' }))
   expect(screen.getAllByRole('button', { name: /^Invite/ }).map(button => button.textContent)).toEqual(['Invite ranked-first', 'Invite ranked-second'])
   fireEvent.click(screen.getByRole('button', { name: 'Case' }))
@@ -78,12 +82,14 @@ it('lets users bypass the walk and keeps list filters real', () => {
 it('reveals immediately with reduced motion', () => {
   window.matchMedia.mockReturnValue({ matches: true })
   render(<PracticeGarden rows={rows} request={request} />)
+  fireEvent.click(screen.getByRole('button', { name: 'Explore garden' }))
   fireEvent.click(screen.getByRole('button', { name: 'Explore the garden' }))
   expect(screen.getByText('Invite ranked-first')).toBeTruthy()
   expect(screen.queryByText('Walking…')).toBeNull()
 })
 it('does not lose the encounter during polling and removes invitations that left the pool', () => {
   const { rerender } = render(<PracticeGarden rows={rows} request={request} />)
+  fireEvent.click(screen.getByRole('button', { name: 'Explore garden' }))
   walk('Explore the garden')
   rerender(<PracticeGarden rows={[...rows]} request={{ ...request }} />)
   expect(screen.getByText('Invite ranked-first')).toBeTruthy()
@@ -94,6 +100,7 @@ it('does not lose the encounter during polling and removes invitations that left
 })
 it('cancels a stale walk if the candidate disappears or the category changes', () => {
   const { rerender } = render(<PracticeGarden rows={rows} request={request} />)
+  fireEvent.click(screen.getByRole('button', { name: 'Explore garden' }))
   fireEvent.click(screen.getByRole('button', { name: 'Explore the garden' }))
   rerender(<PracticeGarden rows={rows.slice(1)} request={request} />)
   act(() => vi.advanceTimersByTime(1000))
@@ -105,6 +112,7 @@ it('cancels a stale walk if the candidate disappears or the category changes', (
 })
 it('does not loop an old encounter after saved preferences change', () => {
   const { rerender } = render(<PracticeGarden rows={rows} request={request} resetKey="old" />)
+  fireEvent.click(screen.getByRole('button', { name: 'Explore garden' }))
   walk('Explore the garden')
   rerender(<PracticeGarden rows={[rows[1], rows[0]]} request={request} resetKey="new" />)
   expect(screen.queryByText('Invite ranked-first')).toBeNull()
@@ -115,7 +123,7 @@ it('offers recovery for an unselected type and an image failure', () => {
   const edit = vi.fn()
   render(<PracticeGarden rows={rows} request={{ ...request, want_types: ['case'] }} onPreferences={edit} />)
   fireEvent.error(document.querySelector('.garden-stage img'))
-  expect(screen.getByRole('button', { name: 'Explore the garden' }).disabled).toBe(false)
+  expect(screen.getByRole('button', { name: 'Explore garden' }).disabled).toBe(false)
   fireEvent.click(screen.getByRole('button', { name: 'Behavioural' }))
   expect(screen.getByText('Add this practice type to your preferences')).toBeTruthy()
   fireEvent.click(screen.getByRole('button', { name: 'Edit practice types' }))

@@ -96,12 +96,19 @@ export default function SessionConfirmCard({
   const [skillRatings, setSkillRatings] = useState({})
   const [financeObservations, setFinanceObservations] = useState({})
   const finance = useFinancePracticeSupport()
+  const financeCategory = Boolean(session?.interview_category?.startsWith('finance'))
   const validObservations = Object.fromEntries(Object.entries(financeObservations).filter(([key]) => skillRatings[key] != null))
   useEffect(() => {
     let active = true
+    if (!financeCategory) {
+      setRatingsSupported(false)
+      setSkillRatings({})
+      setFinanceObservations({})
+      return () => { active = false }
+    }
     fetchSkillRatingsSupport().then(result => { if (active) setRatingsSupported(result.supported) }).catch(() => {})
     return () => { active = false }
-  }, [])
+  }, [financeCategory])
   useEffect(() => {
     let active = true
     Promise.all([fetchFeedbackSupport(), fetchPeerStrengthSupport(), fetchTeammateFeedbackSupport()]).then(([feedback, strengths, teammate]) => {
@@ -109,7 +116,7 @@ export default function SessionConfirmCard({
     }).catch(() => {}).finally(() => { if (active) setCheckingFeedback(false) })
     return () => { active = false }
   }, [initialFeedbackSupported])
-  const strengthOptions = session?.interview_category ? feedbackSkills(session.interview_category, ratingsSupported) : [...SKILLS_BY_CATEGORY.case, ...SKILLS_BY_CATEGORY.behavioural]
+  const strengthOptions = session?.interview_category ? feedbackSkills(session.interview_category, true) : [...SKILLS_BY_CATEGORY.case, ...SKILLS_BY_CATEGORY.behavioural]
   const [step, setStep] = useState('happened')     // happened | roles | feedback | review
   const [answer, setAnswer] = useState(null)       // nothing preselected
   const [ownRound, setOwnRound] = useState(false)
@@ -229,7 +236,7 @@ export default function SessionConfirmCard({
           </div>
           <p style={{ fontSize: 12, color: C.ink2 }}>After you both confirm, these can support their next recommendations and anonymous card if they choose to share.</p>
         </section>}
-        {ratingsSupported && session?.interview_category && <SkillRatings category={session.interview_category} value={skillRatings} onChange={setSkillRatings} disabled={busy} />}
+        {financeCategory && ratingsSupported && session?.interview_category && <SkillRatings category={session.interview_category} value={skillRatings} onChange={setSkillRatings} disabled={busy} />}
         {finance.supported && usesFinanceObservations(session?.interview_category) && <FinanceObservations category={session.interview_category} ratings={skillRatings} value={validObservations} onChange={setFinanceObservations} disabled={busy} />}
         {teammateSupported && <section style={{ marginBottom: 20 }}>
           <h3 style={{ fontSize: 17 }}>What made them a good teammate?</h3>

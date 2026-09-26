@@ -20,6 +20,15 @@ export function togglePracticeSkill(draft, field, key) {
     : selected.length < 3 ? [...selected, key] : selected }
 }
 
+function priorPracticeFields(types = []) {
+  return types.filter(type => INTERVIEW_CATEGORIES[type]).flatMap(type => type === 'case'
+    ? [
+        { key: 'case_done', label: 'Cases completed as candidate', legacyKey: 'case' },
+        { key: 'case_led', label: 'Cases led as interviewer' },
+      ]
+    : [{ key: type, label: INTERVIEW_CATEGORIES[type].label }])
+}
+
 export default function PracticePreferenceFields({ draft, request, onChange, disabled = false }) {
   return <div className="practice-preference-fields">
     {[
@@ -45,12 +54,13 @@ export default function PracticePreferenceFields({ draft, request, onChange, dis
     {draft.prior_practice_supported && <fieldset disabled={disabled}>
       <legend>Practice before Mutu</legend>
       <p>Optional and private. Self reported, separate from verified Mutu sessions.</p>
-      {(request.want_types || []).filter(type => INTERVIEW_CATEGORIES[type]).map(type => <label className="quest-experience-choice" key={type}>
-        <span>{INTERVIEW_CATEGORIES[type].label}</span>
-        <select value={draft.prior_practice?.[type] || ''} onChange={event => {
+      {priorPracticeFields(request.want_types).map(({ key, label, legacyKey }) => <label className="quest-experience-choice" key={key}>
+        <span>{label}</span>
+        <select value={draft.prior_practice?.[key] || (legacyKey ? draft.prior_practice?.[legacyKey] : '') || ''} onChange={event => {
           const prior = { ...draft.prior_practice }
-          if (event.target.value) prior[type] = event.target.value
-          else delete prior[type]
+          if (legacyKey) delete prior[legacyKey]
+          if (event.target.value) prior[key] = event.target.value
+          else delete prior[key]
           onChange({ ...draft, prior_practice: prior })
         }}>
           <option value="">Prefer not to say</option>

@@ -44,7 +44,7 @@ export function GardenWalker({ avatarSeed }) {
 }
 
 export default function PracticeGarden({ rows, request, busyId, onInvite, onPreferences, avatarSeed, resetKey = '' }) {
-  const [view, setView] = useState('garden')
+  const [view, setView] = useState('top')
   const [type, setType] = useState('all')
   const [direction, setDirection] = useState(directionForTypes(request.want_types))
   const finance = useFinancePracticeSupport()
@@ -62,7 +62,7 @@ export default function PracticeGarden({ rows, request, busyId, onInvite, onPref
       </div>
       <button type="button" className="quest-link" disabled={Boolean(busyId)} onClick={() => setView(view === 'garden' ? 'list' : 'garden')}>
         {view === 'garden' ? <List size={16} aria-hidden="true" /> : <Sprout size={16} aria-hidden="true" />}
-        {view === 'garden' ? 'List view' : 'Garden view'}
+        {view === 'top' ? 'Explore garden' : view === 'garden' ? 'List view' : 'Garden view'}
       </button>
     </div>
     <GardenResults key={`${direction}:${type}:${typesKey}:${resetKey}`} view={view} setView={setView} rows={gardenCandidates(rows, scopedRequest, type)}
@@ -114,6 +114,15 @@ function GardenResults({ rows, request, type, view, setView, busyId, onInvite, o
     <h3>{type !== 'all' && !request.want_types?.includes(type) ? 'Add this practice type to your preferences' : 'No partners for this filter right now'}</h3>
     <p>You can review your practice types or choose All to see your other matches.</p>
     <button type="button" className="quest-secondary" onClick={onPreferences}>Edit practice types</button>
+  </div>
+  if (view === 'top') return <div className="garden-first-look">
+    <div className="quest-paper" style={{ marginBottom: 12 }}>
+      <h3>Top matches for you</h3>
+      <p>Start with these recommended teammates. Want more choice? Explore the garden.</p>
+    </div>
+    <div className="garden-partner-list">
+      {rows.slice(0, 3).map(row => <PartnerCard compact key={row.request_id} row={row} myRequest={displayedRequest} onInvite={onInvite} busy={busyId === row.request_id} />)}
+    </div>
   </div>
   if (view === 'list') return <div className="garden-partner-list">
     {rows.map(row => <PartnerCard key={row.request_id} row={row} myRequest={displayedRequest} onInvite={onInvite} busy={busyId === row.request_id} />)}
