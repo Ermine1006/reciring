@@ -46,28 +46,29 @@
 .garden-type-options button { background:#fffdf7; color:#637049; border:1px solid #dfddcf; border-radius:12px; padding:8px 10px; font-size:12px; }
 .garden-type-options button[aria-pressed=true] { background:#ebefdf; border-color:#728354; color:#354926; }
 .practice-quest .garden-filter-hint { margin:4px 0 12px; font-size:11px; }
-.garden-stage { position:relative; isolation:isolate; height:280px; border:2px solid #fff; border-radius:24px; overflow:hidden; background:linear-gradient(#faf0bb,#d8e6bb); box-shadow:0 4px 16px #555c2a15; }
+.garden-stage { position:relative; isolation:isolate; height:330px; border:2px solid #fff; border-radius:24px; overflow:hidden; background:linear-gradient(#faf0bb,#d8e6bb); box-shadow:0 4px 16px #555c2a15; }
 .garden-stage>img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:50% 68%; image-rendering:pixelated; z-index:-1; }
-.garden-caption { position:absolute; top:12px; left:12px; right:12px; padding:12px; background:#fffdf0ec; border:1px solid #eadba8; border-radius:14px; }
-.garden-caption span { font-family:ui-monospace,monospace; font-size:10px; color:#866a25; letter-spacing:.1em; }
-.practice-quest .garden-caption h3 { font-size:15px; margin:4px 0 0; }
-.garden-walker { position:absolute; left:24%; bottom:17%; filter:drop-shadow(0 3px 1px #28463340); }
-.garden-stage.has-encounter .garden-walker { left:58%; }
-.garden-stage.is-walking .garden-walker { animation:practice-garden-walk .85s steps(10,end) forwards; }
-.garden-stage.is-walking .garden-walker svg { animation:practice-garden-step .15s steps(2,end) 6; }
-.garden-sign { position:absolute; left:72%; bottom:19%; color:#8a671f; background:#fff9df; border:2px solid #a38954; box-shadow:2px 2px #c5b281; padding:2px 6px; font-size:20px; }
-.garden-walk-actions { margin:12px 0 16px; }
-.practice-quest .garden-walk-actions>p { text-align:center; font-size:11px; margin:8px 0; }
-.garden-end { text-align:center; padding:8px; }
+.garden-caption { position:absolute; z-index:3; top:12px; left:12px; max-width:250px; padding:10px 12px; background:#fffdf0ec; border:1px solid #eadba8; border-radius:14px; box-shadow:0 4px 12px #5b4a1914; }
+.garden-caption span { display:block; font-family:ui-monospace,monospace; font-size:11px; font-weight:700; color:#725c24; letter-spacing:.06em; text-transform:uppercase; }
+.garden-caption small { display:block; margin-top:4px; color:#67675d; font-size:11px; line-height:1.35; }
+.garden-avatar { position:absolute; z-index:2; width:auto!important; min-width:0; min-height:0!important; padding:0; border:0; background:transparent; transform:translate(-50%,-50%); transition:transform .16s ease,filter .16s ease; }
+.garden-avatar:hover:not(:disabled),.garden-avatar:focus-visible { transform:translate(-50%,-50%) scale(1.08); filter:brightness(1.02); }
+.garden-avatar-shell { display:block; border-radius:50%; padding:3px; background:#fffdf4; border:2px solid #f2e6bd; box-shadow:0 5px 12px #1f39293d; }
+.garden-avatar.is-top .garden-avatar-shell { border-color:#d8b54a; box-shadow:0 0 0 5px #fff8c985,0 7px 18px #67551f55; }
+.garden-top-badge { position:absolute; left:50%; bottom:calc(100% + 5px); transform:translateX(-50%); display:flex; align-items:center; gap:4px; white-space:nowrap; padding:5px 8px; border:1px solid #ddc66d; border-radius:999px; background:#fff9dfed; color:#735b19; box-shadow:0 3px 8px #4b421c1f; font-size:10px; font-weight:750; }
+.garden-discovery-note { position:absolute; z-index:3; right:10px; bottom:10px; display:flex; align-items:center; gap:6px; padding:7px 9px; border:1px solid #e7dcc0; border-radius:12px; background:#fffdf0e8; color:#69695d; font-size:10.5px; }
+.garden-action-row { margin:12px 0 16px; }
+.practice-quest .garden-action-row>p { text-align:center; margin:8px 0; }
+.garden-action-row>small { display:block; text-align:center; margin-top:9px; color:#737569; font-size:11px; line-height:1.45; }
+.garden-list-view { display:grid; gap:12px; }
+.garden-list-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 2px 4px; }
+.garden-list-heading strong,.garden-list-heading small { display:block; }
+.garden-list-heading strong { font-size:14px; color:#38442f; }
+.garden-list-heading small { margin-top:3px; font-size:11px; color:#77796e; }
 .garden-partner-list { display:grid; gap:14px; }
-.garden-encounter { animation:practice-garden-reveal .22s ease-out; }
-.practice-quest .garden-encounter>h3 { margin:0 0 10px; color:#657345; }
 .practice-quest button:focus-visible,.practice-quest summary:focus-visible,.practice-quest select:focus-visible { outline:3px solid #647e4c; outline-offset:3px; }
-@keyframes practice-garden-walk { to { left:58%; } }
-@keyframes practice-garden-step { 50% { transform:translateY(-3px); } }
-@keyframes practice-garden-reveal { from { transform:translateY(12px); opacity:0; } to { transform:none; opacity:1; } }
-@media(max-width:360px) { .quest-preference-edit { display:none; } .garden-stage { height:260px; } }
-@media(prefers-reduced-motion:reduce) { .garden-stage.is-walking .garden-walker,.garden-stage.is-walking .garden-walker svg,.garden-encounter { animation:none; } .garden-stage.is-walking .garden-walker { left:58%; } }
+@media(max-width:360px) { .quest-preference-edit { display:none; } .garden-stage { height:292px; } .garden-caption { max-width:210px; } }
+@media(prefers-reduced-motion:reduce) { .garden-avatar { transition:none; } .garden-avatar:hover:not(:disabled),.garden-avatar:focus-visible { transform:translate(-50%,-50%); } }
 
 /* Visible action surfaces, scoped to the practice page. The Personalise
    disclosure intentionally keeps its approved gold outlined treatment. */
@@ -113,3 +114,8 @@ details[open]>summary>.quest-disclosure-chevron { transform:rotate(180deg); }
 .practice-quest .quest-link:hover:not(:disabled),.practice-quest summary:hover { filter:brightness(.98); }
 .practice-quest .quest-link:active:not(:disabled),.practice-quest .quest-continue:active:not(:disabled),.practice-quest .quest-exit:active:not(:disabled) { transform:translateY(1px); }
 @media(prefers-reduced-motion:reduce) { .quest-disclosure-chevron { transition:none; } }
+
+@media(max-width:600px){
+  .garden-dialog { width:calc(100vw - 20px); max-height:min(74dvh,680px); margin:auto auto max(10px,env(safe-area-inset-bottom)); border-radius:26px 26px 22px 22px; }
+  .garden-dialog::backdrop { background:#18271c66; backdrop-filter:blur(2px); }
+}

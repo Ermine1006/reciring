@@ -41,7 +41,7 @@ function chipTime(w, tz) {
   return `${day} ${time}`
 }
 
-export default function PartnerCard({ row, myRequest, onInvite, busy, compact = false }) {
+export default function PartnerCard({ row, myRequest, onInvite, busy, compact = false, heading = 'Your next teammate' }) {
   const Signals = compact ? 'details' : 'div'
   const windows = (Array.isArray(row.windows) ? row.windows : [])
     .filter((w) => new Date(w.starts_at) > new Date(Date.now() + 2 * 60_000))
@@ -70,7 +70,7 @@ export default function PartnerCard({ row, myRequest, onInvite, busy, compact = 
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}>
         <div style={{ flexShrink: 0 }}><AnonymousAvatar seed={`practice:${row.request_id}`} size={64} /></div>
-        <div style={{ minWidth: 0 }}><h3 style={{ margin: '0 0 5px', fontSize: 21, color: C.ink }}>Your next teammate</h3>
+        <div style={{ minWidth: 0 }}><h3 style={{ margin: '0 0 5px', fontSize: 21, color: C.ink }}>{heading}</h3>
           <p style={{ margin: 0, color: C.ink2, fontSize: 13 }}>{short(youPractise)} practice · Community member</p>
           <p style={{ margin: '6px 0 0', color: C.ink2, fontSize: 12 }}>Identity hidden until you both accept</p>
         </div>
