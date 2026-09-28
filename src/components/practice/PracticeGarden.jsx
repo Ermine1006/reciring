@@ -71,22 +71,28 @@ function GardenResults({ rows, request, type, view, setView, busyId, onInvite, o
   const nextFromGarden = rows.length > 1 ? rows[(lastIndex >= 0 ? lastIndex + 1 : 0) % rows.length] : rows[0] || null
 
   const openCandidate = (row, trigger = null) => {
-    if (!row || busyId) return
+    if (!row) return
     if (trigger) focusRef.current = trigger
     else if (avatarRefs.current[row.request_id]) focusRef.current = avatarRefs.current[row.request_id]
     setLastOpenedId(row.request_id)
     setEncounterId(row.request_id)
   }
 
-  // Lindsay feedback: do not make a first-time user discover the recommendation
-  // themselves. Show the garden immediately, then surface the first real match.
+  const topCandidateId = rows[0]?.request_id || null
+
+  // Lindsay feedback: surface the first real recommendation immediately.
+  // Depend on the stable top candidate id, not the rows array itself:
+  // background polling replaces that array and previously kept cancelling
+  // the delayed timer before the card could open.
   useEffect(() => {
-    if (view !== 'garden' || !rows.length || autoShown.current) return
+    if (view !== 'garden' || !topCandidateId || autoShown.current) return
     autoShown.current = true
-    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches
-    const timer = window.setTimeout(() => openCandidate(rows[0]), reduced ? 0 : 450)
-    return () => window.clearTimeout(timer)
-  }, [view, rows])
+    const top = rows.find(row => row.request_id === topCandidateId)
+    if (!top) return
+    if (avatarRefs.current[topCandidateId]) focusRef.current = avatarRefs.current[topCandidateId]
+    setLastOpenedId(topCandidateId)
+    setEncounterId(topCandidateId)
+  }, [view, topCandidateId])
 
   // Polling can remove a candidate while their card is open.
   useEffect(() => {
@@ -173,7 +179,7 @@ function EncounterDialog({ children, topMatch, onClose, onContinue, hasNext, bus
     const dialog = dialogRef.current
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
-    dialog.showModal()
+    if (!dialog.open) dialog.showModal()
     return () => {
       dialog.close()
       document.body.style.overflow = previousOverflow
