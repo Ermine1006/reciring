@@ -44,3 +44,9 @@
 .bc-program .bc-year-setting{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0;color:#6b7061;font-size:12px}
 .bc-program .bc-year-setting .bc-button{min-height:44px;padding:8px 12px;background:transparent;border:0;color:#536738;font-size:13px}
 .bc-program .bc-join>.bc-button+.bc-button{margin-top:8px}
+
+.bc-program .bc-expired-badge{display:inline-flex;align-items:center;margin:0 0 10px;padding:5px 9px;border-radius:99px;background:#f7eee8;color:#8a5a45;border:1px solid #ead4c7;font-size:11px;font-weight:750;letter-spacing:.02em}
+.bc-program .bc-expired-state{display:grid;gap:9px;margin:12px 0;padding:12px 13px;border:1px solid #ead4c7;border-radius:14px;background:#fbf5f1;color:#6d5549}
+.bc-program .bc-expired-state strong{font-size:13px;color:#7a4f3d}
+.bc-program .bc-expired-state span{font-size:12px;line-height:1.5;color:#75675f}
+.bc-program .bc-expired-state .bc-button{width:100%}

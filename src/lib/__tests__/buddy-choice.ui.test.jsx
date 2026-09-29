@@ -115,3 +115,30 @@ it('keeps the old year and selected correction when saving fails, then allows re
  fail=false;fireEvent.click(screen.getByRole('button',{name:'Save year'}))
  await screen.findByText('Your year is updated.');expect(role).toBe('first')
 })
+
+it('marks an expired first year post and renews it without rewriting the post',async()=>{
+ let renewed=false
+ const past='2026-09-19T03:59:59.000Z'
+ const future='2026-10-06T03:59:59.000Z'
+ const post={id:'expired-post',owner:'me',needs:'General MBA advice',offers:'Presentation design',helpType:['Advice'],tags:['Advice'],time:'30 min',is_anonymous:false,expiresAt:past}
+ rpc.mockImplementation(async(name,args)=>{
+  if(name==='buddy_choice_renew_post'){
+   expect(args).toEqual({p_post:'expired-post',p_days:7})
+   renewed=true
+   return null
+  }
+  if(name==='buddy_recommendations')return {items:[]}
+  return args?.p_program
+   ? {...base,role:'first',posts:[{...post,expiresAt:renewed?future:past}]}
+   : {programs:[{id:'p',name:'Rotman'}]}
+ })
+ render(<BuddyChoiceProgram onBack={()=>{}}/>)
+ fireEvent.click(await screen.findByRole('button',{name:'My posts',exact:true}))
+ expect(await screen.findByText('Expired')).toBeTruthy()
+ expect(screen.getByText(/cannot see this post right now/)).toBeTruthy()
+ fireEvent.click(screen.getByRole('button',{name:'Renew for 7 days'}))
+ await screen.findByText(/Post renewed for 7 days/)
+ expect(rpc).toHaveBeenCalledWith('buddy_choice_renew_post',{p_post:'expired-post',p_days:7})
+ await waitFor(()=>expect(screen.queryByText('Expired')).toBeNull())
+ expect(screen.getByText('General MBA advice',{exact:true})).toBeTruthy()
+})
