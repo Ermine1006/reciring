@@ -44,27 +44,57 @@ it('shows upper-year posts and selects with a real API call',async()=>{
  rpc.mockImplementation(async(name,args)=>{if(name==='buddy_choice_select')return null;return args?.p_program?{...base,role:'upper',posts:[{id:'a',needs:'Finance help',offers:'Python skills',helpType:['Advice'],tags:['Advice'],time:'30 min',is_anonymous:true}]}:{programs:[{id:'p'}]}})
  render(<BuddyChoiceProgram onBack={()=>{}}/>);fireEvent.click(await screen.findByRole('button',{name:'Community',exact:true}));await screen.findByText('Finance help');fireEvent.click(screen.getByRole('button',{name:'I’d like to help'}));await waitFor(()=>expect(rpc).toHaveBeenCalledWith('buddy_choice_select',{p_post:'a'}));expect(screen.queryByText(/Sample data/)).toBeNull()
 })
-it.each(['first','upper'])('lets a student explicitly join as %s without coordinator approval',async role=>{
+it('lets a first year student join directly',async()=>{
  let joined=false
  rpc.mockImplementation(async(name,args)=>{
-  if(name===(role==='upper'?'buddy_choice_join_upper':'buddy_choice_join')){joined=true;return null}
+  if(name==='buddy_choice_join'){joined=true;return null}
   if(name==='buddy_recommendations')return {}
-  return args?.p_program?{...base,role:joined?role:null}:{programs:[{id:'p'}]}
+  return args?.p_program?{...base,role:joined?'first':null}:{programs:[{id:'p'}]}
  })
- render(<BuddyChoiceProgram onBack={()=>{}}/>);
- expect((await screen.findByRole('button',{name:'Join Buddy Program'})).disabled).toBe(true)
- fireEvent.click(screen.getByRole('radio',{name:role==='upper'?/I am a second/:/I am a first/}))
- fireEvent.click(screen.getByRole('button',{name:role==='upper'?'Join as a mentor':'Join as a student'}))
- await screen.findByRole('heading',{name:role==='upper'?'Meet your Buddy crew':'Your Buddy, right here.'})
- expect(rpc).toHaveBeenCalledWith(role==='upper'?'buddy_choice_join_upper':'buddy_choice_join',{p_program:'p'})
- expect(rpc.mock.calls.some(([name])=>name==='buddy_choice_access')).toBe(false)
+ render(<BuddyChoiceProgram onBack={()=>{}}/>)
+ fireEvent.click(await screen.findByRole('radio',{name:/I am a first/}))
+ fireEvent.click(screen.getByRole('button',{name:'Join as a student'}))
+ await screen.findByRole('heading',{name:'Your Buddy, right here.'})
+ expect(rpc).toHaveBeenCalledWith('buddy_choice_join',{p_program:'p'})
 })
-it('keeps signup available for retry when the open signup migration is missing',async()=>{
- rpc.mockImplementation(async(name,args)=>{if(name==='buddy_choice_join_upper')throw new Error('buddy_choice_join_upper missing from schema cache');return args?.p_program?base:{programs:[{id:'p'}]}})
- render(<BuddyChoiceProgram onBack={()=>{}}/>);
- fireEvent.click(await screen.findByRole('radio',{name:/I am a second/}));fireEvent.click(screen.getByRole('button',{name:'Join as a mentor'}))
- await screen.findByText(/Open signup is waiting for a program update/)
- expect(screen.getByRole('button',{name:'Join as a mentor'}).disabled).toBe(false);expect(screen.queryByRole('button',{name:'Browse posts',exact:true})).toBeNull()
+
+it('requires an upper year application and keeps requests locked while pending',async()=>{
+ let application=null
+ rpc.mockImplementation(async(name,args)=>{
+  if(name==='buddy_upper_apply'){
+   expect(args).toEqual({p_program:'p',p_help:['Advice'],p_focus:['Consulting']})
+   application={status:'pending',help_topics:['Advice'],career_focus:['Consulting']}
+   return null
+  }
+  return args?.p_program?{...base,upper_application:application}:{programs:[{id:'p'}]}
+ })
+ render(<BuddyChoiceProgram onBack={()=>{}}/>)
+ fireEvent.click(await screen.findByRole('radio',{name:/I am a second/}))
+ expect(screen.getByText('Help preferences')).toBeTruthy()
+ fireEvent.click(screen.getByRole('button',{name:'Advice'}))
+ fireEvent.click(screen.getByRole('button',{name:'Consulting'}))
+ fireEvent.click(screen.getByRole('button',{name:'Submit application'}))
+ expect(await screen.findByText('Application pending')).toBeTruthy()
+ expect(screen.getByText(/First year requests stay private until you are approved/)).toBeTruthy()
+ expect(screen.queryByRole('button',{name:'Community',exact:true})).toBeNull()
+ expect(rpc.mock.calls.some(([name])=>name==='buddy_choice_join_upper')).toBe(false)
+})
+
+it('lets an admin approve an upper year application',async()=>{
+ let status='pending'
+ rpc.mockImplementation(async(name,args)=>{
+  if(name==='buddy_upper_application_decide'){
+   expect(args).toEqual({p_program:'p',p_user:'upper-1',p_action:'approve'})
+   status='approved';return null
+  }
+  return args?.p_program?{...base,coordinator:true,upper_applications:[{user_id:'upper-1',name:'Alex Chen',email:'alex@example.test',status,help_topics:['Advice'],career_focus:['Finance']}]}:{programs:[{id:'p'}]}
+ })
+ render(<BuddyChoiceProgram onBack={()=>{}}/>)
+ expect(await screen.findByText('Upper year applications')).toBeTruthy()
+ expect(screen.getByText('Alex Chen')).toBeTruthy()
+ fireEvent.click(screen.getByRole('button',{name:'Approve'}))
+ await screen.findByText('Application approved.')
+ expect(rpc).toHaveBeenCalledWith('buddy_upper_application_decide',{p_program:'p',p_user:'upper-1',p_action:'approve'})
 })
 
 it.each(['first','upper'])('corrects a saved %s year and keeps it after reopening',async initial=>{
@@ -154,7 +184,7 @@ it('frames Community as optional help rather than a new Buddy commitment',async(
  fireEvent.click(await screen.findByRole('button',{name:'Community',exact:true}))
  expect(await screen.findByText('Offer help where your experience is useful.')).toBeTruthy()
  expect(screen.getByText('0 of 3 help spots in use')).toBeTruthy()
- expect(screen.getByText('Edit how I can help')).toBeTruthy()
+ expect(screen.getByText('Help preferences')).toBeTruthy()
  expect(screen.getByRole('button',{name:'I’d like to help'})).toBeTruthy()
  expect(screen.queryByText(/buddy places/i)).toBeNull()
 })
