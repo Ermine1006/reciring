@@ -30,19 +30,19 @@ it('opens the first-year overview with real posts, recommendations and private i
  render(<BuddyChoiceProgram onBack={()=>{}}/>);
  fireEvent.click(await screen.findByRole('button',{name:'Community',exact:true}));await screen.findByRole('heading',{name:'A little help finding your footing'});
  expect(screen.getByText('Settling into campus')).toBeTruthy();expect(screen.queryByText(/Connected with Alex/)).toBeNull();expect(screen.queryByRole('button',{name:'Manage access'})).toBeNull()
- fireEvent.click(screen.getByRole('button',{name:'Accept buddy'}));await screen.findByText(/Connected with Alex/)
+ fireEvent.click(screen.getByRole('button',{name:'Connect'}));await screen.findByText(/Connected with Alex/)
  expect(rpc).toHaveBeenCalledWith('buddy_choice_respond',{p_invite:'invite',p_action:'accept'})
  fireEvent.click(screen.getByRole('button',{name:'My posts',exact:true}));expect(screen.queryByRole('region',{name:'Recommended upper-year students'})).toBeNull();expect(screen.getByText('Settling into campus')).toBeTruthy()
 })
 it('explains full capacity and preserves disabled invitations and access to selections',async()=>{
  rpc.mockImplementation(async(name,args)=>name==='buddy_recommendations'?{}:args?.p_program?{...base,role:'upper',capacity:1,posts:[{id:'a',needs:'Finance help',helpType:['Advice'],tags:[],is_anonymous:true}],invitations:[{id:'i',post_id:'other',status:'pending'}]}:{programs:[{id:'p'}]})
  render(<BuddyChoiceProgram onBack={()=>{}}/>);
- fireEvent.click(await screen.findByRole('button',{name:'Community',exact:true}));await screen.findByText(/Your buddy places are full/);expect(screen.getByRole('button',{name:'I’d like to be your buddy'}).disabled).toBe(true)
+ fireEvent.click(await screen.findByRole('button',{name:'Community',exact:true}));await screen.findByText(/Your help spots are full/);expect(screen.getByRole('button',{name:'I’d like to help'}).disabled).toBe(true)
  fireEvent.click(screen.getByRole('button',{name:'My selections'}));await screen.findByRole('heading',{name:'No selections yet'});fireEvent.click(screen.getByRole('button',{name:'Browse posts'}));expect(screen.getByText('Finance help')).toBeTruthy()
 })
 it('shows upper-year posts and selects with a real API call',async()=>{
  rpc.mockImplementation(async(name,args)=>{if(name==='buddy_choice_select')return null;return args?.p_program?{...base,role:'upper',posts:[{id:'a',needs:'Finance help',offers:'Python skills',helpType:['Advice'],tags:['Advice'],time:'30 min',is_anonymous:true}]}:{programs:[{id:'p'}]}})
- render(<BuddyChoiceProgram onBack={()=>{}}/>);fireEvent.click(await screen.findByRole('button',{name:'Community',exact:true}));await screen.findByText('Finance help');fireEvent.click(screen.getByRole('button',{name:'I’d like to be your buddy'}));await waitFor(()=>expect(rpc).toHaveBeenCalledWith('buddy_choice_select',{p_post:'a'}));expect(screen.queryByText(/Sample data/)).toBeNull()
+ render(<BuddyChoiceProgram onBack={()=>{}}/>);fireEvent.click(await screen.findByRole('button',{name:'Community',exact:true}));await screen.findByText('Finance help');fireEvent.click(screen.getByRole('button',{name:'I’d like to help'}));await waitFor(()=>expect(rpc).toHaveBeenCalledWith('buddy_choice_select',{p_post:'a'}));expect(screen.queryByText(/Sample data/)).toBeNull()
 })
 it.each(['first','upper'])('lets a student explicitly join as %s without coordinator approval',async role=>{
  let joined=false
@@ -141,4 +141,20 @@ it('marks an expired first year post and renews it without rewriting the post',a
  expect(rpc).toHaveBeenCalledWith('buddy_choice_renew_post',{p_post:'expired-post',p_days:7})
  await waitFor(()=>expect(screen.queryByText('Expired')).toBeNull())
  expect(screen.getByText('General MBA advice',{exact:true})).toBeTruthy()
+})
+
+it('frames Community as optional help rather than a new Buddy commitment',async()=>{
+ rpc.mockImplementation(async(name,args)=>{
+  if(name==='buddy_recommendations')return {profile:{help_types:[],career_focus:[],discoverable:false},incoming_post_ids:[]}
+  return args?.p_program
+   ? {...base,role:'upper',posts:[{id:'a',needs:'MBA advice',offers:'Presentation help',helpType:['Advice'],tags:['Advice'],time:'30 min',is_anonymous:false}]}
+   : {programs:[{id:'p',name:'Rotman'}]}
+ })
+ render(<BuddyChoiceProgram onBack={()=>{}}/>)
+ fireEvent.click(await screen.findByRole('button',{name:'Community',exact:true}))
+ expect(await screen.findByText('Offer help where your experience is useful.')).toBeTruthy()
+ expect(screen.getByText('0 of 3 help spots in use')).toBeTruthy()
+ expect(screen.getByText('Edit how I can help')).toBeTruthy()
+ expect(screen.getByRole('button',{name:'I’d like to help'})).toBeTruthy()
+ expect(screen.queryByText(/buddy places/i)).toBeNull()
 })
