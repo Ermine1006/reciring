@@ -20,3 +20,32 @@ it('runs the isolated demo from adding a roster to confirmation, question, reply
  fireEvent.change(screen.getByLabelText('Demo perspective'),{target:{value:'upper'}});fireEvent.click(await screen.findByRole('button',{name:'Reply →'}));fireEvent.click(screen.getByRole('button',{name:'Suggest a quick chat'}));fireEvent.click(screen.getByRole('button',{name:'Send reply →'}));await screen.findByText('Reply sent.')
  fireEvent.change(screen.getByLabelText('Demo perspective'),{target:{value:'first'}});fireEvent.click(await screen.findByRole('button',{name:'Open →'}));await screen.findByText(/Happy to help/);fireEvent.click(screen.getByRole('button',{name:'This helped ✓'}));await screen.findByText('Marked resolved by the student.')
 })
+
+it('lets an upper year withdraw a pending school pairing without touching confirmed Buddies',async()=>{
+ let withdrawn=false
+ const rpc=vi.fn(async(name,args)=>{
+  if(name==='buddy_assigned_withdraw'){
+   expect(args).toEqual({p_pair:'pending-pair'})
+   withdrawn=true
+   return null
+  }
+  return {pairs:withdrawn?[
+   {id:'confirmed-pair',name:'Milan',status:'confirmed',requests:[]}
+  ]:[
+   {id:'pending-pair',name:'Arza',status:'pending',requests:[]},
+   {id:'confirmed-pair',name:'Milan',status:'confirmed',requests:[]}
+  ]}
+ })
+ const confirmSpy=vi.spyOn(window,'confirm').mockReturnValue(true)
+ render(<BuddyAssigned role="upper" program="p" rpc={rpc}/>)
+ expect(await screen.findByText('Arza')).toBeTruthy()
+ expect(screen.getByText('Awaiting confirmation')).toBeTruthy()
+ const withdraw=screen.getByRole('button',{name:'Withdraw pairing'})
+ fireEvent.click(withdraw)
+ await waitFor(()=>expect(rpc).toHaveBeenCalledWith('buddy_assigned_withdraw',{p_pair:'pending-pair'}))
+ await waitFor(()=>expect(screen.queryByText('Arza')).toBeNull())
+ expect(screen.getByText('Milan')).toBeTruthy()
+ expect(screen.queryAllByRole('button',{name:'Withdraw pairing'})).toHaveLength(0)
+ expect(confirmSpy).toHaveBeenCalledWith('Withdraw this pairing request? The student will no longer see it in My Buddy.')
+ confirmSpy.mockRestore()
+})
