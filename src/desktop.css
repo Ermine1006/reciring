@@ -123,3 +123,9 @@ html[data-mutu-view="mobile"] .mutu-assistant-panel { max-width:430px !important
 html[data-mutu-view="desktop"] .mutu-viewport { overflow-x:auto; }
 html[data-mutu-view="desktop"] .mutu-shell { min-width:1024px; overflow:clip; }
 html[data-mutu-view="desktop"] .mutu-shell .app-header { position:sticky; left:0; width:100vw; max-width:100%; padding-left:16px; padding-right:16px; z-index:30; }
+
+/* A phone-width view on a larger screen should also have a phone-like height.
+   Actual phone browsers still use their full dynamic viewport. */
+@media (min-width:640px) {
+  html[data-mutu-view="mobile"] .mutu-viewport { height:min(844px, 100dvh); }
+}
