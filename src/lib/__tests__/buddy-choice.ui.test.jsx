@@ -265,3 +265,23 @@ it('does not let an existing upper year role enter first year mentor verificatio
  expect(screen.queryByRole('button',{name:'Request access →'})).toBeNull()
  expect(rpc.mock.calls.some(([name])=>name==='buddy_first_year_request')).toBe(false)
 })
+
+it('lets a first year edit a post and choose its audience',async()=>{
+ let post={id:'post-1',owner:'me',needs:'Coffee chat advice\n\nNeed help preparing.',offers:'Resume review',helpType:['Advice'],industry:['Finance'],tags:['Advice','Finance'],time:'30 min',is_anonymous:true,audience:'buddy_program'}
+ rpc.mockImplementation(async(name,args)=>{
+  if(name==='buddy_choice_update'){post={...post,...args.p_payload,owner:'me'};return null}
+  if(name==='buddy_assigned_state')return {pairs:[{id:'pair',name:'Serine',status:'confirmed',posts:[],requests:[]}]}
+  if(name==='buddy_first_year_access_state')return {request:null,incoming:[]}
+  if(name==='buddy_recommendations')return {items:[]}
+  return args?.p_program?{...base,role:'first',posts:[post],invitations:[]}:{programs:[{id:'p'}]}
+ })
+ render(<BuddyChoiceProgram onBack={()=>{}}/>)
+ fireEvent.click(await screen.findByRole('button',{name:'My posts',exact:true}))
+ expect(await screen.findByText('Buddy Program')).toBeTruthy()
+ fireEvent.click(screen.getByRole('button',{name:'Edit post'}))
+ fireEvent.click(await screen.findByRole('button',{name:/My Buddy Only Serine/}))
+ fireEvent.change(screen.getByLabelText(/What would you like help with/),{target:{value:'Updated coffee chat advice'}})
+ fireEvent.click(screen.getByRole('button',{name:'Save changes'}))
+ await screen.findByText('Post updated.')
+ expect(rpc).toHaveBeenCalledWith('buddy_choice_update',expect.objectContaining({p_post:'post-1',p_payload:expect.objectContaining({audience:'assigned_buddy',needs:expect.stringContaining('Updated coffee chat advice')})}))
+})

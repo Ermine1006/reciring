@@ -47,6 +47,19 @@ function MentorVerificationQueue({items=[],busy,onAction}) {
  if(!items.length)return null
  return <section className="bc-card bc-mentor-queue"><div className="bc-row"><h2>Buddy verification requests</h2><span className="bc-pill">{items.length}</span></div><p>These students entered your Rotman email as their assigned Buddy. Verify only students assigned to you.</p><div className="bc-application-list">{items.map(item=><article className="bc-application-row" key={item.id}><div><strong>{item.name||'First year student'}</strong><small>{item.email||''}</small></div><p className="bc-muted">Says you are their assigned upper year Buddy.</p><div className="bc-application-actions"><Button primary disabled={busy} onClick={()=>onAction(item.id,true)}>Verify Buddy</Button><Button disabled={busy} onClick={()=>onAction(item.id,false)}>Not my mentee</Button></div></article>)}</div></section>
 }
+const AUDIENCE_LABELS={assigned_buddy:'My Buddy',buddy_program:'Buddy Program',whole_community:'Whole community'}
+function splitNeed(value=''){
+ const [title,...rest]=String(value||'').split(/\n\n+/)
+ return {title:title||'',details:rest.join('\n\n')}
+}
+function PostAudiencePicker({value,onChange,buddy}) {
+ const options=[
+  {id:'assigned_buddy',title:'My Buddy',sub:buddy?('Only '+(buddy.name||'your assigned Buddy')):'Available once your assigned Buddy is confirmed',disabled:!buddy},
+  {id:'buddy_program',title:'Buddy Program',sub:'Approved upper year participants'},
+  {id:'whole_community',title:'Whole community',sub:'Everyone in your Rotman community'},
+ ]
+ return <section className="bc-audience-picker" aria-label="Post audience"><div><span className="bc-eyebrow">Who should see this?</span><h3>Choose where to post</h3></div><div className="bc-audience-options">{options.map(option=><button type="button" key={option.id} disabled={option.disabled} aria-pressed={value===option.id} onClick={()=>onChange(option.id)}><strong>{option.title}</strong><small>{option.sub}</small></button>)}</div></section>
+}
 function AdminApplications({items=[],busy,onAction}) {
  const pending=items.filter(item=>item.status==='pending')
  const others=items.filter(item=>item.status!=='pending')
@@ -54,10 +67,11 @@ function AdminApplications({items=[],busy,onAction}) {
  return <section className="bc-card bc-admin-applications"><div className="bc-row"><h2>Upper year applications</h2>{pending.length>0&&<span className="bc-pill">{pending.length} pending</span>}</div><p>Only approved upper year participants can view first year requests or offer help.</p>{pending.length?<div className="bc-application-list">{pending.map(row)}</div>:<p className="bc-muted">No applications waiting for review.</p>}{others.length>0&&<details><summary>Approved and previous applications · {others.length}</summary><div className="bc-application-list">{others.map(row)}</div></details>}</section>
 }
 
-export default function BuddyChoiceProgram({onBack,onOpenChat,registerNavigationGuard}) {
+export default function BuddyChoiceProgram({onBack,onOpenChat,onCommunityPostChanged,registerNavigationGuard}) {
  const [programs,setPrograms]=useState([]),[program,setProgram]=useState(null),[data,setData]=useState(null)
  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('')
  const [view,setView]=useState('new'),[filter,setFilter]=useState('All'),[preview,setPreview]=useState(null),[joinRole,setJoinRole]=useState('')
+ const [editingPost,setEditingPost]=useState(null),[postAudience,setPostAudience]=useState('buddy_program')
  const [applyHelp,setApplyHelp]=useState([]),[applyFocus,setApplyFocus]=useState([])
  const [mentorEmail,setMentorEmail]=useState(''),[editingMentor,setEditingMentor]=useState(false)
  const [interestPosts,setInterestPosts]=useState([])
@@ -94,6 +108,10 @@ export default function BuddyChoiceProgram({onBack,onOpenChat,registerNavigation
    next.first_year_access=access?.request||null
    next.mentee_verifications=access?.incoming||[]
   }catch{/* Other Buddy features remain usable until the verification migration is run. */}
+  try{
+   const assigned=await buddyRpc('buddy_assigned_state',{p_program:p})
+   next.assigned_pairs=assigned?.pairs||[]
+  }catch{/* Posting still works for Buddy Program and Whole community. */}
   return next
  }
  async function refresh(p=program){const next=await loadProgramState(p);setData(next);return next}
@@ -141,6 +159,23 @@ export default function BuddyChoiceProgram({onBack,onOpenChat,registerNavigation
   await requestFirstYearAccess()
  }
  const role=data?.role,upper=role==='upper'
+ const assignedBuddy=role==='first'?(data?.assigned_pairs||[]).find(p=>p.status==='confirmed')||null:null
+ function beginNewPost(){
+  setEditingPost(null)
+  setPostAudience(assignedBuddy?'assigned_buddy':'buddy_program')
+  navigate('new')
+ }
+ function beginEditPost(post){
+  setEditingPost(post)
+  setPostAudience(post.audience||'buddy_program')
+  setPreview(null)
+  navigate('edit')
+ }
+ async function removeOwnedPost(post){
+  if(!window.confirm('Remove this post? Existing connections will stay in Matches.'))return
+  const ok=await run(()=>buddyRpc('buddy_choice_remove',{p_post:post.id}),'Post removed.')
+  if(ok&&post.audience==='whole_community')onCommunityPostChanged?.()
+ }
  const posts=(data?.posts||[]).filter(p=>upper?(filter==='All'||p.helpType?.includes(filter))&&(view!=='selected'||data.invitations.some(i=>i.post_id===p.id&&['pending','accepted'].includes(i.status))):p.owner==='me')
  const used=(data?.invitations||[]).filter(i=>['pending','accepted'].includes(i.status)).length
  function actions(post){
@@ -154,7 +189,7 @@ export default function BuddyChoiceProgram({onBack,onOpenChat,registerNavigation
     {upper&&i.status==='pending'&&<Button disabled={busy} onClick={()=>run(()=>buddyRpc('buddy_choice_respond',{p_invite:i.id,p_action:'withdraw'}),'Help offer withdrawn.')}>Withdraw offer</Button>}
    </div>)}
    {upper&&!invites.some(i=>['pending','accepted','declined'].includes(i.status))&&<Button primary disabled={busy||used>=data.capacity||!data.enabled} onClick={()=>run(()=>buddyRpc('buddy_choice_select',{p_post:post.id}),'Help offered. The first-year student can connect or decline.')}>I’d like to help</Button>}
-   {!upper&&<Button disabled={busy} onClick={()=>{if(window.confirm('Remove this post? Existing connections will stay in Matches.'))run(()=>buddyRpc('buddy_choice_remove',{p_post:post.id}),'Post removed.')}}>Remove post</Button>}
+   {!upper&&<div className="bc-owner-actions"><Button disabled={busy} onClick={()=>beginEditPost(post)}>Edit post</Button><Button disabled={busy} onClick={()=>removeOwnedPost(post)}>Remove post</Button></div>}
   </div>
  }
  return <AppScreen background="transparent"><main className="bc-shell bc-program" ref={root}>
@@ -166,14 +201,14 @@ export default function BuddyChoiceProgram({onBack,onOpenChat,registerNavigation
  {(role||data.coordinator)&&view!=='year'&&<nav className="bc-tabs" aria-label="Buddy views">{(upper?[['buddies','My Buddies'],['browse','Community'],['selected','My selections']]:role==='first'?[['buddies','My Buddy'],['home','Community'],['mine','My posts']]:[]).concat(data.coordinator?[['access','Manage access']]:[]).map(([id,label])=><Button key={id} aria-pressed={view===id} onClick={()=>navigate(id)}>{label}</Button>)}</nav>}
  {role==='first'&&view==='home'&&<section className="bc-intro"><span className="bc-eyebrow">A little support goes a long way</span><h2>A little help finding your footing</h2><p>Ask the community for another perspective.</p><Button primary disabled={!data.enabled} onClick={()=>navigate('new')}>Post a request →</Button>{!data.enabled&&<p className="bc-paused">Posting is paused by the program coordinator.</p>}</section>}
  {upper&&view==='browse'&&<section className="bc-intro"><span className="bc-eyebrow">You choose where to help</span><h2>Support a first-year your way</h2><p>Offer help where your experience is useful.</p><span className="bc-capacity">{used} of {data.capacity} help spots in use</span>{used>=data.capacity&&<p className="bc-paused">Your help spots are full. Manage your current offers in My selections.</p>}{!data.enabled&&<p className="bc-paused">New invitations are paused by the program coordinator.</p>}</section>}
- {role==='first'&&view==='mine'&&<div className="bc-toolbar"><h2>My buddy posts</h2><Button primary disabled={!data.enabled} onClick={()=>navigate('new')}>+ New post</Button></div>}
+ {role==='first'&&view==='mine'&&<div className="bc-toolbar"><h2>My posts</h2><Button primary disabled={!data.enabled} onClick={beginNewPost}>+ New post</Button></div>
  {view==='buddies'&&role?<><MentorVerificationQueue items={upper?(data.mentee_verifications||[]):[]} busy={busy} onAction={verifyMentee}/><BuddyAssigned key={assignedRefreshKey} program={program} role={role} onOpenChat={onOpenChat} onDirtyChange={setAssignedDirty} coordinator={data.coordinator}/></>:view==='access'&&data.coordinator?<><AdminApplications items={data.upper_applications||[]} busy={busy} onAction={(userId,action)=>run(()=>buddyRpc('buddy_upper_application_decide',{p_program:program,p_user:userId,p_action:action}),action==='approve'?'Application approved.':action==='decline'?'Application declined.':action==='pause'?'Upper year access paused.':'Upper year access restored.')} />{!role&&<Button onClick={()=>navigate('new')}>Student access</Button>}</>
  :(!role||view==='year')?(!role&&data.upper_application?<UpperApplicationGate application={data.upper_application} busy={busy} enabled={data.enabled} help={applyHelp} focus={applyFocus} onHelp={setApplyHelp} onFocus={setApplyFocus} onResubmit={()=>run(()=>buddyRpc('buddy_upper_apply',{p_program:program,p_help:applyHelp,p_focus:applyFocus}),'Application submitted. A program admin will review it before upper year access opens.')} onRefresh={()=>refresh()}/>:!role&&data.first_year_access&&!editingMentor?<FirstYearAccessGate request={data.first_year_access} busy={busy} mentorEmail={mentorEmail} onMentorEmail={setMentorEmail} onRequest={requestFirstYearAccess} onRefresh={checkFirstYearAccess} onEdit={()=>setEditingMentor(true)} editing={false}/>:<section className="bc-card bc-join"><h2>{role?'Change your year':'How would you like to take part?'}</h2><p>{role?'Picked the wrong year? You can choose again.':'Choose your year. Find your crew.'}</p><fieldset className="bc-role-options" disabled={busy}><legend>Your year</legend><label><input type="radio" name="buddy-year" value="upper" checked={joinRole==='upper'} onChange={()=>setJoinRole('upper')}/><span><strong>I am a second year or upper year student</strong><small>Apply to help. A program admin approves access before first year requests become visible.</small></span></label><label><input type="radio" name="buddy-year" value="first" checked={joinRole==='first'} onChange={()=>setJoinRole('first')}/><span><strong>I am a first year student</strong><small>Share what you need and what you enjoy helping with.</small></span></label></fieldset>{joinRole==='first'&&!role&&<FirstYearAccessGate request={data.first_year_access} busy={busy} mentorEmail={mentorEmail} onMentorEmail={setMentorEmail} onRequest={requestFirstYearAccess} onRefresh={()=>{setEditingMentor(false);setMentorEmail(data.first_year_access?.mentor_email||'')}} onEdit={()=>setEditingMentor(true)} editing={true}/>} {joinRole==='first'&&role&&role!=='first'&&<div className="bc-card bc-role-correction"><span className="bc-eyebrow">Year correction</span><h3>First year access needs an admin correction</h3><p>Your account is already registered as an upper year participant. To protect Buddy Program access, this role cannot be changed through mentor verification.</p><p className="bc-audience">Ask the program admin to correct your year, then you can request verification from your assigned Buddy.</p></div>} {joinRole==='upper'&&<div className="bc-upper-application"><h3>Help preferences</h3><p>Tell the program what you can help with. These become your starting preferences after approval.</p><ChoiceChips legend="Help topics" options={HELP_TYPES} value={applyHelp} onChange={setApplyHelp} max={3} disabled={busy}/><ChoiceChips legend="Career focus" options={CAREER_FOCUS_OPTIONS} value={applyFocus} onChange={setApplyFocus} max={2} disabled={busy}/><p className="bc-audience">Your application is visible only to program admins. First year students do not see your identity before you choose to help and they connect.</p></div>}<p className="bc-audience">My Buddies uses real names. School pairings stay separate from community help.</p>{joinRole!=='first'&&<Button primary disabled={busy||!joinRole||!data.enabled||(joinRole==='upper'&&!applyHelp.length)||(!!role&&joinRole===role)} onClick={role?saveYear:join}>{busy?'Saving…':joinRole==='upper'?'Submit application':'Join Buddy Program'}</Button>}{joinRole==='first'&&role&&role!=='first'&&<Button disabled={busy} onClick={cancelYear}>Cancel</Button>}{role&&<Button disabled={busy} onClick={cancelYear}>Cancel</Button>}{!data.enabled&&<p>Joining is paused by the program coordinator.</p>}</section>)
- :role==='first'&&view==='new'?<><p className="bc-audience">Visible to upper year students in your community.</p>{!data.enabled?<p>Posting is paused by the program coordinator.</p>:<div onChangeCapture={()=>{dirty.current=true}} onClickCapture={e=>{if(e.target.closest('button'))dirty.current=true}}><SubmitRequest key={formKey} audience="Approved upper year students in your community" onSubmitted={async payload=>{const ok=await run(()=>buddyRpc('buddy_choice_publish',{p_program:program,p_post:payload}),'Post published. Upper-year students can now choose to help.');if(!ok)return {error:{message:'Your post was not published. Please try again.'}};dirty.current=false;setFormKey(k=>k+1);setView('mine');return {}}}/></div>}</>
+ :role==='first'&&(view==='new'||view==='edit')?<>{!data.enabled?<p>Posting is paused by the program coordinator.</p>:<><PostAudiencePicker value={postAudience} onChange={value=>{setPostAudience(value);dirty.current=true}} buddy={assignedBuddy}/><div onChangeCapture={()=>{dirty.current=true}} onClickCapture={e=>{if(e.target.closest('button'))dirty.current=true}}><SubmitRequest key={editingPost?('edit-'+editingPost.id):formKey} audience={postAudience==='assigned_buddy'?(assignedBuddy?.name||'Your assigned Buddy'):postAudience==='buddy_program'?'Approved upper year students in your community':'Members of your Rotman community'} prefill={editingPost?(()=>{const parts=splitNeed(editingPost.needs);return {...parts,offers:editingPost.offers||'',helpType:editingPost.helpType||[],industry:editingPost.industry||[],time:editingPost.time||'15 min',urgency:editingPost.urgency||null,expiresAt:editingPost.expiresAt||null,is_anonymous:editingPost.is_anonymous??true,editing:true}})():null} onSubmitted={async payload=>{const post={...payload,audience:postAudience};const ok=editingPost?await run(()=>buddyRpc('buddy_choice_update',{p_post:editingPost.id,p_payload:post}),'Post updated.'):await run(()=>buddyRpc('buddy_choice_publish',{p_program:program,p_post:post}),'Post published.');if(!ok)return {error:{message:editingPost?'Your post was not updated. Please try again.':'Your post was not published. Please try again.'}};if(postAudience==='whole_community'||editingPost?.audience==='whole_community')onCommunityPostChanged?.();dirty.current=false;setEditingPost(null);setFormKey(k=>k+1);setView('mine');return {}}}/></div>{editingPost&&<div className="bc-edit-footer"><Button disabled={busy} onClick={()=>{setEditingPost(null);setView('mine')}}>Cancel editing</Button></div>}</>}</>
  :<>{upper&&<UpperBuddyProfile program={program} onInterestPosts={setInterestPosts}/ >}{upper&&<div className="bc-filter"><label>Help type<select aria-label="Filter by help type" value={filter} onChange={e=>setFilter(e.target.value)}>{['All',...HELP_TYPES].map(t=><option key={t}>{t}</option>)}</select></label><p>Choose a student whose request you can help with.</p></div>}
  {view!=='mine'&&<div className="bc-section-heading"><h2>{upper?(view==='selected'?'My selections':'First-year requests'):'Your requests'}</h2><span>{posts.length} {posts.length===1?'post':'posts'}</span></div>}
- <div className="bc-list">{posts.length?posts.map(post=><article className="bc-card" key={post.id}>{upper&&interestPosts.includes(post.id)&&<p className="br-interest-badge">This student is interested in connecting with you.</p>}{!upper&&postIsExpired(post)&&<span className="bc-expired-badge">Expired</span>}<button className="bc-open" onClick={()=>setPreview(post)} aria-label="Preview full post"><Post post={post}/><span className="bc-preview-link">View full post ↗</span></button>{actions(post)}</article>):<section className="bc-card bc-empty"><h2>{view==='selected'?'No selections yet':upper&&filter!=='All'?'No requests for this help type':'No posts here yet'}</h2><p>{upper?(view==='selected'?'Browse requests to find a student you can support.':filter!=='All'?'Try another help type to see more requests.':'New first-year posts will appear here.'):'Your request is a starting point for a useful conversation. Share what would help right now.'}</p>{upper&&view==='selected'&&<Button onClick={()=>navigate('browse')}>Browse posts</Button>}</section>}</div></>}
- {role==='first'&&view==='home'&&<BuddyRecommendations program={program} posts={data.posts||[]} version={data}/>}
+ <div className="bc-list">{posts.length?posts.map(post=><article className="bc-card" key={post.id}>{!upper&&<span className="bc-post-audience">{AUDIENCE_LABELS[post.audience||'buddy_program']}</span>}{upper&&interestPosts.includes(post.id)&&<p className="br-interest-badge">This student is interested in connecting with you.</p>}{!upper&&postIsExpired(post)&&<span className="bc-expired-badge">Expired</span>}<button className="bc-open" onClick={()=>setPreview(post)} aria-label="Preview full post"><Post post={post}/><span className="bc-preview-link">View full post ↗</span></button>{actions(post)}</article>):<section className="bc-card bc-empty"><h2>{view==='selected'?'No selections yet':upper&&filter!=='All'?'No requests for this help type':'No posts here yet'}</h2><p>{upper?(view==='selected'?'Browse requests to find a student you can support.':filter!=='All'?'Try another help type to see more requests.':'New first-year posts will appear here.'):'Your request is a starting point for a useful conversation. Share what would help right now.'}</p>{upper&&view==='selected'&&<Button onClick={()=>navigate('browse')}>Browse posts</Button>}</section>}</div></>}
+ {role==='first'&&view==='home'&&<BuddyRecommendations program={program} posts={(data.posts||[]).filter(p=>(p.audience||'buddy_program')==='buddy_program')} version={data}/>}
  </>}
  {preview&&<Preview post={preview} onClose={()=>setPreview(null)}>{actions(preview)}</Preview>}
  </main></AppScreen>

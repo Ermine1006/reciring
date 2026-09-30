@@ -88,3 +88,17 @@
 .bc-gate-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .bc-mentor-queue{margin-bottom:14px}
 .bc-mentor-queue .bc-application-row{background:#fbfcf7}
+
+.bc-audience-picker{margin:10px 16px 2px;padding:16px;border-radius:18px;background:#fffdf8;border:1px solid #e8dfc6}
+.bc-audience-picker h3{margin:3px 0 12px;font-size:18px;color:#293126}
+.bc-audience-options{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.bc-audience-options button{min-height:82px;border:1px solid #ddd9cd;border-radius:14px;background:#fff;padding:10px;text-align:left;color:#353a31;cursor:pointer}
+.bc-audience-options button[aria-pressed="true"]{border-color:#859665;background:#eef2e5;box-shadow:0 0 0 2px rgba(133,150,101,.14)}
+.bc-audience-options button:disabled{opacity:.45;cursor:default}
+.bc-audience-options strong,.bc-audience-options small{display:block}
+.bc-audience-options strong{font-size:13px}
+.bc-audience-options small{margin-top:4px;font-size:10.5px;line-height:1.35;color:#72776d}
+.bc-owner-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.bc-post-audience{display:inline-block;margin:0 0 8px;padding:4px 8px;border-radius:999px;background:#edf2e6;color:#5d7048;font-size:10px;font-weight:700}
+.bc-edit-footer{padding:0 20px 24px}
+@media(max-width:390px){.bc-audience-options{grid-template-columns:1fr}.bc-audience-options button{min-height:64px}}

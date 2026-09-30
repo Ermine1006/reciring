@@ -217,7 +217,7 @@ function SectionTitle({ children, right }) {
   )
 }
 
-export default function PracticeHub({ userId, avatarSeed, onOpenChat, onOpenEvent, onOpenEventsList, focusMatchId = null, focusPairingId = null, focusBuddyRequestId = null, onFocusHandled, onBuddyFocusHandled, registerNavigationGuard }) {
+export default function PracticeHub({ userId, avatarSeed, onOpenChat, onOpenEvent, onOpenEventsList, onCommunityPostChanged, focusMatchId = null, focusPairingId = null, focusBuddyRequestId = null, onFocusHandled, onBuddyFocusHandled, registerNavigationGuard }) {
   const demoMode = !isSupabaseConfigured
   const [loading, setLoading] = useState(true)
   const [community, setCommunity] = useState(null)
@@ -936,7 +936,7 @@ export default function PracticeHub({ userId, avatarSeed, onOpenChat, onOpenEven
 
   if (buddyOpen && isBuddyEnabled()) {
     return <Suspense fallback={<AppScreen><p role="status">Opening Buddy Program…</p></AppScreen>}>
-      <BuddyProgram onBack={() => setBuddyOpen(false)} onOpenChat={onOpenChat} registerNavigationGuard={registerNavigationGuard} />
+      <BuddyProgram onBack={() => setBuddyOpen(false)} onOpenChat={onOpenChat} onCommunityPostChanged={onCommunityPostChanged} registerNavigationGuard={registerNavigationGuard} />
     </Suspense>
   }
 

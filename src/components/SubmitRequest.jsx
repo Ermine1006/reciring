@@ -203,9 +203,9 @@ export default function SubmitRequest({ onSubmitted, prefill = null, demoMode = 
   const [offers,   setOffers]   = useState(prefill?.offers   || '')
   const [helpType, setHelpType] = useState(prefill?.helpType || [])
   const [industry, setIndustry] = useState(prefill?.industry || [])
-  const [time,     setTime]     = useState('15 min')
-  const [urgency,  setUrgency]  = useState(null)
-  const [expiresOn, setExpiresOn] = useState('')   // 'YYYY-MM-DD' or '' (never expires)
+  const [time,     setTime]     = useState(prefill?.time || '15 min')
+  const [urgency,  setUrgency]  = useState(prefill?.urgency || null)
+  const [expiresOn, setExpiresOn] = useState(prefill?.expiresAt ? String(prefill.expiresAt).slice(0,10) : '')   // 'YYYY-MM-DD' or '' (never expires)
   // Default follows the profile-level visibility setting: a Public profile
   // posts under its real name (that is what the user asked for when they
   // chose Public), a Private profile stays anonymous. Hard-coding `true`
@@ -215,8 +215,9 @@ export default function SubmitRequest({ onSubmitted, prefill = null, demoMode = 
   const { profile } = useAuth()
   const profileWantsRealName =
     !demoMode && profile?.visibility === VISIBILITY_PUBLIC && Boolean(profile?.name)
-  const [anonTouched, setAnonTouched]   = useState(false)
-  const [isAnonymous, setIsAnonymous]   = useState(!profileWantsRealName)
+  const prefillAnonymous = prefill?.is_anonymous ?? prefill?.isAnonymous
+  const [anonTouched, setAnonTouched]   = useState(prefillAnonymous !== undefined)
+  const [isAnonymous, setIsAnonymous]   = useState(prefillAnonymous !== undefined ? Boolean(prefillAnonymous) : !profileWantsRealName)
   // Profile can arrive after this mounts (auth still loading) — adopt it
   // as long as the user hasn't picked a side themselves.
   useEffect(() => {
@@ -806,8 +807,10 @@ export default function SubmitRequest({ onSubmitted, prefill = null, demoMode = 
           }}
         >
           {submitting
-            ? 'Posting…'
-            : (isAnonymous ? 'Publish post anonymously' : 'Publish post with my name')}
+            ? (prefill?.editing ? 'Saving…' : 'Posting…')
+            : prefill?.editing
+              ? 'Save changes'
+              : (isAnonymous ? 'Publish post anonymously' : 'Publish post with my name')}
         </button>
       </form>
 

@@ -120,7 +120,7 @@ export default function HomePage({
     ? viewerProfile : DEFAULT_VIEWER_PROFILE
   const personRec = useMemo(() => {
     return (requests || [])
-      .filter(p => p.created_by !== userId && (p.needs || p.offers) && p.creator?.name && !p.isAnonymous)
+      .filter(p => p.created_by !== userId && (p.needs || p.offers) && p.creator?.name && !p.isAnonymous && (!p.expiresAt || new Date(p.expiresAt).getTime() > Date.now()))
       .map(p => ({ post: p, score: getMatchScore(p, rankViewer) }))
       .sort((a, b) => b.score - a.score)[0]?.post || null
   }, [requests, userId, rankViewer])

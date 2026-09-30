@@ -3,3 +3,10 @@
 .ba-withdraw{display:block;margin:8px auto 0;padding:8px 10px;border:0;background:transparent;color:#7d6557;font-size:12px;font-weight:650;cursor:pointer}
 .ba-withdraw:hover{text-decoration:underline}
 .ba-withdraw:disabled{opacity:.5;cursor:default;text-decoration:none}
+
+.ba-buddy-posts{margin:16px 0}
+.ba-buddy-posts>h3{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#8a7437;margin:0 0 8px}
+.ba-buddy-post{padding:13px 14px;border:1px solid #e5dfcc;border-radius:14px;background:#fffdf8;margin:8px 0}
+.ba-buddy-post>span{display:block;font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:#8a7437;margin-bottom:4px}
+.ba-buddy-post>strong{display:block;font-size:14px;color:#30372c}
+.ba-buddy-post p{font-size:12px;line-height:1.45;color:#6d7367;margin:7px 0 0}

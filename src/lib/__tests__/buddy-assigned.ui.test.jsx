@@ -81,3 +81,12 @@ it('keeps existing questions accessible alongside the direct chat',async()=>{
  await screen.findByRole('button',{name:'Open chat'});fireEvent.click(screen.getByRole('button',{name:'Reply to question'}))
  expect(screen.getByLabelText('Your reply')).toBeTruthy()
 })
+
+it('shows My Buddy audience posts to the assigned upper year',async()=>{
+ const rpc=vi.fn(async(name)=>name==='buddy_assigned_state'?{pairs:[{id:'p',name:'Sara',status:'confirmed',posts:[{id:'post',needs:'Coffee chat advice\n\nWhich questions work?',offers:'Resume review'}],requests:[]}]}:{})
+ render(<BuddyAssigned role="upper" program="p" rpc={rpc}/>)
+ fireEvent.click(await screen.findByRole('button',{name:'Open →'}))
+ expect(await screen.findByText('Buddy posts')).toBeTruthy()
+ expect(screen.getByText('Coffee chat advice')).toBeTruthy()
+ expect(screen.queryByText('No questions yet')).toBeNull()
+})

@@ -1302,6 +1302,7 @@ function AppShell() {
               onOpenChat={(matchId) => { loadMatches(); setTab('matches'); setChatMatchId(matchId) }}
               onOpenEvent={(id) => { setEventReturnTab('practice'); setEventInitialView(null); setViewingEventId(id); setTab('events') }}
               onOpenEventsList={() => { setEventsCameFrom('practice'); setEventsTopView('discover'); setViewingEventId(null); setTab('events') }}
+              onCommunityPostChanged={loadPosts}
             />
           )}
           {tab === 'matches' && !chatMatchId && (
