@@ -81,3 +81,10 @@
 .bc-program .bc-connected-person strong{display:block;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bc-program .bc-connected-person small{display:block;margin-top:2px;font-size:11px;color:#6f7765}
 .bc-program .bc-connected-person>b{font-size:11px;color:#607245;white-space:nowrap}
+
+.bc-mentor-email{display:block;margin:16px 0 8px;font-size:12px;font-weight:700;color:#3f4937;text-align:left}
+.bc-mentor-email input{display:block;width:100%;box-sizing:border-box;margin-top:7px;min-height:46px;border:1px solid #dcded3;border-radius:12px;background:#fff;padding:0 12px;font:14px Inter,system-ui,sans-serif;color:#282d25}
+.bc-mentor-value{margin:12px 0;padding:10px 12px;border-radius:11px;background:#f4f5ef;color:#526047;font-size:13px;overflow-wrap:anywhere}
+.bc-gate-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.bc-mentor-queue{margin-bottom:14px}
+.bc-mentor-queue .bc-application-row{background:#fbfcf7}

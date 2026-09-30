@@ -182,6 +182,7 @@ function AppShell() {
   const [practiceFocusMatchId, setPracticeFocusMatchId] = useState(null)
   // Same idea, keyed by pairing id (notification payloads carry it).
   const [practiceFocusPairingId, setPracticeFocusPairingId] = useState(null)
+  const [buddyFocusRequestId, setBuddyFocusRequestId] = useState(null)
   // In-app toast for realtime Exchange notifications: the bell badge
   // alone is too quiet for time-sensitive moments like an acceptance.
   const [practiceToast, setPracticeToast] = useState(null)
@@ -740,6 +741,12 @@ function AppShell() {
       }
       return
     }
+    if (n.type === 'new_match' && ['buddy_first_year_verification','buddy_first_year_status'].includes(n.payload?.kind)) {
+      setBuddyFocusRequestId(n.payload?.request_id || 'open')
+      setChatMatchId(null)
+      setTab('practice')
+      return
+    }
     switch (n.type) {
       case 'new_match':
       case 'new_message':
@@ -1289,7 +1296,9 @@ function AppShell() {
               registerNavigationGuard={registerNavigationGuard}
               focusMatchId={practiceFocusMatchId}
               focusPairingId={practiceFocusPairingId}
+              focusBuddyRequestId={buddyFocusRequestId}
               onFocusHandled={() => { setPracticeFocusMatchId(null); setPracticeFocusPairingId(null) }}
+              onBuddyFocusHandled={() => setBuddyFocusRequestId(null)}
               onOpenChat={(matchId) => { loadMatches(); setTab('matches'); setChatMatchId(matchId) }}
               onOpenEvent={(id) => { setEventReturnTab('practice'); setEventInitialView(null); setViewingEventId(id); setTab('events') }}
               onOpenEventsList={() => { setEventsCameFrom('practice'); setEventsTopView('discover'); setViewingEventId(null); setTab('events') }}

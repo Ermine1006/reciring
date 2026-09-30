@@ -217,7 +217,7 @@ function SectionTitle({ children, right }) {
   )
 }
 
-export default function PracticeHub({ userId, avatarSeed, onOpenChat, onOpenEvent, onOpenEventsList, focusMatchId = null, focusPairingId = null, onFocusHandled, registerNavigationGuard }) {
+export default function PracticeHub({ userId, avatarSeed, onOpenChat, onOpenEvent, onOpenEventsList, focusMatchId = null, focusPairingId = null, focusBuddyRequestId = null, onFocusHandled, onBuddyFocusHandled, registerNavigationGuard }) {
   const demoMode = !isSupabaseConfigured
   const [loading, setLoading] = useState(true)
   const [community, setCommunity] = useState(null)
@@ -235,6 +235,11 @@ export default function PracticeHub({ userId, avatarSeed, onOpenChat, onOpenEven
   const [view, setView] = useState('explore')            // 'explore' | 'mine'
   const [buddyOpen, setBuddyOpen] = useState(false)
   const [storiesOpen, setStoriesOpen] = useState(false)
+  useEffect(() => {
+    if (!focusBuddyRequestId || !isBuddyEnabled()) return
+    setBuddyOpen(true)
+    onBuddyFocusHandled?.()
+  }, [focusBuddyRequestId, onBuddyFocusHandled])
   const storiesNavigation = useRef(null)
   const registerStoriesNavigation = useCallback(handler => {
     storiesNavigation.current = handler

@@ -53,18 +53,27 @@ it('shows upper-year posts and selects with a real API call',async()=>{
  rpc.mockImplementation(async(name,args)=>{if(name==='buddy_choice_select')return null;return args?.p_program?{...base,role:'upper',posts:[{id:'a',needs:'Finance help',offers:'Python skills',helpType:['Advice'],tags:['Advice'],time:'30 min',is_anonymous:true}]}:{programs:[{id:'p'}]}})
  render(<BuddyChoiceProgram onBack={()=>{}}/>);fireEvent.click(await screen.findByRole('button',{name:'Community',exact:true}));await screen.findByText('Finance help');fireEvent.click(screen.getByRole('button',{name:'I’d like to help'}));await waitFor(()=>expect(rpc).toHaveBeenCalledWith('buddy_choice_select',{p_post:'a'}));expect(screen.queryByText(/Sample data/)).toBeNull()
 })
-it('lets a first year student join directly',async()=>{
- let joined=false
+it('requires a first year student to request access from their assigned Buddy',async()=>{
+ let request=null
  rpc.mockImplementation(async(name,args)=>{
-  if(name==='buddy_choice_join'){joined=true;return null}
+  if(name==='buddy_first_year_request'){
+   expect(args).toEqual({p_program:'p',p_mentor_email:'mentor@rotman.utoronto.ca'})
+   request={status:'pending_verification',mentor_email:'mentor@rotman.utoronto.ca'}
+   return 'request-1'
+  }
+  if(name==='buddy_first_year_access_state')return {request,incoming:[]}
   if(name==='buddy_recommendations')return {}
-  return args?.p_program?{...base,role:joined?'first':null}:{programs:[{id:'p'}]}
+  return args?.p_program?{...base,role:null}:{programs:[{id:'p'}]}
  })
  render(<BuddyChoiceProgram onBack={()=>{}}/>)
  fireEvent.click(await screen.findByRole('radio',{name:/I am a first/}))
- fireEvent.click(screen.getByRole('button',{name:'Join as a student'}))
- await screen.findByRole('heading',{name:'Your Buddy, right here.'})
- expect(rpc).toHaveBeenCalledWith('buddy_choice_join',{p_program:'p'})
+ expect(screen.queryByRole('button',{name:'Join as a student'})).toBeNull()
+ fireEvent.change(screen.getByLabelText('Assigned Buddy email'),{target:{value:'MENTOR@rotman.utoronto.ca'}})
+ fireEvent.click(screen.getByRole('button',{name:'Request access →'}))
+ expect(await screen.findByText('Waiting for your Buddy')).toBeTruthy()
+ expect(screen.getByText('mentor@rotman.utoronto.ca')).toBeTruthy()
+ expect(rpc).toHaveBeenCalledWith('buddy_first_year_request',{p_program:'p',p_mentor_email:'mentor@rotman.utoronto.ca'})
+ expect(rpc.mock.calls.some(([name])=>name==='buddy_choice_join')).toBe(false)
 })
 
 it('requires an upper year application and keeps requests locked while pending',async()=>{
@@ -85,8 +94,12 @@ it('requires an upper year application and keeps requests locked while pending',
  fireEvent.click(screen.getByRole('button',{name:'Submit application'}))
  expect(await screen.findByText('Application pending')).toBeTruthy()
  expect(screen.getByText(/First year requests stay private until you are approved/)).toBeTruthy()
+ expect(screen.getByText(/year is locked to this application/i)).toBeTruthy()
  expect(screen.queryByRole('button',{name:'Community',exact:true})).toBeNull()
+ expect(screen.queryByRole('radio',{name:/I am a first/})).toBeNull()
+ expect(screen.queryByRole('button',{name:'Join as a student'})).toBeNull()
  expect(rpc.mock.calls.some(([name])=>name==='buddy_choice_join_upper')).toBe(false)
+ expect(rpc.mock.calls.some(([name])=>name==='buddy_choice_join')).toBe(false)
 })
 
 it('lets an admin approve an upper year application',async()=>{
@@ -196,4 +209,44 @@ it('frames Community as optional help rather than a new Buddy commitment',async(
  expect(screen.getByText('Help preferences')).toBeTruthy()
  expect(screen.getByRole('button',{name:'I’d like to help'})).toBeTruthy()
  expect(screen.queryByText(/buddy places/i)).toBeNull()
+})
+
+it('keeps a declined upper year applicant on the upper year track',async()=>{
+ let submitted=false
+ rpc.mockImplementation(async(name,args)=>{
+  if(name==='buddy_upper_apply'){submitted=true;return null}
+  return args?.p_program
+    ? {...base,upper_application:{status:submitted?'pending':'declined',help_topics:['Advice'],career_focus:['Finance']}}
+    : {programs:[{id:'p'}]}
+ })
+ render(<BuddyChoiceProgram onBack={()=>{}}/>)
+ expect(await screen.findByText('Application not approved')).toBeTruthy()
+ expect(screen.queryByRole('radio',{name:/I am a first/})).toBeNull()
+ expect(screen.queryByRole('button',{name:'Join as a student'})).toBeNull()
+ fireEvent.click(screen.getByRole('button',{name:'Submit application again'}))
+ await screen.findByText('Application pending')
+ expect(rpc).toHaveBeenCalledWith('buddy_upper_apply',{p_program:'p',p_help:['Advice'],p_focus:['Finance']})
+ expect(rpc.mock.calls.some(([name])=>name==='buddy_choice_join')).toBe(false)
+})
+
+it('lets only an approved upper year Buddy act on incoming mentee verification requests',async()=>{
+ let incoming=[{id:'req-1',name:'Milan Patel',email:'milan@rotman.utoronto.ca'}]
+ const rpcLocal=rpc
+ rpcLocal.mockImplementation(async(name,args)=>{
+  if(name==='buddy_first_year_verify'){
+   expect(args).toEqual({p_request:'req-1',p_accept:true})
+   incoming=[]
+   return null
+  }
+  if(name==='buddy_first_year_access_state')return {request:null,incoming}
+  if(name==='buddy_assigned_state')return {pairs:[]}
+  if(name==='buddy_recommendations')return {items:[]}
+  return args?.p_program?{...base,role:'upper'}:{programs:[{id:'p'}]}
+ })
+ render(<BuddyChoiceProgram onBack={()=>{}}/>)
+ expect(await screen.findByText('Buddy verification requests')).toBeTruthy()
+ expect(screen.getByText('Milan Patel')).toBeTruthy()
+ fireEvent.click(screen.getByRole('button',{name:'Verify Buddy'}))
+ await waitFor(()=>expect(rpcLocal).toHaveBeenCalledWith('buddy_first_year_verify',{p_request:'req-1',p_accept:true}))
+ await waitFor(()=>expect(screen.queryByText('Milan Patel')).toBeNull())
 })
