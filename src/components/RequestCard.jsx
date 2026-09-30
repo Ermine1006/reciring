@@ -268,7 +268,7 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
       {/* ── Card body ─────────────────────────────────── */}
       {/* pan-y: allow vertical scroll of a long request while keeping the
           left/right swipe gesture working (a plain scroll child eats it). */}
-      <div style={{ padding: '16px 20px 18px', flex: 1, overflowY: 'auto', minHeight: 0, touchAction: 'pan-y' }}>
+      <div data-card-body="" style={{ padding: '16px 20px 18px', flex: 1, overflowY: 'auto', minHeight: 0, touchAction: 'pan-y' }}>
 
         {/* ── Scannable meta bar — the 1-second decision row ────── */}
         {(() => {

@@ -183,7 +183,7 @@ export default function EventPreviewCard({ promo, isTop, onDrag, onSwipeLeft, on
       {/* touch-action: pan-y lets the content scroll vertically while leaving
           horizontal gestures for the swipe — without it the scrollable content
           swallows the left/right drag and the card won't swipe. */}
-      <div style={{ padding: '16px 18px 18px', flex: 1, minHeight: 0, overflowY: 'auto', touchAction: 'pan-y' }}>
+      <div data-card-body="" style={{ padding: '16px 18px 18px', flex: 1, minHeight: 0, overflowY: 'auto', touchAction: 'pan-y' }}>
         {/* Event headline */}
         <h3 style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 21, fontWeight: 600, color: C.ink, margin: 0, lineHeight: 1.2 }}>
           {promo.eventTitle}

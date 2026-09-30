@@ -129,3 +129,16 @@ html[data-mutu-view="desktop"] .mutu-shell .app-header { position:sticky; left:0
 @media (min-width:640px) {
   html[data-mutu-view="mobile"] .mutu-viewport { height:min(844px, 100dvh); }
 }
+
+/* On larger browser windows, size the deck from the current post instead of
+   stretching an absolutely positioned card to all remaining screen space.
+   Long posts keep an inner scroller; action buttons follow the card in flow. */
+@media (min-width:640px) {
+  .mutu-deck-body, .mutu-deck-region { flex:0 1 auto; }
+  .mutu-deck-region { display:flex; flex-direction:column; }
+  .mutu-deck-top { position:relative; inset:auto; display:flex; flex-direction:column; min-height:0; }
+  .mutu-deck-top > div { position:relative; inset:auto; height:auto !important; margin:8px 16px 16px; min-height:0; flex:0 1 auto; }
+  .mutu-deck-top [data-card-body] { flex:0 1 auto !important; }
+  /* The queued card must not set the height or peek past a shorter post. */
+  .mutu-deck-region > :not(.mutu-deck-top) { visibility:hidden; pointer-events:none; }
+}

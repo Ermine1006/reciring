@@ -443,11 +443,11 @@ export default function CardStack({ toolbarActions, requests, eventPromos, unmat
   }
 
   return (
-    <div className="flex flex-col flex-1" style={{ minHeight: 0 }}>
+    <div className="mutu-discover-deck flex flex-col flex-1" style={{ minHeight: 0 }}>
       {filterBar}
-      <div className="flex flex-col flex-1" style={{ minHeight: 0 }}>
+      <div className="mutu-deck-body flex flex-col flex-1" style={{ minHeight: 0 }}>
         {/* ── Card region ─────────────────────────────────────── */}
-        <div className="relative flex-1" style={{ minHeight: 0 }}>
+        <div className="mutu-deck-region relative flex-1" style={{ minHeight: 0 }}>
           {nextRequest && (
             isPromo(nextRequest)
               ? <EventPreviewCard key={nextRequest.id} promo={nextRequest} isTop={false} />
@@ -459,7 +459,7 @@ export default function CardStack({ toolbarActions, requests, eventPromos, unmat
               (the stamp lives inside this card) and let the card behind bleed
               through the edges — beta feedback: "can't see PASS on left
               swipe". Rotation + translation + the stamp carry the gesture. */}
-          <motion.div className="absolute inset-0">
+          <motion.div className="mutu-deck-top absolute inset-0">
             {isPromo(topRequest) ? (
               <EventPreviewCard
                 key={topRequest.id}
@@ -488,7 +488,7 @@ export default function CardStack({ toolbarActions, requests, eventPromos, unmat
 
         {/* ── Action buttons (flow layout, not absolute) ──────── */}
         <div
-          className="flex-shrink-0 flex justify-center items-center z-20"
+          className="mutu-deck-actions flex-shrink-0 flex justify-center items-center z-20"
           style={{ paddingTop: 4, paddingBottom: 6, gap: 20 }}
         >
           {/* Rewind — undo the last pass (only when there's one to undo) */}

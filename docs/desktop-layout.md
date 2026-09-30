@@ -31,3 +31,9 @@ Validated at 1440 × 900, 1024 × 768, 768 × 1024 and 390 × 844. There was no 
 The login page and signed-in header expose “View” with “Auto”, “Mobile” and “PC”. Auto uses the breakpoints above; Mobile caps the shell at 430px with bottom navigation; PC retains a minimum 1024px workspace with horizontal panning on smaller devices. The header control remains reachable while panning. The underlying screens stay mounted when choosing a mode, so signing in again is unnecessary and drafts remain intact.
 
 This small control supports agency and ease: choose once, continue the current action, and return to the preferred layout next visit. The validated preference is stored only in this browser, with Auto as the default. Invalid or unavailable storage falls back safely, and blocked storage still permits a change for the current visit. No account, privacy, sharing, feature flag or data-access rules change. Native app shells retain automatic sizing and do not show the selector.
+
+## Content-sized discovery cards
+
+At browser widths of 640px and above, Give & Ask now sizes the current card from its content. The actions follow it in document flow instead of staying below a full-height blank card. The queued card does not influence height or peek through. Long content retains its inner scroll area and visible actions. Phone-width layouts, matching, privacy, copy and gestures are unchanged. This supports the existing ease and agency goals: read the request and make a clear next choice.
+
+Browser checks with synthetic short, ask-only and long posts: short card height 336px, ask-only height 252.5px, bottom padding 19px, action gap 16px. Long content scrolled through 1,553px in a 490px region with actions above navigation. The real app at 390 × 844 retained its original absolute-positioned card and bottom navigation at 844px. Production build passed.
