@@ -18,10 +18,11 @@ export function parseBuddyList(text) {
  }).filter(Boolean)
 }
 const status=r=>r?.resolved?'Resolved':r?.replied?'Replied':r?'Needs a hand':'Say hello'
-export default function BuddyAssigned({program,role,rpc=buddyRpc,initialRoster='',onDirtyChange,coordinator=false}) {
+export default function BuddyAssigned({program,role,rpc=buddyRpc,initialRoster='',onDirtyChange,onOpenChat,coordinator=false}) {
  const [pairs,setPairs]=useState([]),[loading,setLoading]=useState(true),[error,setError]=useState(''),[notice,setNotice]=useState('')
  const [busy,setBusy]=useState(false),[add,setAdd]=useState(false),[review,setReview]=useState(null),[roster,setRoster]=useState(initialRoster)
  const [pairId,setPairId]=useState(null),[requestId,setRequestId]=useState(null),[draft,setDraft]=useState(''),[asking,setAsking]=useState(false)
+ const [openingPair,setOpeningPair]=useState(null)
  const [summary,setSummary]=useState(null),[summaryError,setSummaryError]=useState('')
  const live=useRef(true),lock=useRef(false),sequence=useRef(0),dirty=useRef(false)
  const upper=role==='upper',pair=pairs.find(p=>p.id===pairId),request=pair?.requests?.find(r=>r.id===requestId)
@@ -45,6 +46,16 @@ export default function BuddyAssigned({program,role,rpc=buddyRpc,initialRoster='
  const LEAVE_PROMPT='Leave without saving? Your Buddy list will not be kept.'
  function move(fn){if(dirty.current&&!window.confirm(LEAVE_PROMPT))return;changed(false);setDraft('');setError('');fn()}
  async function act(name,args,message,done){if(lock.current)return;lock.current=true;setBusy(true);setError('');try{await rpc(name,args);if(!live.current)return;changed(false);await refresh();setNotice(message);done?.()}catch(e){if(live.current)setError(e.message)}finally{lock.current=false;if(live.current)setBusy(false)}}
+ async function openChat(p){
+  if(lock.current)return
+  lock.current=true;setBusy(true);setOpeningPair(p.id);setError('')
+  try{
+   const result=await rpc('buddy_assigned_open_chat',{p_pair:p.id})
+   if(!result?.match_id)throw new Error('Your chat could not be opened. Please try again.')
+   if(live.current)await onOpenChat(result.match_id)
+  }catch(e){if(live.current)setError(/buddy_assigned_open_chat|schema cache/i.test(e.message)?'Buddy chat is waiting for a program update. Your questions are still available.':e.message)}
+  finally{lock.current=false;if(live.current){setBusy(false);setOpeningPair(null)}}
+ }
  async function report(){try{setSummary(await rpc('buddy_assigned_summary',{p_program:program}));setSummaryError('')}catch(e){setSummaryError(e.message)}}
  const reset=()=>{setPairId(null);setRequestId(null);setAsking(false);setAdd(false);setReview(null)}
  const withdrawPairing=(id)=>{
@@ -65,6 +76,7 @@ export default function BuddyAssigned({program,role,rpc=buddyRpc,initialRoster='
    <Button disabled={busy} onClick={()=>move(reset)}>‹ {upper?'My Buddies':'My Buddy'}</Button>
    <span className="ba-eyebrow">School assigned</span><h2>{pair.name}</h2>{pair.email&&<p className="ba-muted">{pair.email}</p>}
    {pair.status!=='confirmed'?<div className="ba-empty"><p>{pair.status==='declined'?'Pairing needs correction. Please contact your coordinator.':upper?'Waiting for your student to confirm.':'Is this your school assigned Buddy?'}</p>{upper&&pair.status==='pending'&&<><Button disabled={busy} onClick={()=>withdrawPairing(pair.id)}>Withdraw pairing</Button><p className="ba-muted">Withdraw only removes this pending pairing request. Confirmed Buddy relationships are not changed here.</p></>}{!upper&&pair.status==='pending'&&<><Button primary disabled={busy} onClick={()=>act('buddy_assigned_confirm',{p_pair:pair.id,p_accept:true},'You are connected.')}>Confirm my Buddy</Button><Button disabled={busy} onClick={()=>act('buddy_assigned_confirm',{p_pair:pair.id,p_accept:false},'Pairing marked for correction.')}>Needs correction</Button><p className="ba-muted">Your names and requests are shared within this pair. The school sees participation counts.</p></>}</div>:<>
+    {onOpenChat&&<Button primary disabled={busy} onClick={()=>move(()=>openChat(pair))}>{openingPair===pair.id?'Opening chat…':'Open chat'}</Button>}
     {!upper&&!asking&&<Button disabled={busy} primary onClick={()=>move(()=>{setAsking(true);setRequestId(null)})}>Ask my Buddy</Button>}
     {asking?<form onSubmit={e=>{e.preventDefault();act('buddy_assigned_ask',{p_pair:pair.id,p_body:draft},'Question sent.',()=>{setDraft('');setAsking(false)})}}><label className="ba-field">What would help?<textarea required maxLength={1000} value={draft} disabled={busy} onChange={e=>{setDraft(e.target.value);changed(true)}}/></label><p className="ba-muted">Your name is shown. Only your Buddy can read this.</p><button className="ba-cta" disabled={busy||!draft.trim()}>Send question →</button></form>:<>
      {(pair.requests||[]).map(r=><button className="ba-request" type="button" key={r.id} disabled={busy} aria-pressed={requestId===r.id} onClick={()=>move(()=>setRequestId(r.id))}><span>{r.body}</span><small>{status(r)} →</small></button>)}
@@ -78,7 +90,7 @@ export default function BuddyAssigned({program,role,rpc=buddyRpc,initialRoster='
   </>:<>
    <div className="ba-hero"><div><span className="ba-eyebrow">School assigned</span><h2>{upper?'Meet your Buddy crew':'Your Buddy, right here.'}</h2><p>A little help goes a long way.</p></div><span className="ba-hero-art" aria-hidden="true"/></div>
    {upper&&!pairs.length&&<Button primary disabled={busy} onClick={()=>setAdd(true)}>Add my Buddies →</Button>}
-   {pairs.map(p=>{const needs=p.requests?.find(r=>!r.resolved&&!r.replied),latest=needs||p.requests?.[0];return <article className="ba-card" key={p.id}><div className="ba-card-head"><h3>{p.name}</h3><span className="ba-status">{p.status==='pending'?(upper?'Awaiting confirmation':'Confirm pairing'):p.status==='declined'?'Check pairing':status(latest)}</span></div><p>{p.status==='confirmed'?(latest?.body||'A little help starts here.'):(upper?'Waiting to connect your accounts.':'Your school pairing is ready.')}</p><Button primary={p.status==='confirmed'&&!!needs} disabled={busy} onClick={()=>move(()=>{setPairId(p.id);setRequestId(latest?.id||null);setAsking(false)})}>{p.status==='pending'&&!upper?'Confirm':needs&&upper?'Reply →':'Open →'}</Button>{upper&&p.status==='pending'&&<button type="button" className="ba-withdraw" disabled={busy} onClick={()=>withdrawPairing(p.id)}>Withdraw pairing</button>}</article>})}
+   {pairs.map(p=>{const needs=p.requests?.find(r=>!r.resolved&&!r.replied),latest=needs||p.requests?.[0],canChat=p.status==='confirmed'&&!!onOpenChat;const details=()=>move(()=>{setPairId(p.id);setRequestId(latest?.id||null);setAsking(false)});return <article className="ba-card" key={p.id}><div className="ba-card-head"><h3>{p.name}</h3><span className="ba-status">{p.status==='pending'?(upper?'Awaiting confirmation':'Confirm pairing'):p.status==='declined'?'Check pairing':status(latest)}</span></div><p>{p.status==='confirmed'?(latest?.body||'A little help starts here.'):(upper?'Waiting to connect your accounts.':'Your school pairing is ready.')}</p><Button primary={canChat||p.status==='confirmed'&&!!needs} disabled={busy} onClick={canChat?()=>move(()=>openChat(p)):details}>{openingPair===p.id?'Opening chat…':canChat?'Open chat':p.status==='pending'&&!upper?'Confirm':needs&&upper?'Reply →':'Open →'}</Button>{canChat&&<Button disabled={busy} onClick={details}>{needs&&upper?'Reply to question':'View questions'}</Button>}{upper&&p.status==='pending'&&<button type="button" className="ba-withdraw" disabled={busy} onClick={()=>withdrawPairing(p.id)}>Withdraw pairing</button>}</article>})}
    {!upper&&!pairs.length&&!error&&<div className="ba-empty"><h3>Ready when you are.</h3><p>Your mentor can add your verified school email.</p></div>}
    <div className="ba-footer">{upper&&pairs.length>0&&<Button disabled={busy} onClick={()=>setAdd(true)}>+ Add Buddies</Button>}<Button disabled={busy} onClick={()=>refresh()}>Refresh</Button></div>
   </>}

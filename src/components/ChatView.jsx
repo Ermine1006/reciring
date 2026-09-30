@@ -541,7 +541,12 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
 
         {/* Context card. Marketplace connections show "Connected about: <the
             opportunity>"; ordinary peer matches show the needs/offers exchange. */}
-        {match?.isPractice ? (
+        {match?.isBuddy && !match?.buddyPostId ? (
+          <div style={{ margin: '0 16px 16px', padding: '12px 16px', background: C.white, borderRadius: 16, border: `1px solid ${C.goldLight}` }}>
+            <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: C.text }}>Your school Buddy</p>
+            <p style={{ margin: '4px 0 0', fontSize: 12, color: C.textSub }}>A little support, together. Say hello or share what is on your mind.</p>
+          </div>
+        ) : match?.isPractice ? (
           <>
           <div style={{
             margin: '0 16px 16px', background: C.white, borderRadius: 16,

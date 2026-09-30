@@ -49,3 +49,35 @@ it('lets an upper year withdraw a pending school pairing without touching confir
  expect(confirmSpy).toHaveBeenCalledWith('Withdraw this pairing request? The student will no longer see it in My Buddy.')
  confirmSpy.mockRestore()
 })
+
+it.each(['upper','first'])('opens a confirmed Buddy chat directly for %s without a question',async role=>{
+ const onOpenChat=vi.fn(),rpc=vi.fn(async name=>name==='buddy_assigned_open_chat'?{match_id:'chat-sara'}:{pairs:[{id:'sara',name:'Sara',status:'confirmed',requests:[]}]})
+ render(<BuddyAssigned role={role} program="p" rpc={rpc} onOpenChat={onOpenChat}/>);
+ fireEvent.click(await screen.findByRole('button',{name:'Open chat'}))
+ await waitFor(()=>expect(onOpenChat).toHaveBeenCalledWith('chat-sara'))
+ expect(rpc).toHaveBeenCalledWith('buddy_assigned_open_chat',{p_pair:'sara'})
+ expect(screen.queryByText('No questions yet')).toBeNull()
+})
+it.each(['pending','declined'])('keeps %s pairings in their confirmation flow',async status=>{
+ const rpc=vi.fn(async()=>({pairs:[{id:'sara',name:'Sara',status,requests:[]}]}))
+ render(<BuddyAssigned role="upper" program="p" rpc={rpc} onOpenChat={vi.fn()}/>);
+ await screen.findByText('Sara');expect(screen.queryByRole('button',{name:'Open chat'})).toBeNull()
+ fireEvent.click(screen.getByRole('button',{name:'Open →'}))
+ expect(rpc).not.toHaveBeenCalledWith('buddy_assigned_open_chat',expect.anything())
+})
+it('prevents repeated chat requests and lets a failed opening retry',async()=>{
+ let reject;const onOpenChat=vi.fn(),rpc=vi.fn(name=>name==='buddy_assigned_open_chat'?new Promise((_,r)=>{reject=r}):Promise.resolve({pairs:[{id:'sara',name:'Sara',status:'confirmed',requests:[]}]}))
+ render(<BuddyAssigned role="upper" program="p" rpc={rpc} onOpenChat={onOpenChat}/>);
+ const button=await screen.findByRole('button',{name:'Open chat'});fireEvent.click(button);fireEvent.click(button)
+ expect(screen.getByRole('button',{name:'Opening chat…'}).disabled).toBe(true)
+ expect(rpc.mock.calls.filter(([name])=>name==='buddy_assigned_open_chat')).toHaveLength(1)
+ reject(Error('Connection interrupted'));await screen.findByText('Connection interrupted');expect(onOpenChat).not.toHaveBeenCalled()
+ rpc.mockImplementation(async()=>({match_id:'chat-sara'}));fireEvent.click(screen.getByRole('button',{name:'Open chat'}))
+ await waitFor(()=>expect(onOpenChat).toHaveBeenCalledWith('chat-sara'))
+})
+it('keeps existing questions accessible alongside the direct chat',async()=>{
+ const rpc=vi.fn(async()=>({pairs:[{id:'sara',name:'Sara',status:'confirmed',requests:[{id:'r',body:'Help?',resolved:false,replied:false,replies:[]}]}]}))
+ render(<BuddyAssigned role="upper" program="p" rpc={rpc} onOpenChat={vi.fn()}/>);
+ await screen.findByRole('button',{name:'Open chat'});fireEvent.click(screen.getByRole('button',{name:'Reply to question'}))
+ expect(screen.getByLabelText('Your reply')).toBeTruthy()
+})
