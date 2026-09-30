@@ -250,3 +250,18 @@ it('lets only an approved upper year Buddy act on incoming mentee verification r
  await waitFor(()=>expect(rpcLocal).toHaveBeenCalledWith('buddy_first_year_verify',{p_request:'req-1',p_accept:true}))
  await waitFor(()=>expect(screen.queryByText('Milan Patel')).toBeNull())
 })
+
+it('does not let an existing upper year role enter first year mentor verification',async()=>{
+ rpc.mockImplementation(async(name,args)=>{
+  if(name==='buddy_first_year_access_state')return {request:null,incoming:[]}
+  if(name==='buddy_recommendations')return {items:[]}
+  return args?.p_program?{...base,role:'upper'}:{programs:[{id:'p'}]}
+ })
+ render(<BuddyChoiceProgram onBack={()=>{}}/>)
+ fireEvent.click(await screen.findByRole('button',{name:'Change year'}))
+ fireEvent.click(screen.getByRole('radio',{name:/I am a first/}))
+ expect(screen.getByText('First year access needs an admin correction')).toBeTruthy()
+ expect(screen.queryByLabelText('Assigned Buddy email')).toBeNull()
+ expect(screen.queryByRole('button',{name:'Request access →'})).toBeNull()
+ expect(rpc.mock.calls.some(([name])=>name==='buddy_first_year_request')).toBe(false)
+})
