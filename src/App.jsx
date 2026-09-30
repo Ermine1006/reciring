@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } fro
 import CardStack from './components/CardStack'
 import GiveAskHub from './components/GiveAskHub'
 import AppScreen from './components/AppScreen'
+import DisplayModeSwitcher, { DisplayModeProvider } from './components/DisplayMode'
 import { AppFrame, AppNavigation, MessagesWorkspace } from './components/AppLayout'
 import MatchesList from './components/MatchesList'
 import ReciRingLogo from './components/ReciRingLogo'
@@ -1115,6 +1116,7 @@ function AppShell() {
             <ReciRingLogo size={34} />
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <DisplayModeSwitcher />
               {/* Notification bell */}
               {user && (
                 <NotificationBell
@@ -1577,8 +1579,10 @@ function AppRoot() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppRoot />
-    </AuthProvider>
+    <DisplayModeProvider>
+      <AuthProvider>
+        <AppRoot />
+      </AuthProvider>
+    </DisplayModeProvider>
   )
 }

@@ -21,66 +21,105 @@
 .mutu-home-primary, .mutu-home-secondary { min-width:0; }
 
 /* Tablets retain bottom navigation and gain a comfortable reading column. */
-@media (min-width:640px) {
-  .mutu-shell .app-header { margin:0; padding:16px 24px 8px; border-radius:0; }
-  .mutu-shell > .mutu-main { width:100%; max-width:1040px; align-self:center; }
-  .mutu-shell > .mutu-navigation { border-radius:0; }
-  .mutu-main > * { min-width:0; }
-}
+:where(html[data-mutu-layout="tablet"], html[data-mutu-layout="desktop"]) .mutu-shell .app-header { margin:0; padding:16px 24px 8px; border-radius:0; }
+:where(html[data-mutu-layout="tablet"], html[data-mutu-layout="desktop"]) .mutu-shell > .mutu-main { width:100%; max-width:1040px; align-self:center; }
+:where(html[data-mutu-layout="tablet"], html[data-mutu-layout="desktop"]) .mutu-shell > .mutu-navigation { border-radius:0; }
+:where(html[data-mutu-layout="tablet"], html[data-mutu-layout="desktop"]) .mutu-main > * { min-width:0; }
 
-@media (min-width:1024px) {
-  .mutu-shell {
+:where(html[data-mutu-layout="desktop"]) .mutu-shell {
     display:grid; grid-template-columns:216px minmax(0,1fr);
     grid-template-rows:auto auto minmax(0,1fr);
     grid-template-areas:"header header" "nav banner" "nav main";
     background:#F9F8F3 !important;
   }
-  .mutu-shell .app-header { grid-area:header; padding:18px 32px 8px; }
-  .mutu-banner { grid-area:banner; margin-top:12px !important; }
-  .mutu-shell > .mutu-main {
+
+:where(html[data-mutu-layout="desktop"]) .mutu-shell .app-header { grid-area:header; padding:18px 32px 8px; }
+
+:where(html[data-mutu-layout="desktop"]) .mutu-banner { grid-area:banner; margin-top:12px !important; }
+
+:where(html[data-mutu-layout="desktop"]) .mutu-shell > .mutu-main {
     grid-area:main; align-self:stretch; justify-self:center;
     max-width:1120px; padding:24px 32px; width:100%;
   }
-  .mutu-shell > .mutu-main:is([data-page="discover"], [data-page="post"], [data-page="profile"], [data-page="events"]) { max-width:900px; }
-  /* Rounded surface and a single scroll owner inside each existing screen. */
-  .mutu-main > :not(style) { min-height:0; }
-  .mutu-shell > .mutu-navigation {
+
+:where(html[data-mutu-layout="desktop"]) .mutu-shell > .mutu-main:is([data-page="discover"], [data-page="post"], [data-page="profile"], [data-page="events"]) { max-width:900px; }
+
+/* Rounded surface and a single scroll owner inside each existing screen. */
+
+:where(html[data-mutu-layout="desktop"]) .mutu-main > :not(style) { min-height:0; }
+
+:where(html[data-mutu-layout="desktop"]) .mutu-shell > .mutu-navigation {
     grid-area:nav; display:flex; flex-direction:column; gap:24px;
     padding:24px 16px; overflow-y:auto; min-height:0;
     border:0 !important; border-right:1px solid #E8E7DE !important;
     border-radius:0; box-shadow:none; background:#FFFDF8 !important;
   }
-  .mutu-nav-links { flex-direction:column; gap:8px; }
-  .mutu-navigation .mutu-nav-item { flex:none; flex-direction:row; justify-content:flex-start; gap:14px; padding:12px 16px; border:0 !important; border-radius:12px; }
-  .mutu-shell > nav .mutu-nav-item span { font-size:14px; font-weight:550; }
-  .mutu-nav-item:hover { box-shadow:inset 0 0 0 1px #D8DFCC !important; }
-  .mutu-nav-assistant { display:flex; align-items:center; gap:14px; margin-top:auto; padding:14px 16px; border-radius:12px; color:#68764A; font-size:14px; text-align:left; background:#F0F3E8; }
-  .mutu-shell .phone-scroll { scrollbar-width:thin; scrollbar-color:#B4BBA9 transparent; }
-  .mutu-shell ::-webkit-scrollbar { width:8px; height:8px; }
-  .mutu-shell ::-webkit-scrollbar-thumb { background:#B4BBA980; }
-  .mutu-home > .mutu-home-layout { max-width:none !important; padding:4px 4px 28px !important; }
-  .mutu-home-greeting { margin-bottom:20px; }
-  .mutu-together-landing { max-width:960px !important; }
-  :root .mutu-together-landing .mutu-connection-card { grid-template-columns: minmax(120px,160px) minmax(0,1fr); }
-  .mutu-greeting-name { display:inline; font-size:34px; }
-  .mutu-messages-workspace { flex-direction:row; border:1px solid #E5E6DC; border-radius:18px; background:#fffdf8; }
-  .mutu-messages-workspace > .mutu-messages-list,
-  .mutu-messages-workspace > .mutu-messages-detail { display:flex !important; }
-  .mutu-messages-list { flex:0 0 300px; border-right:1px solid #E5E6DC; }
-  .mutu-messages-detail { flex:1; }
-  .mutu-messages-list .mutu-matches-scroll > div { padding:20px 12px !important; }
-  .mutu-assistant-backdrop { align-items:center !important; padding:28px; }
-  .mutu-assistant-panel { background:#FAF8F0 !important; max-width:720px !important; height:min(820px, 90dvh) !important; border-radius:24px !important; box-shadow:0 24px 80px #18241430; }
-}
 
-@media (min-width:1280px) {
-  .mutu-home-layout { display:grid; grid-template-columns:minmax(0,1.4fr) minmax(280px,1fr); column-gap:32px; align-items:start; }
-  .mutu-home-greeting { grid-column:1 / -1; }
-  .mutu-home-secondary { padding-top:4px; }
-  .mutu-together-landing .together-connection-list { display:grid !important; grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
-  .mutu-messages-list { flex-basis:320px; }
-}
+:where(html[data-mutu-layout="desktop"]) .mutu-nav-links { flex-direction:column; gap:8px; }
+
+:where(html[data-mutu-layout="desktop"]) .mutu-navigation .mutu-nav-item { flex:none; flex-direction:row; justify-content:flex-start; gap:14px; padding:12px 16px; border:0 !important; border-radius:12px; }
+
+:where(html[data-mutu-layout="desktop"]) .mutu-shell > nav .mutu-nav-item span { font-size:14px; font-weight:550; }
+
+:where(html[data-mutu-layout="desktop"]) .mutu-nav-item:hover { box-shadow:inset 0 0 0 1px #D8DFCC !important; }
+
+:where(html[data-mutu-layout="desktop"]) .mutu-nav-assistant { display:flex; align-items:center; gap:14px; margin-top:auto; padding:14px 16px; border-radius:12px; color:#68764A; font-size:14px; text-align:left; background:#F0F3E8; }
+
+:where(html[data-mutu-layout="desktop"]) .mutu-shell .phone-scroll { scrollbar-width:thin; scrollbar-color:#B4BBA9 transparent; }
+
+:where(html[data-mutu-layout="desktop"]) .mutu-shell ::-webkit-scrollbar { width:8px; height:8px; }
+
+:where(html[data-mutu-layout="desktop"]) .mutu-shell ::-webkit-scrollbar-thumb { background:#B4BBA980; }
+
+:where(html[data-mutu-layout="desktop"]) .mutu-home > .mutu-home-layout { max-width:none !important; padding:4px 4px 28px !important; }
+
+:where(html[data-mutu-layout="desktop"]) .mutu-home-greeting { margin-bottom:20px; }
+
+:where(html[data-mutu-layout="desktop"]) .mutu-together-landing { max-width:960px !important; }
+
+:root:where(html[data-mutu-layout="desktop"]) .mutu-together-landing .mutu-connection-card { grid-template-columns: minmax(120px,160px) minmax(0,1fr); }
+
+:where(html[data-mutu-layout="desktop"]) .mutu-greeting-name { display:inline; font-size:34px; }
+
+:where(html[data-mutu-layout="desktop"]) .mutu-messages-workspace { flex-direction:row; border:1px solid #E5E6DC; border-radius:18px; background:#fffdf8; }
+
+:where(html[data-mutu-layout="desktop"]) .mutu-messages-workspace > .mutu-messages-list,
+  :where(html[data-mutu-layout="desktop"]) .mutu-messages-workspace > .mutu-messages-detail { display:flex !important; }
+
+:where(html[data-mutu-layout="desktop"]) .mutu-messages-list { flex:0 0 300px; border-right:1px solid #E5E6DC; }
+
+:where(html[data-mutu-layout="desktop"]) .mutu-messages-detail { flex:1; }
+
+:where(html[data-mutu-layout="desktop"]) .mutu-messages-list .mutu-matches-scroll > div { padding:20px 12px !important; }
+
+:where(html[data-mutu-layout="desktop"]) .mutu-assistant-backdrop { align-items:center !important; padding:28px; }
+
+:where(html[data-mutu-layout="desktop"]) .mutu-assistant-panel { background:#FAF8F0 !important; max-width:720px !important; height:min(820px, 90dvh) !important; border-radius:24px !important; box-shadow:0 24px 80px #18241430; }
+
+:where(html[data-mutu-wide="true"]) .mutu-home-layout { display:grid; grid-template-columns:minmax(0,1.4fr) minmax(280px,1fr); column-gap:32px; align-items:start; }
+
+:where(html[data-mutu-wide="true"]) .mutu-home-greeting { grid-column:1 / -1; }
+
+:where(html[data-mutu-wide="true"]) .mutu-home-secondary { padding-top:4px; }
+
+:where(html[data-mutu-wide="true"]) .mutu-together-landing .together-connection-list { display:grid !important; grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
+
+:where(html[data-mutu-wide="true"]) .mutu-messages-list { flex-basis:320px; }
 @media (forced-colors:active) {
   .mutu-shell, .mutu-shell > .mutu-navigation, .mutu-assistant-panel { background:Canvas !important; }
   .mutu-nav-item[aria-current="page"], .mutu-conversation-row[aria-current="true"] { outline:2px solid Highlight; }
 }
+
+/* Explicit views use the same mounted screens, including unsent drafts. */
+.mutu-view-switcher { display:flex; align-items:center; gap:6px; color:#68764A; font-size:12px; white-space:nowrap; }
+.mutu-view-switcher select { width:auto; min-height:44px; padding:8px 6px; border:1px solid #DDDCCF; border-radius:10px; color:#405737; background:#FFFDF8; font:inherit; cursor:pointer; }
+.mutu-login-view { display:flex; justify-content:flex-end; margin:-24px -10px 16px 0; }
+html[data-mutu-view="mobile"] .mutu-viewport { max-width:430px; margin:0 auto; box-shadow:0 0 32px #263b3115; }
+/* Neutralize viewport-based header offsets when Mobile is chosen on a PC. */
+html[data-mutu-layout="mobile"] .mutu-shell .app-header { margin:12px 10px 4px; border-radius:24px; padding: max(20px, env(safe-area-inset-top)) 16px 12px; }
+html[data-mutu-view="mobile"] .mutu-assistant-panel { max-width:430px !important; }
+/* A deliberately selected PC view on a narrow device can pan horizontally.
+   Keep the switcher within reach so returning to Auto is always easy. */
+html[data-mutu-view="desktop"] .mutu-viewport { overflow-x:auto; }
+html[data-mutu-view="desktop"] .mutu-shell { min-width:1024px; overflow:clip; }
+html[data-mutu-view="desktop"] .mutu-shell .app-header { position:sticky; left:0; width:100vw; max-width:100%; padding-left:16px; padding-right:16px; z-index:30; }

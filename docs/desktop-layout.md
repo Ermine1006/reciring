@@ -25,3 +25,9 @@ The value loop is an existing invitation or relevant opportunity → respond or 
 Build the production bundle; run layout interaction tests and existing Ask Mutu tests. Visually check Home, Give & Ask, Together, Messages and the assistant at desktop and mobile widths. Use synthetic local conversations to check independent scrolling, keyboard selection, current-row highlighting and retaining a typed draft across viewport changes. Never send test messages to real members.
 
 Validated at 1440 × 900, 1024 × 768, 768 × 1024 and 390 × 844. There was no document-level horizontal overflow in the measured tablet, phone or small desktop layouts; the composer stayed visible and the typed draft survived resizing. Keyboard activation opened an anonymous synthetic conversation. Production build passed. Full suite: 568 passed, 8 existing failures in practice taxonomy/preferences/recommendations/quest and Buddy year-edit tests. The five new navigation, filter-retention and conversation-isolation tests passed.
+
+## Optional website view
+
+The login page and signed-in header expose “View” with “Auto”, “Mobile” and “PC”. Auto uses the breakpoints above; Mobile caps the shell at 430px with bottom navigation; PC retains a minimum 1024px workspace with horizontal panning on smaller devices. The header control remains reachable while panning. The underlying screens stay mounted when choosing a mode, so signing in again is unnecessary and drafts remain intact.
+
+This small control supports agency and ease: choose once, continue the current action, and return to the preferred layout next visit. The validated preference is stored only in this browser, with Auto as the default. Invalid or unavailable storage falls back safely, and blocked storage still permits a change for the current visit. No account, privacy, sharing, feature flag or data-access rules change. Native app shells retain automatic sizing and do not show the selector.

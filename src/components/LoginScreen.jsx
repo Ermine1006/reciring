@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { isInstitutionalEmail, isGmailEmail } from '../config/auth'
 import { checkAccessCode, accessCodeReasonLabel } from '../lib/accessCodes'
 import ReciRingLogo from './ReciRingLogo'
+import DisplayModeSwitcher from './DisplayMode'
 import { matchaCta, MATCHA_DEEP } from '../lib/matchaCta'
 
 const C = {
@@ -270,6 +271,7 @@ export default function LoginScreen() {
           boxShadow: '0 20px 60px rgba(0,0,0,0.10), 0 4px 16px rgba(201,163,59,0.12)',
         }}
       >
+        <div className="mutu-login-view"><DisplayModeSwitcher /></div>
         <div className="flex justify-center mb-6">
           <ReciRingLogo size={36} />
         </div>
