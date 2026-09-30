@@ -109,3 +109,73 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]),textarea,select {
 .mutu-matches-scroll { scrollbar-width:thin; scrollbar-color:#a69258 transparent; }
 .mutu-matches-scroll::-webkit-scrollbar { width:6px; }
 .mutu-matches-scroll::-webkit-scrollbar-thumb { background:#a6925880; border-radius:6px; }
+
+/* ──────────────────────────────────────────────────────────────
+   iPad / large-screen layout (Guideline 4: use the full screen).
+   Turns the centered phone frame into a two-pane tablet app:
+   a left navigation rail (brand + vertical tabs) and a wide
+   content pane. Phone layout (< 768px) is untouched.
+   ────────────────────────────────────────────────────────────── */
+@media (min-width: 768px) {
+  .mutu-shell {
+    width: 94vw !important;
+    max-width: 1180px !important;
+    height: 94dvh !important;
+    max-height: 1024px !important;
+    margin: 0 !important;
+    border-radius: 34px !important;
+    display: grid !important;
+    grid-template-columns: 268px minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    overflow: hidden !important;
+    background-size: cover !important;
+  }
+  /* Brand header sits at the top of the left rail */
+  .mutu-shell > .app-header {
+    grid-column: 1; grid-row: 1;
+    margin: 18px 14px 6px !important;
+  }
+  /* Content fills the right pane and scrolls on its own */
+  .mutu-shell > main {
+    grid-column: 2; grid-row: 1 / span 2;
+    overflow-y: auto;
+    border-left: 1px solid rgba(120,100,50,.10);
+    background: rgba(255,253,247,.42) !important;
+  }
+  .mutu-shell > main > * {
+    max-width: 600px;
+    margin-left: auto; margin-right: auto;
+    width: 100%;
+  }
+  /* Bottom tab bar becomes a vertical rail in the left column */
+  .mutu-shell > nav {
+    grid-column: 1; grid-row: 2;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    align-items: stretch !important;
+    gap: 4px;
+    padding: 6px 14px 18px !important;
+    border-top: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+  .mutu-shell > nav button {
+    flex: 0 0 auto !important;
+    flex-direction: row !important;
+    justify-content: flex-start !important;
+    gap: 14px !important;
+    width: 100% !important;
+    padding: 13px 16px !important;
+    border-radius: 16px !important;
+    min-height: 52px !important;
+  }
+  .mutu-shell > nav button span {
+    font-size: 15px !important;
+    font-weight: 600 !important;
+  }
+  /* Hide the phone-only faux dynamic-island + home indicator */
+  .mutu-shell > .absolute.top-3\.5.left-1\/2 { display: none !important; }
+}
