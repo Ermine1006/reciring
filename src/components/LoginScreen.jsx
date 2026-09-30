@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
+import { Browser } from '@capacitor/browser'
 import { useAuth } from '../context/AuthContext'
 import { isInstitutionalEmail, isGmailEmail } from '../config/auth'
 import { checkAccessCode, accessCodeReasonLabel } from '../lib/accessCodes'
@@ -21,6 +22,16 @@ const C = {
 // Support email surfaced in the Forgot-email helper. Kept next to the
 // gold token so future tweaks stay in one place.
 const SUPPORT_EMAIL = 'hello@muturing.com'
+
+// Public legal pages (hosted on the marketing site). Linked from the
+// signup consent so members can read the Terms / Community Guidelines
+// (which state zero tolerance for objectionable content and abusive
+// users) and the Privacy Policy before creating an account.
+const TERMS_URL   = 'https://www.muturing.com/terms.html'
+const PRIVACY_URL = 'https://www.muturing.com/privacy.html'
+// Open a legal page in the system browser (SFSafariViewController on iOS)
+// so it works reliably inside the native WKWebView shell and on the web.
+const openLegal = (url) => { Browser.open({ url }).catch(() => { try { window.open(url, '_blank', 'noopener') } catch {} }) }
 
 export default function LoginScreen() {
   const {
@@ -56,6 +67,11 @@ export default function LoginScreen() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [info, setInfo]         = useState(null)
   const [showForgotEmail, setShowForgotEmail] = useState(false)
+  // App Store Guideline 1.2 (anonymous UGC): new accounts must explicitly
+  // agree to the Terms of Use / Community Guidelines, which state zero
+  // tolerance for objectionable content and abusive users. Unchecked by
+  // default (no pre-selected consent) and required before account creation.
+  const [agreedToTerms, setAgreedToTerms] = useState(false)
 
   const emailLower = email.trim().toLowerCase()
   const isGmail          = isGmailEmail(emailLower)
@@ -133,6 +149,11 @@ export default function LoginScreen() {
         } else {
           setError("This email isn't eligible for Mutu. Use your UofT email (@utoronto.ca, @mail.utoronto.ca, @rotman.utoronto.ca, or @alum.utoronto.ca).")
         }
+        return
+      }
+
+      if (!agreedToTerms) {
+        setError('Please agree to the Terms of Use and Community Guidelines to create your account.')
         return
       }
 
@@ -410,6 +431,31 @@ export default function LoginScreen() {
                   Password signup is for UofT / Rotman emails. Gmail users, use "Continue with Google" below (with an invite or referral code if you're new).
                 </p>
               )}
+              {/* Guideline 1.2: explicit, unchecked agreement to the Terms /
+                  Community Guidelines (zero tolerance for objectionable
+                  content and abusive users) before creating an account. */}
+              {mode === 'signup' && (
+                <label className="flex items-start gap-2 mt-3" style={{ cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={agreedToTerms}
+                    onChange={(e) => setAgreedToTerms(e.target.checked)}
+                    style={{ marginTop: 2, width: 16, height: 16, accentColor: MATCHA_DEEP, flexShrink: 0 }}
+                  />
+                  <span style={{ fontSize: 11, color: C.textSub, lineHeight: 1.5 }}>
+                    I agree to Mutu's{' '}
+                    <button type="button" onClick={() => openLegal(TERMS_URL)}
+                      style={{ background: 'none', border: 'none', padding: 0, color: C.goldDark, fontWeight: 600, cursor: 'pointer' }}>
+                      Terms of Use and Community Guidelines
+                    </button>{' '}
+                    and{' '}
+                    <button type="button" onClick={() => openLegal(PRIVACY_URL)}
+                      style={{ background: 'none', border: 'none', padding: 0, color: C.goldDark, fontWeight: 600, cursor: 'pointer' }}>
+                      Privacy Policy
+                    </button>. Mutu has zero tolerance for objectionable content or abusive behaviour.
+                  </span>
+                </label>
+              )}
             </>
           )}
 
@@ -668,7 +714,12 @@ export default function LoginScreen() {
         )}
 
         <p className="text-center mt-6" style={{ fontSize: 11, color: C.textMuted, lineHeight: 1.5 }}>
-          By continuing, you agree to stay anonymous to peers until you choose to reveal your name.
+          By continuing, you agree to Mutu's{' '}
+          <button type="button" onClick={() => openLegal(TERMS_URL)}
+            style={{ background: 'none', border: 'none', padding: 0, color: C.textSub, fontWeight: 600, textDecoration: 'underline', cursor: 'pointer' }}>
+            Terms of Use and Community Guidelines
+          </button>
+          {' '}— which have zero tolerance for objectionable content or abusive behaviour — and to stay anonymous to peers until you choose to reveal your name.
         </p>
 
       </motion.div>
