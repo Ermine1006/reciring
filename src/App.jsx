@@ -14,7 +14,7 @@ import ResetPasswordPage from './components/ResetPasswordPage'
 import NewMatchModal from './components/NewMatchModal'
 import LinkAccountPrompt from './components/LinkAccountPrompt'
 import NotificationBell from './components/NotificationBell'
-import { markRead as markNotificationRead } from './lib/notifications'
+import { fetchNotifications, markRead as markNotificationRead } from './lib/notifications'
 import SettingsPage, { resolveAvatarSeed } from './components/SettingsPage'
 import OnboardingProfile from './components/OnboardingProfile'
 import ProfileOnboardingV3 from './components/profile/ProfileOnboardingV3'
@@ -49,6 +49,7 @@ import { track } from './lib/analytics'
 import { notifyEventReview, notifyNewMatch } from './lib/email'
 import { fetchMessages, sendMessage, sendMeetingProposal, updateMeetingStatus, msgToUI, markMessagesRead } from './lib/messages'
 import { MATCHA_DEEP, MATCHA_SOFT } from './lib/matchaCta'
+import { buddyRpc } from './lib/buddy/api'
 
 /* ─── Design tokens ─────────────────────────────────────────────── */
 const C = {
@@ -184,7 +185,13 @@ function AppShell() {
   // In-app toast for realtime Exchange notifications: the bell badge
   // alone is too quiet for time-sensitive moments like an acceptance.
   const [practiceToast, setPracticeToast] = useState(null)
+  const [buddyHelpOffer, setBuddyHelpOffer] = useState(null)
+  const [buddyHelpBusy, setBuddyHelpBusy] = useState(false)
   const handleIncomingNotification = useCallback((row) => {
+    if (row?.type === 'new_match' && row?.payload?.kind === 'buddy_help_offer' && !row?.payload?.resolved) {
+      setBuddyHelpOffer(row)
+      return
+    }
     if (isPracticeEnabled() && String(row?.type || '').startsWith('practice_')) {
       setPracticeToast(row)
     }
@@ -194,6 +201,24 @@ function AppShell() {
     const t = setTimeout(() => setPracticeToast(null), 4000)
     return () => clearTimeout(t)
   }, [practiceToast])
+
+  // Cold-load fallback for Buddy help offers. Realtime surfaces new offers,
+  // while this catches offers that arrived while the app was closed.
+  useEffect(() => {
+    if (!user?.id || buddyHelpOffer) return
+    let live = true
+    fetchNotifications(user.id, { limit: 30 }).then(({ data }) => {
+      if (!live) return
+      const offer = (data || []).find(n =>
+        !n.read_at
+        && n.type === 'new_match'
+        && n.payload?.kind === 'buddy_help_offer'
+        && !n.payload?.resolved
+      )
+      if (offer) setBuddyHelpOffer(offer)
+    })
+    return () => { live = false }
+  }, [user?.id, buddyHelpOffer])
   // When an event was opened FROM the Exchange feed, Back on the event
   // detail returns to Exchange instead of dropping into the Events area.
   const [eventReturnTab, setEventReturnTab] = useState(null)
@@ -568,6 +593,9 @@ function AppShell() {
     const uid = user.id
 
     const triggerNewMatchPopup = async (row) => {
+      // Buddy acceptance already came from explicit first-year consent.
+      // It belongs in Matches, but should not create a second popup.
+      if (row.source === 'buddy') { loadMatches(); return }
       // Only the REQUESTER sees the popup — the helper already navigated
       // into the chat as part of their own action (handleMatchConfirm).
       if (row.helper_user_id === uid) return
@@ -646,7 +674,7 @@ function AppShell() {
   useEffect(() => {
     if (!user || !matches.length || newMatchModalOpen) return
     const ack = loadAckSet()
-    const candidate = matches.find(m => !m.isHelper && !ack.has(m.id) && !shownMatchIdsRef.current.has(m.id))
+    const candidate = matches.find(m => m.source !== 'buddy' && !m.isHelper && !ack.has(m.id) && !shownMatchIdsRef.current.has(m.id))
     if (candidate) {
       shownMatchIdsRef.current.add(candidate.id)
       setLatestNewMatch(candidate)
@@ -667,6 +695,31 @@ function AppShell() {
     setNewMatchModalOpen(false)
   }, [latestNewMatch, persistAck])
 
+  const handleBuddyHelpConnect = useCallback(async () => {
+    const inviteId = buddyHelpOffer?.payload?.invite_id
+    if (!inviteId || buddyHelpBusy) return
+    setBuddyHelpBusy(true)
+    try {
+      const matchId = await buddyRpc('buddy_choice_connect', { p_invite: inviteId })
+      if (!matchId) throw new Error('The connection could not be opened.')
+      if (buddyHelpOffer?.id) markNotificationRead(buddyHelpOffer.id)
+      await loadMatches()
+      setBuddyHelpOffer(null)
+      setTab('matches')
+      setChatMatchId(matchId)
+    } catch (e) {
+      setBanner(e?.message || 'This help offer is no longer available.')
+    } finally {
+      setBuddyHelpBusy(false)
+    }
+  }, [buddyHelpOffer, buddyHelpBusy, loadMatches])
+
+  const handleBuddyHelpDismiss = useCallback(async () => {
+    const current = buddyHelpOffer
+    if (current?.id) await markNotificationRead(current.id)
+    setBuddyHelpOffer(null)
+  }, [buddyHelpOffer])
+
   // Load blocked user ids on mount
   useEffect(() => {
     if (!user) return
@@ -678,6 +731,15 @@ function AppShell() {
   // ── Notification routing — bell click → correct view ─────────
   const handleNotificationOpen = useCallback((n) => {
     const matchId = n.payload?.match_id
+    if (n.type === 'new_match' && n.payload?.kind === 'buddy_help_offer') {
+      if (n.payload?.resolved === 'connected' && matchId) {
+        setTab('matches')
+        setChatMatchId(matchId)
+      } else if (!n.payload?.resolved) {
+        setBuddyHelpOffer(n)
+      }
+      return
+    }
     switch (n.type) {
       case 'new_match':
       case 'new_message':
@@ -1470,9 +1532,21 @@ function AppShell() {
           </div>
         )}
 
-        {/* ── New Match popup ─────────────────────────────────── */}
+        {/* ── Buddy help offer + New Match popup ─────────────── */}
         <NewMatchModal
-          open={newMatchModalOpen && !(tab === 'matches' && chatMatchId === latestNewMatch?.id)}
+          open={Boolean(buddyHelpOffer)}
+          mode="buddy_help"
+          busy={buddyHelpBusy}
+          match={buddyHelpOffer ? {
+            id: buddyHelpOffer.payload?.invite_id,
+            peerId: buddyHelpOffer.payload?.invite_id,
+            request: { needs: buddyHelpOffer.payload?.post_preview || 'your Buddy Program request' },
+          } : null}
+          onView={handleBuddyHelpConnect}
+          onDismiss={handleBuddyHelpDismiss}
+        />
+        <NewMatchModal
+          open={!buddyHelpOffer && newMatchModalOpen && !(tab === 'matches' && chatMatchId === latestNewMatch?.id)}
           match={latestNewMatch}
           onView={handleNewMatchView}
           onDismiss={handleNewMatchDismiss}

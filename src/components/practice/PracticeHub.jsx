@@ -931,7 +931,7 @@ export default function PracticeHub({ userId, avatarSeed, onOpenChat, onOpenEven
 
   if (buddyOpen && isBuddyEnabled()) {
     return <Suspense fallback={<AppScreen><p role="status">Opening Buddy Program…</p></AppScreen>}>
-      <BuddyProgram onBack={() => setBuddyOpen(false)} registerNavigationGuard={registerNavigationGuard} />
+      <BuddyProgram onBack={() => setBuddyOpen(false)} onOpenChat={onOpenChat} registerNavigationGuard={registerNavigationGuard} />
     </Suspense>
   }
 

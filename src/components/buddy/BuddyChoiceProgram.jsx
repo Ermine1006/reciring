@@ -9,6 +9,7 @@ import { Button, Post, Preview } from './BuddyChoiceDemo'
 import './choice-demo.css'
 import './choice-program.css'
 import BuddyRecommendations, { UpperBuddyProfile } from './BuddyRecommendations'
+import PeerAvatar from '../PeerAvatar'
 
 // Guarding a post that is not published and a Buddy list that is not
 // added. Neither sends anything, so the prompt does not say "sending".
@@ -34,7 +35,7 @@ function AdminApplications({items=[],busy,onAction}) {
  return <section className="bc-card bc-admin-applications"><div className="bc-row"><h2>Upper year applications</h2>{pending.length>0&&<span className="bc-pill">{pending.length} pending</span>}</div><p>Only approved upper year participants can view first year requests or offer help.</p>{pending.length?<div className="bc-application-list">{pending.map(row)}</div>:<p className="bc-muted">No applications waiting for review.</p>}{others.length>0&&<details><summary>Approved and previous applications · {others.length}</summary><div className="bc-application-list">{others.map(row)}</div></details>}</section>
 }
 
-export default function BuddyChoiceProgram({onBack,registerNavigationGuard}) {
+export default function BuddyChoiceProgram({onBack,onOpenChat,registerNavigationGuard}) {
  const [programs,setPrograms]=useState([]),[program,setProgram]=useState(null),[data,setData]=useState(null)
  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('')
  const [view,setView]=useState('new'),[filter,setFilter]=useState('All'),[preview,setPreview]=useState(null),[joinRole,setJoinRole]=useState('')
@@ -56,10 +57,19 @@ export default function BuddyChoiceProgram({onBack,registerNavigationGuard}) {
    setApplyFocus(application.career_focus||[])
   }
  },[data?.upper_application,data?.role])
- async function refresh(p=program){const next=await buddyRpc('buddy_choice_state',{p_program:p});setData(next);return next}
+ async function loadProgramState(p){
+  const next=await buddyRpc('buddy_choice_state',{p_program:p})
+  try{
+   const links=await buddyRpc('buddy_choice_connection_links',{p_program:p})
+   const byInvite=new Map((links||[]).map(link=>[link.invite_id,link.match_id]))
+   next.invitations=(next.invitations||[]).map(invite=>({...invite,match_id:byInvite.get(invite.id)||invite.match_id||null}))
+  }catch{/* New migration may still be propagating through the schema cache. */}
+  return next
+ }
+ async function refresh(p=program){const next=await loadProgramState(p);setData(next);return next}
  useEffect(()=>{let mounted=true;setLoading(true);setError('');buddyRpc('buddy_choice_state').then(async result=>{
   if(!mounted)return;setPrograms(result.programs||[])
-  if(result.programs?.length===1){const id=result.programs[0].id;const next=await buddyRpc('buddy_choice_state',{p_program:id});if(mounted){setProgram(id);setData(next);setView(next.role?'buddies':next.coordinator?'access':'new')}}
+  if(result.programs?.length===1){const id=result.programs[0].id;const next=await loadProgramState(id);if(mounted){setProgram(id);setData(next);setView(next.role?'buddies':next.coordinator?'access':'new')}}
  }).catch(e=>{if(mounted)setError(/buddy_choice|schema cache|function/i.test(e.message)?'The new Buddy Program is waiting for its database update. Please ask the program coordinator to finish setup.':e.message)}).finally(()=>{if(mounted)setLoading(false)});return()=>{mounted=false}},[retry])
  async function run(task,message){if(working.current)return;working.current=true;setBusy(true);setError('');try{await task();await refresh();setPreview(null);if(message)setNotice(message);return true}catch(e){setError(e.message);return false}finally{working.current=false;setBusy(false)}}
  function navigate(next){if(working.current)return false;if(dirty.current&&!window.confirm(LEAVE_PROMPT))return;dirty.current=false;setView(next);return true}
@@ -91,14 +101,20 @@ export default function BuddyChoiceProgram({onBack,registerNavigationGuard}) {
  const role=data?.role,upper=role==='upper'
  const posts=(data?.posts||[]).filter(p=>upper?(filter==='All'||p.helpType?.includes(filter))&&(view!=='selected'||data.invitations.some(i=>i.post_id===p.id&&['pending','accepted'].includes(i.status))):p.owner==='me')
  const used=(data?.invitations||[]).filter(i=>['pending','accepted'].includes(i.status)).length
- function actions(post){const invites=(data.invitations||[]).filter(i=>i.post_id===post.id),expired=postIsExpired(post),accepted=invites.some(i=>i.status==='accepted');return <div className="bc-actions">
-  {!upper&&expired&&!accepted&&<div className="bc-expired-state" role="status"><strong>Expired</strong><span>Upper year students cannot see this post right now.</span><Button primary disabled={busy||!data.enabled} onClick={()=>run(()=>buddyRpc('buddy_choice_renew_post',{p_post:post.id,p_days:7}),'Post renewed for 7 days. Upper year students can see it again.')}>Renew for 7 days</Button></div>}
-  {invites.map(i=><div key={i.id}>{i.status==='accepted'?<p className="bc-success">Connected with {i.name||'your buddy'}. You have both agreed to connect.</p>:i.status==='pending'?upper?<span>Waiting for student confirmation</span>:<div className="bc-invite"><strong>An upper-year student would like to help with this request.</strong><p>Connect to share your names with each other.</p><Button primary disabled={busy} onClick={()=>run(()=>buddyRpc('buddy_choice_respond',{p_invite:i.id,p_action:'accept'}),'Connected. You can now see each other’s names.')}>Connect</Button><Button disabled={busy} onClick={()=>run(()=>buddyRpc('buddy_choice_respond',{p_invite:i.id,p_action:'decline'}),'Invitation declined.')}>Decline</Button></div>:<small>{i.status==='declined'?'Invitation declined':'Invitation withdrawn'}</small>}
-   {upper&&['pending','accepted'].includes(i.status)&&<Button disabled={busy} onClick={()=>run(()=>buddyRpc('buddy_choice_respond',{p_invite:i.id,p_action:'withdraw'}),'Help offer withdrawn.')}>{i.status==='accepted'?'End connection':'Withdraw offer'}</Button>}
-  </div>)}
-  {upper&&!invites.some(i=>['pending','accepted','declined'].includes(i.status))&&<Button primary disabled={busy||used>=data.capacity||!data.enabled} onClick={()=>run(()=>buddyRpc('buddy_choice_select',{p_post:post.id}),'Help offered. The first-year student can connect or decline.')}>I’d like to help</Button>}
-  {!upper&&<Button disabled={busy} onClick={()=>{if(window.confirm('Remove this post and end its buddy invitations?'))run(()=>buddyRpc('buddy_choice_remove',{p_post:post.id}),'Post removed.')}}>Remove post</Button>}
- </div>}
+ function actions(post){
+  const invites=(data.invitations||[]).filter(i=>i.post_id===post.id)
+  const acceptedInvite=invites.find(i=>i.status==='accepted')
+  const visibleInvites=acceptedInvite?[acceptedInvite]:invites.filter(i=>i.status!=='withdrawn')
+  const expired=postIsExpired(post),accepted=Boolean(acceptedInvite)
+  return <div className="bc-actions">
+   {!upper&&expired&&!accepted&&<div className="bc-expired-state" role="status"><strong>Expired</strong><span>Upper year students cannot see this post right now.</span><Button primary disabled={busy||!data.enabled} onClick={()=>run(()=>buddyRpc('buddy_choice_renew_post',{p_post:post.id,p_days:7}),'Post renewed for 7 days. Upper year students can see it again.')}>Renew for 7 days</Button></div>}
+   {visibleInvites.map(i=><div key={i.id}>{i.status==='accepted'?<button type="button" className="bc-connected-person" disabled={!i.match_id} onClick={()=>i.match_id&&onOpenChat?.(i.match_id)}><PeerAvatar name={i.name||'Connected student'} seed={i.match_id||i.id} size={38}/><span><strong>{i.name||'Connected student'}</strong><small>Connected through this request</small></span><b>{i.match_id?'Message →':'Connected'}</b></button>:i.status==='pending'?upper?<span>Waiting for student confirmation</span>:<div className="bc-invite"><strong>An upper-year student would like to help with this request.</strong><p>Connect to share your names with each other and start chatting.</p><Button primary disabled={busy} onClick={()=>run(()=>buddyRpc('buddy_choice_connect',{p_invite:i.id}),'Connected. You can now message each other in Matches.')}>Connect</Button><Button disabled={busy} onClick={()=>run(()=>buddyRpc('buddy_choice_respond',{p_invite:i.id,p_action:'decline'}),'Help offer declined.')}>Decline</Button></div>:i.status==='declined'?<small>Help offer declined</small>:null}
+    {upper&&i.status==='pending'&&<Button disabled={busy} onClick={()=>run(()=>buddyRpc('buddy_choice_respond',{p_invite:i.id,p_action:'withdraw'}),'Help offer withdrawn.')}>Withdraw offer</Button>}
+   </div>)}
+   {upper&&!invites.some(i=>['pending','accepted','declined'].includes(i.status))&&<Button primary disabled={busy||used>=data.capacity||!data.enabled} onClick={()=>run(()=>buddyRpc('buddy_choice_select',{p_post:post.id}),'Help offered. The first-year student can connect or decline.')}>I’d like to help</Button>}
+   {!upper&&<Button disabled={busy} onClick={()=>{if(window.confirm('Remove this post? Existing connections will stay in Matches.'))run(()=>buddyRpc('buddy_choice_remove',{p_post:post.id}),'Post removed.')}}>Remove post</Button>}
+  </div>
+ }
  return <AppScreen background="transparent"><main className="bc-shell bc-program" ref={root}>
  <header className="bc-program-header"><Button className="bc-back" disabled={busy} onClick={()=>{if(view==='year'){cancelYear();return}if(!dirty.current||window.confirm(LEAVE_PROMPT))onBack()}}>{view==='year'?'‹ Back':'‹ Together'}</Button><h1>Buddy Program</h1><p>{upper?'Your crew. A little help, together.':role==='first'?'A little help goes a long way.':'Ask for support or share what you have learned.'}</p></header>
  {error&&<section className="bc-card" role="alert"><p>{error}</p><Button disabled={busy} onClick={()=>{if(program)run(()=>Promise.resolve());else setRetry(r=>r+1)}}>Try again</Button></section>}

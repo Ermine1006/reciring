@@ -14,7 +14,12 @@ const C = {
   border:    '#E5E7EB',
 }
 
-export default function NewMatchModal({ open, match, onView, onDismiss }) {
+export default function NewMatchModal({ open, match, mode = 'match', busy = false, onView, onDismiss }) {
+  const isBuddyHelp = mode === 'buddy_help'
+  const title = isBuddyHelp ? 'Someone wants to help' : 'You have a new match'
+  const description = isBuddyHelp
+    ? 'An approved upper year student offered to help with your Buddy Program request. Connect to reveal who they are and start chatting.'
+    : 'Someone just picked up your request. Say hello and get the conversation going.'
   return (
     <AnimatePresence>
       {open && match && (
@@ -57,7 +62,7 @@ export default function NewMatchModal({ open, match, onView, onDismiss }) {
                 filter: 'drop-shadow(0 4px 10px rgba(201,163,59,0.35))',
               }}
             >
-              🎉
+              {isBuddyHelp ? '🌱' : '🎉'}
             </div>
 
             {/* Avatar */}
@@ -70,7 +75,7 @@ export default function NewMatchModal({ open, match, onView, onDismiss }) {
                 }}
               >
                 <div style={{ background: C.white, borderRadius: '50%', padding: 2 }}>
-                  <PeerAvatar name="Anonymous peer" seed={match.peerId || match.id} size={72} />
+                  <PeerAvatar name={isBuddyHelp ? 'Anonymous upper year student' : 'Anonymous peer'} seed={match.peerId || match.id} size={72} />
                 </div>
               </div>
             </div>
@@ -79,10 +84,10 @@ export default function NewMatchModal({ open, match, onView, onDismiss }) {
               className="font-display"
               style={{ fontSize: 22, fontWeight: 600, color: C.text, marginBottom: 6 }}
             >
-              You have a new match
+              {title}
             </h2>
             <p style={{ fontSize: 13, color: C.textSub, lineHeight: 1.5, marginBottom: 22 }}>
-              Someone just picked up your request. Say hello and get the conversation going.
+              {description}
             </p>
 
             {match.request?.needs && (
@@ -100,7 +105,7 @@ export default function NewMatchModal({ open, match, onView, onDismiss }) {
                 }}
               >
                 <div style={{ fontWeight: 600, marginBottom: 2, fontSize: 11, letterSpacing: 0.4, textTransform: 'uppercase' }}>
-                  Your request
+                  {isBuddyHelp ? 'Your Buddy Program request' : 'Your request'}
                 </div>
                 <div style={{ color: C.text, fontWeight: 500 }}>
                   {String(match.request.needs).slice(0, 110)}
@@ -112,14 +117,16 @@ export default function NewMatchModal({ open, match, onView, onDismiss }) {
             <div className="flex flex-col gap-2">
               <button data-mutu-glass=""
                 onClick={onView}
+                disabled={busy}
                 className="w-full py-3.5 rounded-xl text-sm font-semibold tracking-wide transition-all duration-200 active:scale-[0.98]"
                 style={{
                   border: 'none',
-                  cursor: 'pointer',
+                  cursor: busy ? 'wait' : 'pointer',
+                  opacity: busy ? 0.72 : 1,
                   ...matchaCta,
                 }}
               >
-                View match
+                {isBuddyHelp ? (busy ? 'Connecting…' : 'Connect') : 'View match'}
               </button>
               <button
                 onClick={onDismiss}
@@ -131,7 +138,7 @@ export default function NewMatchModal({ open, match, onView, onDismiss }) {
                   cursor: 'pointer',
                 }}
               >
-                Maybe later
+                {isBuddyHelp ? 'Not now' : 'Maybe later'}
               </button>
             </div>
           </motion.div>

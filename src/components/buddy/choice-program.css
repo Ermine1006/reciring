@@ -74,3 +74,10 @@
 .bc-program .bc-application-status.is-paused,.bc-program .bc-application-status.is-declined{background:#f7efea;color:#805d4d}
 .bc-program .bc-application-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .bc-program .bc-application-actions .bc-button{flex:1;min-width:110px}
+
+.bc-program .bc-connected-person{width:100%;display:flex;align-items:center;gap:10px;margin:10px 0;padding:11px 12px;border:1px solid #dce5ca;border-radius:14px;background:#f2f6eb;color:#35452d;text-align:left;cursor:pointer}
+.bc-program .bc-connected-person:disabled{cursor:default;opacity:.72}
+.bc-program .bc-connected-person>span{flex:1;min-width:0}
+.bc-program .bc-connected-person strong{display:block;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bc-program .bc-connected-person small{display:block;margin-top:2px;font-size:11px;color:#6f7765}
+.bc-program .bc-connected-person>b{font-size:11px;color:#607245;white-space:nowrap}

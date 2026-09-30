@@ -195,7 +195,19 @@ export function matchToUI(row, currentUserId) {
   // peer-networking post — its context is the marketplace need/offer. Flatten
   // it into the same `request` shape ChatView expects.
   const mkt = row.marketplace || null
-  const request = mkt
+  const buddy = row.source === 'buddy' ? (row.source_context || {}) : null
+  const request = buddy
+    ? {
+        id:          row.buddy_post_id || null,
+        needs:       buddy.needs || null,
+        offers:      buddy.offers || null,
+        category:    buddy.helpType?.[0] || 'Advice',
+        tags:        [...(buddy.helpType || []), ...(buddy.industry || [])],
+        time:        buddy.time || '30 min',
+        urgency:     buddy.urgency || null,
+        description: '',
+      }
+    : mkt
     ? {
         id:       mkt.id,
         needs:    mkt.type === 'need'  ? mkt.title : null,
@@ -222,6 +234,7 @@ export function matchToUI(row, currentUserId) {
   return {
     id:              row.id,
     postId:          row.post_id,
+    buddyPostId:     row.buddy_post_id || null,
     peerId,
     isHelper,
     status:          row.status,
@@ -234,6 +247,7 @@ export function matchToUI(row, currentUserId) {
     // Practice chats are created by accept_practice_pairing() — born
     // identity-revealed, badged "Practice" in Matches + ChatView.
     isPractice:      row.source === 'practice',
+    isBuddy:         row.source === 'buddy',
     // Marketplace-match context (null for ordinary peer-networking matches).
     isMarketplace:   Boolean(mkt),
     eventId:         row.event_id || null,

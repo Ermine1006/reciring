@@ -63,6 +63,7 @@ export default function MatchesList({ matches = [], completedMatchIds = new Set(
           <p style={{ margin: 0, fontSize: 14, fontWeight: 650, color: C.ink, fontFamily: 'Inter, system-ui, sans-serif', display: 'flex', alignItems: 'center', gap: 7 }}>
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{peerName(m)}</span>
             {m.isPractice && <span style={{ flexShrink: 0, fontSize: 9, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: C.gold, background: '#F8F3E5', border: '1px solid #E8D9A7', borderRadius: 5, padding: '2px 6px' }}>Mock interview</span>}
+            {m.isBuddy && <span style={{ flexShrink: 0, fontSize: 9, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: C.gold, background: '#F8F3E5', border: '1px solid #E8D9A7', borderRadius: 5, padding: '2px 6px' }}>Buddy Program</span>}
             {isNew && <span style={{ flexShrink: 0, fontSize: 9, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: C.sage, background: C.sageBg, borderRadius: 5, padding: '2px 6px' }}>New</span>}
           </p>
           <p style={{ margin: '2px 0 0', fontSize: 12.5, color: C.ink3, fontFamily: 'Inter, system-ui, sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

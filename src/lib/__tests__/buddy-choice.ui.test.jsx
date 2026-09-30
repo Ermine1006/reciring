@@ -19,21 +19,30 @@ it('uses the actual Give and Ask composer and writes to the choice API',async()=
  rpc.mockImplementation(async(name,args)=>{if(name==='buddy_choice_publish'){expect(args.p_post.needs).toContain('Finance advice');posted=true;return 'post'}return args?.p_program?{...base,role:'first',posts:posted?[{id:'post',owner:'me',needs:'Finance advice',offers:'',helpType:['Advice'],tags:['Advice'],time:'15 min',is_anonymous:true}]:[]}:{programs:[{id:'p',name:'Rotman'}]}})
  render(<BuddyChoiceProgram onBack={()=>{}}/>);fireEvent.click(await screen.findByRole('button',{name:'Community',exact:true}));fireEvent.click(await screen.findByRole('button',{name:'Post a request →'}));await screen.findByRole('heading',{name:'Create a post'});fireEvent.click(screen.getByRole('button',{name:'Advice',exact:true}));fireEvent.change(screen.getByLabelText(/What would you like help with/),{target:{value:'Finance advice'}});fireEvent.click(screen.getByRole('button',{name:'Publish post anonymously',exact:true}));await screen.findByText(/Post published/);expect(posted).toBe(true);expect(screen.getByText('Finance advice',{exact:true})).toBeTruthy()
 })
-it('opens the first-year overview with real posts, recommendations and private invitations',async()=>{
+it('connects a Buddy help offer into the shared Matches chat',async()=>{
  const post={id:'a',owner:'me',needs:'Settling into campus',offers:'Python skills',helpType:['Advice'],tags:['Advice'],time:'30 min',is_anonymous:true}
  let accepted=false
+ const openChat=vi.fn()
  rpc.mockImplementation(async(name,args)=>{
   if(name==='buddy_recommendations')return {items:[]}
-  if(name==='buddy_choice_respond'){accepted=true;return null}
+  if(name==='buddy_choice_connection_links')return accepted?[{invite_id:'invite',match_id:'match-1'}]:[]
+  if(name==='buddy_choice_connect'){accepted=true;return 'match-1'}
   return args?.p_program?{...base,role:'first',posts:[post],invitations:[{id:'invite',post_id:'a',status:accepted?'accepted':'pending',name:accepted?'Alex':null}]}:{programs:[{id:'p'}]}
  })
- render(<BuddyChoiceProgram onBack={()=>{}}/>);
- fireEvent.click(await screen.findByRole('button',{name:'Community',exact:true}));await screen.findByRole('heading',{name:'A little help finding your footing'});
- expect(screen.getByText('Settling into campus')).toBeTruthy();expect(screen.queryByText(/Connected with Alex/)).toBeNull();expect(screen.queryByRole('button',{name:'Manage access'})).toBeNull()
- fireEvent.click(screen.getByRole('button',{name:'Connect'}));await screen.findByText(/Connected with Alex/)
- expect(rpc).toHaveBeenCalledWith('buddy_choice_respond',{p_invite:'invite',p_action:'accept'})
- fireEvent.click(screen.getByRole('button',{name:'My posts',exact:true}));expect(screen.queryByRole('region',{name:'Recommended upper-year students'})).toBeNull();expect(screen.getByText('Settling into campus')).toBeTruthy()
+ render(<BuddyChoiceProgram onBack={()=>{}} onOpenChat={openChat}/>)
+ fireEvent.click(await screen.findByRole('button',{name:'Community',exact:true}))
+ await screen.findByRole('heading',{name:'A little help finding your footing'})
+ expect(screen.getByText('Settling into campus')).toBeTruthy()
+ fireEvent.click(screen.getByRole('button',{name:'Connect'}))
+ await screen.findByText('Alex')
+ expect(rpc).toHaveBeenCalledWith('buddy_choice_connect',{p_invite:'invite'})
+ fireEvent.click(screen.getByRole('button',{name:/Alex/}))
+ expect(openChat).toHaveBeenCalledWith('match-1')
+ fireEvent.click(screen.getByRole('button',{name:'My posts',exact:true}))
+ expect(screen.getByText('Settling into campus')).toBeTruthy()
+ expect(screen.getByRole('button',{name:/Alex/})).toBeTruthy()
 })
+
 it('explains full capacity and preserves disabled invitations and access to selections',async()=>{
  rpc.mockImplementation(async(name,args)=>name==='buddy_recommendations'?{}:args?.p_program?{...base,role:'upper',capacity:1,posts:[{id:'a',needs:'Finance help',helpType:['Advice'],tags:[],is_anonymous:true}],invitations:[{id:'i',post_id:'other',status:'pending'}]}:{programs:[{id:'p'}]})
  render(<BuddyChoiceProgram onBack={()=>{}}/>);
