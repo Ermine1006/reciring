@@ -1088,7 +1088,7 @@ export default function PracticeHub({ userId, avatarSeed, onOpenChat, onOpenEven
   return (
     <AppScreen>
       <TogetherStyles />
-      <div className={`${TOGETHER_CLASS} together-ivory ${view === 'mine' ? 'practice-ui practice-sessions' : ''}`}
+      <div className={`${TOGETHER_CLASS} together-ivory mutu-together-landing ${view === 'mine' ? 'practice-ui practice-sessions' : ''}`}
         style={{ maxWidth: 560, margin: '0 auto', width: '100%', boxSizing: 'border-box', paddingBottom: 28 }}>
 
         {/* Header: title + subtitle + real Token pill. The subtitle

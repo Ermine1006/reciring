@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } fro
 import CardStack from './components/CardStack'
 import GiveAskHub from './components/GiveAskHub'
 import AppScreen from './components/AppScreen'
+import { AppFrame, AppNavigation, MessagesWorkspace } from './components/AppLayout'
 import MatchesList from './components/MatchesList'
 import ReciRingLogo from './components/ReciRingLogo'
 import { MOCK_REQUESTS } from './data/mockRequests'
@@ -21,6 +22,7 @@ import OnboardingProfile from './components/OnboardingProfile'
 import ProfileOnboardingV3 from './components/profile/ProfileOnboardingV3'
 import { isProfileV3Enabled, isPracticeEnabled, isBuddyEnabled } from './lib/featureFlags'
 import useGuardedTab from './lib/useGuardedTab'
+import useConversationState from './lib/useConversationState'
 import PracticeHub from './components/practice/PracticeHub'
 import AnonymousAvatar from './components/AnonymousAvatar'
 import AdminEmailTest from './components/AdminEmailTest'
@@ -49,7 +51,6 @@ import { fetchCompletedMatchIds } from './lib/recognition'
 import { track } from './lib/analytics'
 import { notifyEventReview, notifyNewMatch } from './lib/email'
 import { fetchMessages, sendMessage, sendMeetingProposal, updateMeetingStatus, msgToUI, markMessagesRead } from './lib/messages'
-import { MATCHA_DEEP, MATCHA_SOFT } from './lib/matchaCta'
 import { buddyRpc } from './lib/buddy/api'
 
 /* ─── Design tokens ─────────────────────────────────────────────── */
@@ -266,8 +267,9 @@ function AppShell() {
   const [matches, setMatches]     = useState([])
   const [completedMatchIds, setCompletedMatchIds] = useState(new Set())
   const [chatMatchId, setChatMatchId] = useState(null)
-  const [chatMessages, setChatMessages] = useState([]) // messages for current chat
-  const [peerProfile, setPeerProfile]   = useState(null) // peer's profile when reveal is accepted
+  const conversationScope = JSON.stringify([user?.id, chatMatchId])
+  const [chatMessages, setChatMessages] = useConversationState(conversationScope, []) // messages for current chat
+  const [peerProfile, setPeerProfile]   = useConversationState(conversationScope, null) // peer's profile when reveal is accepted
   const [profileHovered, setProfileHovered] = useState(false)
   const [blockedIds, setBlockedIds] = useState(new Set())
   const [matchedPostIds, setMatchedPostIds] = useState(new Set())
@@ -519,7 +521,7 @@ function AppShell() {
     const { data, error } = await fetchMessages(matchId)
     if (error) { console.error('[ReciRing] Failed to load messages:', error); return }
     setChatMessages(data.map(m => msgToUI(m, user.id)))
-  }, [user?.id])
+  }, [user?.id, setChatMessages])
 
   useEffect(() => {
     if (chatMatchId) loadMessages(chatMatchId)
@@ -1103,46 +1105,10 @@ function AppShell() {
   }
 
   return (
-    /*
-     * Desktop: warm-cream canvas, phone centered.
-     * Mobile:  fills the viewport edge-to-edge.
-     */
-    <div
-      className="w-full min-h-[100dvh] flex items-start sm:items-center justify-center"
-      style={{ background: '#EEE9E0' }}
-    >
-      {/* ── Phone frame ───────────────────────────────────────── */}
-      <div
-        className="
-          mutu-shell relative flex flex-col
-          w-full          sm:w-[390px]
-          h-[100dvh]      sm:h-[844px]
-                          sm:rounded-[52px] sm:overflow-hidden
-                          sm:my-6
-        "
-        style={{
-          background: C.white,
-          boxShadow: [
-            '0 0 0 1px rgba(0,0,0,0.07)',
-            '0 0 0 1px rgba(201,163,59,0.15)',
-            '0 40px 90px rgba(0,0,0,0.14)',
-            '0 8px 20px rgba(0,0,0,0.06)',
-          ].join(','),
-        }}
-      >
-        {/* Dynamic-island pill (desktop) */}
-        <div
-          className="hidden sm:block absolute top-3.5 left-1/2 -translate-x-1/2 z-50"
-          style={{
-            width: 126, height: 34,
-            background: '#111',
-            borderRadius: 20,
-          }}
-        />
-
+    <AppFrame>
         {/* ── App header ────────────────────────────────────── */}
         <header
-          className="app-header flex-shrink-0 px-5 pb-3 pt-5 sm:pt-14"
+          className="app-header flex-shrink-0 px-5 pb-3 pt-5"
           style={{ background: C.white }}
         >
           <div className="flex items-center justify-between">
@@ -1207,7 +1173,7 @@ function AppShell() {
           <div
             role="status"
             onClick={() => setBanner(null)}
-            className="flex-shrink-0"
+            className="mutu-banner flex-shrink-0"
             style={{
               margin: '0 16px 8px', padding: '10px 14px',
               background: '#F8F3E5', border: '1px solid #E8D9A7', borderRadius: 12,
@@ -1222,7 +1188,7 @@ function AppShell() {
         )}
 
         {/* ── Main content ──────────────────────────────────── */}
-        <main className="flex-1 flex flex-col min-h-0" style={{ background: 'var(--mutu-canvas, #F9F7F4)', position: 'relative' }}>
+        <main id="mutu-main" tabIndex={-1} data-page={tab} className="mutu-main flex-1 flex flex-col min-h-0" style={{ background: 'var(--mutu-canvas, #F9F7F4)', position: 'relative' }}>
           {showAdminEmailTest && session && isAdmin(user?.email) ? (
             <AdminEmailTest onClose={() => setShowAdminEmailTest(false)} />
           ) : showEventReview && session && isAdmin(user?.email) ? (
@@ -1304,19 +1270,18 @@ function AppShell() {
               onCommunityPostChanged={loadPosts}
             />
           )}
-          {tab === 'matches' && !chatMatchId && (
-            // MatchesList owns its scroll area. Nesting it in AppScreen's
-            // phone-scroll wrapper traps desktop wheel/trackpad scrolling.
-            <MatchesList
-              matches={matches}
-              completedMatchIds={completedMatchIds}
-              onOpenChat={(id) => setChatMatchId(id)}
-              revealedMatchIds={revealedMatchIds}
-            />
-          )}
-          {tab === 'matches' && chatMatchId && (
-            <div className="flex-1 min-h-0 overflow-hidden" style={{ display: 'flex', flexDirection: 'column' }}>
-              <ChatView
+          {tab === 'matches' && (
+            <MessagesWorkspace
+              hasSelection={Boolean(chatMatchId)}
+              list={<MatchesList
+                matches={matches}
+                completedMatchIds={completedMatchIds}
+                onOpenChat={setChatMatchId}
+                selectedMatchId={chatMatchId}
+                revealedMatchIds={revealedMatchIds}
+              />}
+            >
+              {chatMatchId && <ChatView
                 key={chatMatchId}
                 match={matches.find(m => m.id === chatMatchId)}
                 messages={chatMessages}
@@ -1344,8 +1309,8 @@ function AppShell() {
                   setChatMatchId(null)
                   setTab('practice')
                 } : undefined}
-              />
-            </div>
+              />}
+            </MessagesWorkspace>
           )}
           {tab === 'profile' && (
             <ProfilePage
@@ -1441,54 +1406,8 @@ function AppShell() {
           </>}
         </main>
 
-        {/* ── Bottom tab bar ────────────────────────────────── */}
-        {/* paddingBottom uses env(safe-area-inset-bottom) so on real iOS
-            the home indicator never overlaps the tab buttons. Falls back
-            to 8px on browsers where the inset is 0 (desktop, Android). */}
-        <nav
-          className="flex-shrink-0 flex justify-around items-center pt-2 px-1"
-          style={{
-            background: 'rgba(255,255,255,0.96)',
-            borderTop: `1px solid ${C.border}`,
-            backdropFilter: 'blur(20px)',
-            paddingBottom: 'max(8px, env(safe-area-inset-bottom))',
-          }}
-        >
-          {navTabs.map((t) => {
-            const active = tab === t.id || (practiceOn && tab === 'post' && t.id === 'discover')
-            return (
-              <button data-mutu-glass=""
-                key={t.id}
-                type="button"
-                onClick={() => setTab(t.id)}
-                className="flex flex-col items-center gap-1 py-2 px-1 rounded-2xl transition-all duration-200 active:scale-95"
-                style={{
-                  color: active ? MATCHA_DEEP : C.textMuted,
-                  background: active ? MATCHA_SOFT : 'transparent',
-                  minWidth: 0, flex: 1,
-                }}
-              >
-                {t.icon(active)}
-                <span
-                  className="text-[11px] font-medium whitespace-nowrap"
-                  style={{ color: active ? MATCHA_DEEP : C.textMuted }}
-                >
-                  {t.label}
-                </span>
-              </button>
-            )
-          })}
-        </nav>
-
-        {/* Decorative iOS home indicator — desktop-only (the real OS
-            already draws one on mobile, and the nav's safe-area padding
-            already reserves room for it). */}
-        <div
-          className="hidden sm:flex flex-shrink-0 justify-center py-2"
-          style={{ background: 'rgba(255,255,255,0.96)' }}
-        >
-          <div style={{ width: 134, height: 5, borderRadius: 99, background: 'rgba(0,0,0,0.18)' }} />
-        </div>
+        <AppNavigation tabs={navTabs} activeTab={tab} onNavigate={setTab}
+          postIsDiscover={practiceOn} onAskMutu={() => setAskMutuOpen(true)} />
 
         {/* ── Exchange toast: realtime, tap to open, auto-dismisses ── */}
         {practiceToast && (
@@ -1588,8 +1507,7 @@ function AppShell() {
 
         {/* ── Link Google account prompt (one-shot, institutional) ─ */}
         <LinkAccountPrompt />
-      </div>
-    </div>
+    </AppFrame>
   )
 }
 

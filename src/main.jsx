@@ -7,6 +7,7 @@ import { watchForStaleBuild } from './lib/staleBuild'
 import './index.css'
 import './pixel-glass.css'
 import './together-type.css'
+import './desktop.css'
 
 // Note: intentionally NOT using React.StrictMode in production boot.
 // StrictMode double-mounts effects in dev which can cause the Supabase

@@ -32,7 +32,7 @@ function timeAgo(isoString) {
   return `${Math.floor(h / 24)}d`
 }
 
-export default function MatchesList({ matches = [], completedMatchIds = new Set(), onOpenChat, revealedMatchIds = new Set(), peerProfiles = {} }) {
+export default function MatchesList({ matches = [], completedMatchIds = new Set(), onOpenChat, revealedMatchIds = new Set(), peerProfiles = {}, selectedMatchId = null }) {
   const active = matches.filter(m => !completedMatchIds.has(m.id))
   const past   = matches.filter(m =>  completedMatchIds.has(m.id))
   const [view, setView] = useState('active')
@@ -49,14 +49,19 @@ export default function MatchesList({ matches = [], completedMatchIds = new Set(
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: Math.min(i * 0.04, 0.3) }}
-        onClick={() => onOpenChat?.(m.id)}
         className="active:scale-[0.997]"
         style={{
           display: 'flex', alignItems: 'center', gap: 12,
-          padding: '12px 4px', borderBottom: `1px solid ${C.line2}`,
+          padding: '2px 0', borderBottom: `1px solid ${C.line2}`,
           cursor: 'pointer', listStyle: 'none',
         }}
       >
+        <button type="button" onClick={() => onOpenChat?.(m.id)}
+          aria-current={selectedMatchId === m.id ? 'true' : undefined}
+          className="mutu-conversation-row"
+          style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', minWidth: 0,
+            textAlign: 'left', border: 0, borderRadius: 12, padding: '10px 8px',
+            background: selectedMatchId === m.id ? '#EAF0E0' : 'transparent', cursor: 'pointer' }}>
         <PeerAvatar name={peerName(m)} seed={m.id} size={44} />
 
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -74,6 +79,7 @@ export default function MatchesList({ matches = [], completedMatchIds = new Set(
         <span style={{ flexShrink: 0, fontSize: 11, color: C.ink3, fontFamily: 'Inter, system-ui, sans-serif' }}>
           {m.lastMessageTime || timeAgo(m.createdAt)}
         </span>
+        </button>
       </motion.li>
     )
   }

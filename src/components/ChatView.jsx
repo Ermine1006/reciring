@@ -326,7 +326,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
         borderBottom: `1px solid rgba(201,163,59,0.18)`,
         flexShrink: 0,
       }}>
-        <button data-mutu-glass="" onClick={onBack} style={{
+        <button type="button" aria-label="Back to conversations" data-mutu-glass="" onClick={onBack} style={{
           width: 36, height: 36, borderRadius: 10, flexShrink: 0,
           background: C.goldBg, border: `1px solid ${C.goldLight}`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',

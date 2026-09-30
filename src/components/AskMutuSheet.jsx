@@ -233,8 +233,8 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
   const empty = msgs.length === 0
 
   return createPortal(
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 96, background: 'rgba(17,17,17,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-      <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 460, height: '86vh', background: 'var(--mutu-canvas, #F9F7F4)', borderRadius: '24px 24px 0 0', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <div className="mutu-assistant-backdrop" onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 96, background: 'rgba(17,17,17,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+      <div className="mutu-assistant-panel" onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 460, height: '86vh', background: 'var(--mutu-canvas, #F9F7F4)', borderRadius: '24px 24px 0 0', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {/* Header */}
         <div style={{ flexShrink: 0, padding: '10px 20px 12px', borderBottom: `1px solid ${C.border}`, background: C.white }}>
           <div style={{ display: 'flex', justifyContent: 'center', padding: '2px 0 10px' }}>

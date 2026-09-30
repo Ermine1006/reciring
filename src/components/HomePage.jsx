@@ -142,8 +142,9 @@ export default function HomePage({
 
   return (
     <div className="mutu-home flex-1 phone-scroll" style={{ background: C.ground }}>
-      <div style={{ padding: '10px 18px 26px', maxWidth: 560, margin: '0 auto' }}>
+      <div className="mutu-home-layout" style={{ padding: '10px 18px 26px', maxWidth: 560, margin: '0 auto' }}>
 
+        <div className="mutu-home-greeting">
         {/* Greeting */}
         <h1 style={{ fontSize: 22, fontWeight: 700, color: C.ink, margin: '4px 0 0', letterSpacing: '-0.01em', fontFamily: 'Inter, system-ui, sans-serif' }}>
           {greeting()}, <span className="mutu-greeting-name">{firstName(me.name)}</span>
@@ -152,6 +153,8 @@ export default function HomePage({
           Here's your community at a glance.
         </p>
 
+        </div>
+        <section className="mutu-home-primary" aria-label="Your community">
         {/* ── Community network (flag on) OR My Networking hero (green) ──
             The flag swaps ONLY this card. The dashboard route/component
             stays intact and reachable elsewhere. */}
@@ -254,6 +257,8 @@ export default function HomePage({
           </p>
         )}
 
+        </section>
+        <aside className="mutu-home-secondary" aria-label="Connections and assistance">
         {/* ── People you should meet (Smart Match) ── */}
         <SmartMatchSection />
 
@@ -278,6 +283,7 @@ export default function HomePage({
             <ArrowRight size={15} color="#fff" strokeWidth={2.3} />
           </span>
         </button>
+        </aside>
       </div>
 
       <PastPostsSheet
