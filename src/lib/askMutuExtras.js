@@ -25,7 +25,37 @@ function isoDay(value) {
  * them. An email address is the one thing an assistant answer should
  * never be able to spill, and the member can already see it in the app.
  */
-export function buildBuddyContext({ programs = [], state = null } = {}) {
+export function buildBuddyContext({ programs = [], state = null, programStates = null } = {}) {
+  if (programStates) {
+    const joined = programStates.filter(({ state }) => state?.role || state?.coordinator)
+    if (!joined.length) return null
+    const safeName = value => typeof value === 'string' && !value.includes('@') ? value : null
+    return {
+      programs: joined.map(({ program, state, assigned }) => ({ name: program.name, my_role: state.role || 'coordinator', assigned_records_available: Boolean(assigned) })),
+      my_posts: joined.flatMap(({ program, state }) => (state.posts || []).filter(p => p.owner === 'me').slice(0, 12).map(p => ({
+        program: program.name,
+        want_help_with: p.needs || null,
+        can_help_with: p.offers || null,
+        audiences: Array.isArray(p.audiences) ? p.audiences : [p.audience || 'buddy_program'],
+        posted_anonymously: p.is_anonymous !== false,
+        expires_at: p.expiresAt || null,
+      }))),
+      assigned_buddies: joined.flatMap(({ program, state, assigned }) => (assigned?.pairs || [])
+        .filter(p => ['pending', 'confirmed'].includes(p.status)).slice(0, 10).map(p => ({
+          program: program.name,
+          status: p.status,
+          buddy_role: state.role === 'first' ? 'upper' : 'first',
+          buddy_name: p.status === 'confirmed' ? safeName(p.name) : null,
+        }))),
+      help_offers: joined.flatMap(({ program, state }) => (state.invitations || [])
+        .filter(i => ['pending', 'accepted'].includes(i.status)).slice(0, 12).map(i => ({
+          program: program.name,
+          status: i.status,
+          direction: state.role === 'first' ? 'received' : 'sent',
+          peer_name: i.status === 'accepted' ? safeName(i.name) : null,
+        }))),
+    }
+  }
   const joined = (programs || []).filter((p) => p && (p.role || p.coordinator))
   if (joined.length === 0 && !state?.post) return null
 
@@ -70,7 +100,9 @@ export function buildBuddyContext({ programs = [], state = null } = {}) {
  * repeating it back, let alone quoting it into an answer.
  */
 export function buildStoriesContext({ stories = [], userId = null } = {}) {
-  const own = (stories || []).filter((s) => s && (!userId || s.author_id === userId))
+  if (!userId) return null
+  const own = (stories || []).filter(s => s && s.is_mine !== false &&
+    (s.author_id ? s.author_id === userId : s.is_mine === true))
   if (own.length === 0) return null
   return own.slice(0, 10).map((s) => ({
     title: s.title || null,
@@ -97,15 +129,15 @@ export function buildCircleContext({ edges = [], namesById = {}, userId = null }
 
   const rows = (edges || [])
     .map((e) => {
-      const peerId = e.user_lo === userId ? e.user_hi : e.user_lo === undefined ? null : e.user_lo
-      const other = e.user_lo === userId ? e.user_hi : e.user_hi === userId ? e.user_lo : peerId
+      if (e.user_lo !== userId && e.user_hi !== userId) return null
+      const other = e.user_lo === userId ? e.user_hi : e.user_lo
       const name = nameOf(other)
-      const verified = Number(e.verified_count ?? e.verified ?? 0)
+      const verified = Number(e.verified_exchange_count ?? e.verified_count ?? e.verified ?? 0)
       if (!name || !Number.isFinite(verified) || verified <= 0) return null
       return {
         name,
         practices_together: verified,
-        shared_tokens: Number(e.token_count ?? 0) || 0,
+        shared_tokens: Number(e.token_count ?? e.verified_exchange_count ?? 0) || 0,
         last_together: isoDay(e.last_verified_at),
       }
     })

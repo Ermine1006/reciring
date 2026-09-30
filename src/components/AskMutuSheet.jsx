@@ -8,11 +8,12 @@ import { fetchEventPrepCandidates } from '../lib/eventMatch'
 import {
   fetchMyPracticeRequest, fetchMyAvailabilityWindows, fetchMyPairings, fetchMySessions,
   fetchMyExchangeTokens, fetchMyPracticeConfirmations, fetchProfilesByIds,
-  fetchFeedbackSupport, fetchMyPracticeFeedback, fetchCommunityBySlug, fetchMyPracticeEdges,
+  fetchFeedbackSupport, fetchMyPracticeFeedback, fetchCommunityBySlug,
 } from '../lib/practice'
 import { computePassport } from '../lib/practicePassport'
 import { buildPracticeContext } from '../lib/askMutuPractice'
 import { buildPostsContext } from '../lib/askMutuPosts'
+import { loadAskMutuContextExtras } from '../lib/askMutuContextExtras'
 import { fetchPosts } from '../lib/posts'
 import { fetchMatchedPostIds } from '../lib/matches'
 import { isPracticeEnabled } from '../lib/featureFlags'
@@ -86,6 +87,10 @@ function SparkIcon() {
 export default function AskMutuSheet({ open, userId, events = [], onClose }) {
   const { profile } = useAuth()
   const [ctx, setCtx] = useState(null)
+  const [contextUserId, setContextUserId] = useState(null)
+  const [contextError, setContextError] = useState(false)
+  const [retry, setRetry] = useState(0)
+  const ready = Boolean(userId && ctx && contextUserId === userId)
   const [msgs, setMsgs] = useState([])       // { role: 'user'|'mutu', text }
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
@@ -95,6 +100,11 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
 
   useEffect(() => {
     if (!open) return
+    let cancelled = false
+    setCtx(null)
+    setContextUserId(null)
+    setContextError(false)
+    setMsgs([])
     setInput('')
     setView('home')
     ;(async () => {
@@ -178,33 +188,14 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
           })
         } catch { practice = null }
       }
-      // Buddy, Story Garden and relationship strength. Each is wrapped
-      // on its own: a member without Buddy, or a community without the
-      // Story migration run, must still get every other answer.
-      let buddy = null, stories = null, circle = null
-      try {
-        const programs = await buddyRpc('buddy_state')
-        const list = programs?.programs || []
-        const first = list.find((x) => x?.enabled !== false) || list[0]
-        const state = first?.id ? await buddyRpc('buddy_state', { p_program: first.id }).catch(() => null) : null
-        buddy = buildBuddyContext({ programs: list, state })
-      } catch { buddy = null }
-      try {
-        const { data: comm } = await fetchCommunityBySlug('rotman')
-        if (comm?.id) {
-          const mine = await fetchStories({ communityId: comm.id, view: 'mine', limit: 10 }).catch(() => null)
-          stories = buildStoriesContext({ stories: mine?.stories || mine?.data || [], userId })
-          const edges = await fetchMyPracticeEdges().catch(() => ({ data: [] }))
-          const peerIds = (edges?.data || []).flatMap((e) => [e.user_lo, e.user_hi]).filter((id) => id && id !== userId)
-          const profs = peerIds.length ? await fetchProfilesByIds(peerIds).catch(() => ({})) : {}
-          circle = buildCircleContext({ edges: edges?.data || [], namesById: profs || {}, userId })
-        }
-      } catch { /* stories and circle stay null */ }
-
-      setCtx(buildAssistantContext({ encounters: enc, events: allEvents, connections: conns, me: profile, eventMatches, practice, myPosts, buddy, stories, circle }))
+      const extras = await loadAskMutuContextExtras(userId)
+      if (cancelled) return
+      setCtx(buildAssistantContext({ encounters: enc || [], events: allEvents, connections: conns || [], me: profile, eventMatches, practice, myPosts, ...extras }))
+      setContextUserId(userId)
       setMsgs((hist || []).map(m => ({ role: m.role, text: m.text })))
-    })()
-  }, [open, userId, profile]) // eslint-disable-line react-hooks/exhaustive-deps
+    })().catch(() => { if (!cancelled) setContextError(true) })
+    return () => { cancelled = true }
+  }, [open, userId, profile, retry]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [msgs, busy])
 
@@ -212,7 +203,7 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
 
   const send = async (q) => {
     const question = (q ?? input).trim()
-    if (!question || busy) return
+    if (!question || busy || !ready) return
     setInput('')
     setMsgs(m => [...m, { role: 'user', text: question }])
     saveAskMessage(userId, 'user', question)
@@ -227,7 +218,7 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
   // Primary action cards. "prep" opens an event picker; the others send a
   // crafted question straight through.
   const onAction = (kind) => {
-    if (busy) return
+    if (busy || !ready) return
     if (kind === 'summary') return send(Q_SUMMARY)
     if (kind === 'attend')  return send(Q_ATTEND)
     if (kind === 'practice') return send(Q_PRACTICE)
@@ -267,7 +258,12 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
 
         {/* Conversation */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '16px 18px' }}>
-          {view === 'pickEvent' ? (
+          {!ready ? (
+            <p role={contextError ? 'alert' : 'status'} style={{ color: C.sub, fontSize: 14 }}>
+              {contextError ? 'Your network could not load. Please try again.' : 'Loading your network…'}
+              {contextError && <button type="button" onClick={() => setRetry(n => n + 1)}>Try again</button>}
+            </p>
+          ) : view === 'pickEvent' ? (
             <div>
               <button type="button" onClick={() => setView('home')}
                 style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', color: C.muted, fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: '2px 0 12px', fontFamily: 'Inter, system-ui, sans-serif' }}>
@@ -339,12 +335,12 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
         {view !== 'pickEvent' && (
           <div className="phone-scroll" style={{ flexShrink: 0, display: 'flex', gap: 8, padding: '8px 14px 2px', overflowX: 'auto', background: 'var(--mutu-canvas, #F9F7F4)' }}>
             {ACTIONS.map(a => (
-              <button key={a.kind} type="button" onClick={() => onAction(a.kind)} style={rowChip}>
+              <button key={a.kind} type="button" disabled={!ready || busy} onClick={() => onAction(a.kind)} style={rowChip}>
                 <ActionIcon kind={a.kind} />{a.short}
               </button>
             ))}
             {SUGGESTIONS.map(s => (
-              <button key={s} type="button" onClick={() => send(s)} style={rowChip}>{s}</button>
+              <button key={s} type="button" disabled={!ready || busy} onClick={() => send(s)} style={rowChip}>{s}</button>
             ))}
           </div>
         )}
@@ -359,8 +355,8 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
             placeholder="Ask about your network…"
             style={{ flex: 1, resize: 'none', maxHeight: 100, padding: '11px 13px', borderRadius: 14, border: `1.5px solid ${C.border}`, background: 'var(--mutu-canvas, #F9F7F4)', fontSize: 14.5, color: C.ink, fontFamily: 'Inter, system-ui, sans-serif', outline: 'none' }}
           />
-          <button type="button" onClick={() => send()} disabled={!input.trim() || busy}
-            style={{ width: 44, height: 44, borderRadius: 13, border: 'none', flexShrink: 0, display: 'grid', placeItems: 'center', cursor: !input.trim() || busy ? 'default' : 'pointer', ...(!input.trim() || busy ? { background: '#E5E1D8', color: '#fff' } : matchaCta) }}>
+          <button type="button" onClick={() => send()} disabled={!input.trim() || busy || !ready}
+            style={{ width: 44, height: 44, borderRadius: 13, border: 'none', flexShrink: 0, display: 'grid', placeItems: 'center', cursor: !input.trim() || busy || !ready ? 'default' : 'pointer', ...(!input.trim() || busy || !ready ? { background: '#E5E1D8', color: '#fff' } : matchaCta) }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M5 12h14M13 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </button>
         </div>

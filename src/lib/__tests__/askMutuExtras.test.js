@@ -70,3 +70,16 @@ describe('Relationship strength context', () => {
     expect(buildCircleContext({ edges, namesById, userId: null })).toBeNull()
   })
 })
+
+it('requires a known viewer and an explicit own-story signal', () => {
+  expect(buildStoriesContext({ stories: [{ title: 'Unscoped' }] })).toBeNull()
+  expect(buildStoriesContext({ stories: [{ title: 'Unscoped' }], userId: 'me' })).toBeNull()
+  expect(buildStoriesContext({ stories: [{ is_mine: true, author_id: 'other', title: 'Other' }], userId: 'me' })).toBeNull()
+})
+it('excludes unrelated relationship rows even when their names are resolvable', () => {
+  expect(buildCircleContext({ edges: [{ user_lo: 'a', user_hi: 'b', verified_exchange_count: 10 }], namesById: { a: 'Alice', b: 'Bob' }, userId: 'me' })).toBeNull()
+})
+it('does not treat a confirmed Buddy email fallback as a revealed name', () => {
+  const ctx = buildBuddyContext({ programStates: [{ program: { name: 'Rotman' }, state: { role: 'upper' }, assigned: { pairs: [{ status: 'confirmed', name: 'private@example.com' }] } }] })
+  expect(ctx.assigned_buddies[0].buddy_name).toBeNull()
+})

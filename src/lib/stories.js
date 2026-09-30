@@ -1,7 +1,8 @@
 import { supabase, isSupabaseConfigured } from './supabase'
 import { validateStory } from '../data/storiesContent'
 
-// Stories never use aiRewrite, Ask Mutu, matching, profile backfills, or Tokens.
+// Story bodies never enter AI, matching, profile backfills, or Tokens.
+// Ask Mutu may use only the signed-in author’s titles, topics and page status.
 // No caller supplies an author/reporter id. Raw tables are not client-readable.
 async function rpc(name, args = {}) {
   if (!isSupabaseConfigured) return { data: null, error: { code: 'UNCONFIGURED', message: 'Story Garden needs a connection.' } }
