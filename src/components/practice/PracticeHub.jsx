@@ -217,7 +217,7 @@ function SectionTitle({ children, right }) {
   )
 }
 
-export default function PracticeHub({ userId, avatarSeed, onOpenChat, onOpenEvent, onOpenEventsList, onCommunityPostChanged, focusMatchId = null, focusPairingId = null, focusBuddyRequestId = null, onFocusHandled, onBuddyFocusHandled, registerNavigationGuard }) {
+export default function PracticeHub({ userId, avatarSeed, onOpenChat, onOpenEvent, onOpenEventsList, onCommunityPostChanged, focusMatchId = null, focusPairingId = null, focusBuddyRequestId = null, focusBuddyProgramId = null, onFocusHandled, onBuddyFocusHandled, registerNavigationGuard }) {
   const demoMode = !isSupabaseConfigured
   const [loading, setLoading] = useState(true)
   const [community, setCommunity] = useState(null)
@@ -234,12 +234,14 @@ export default function PracticeHub({ userId, avatarSeed, onOpenChat, onOpenEven
   const [namesById, setNamesById] = useState({})
   const [view, setView] = useState('explore')            // 'explore' | 'mine'
   const [buddyOpen, setBuddyOpen] = useState(false)
+  const [buddyEntry, setBuddyEntry] = useState(null)
   const [storiesOpen, setStoriesOpen] = useState(false)
   useEffect(() => {
     if (!focusBuddyRequestId || !isBuddyEnabled()) return
+    setBuddyEntry({programId:focusBuddyProgramId,key:focusBuddyRequestId})
     setBuddyOpen(true)
     onBuddyFocusHandled?.()
-  }, [focusBuddyRequestId, onBuddyFocusHandled])
+  }, [focusBuddyRequestId, focusBuddyProgramId, onBuddyFocusHandled])
   const storiesNavigation = useRef(null)
   const registerStoriesNavigation = useCallback(handler => {
     storiesNavigation.current = handler
@@ -936,7 +938,7 @@ export default function PracticeHub({ userId, avatarSeed, onOpenChat, onOpenEven
 
   if (buddyOpen && isBuddyEnabled()) {
     return <Suspense fallback={<AppScreen><p role="status">Opening Buddy Program…</p></AppScreen>}>
-      <BuddyProgram onBack={() => setBuddyOpen(false)} onOpenChat={onOpenChat} onCommunityPostChanged={onCommunityPostChanged} registerNavigationGuard={registerNavigationGuard} />
+      <BuddyProgram key={buddyEntry?.key} initialProgramId={buddyEntry?.programId} onBack={() => setBuddyOpen(false)} onOpenChat={onOpenChat} onCommunityPostChanged={onCommunityPostChanged} registerNavigationGuard={registerNavigationGuard} />
     </Suspense>
   }
 

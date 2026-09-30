@@ -1,3 +1,4 @@
+import AssignedBuddyInvitations from './components/buddy/AssignedBuddyInvitations'
 import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from 'react'
 import CardStack from './components/CardStack'
 import GiveAskHub from './components/GiveAskHub'
@@ -18,7 +19,7 @@ import { fetchNotifications, markRead as markNotificationRead } from './lib/noti
 import SettingsPage, { resolveAvatarSeed } from './components/SettingsPage'
 import OnboardingProfile from './components/OnboardingProfile'
 import ProfileOnboardingV3 from './components/profile/ProfileOnboardingV3'
-import { isProfileV3Enabled, isPracticeEnabled } from './lib/featureFlags'
+import { isProfileV3Enabled, isPracticeEnabled, isBuddyEnabled } from './lib/featureFlags'
 import useGuardedTab from './lib/useGuardedTab'
 import PracticeHub from './components/practice/PracticeHub'
 import AnonymousAvatar from './components/AnonymousAvatar'
@@ -183,6 +184,7 @@ function AppShell() {
   // Same idea, keyed by pairing id (notification payloads carry it).
   const [practiceFocusPairingId, setPracticeFocusPairingId] = useState(null)
   const [buddyFocusRequestId, setBuddyFocusRequestId] = useState(null)
+  const [buddyFocusProgramId, setBuddyFocusProgramId] = useState(null)
   // In-app toast for realtime Exchange notifications: the bell badge
   // alone is too quiet for time-sensitive moments like an acceptance.
   const [practiceToast, setPracticeToast] = useState(null)
@@ -1297,8 +1299,9 @@ function AppShell() {
               focusMatchId={practiceFocusMatchId}
               focusPairingId={practiceFocusPairingId}
               focusBuddyRequestId={buddyFocusRequestId}
+              focusBuddyProgramId={buddyFocusProgramId}
               onFocusHandled={() => { setPracticeFocusMatchId(null); setPracticeFocusPairingId(null) }}
-              onBuddyFocusHandled={() => setBuddyFocusRequestId(null)}
+              onBuddyFocusHandled={() => { setBuddyFocusRequestId(null); setBuddyFocusProgramId(null) }}
               onOpenChat={(matchId) => { loadMatches(); setTab('matches'); setChatMatchId(matchId) }}
               onOpenEvent={(id) => { setEventReturnTab('practice'); setEventInitialView(null); setViewingEventId(id); setTab('events') }}
               onOpenEventsList={() => { setEventsCameFrom('practice'); setEventsTopView('discover'); setViewingEventId(null); setTab('events') }}
@@ -1542,6 +1545,10 @@ function AppShell() {
           </div>
         )}
 
+        {user?.id && practiceOn && isBuddyEnabled() && <AssignedBuddyInvitations key={user.id}
+          suppressed={Boolean(buddyHelpOffer)||(newMatchModalOpen&&!(tab==='matches'&&chatMatchId===latestNewMatch?.id))}
+          onAccepted={result=>{setBuddyFocusProgramId(result.program_id);setBuddyFocusRequestId(result.pair_id);setChatMatchId(null);setTab('practice')}}
+        />}
         {/* ── Buddy help offer + New Match popup ─────────────── */}
         <NewMatchModal
           open={Boolean(buddyHelpOffer)}

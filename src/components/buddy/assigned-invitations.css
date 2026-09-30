@@ -1,0 +1,10 @@
+.bai-inbox{margin:16px;padding:20px;border:1px solid #e8dfc6;border-radius:20px;background:#fffdf8;color:#354630}
+.bai-inbox h2{font-size:21px;line-height:1.3;margin:0 0 16px}
+.bai-card p{font-size:15px;line-height:1.6;margin:0 0 14px}
+.bai-card .bai-note{font-size:13px;color:#72776d}
+.bai-card+.bai-card{margin-top:20px;padding-top:20px;border-top:1px solid #e8dfc6}
+.bai-actions{display:flex;flex-wrap:wrap;gap:10px}
+.bai-actions button,.bai-later{font:inherit;min-height:44px;padding:10px 16px;border-radius:12px;border:1px solid #cdd5bf;background:#fffdf8;color:#354630;cursor:pointer}
+.bai-actions .bai-accept{background:#637947;color:#fff;border-color:#637947}
+.bai-actions button:disabled,.bai-later:disabled{opacity:.5;cursor:default}
+.bai-later{margin-top:14px;width:100%}

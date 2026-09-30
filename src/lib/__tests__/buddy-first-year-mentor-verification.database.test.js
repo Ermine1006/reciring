@@ -45,12 +45,14 @@ it('requires the requested approved mentor to verify first year access',async()=
   expect(state.incoming[0].name).toBe('Milan Patel')
   await db.query('select buddy_first_year_verify($1,true)',[req])
 
-  await as(ids[2])
+  // Inspect persisted rows as the test administrator, without granting app table access.
+  await db.exec('RESET ROLE')
   const role=(await db.query('select role from buddy_choice_members where program_id=$1 and user_id=$2',[p,ids[2]])).rows[0].role
   expect(role).toBe('first')
   const pair=(await db.query('select status,mentor_id from buddy_assigned_pairs where program_id=$1 and student_id=$2',[p,ids[2]])).rows[0]
   expect(pair.status).toBe('confirmed')
   expect(pair.mentor_id).toBe(ids[1])
+  await as(ids[2])
   state=(await db.query('select buddy_first_year_access_state($1) as value',[p])).rows[0].value
   expect(state.request.status).toBe('verified')
  }finally{await db.close()}

@@ -191,7 +191,7 @@ function SectionCard({ accentColor, accentBorder, label, labelColor, labelBg, la
 }
 
 /* ── Main component ─────────────────────────────────────────────── */
-export default function SubmitRequest({ onSubmitted, prefill = null, demoMode = false, audience = null }) {
+export default function SubmitRequest({ onSubmitted, prefill = null, demoMode = false, audience = null, submitDisabled = false }) {
   // `prefill` carries an Event Board post being republished to Discover. It
   // seeds the fields once (the parent remounts via `key` when it changes), and
   // the user reviews/completes before posting — a single-sided Event Board post
@@ -360,7 +360,7 @@ export default function SubmitRequest({ onSubmitted, prefill = null, demoMode = 
   /* ── Submit ── */
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!canSubmit || submitting) return
+    if (!canSubmit || submitting || submitDisabled) return
     setSubmitting(true); setSubmitError(null)
     try {
       const result = await onSubmitted?.({
@@ -797,10 +797,10 @@ export default function SubmitRequest({ onSubmitted, prefill = null, demoMode = 
         )}
         <button
           type="submit"
-          disabled={!canSubmit || submitting}
+          disabled={!canSubmit || submitting || submitDisabled}
           className="w-full py-4 rounded-[16px] text-sm font-semibold tracking-[0.12em] uppercase transition-all duration-200 active:scale-[0.98]"
           style={{
-            opacity:    submitting ? 0.6 : 1,
+            opacity:    submitting || submitDisabled ? 0.6 : 1,
             ...(canSubmit
               ? matchaCta
               : { background: '#F3F4F6', color: C.textMuted, boxShadow: 'none' }),
