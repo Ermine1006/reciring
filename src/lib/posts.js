@@ -48,10 +48,10 @@ export async function fetchPosts() {
       .select('*')
       .order('created_at', { ascending: false })
     if (plainErr) return { data: null, error: plainErr }
-    return { data: (plain || []).map(rowToCard), error: null }
+    return { data: (plain || []).filter(row => row.buddy_visible !== false).map(rowToCard), error: null }
   }
 
-  return { data: (data || []).map(rowToCard), error: null }
+  return { data: (data || []).filter(row => row.buddy_visible !== false).map(rowToCard), error: null }
 }
 
 /**
@@ -91,6 +91,15 @@ export async function createPost(userId, fields) {
 export async function updatePost(postId, userId, fields) {
   if (!isSupabaseConfigured) return { data: null, error: new Error('Supabase not configured.') }
 
+  const { data: current, error: readError } = await supabase.from('posts').select('*').eq('id', postId).eq('created_by', userId).single()
+  if (readError) return { data: null, error: readError }
+  if (current.buddy_post_id) {
+    const { error } = await supabase.rpc('buddy_public_update', { p_post: postId, p_fields: fields })
+    if (error) return { data: null, error }
+    return { data: rowToCard(await withCreator(current)), error: null }
+  }
+
+
   const { data, error } = await supabase
     .from('posts')
     .update({
@@ -122,6 +131,7 @@ export function rowToCard(row) {
   const creator = row.creator || {}
   return {
     id:           row.id,
+    buddyPostId:  row.buddy_post_id || null,
     created_by:   row.created_by,
     needs:        row.need_text,
     offers:       row.offer_text,
@@ -172,4 +182,12 @@ export function formatRelative(isoString) {
   const days = Math.floor(hrs / 24)
   if (days < 7)   return `${days}d ago`
   return `${Math.floor(days / 7)}w ago`
+}
+
+export async function deletePost(postId, userId) {
+  if (!isSupabaseConfigured) return { error: new Error('Supabase not configured.') }
+  const { data: current, error } = await supabase.from('posts').select('*').eq('id', postId).eq('created_by', userId).single()
+  if (error) return { error }
+  if (current.buddy_post_id) return supabase.rpc('buddy_public_remove', { p_post: postId })
+  return supabase.from('posts').delete().eq('id', postId).eq('created_by', userId)
 }

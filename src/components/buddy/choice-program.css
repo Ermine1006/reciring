@@ -105,3 +105,6 @@
 
 .bc-audience-hint{margin:0 0 12px;font-size:12px;line-height:1.5;color:#72776d}
 .bc-audience-options + .bc-audience-hint{margin:10px 0 0}
+
+.bc-audience-options strong::before{content:'';display:inline-block;width:13px;height:13px;margin-right:6px;border:1px solid #9b9f92;border-radius:3px;vertical-align:-2px}
+.bc-audience-options button[aria-pressed="true"] strong::before{content:'✓';background:#718554;border-color:#718554;color:#fff;font-size:11px;line-height:13px;text-align:center}

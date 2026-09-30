@@ -7,6 +7,11 @@ import { supabase, isSupabaseConfigured } from './supabase'
 export async function createMatch(helperUserId, post) {
   if (!isSupabaseConfigured) return { data: null, error: new Error('Supabase not configured.') }
 
+  if (post.buddyPostId) {
+    const { data, error } = await supabase.rpc('buddy_public_connect', { p_post: post.id })
+    return { data: Array.isArray(data) ? data[0] : data, error }
+  }
+
   // Upsert on the (post_id, helper_user_id) unique key. Picking up a post is
   // a one-sided, immediate connect — there's no "both must swipe" step. A
   // plain INSERT raised 23505 whenever the helper re-connected a post they had

@@ -37,7 +37,7 @@ import AskMutuSheet from './components/AskMutuSheet'
 import { isAdmin } from './data/adminEmails'
 import { submitReport, blockUser, fetchBlockedIds } from './lib/safety'
 import { isSupabaseConfigured, supabase } from './lib/supabase'
-import { fetchPosts, createPost, updatePost } from './lib/posts'
+import { fetchPosts, createPost, updatePost, deletePost } from './lib/posts'
 import { markMarketplacePostSharedToDiscover } from './lib/marketplace'
 import { HELP_TYPES, INDUSTRIES } from './data/requestOptions'
 import { backfillMatchingTags } from './lib/profileBackfill'
@@ -928,11 +928,7 @@ function AppShell() {
 
   const handleDeletePost = async (postId) => {
     if (!user) return { error: new Error('Not signed in.') }
-    const { error } = await supabase
-      .from('posts')
-      .delete()
-      .eq('id', postId)
-      .eq('created_by', user.id)
+    const { error } = await deletePost(postId, user.id)
     if (error) return { error }
     setRequests(prev => prev.filter(r => r.id !== postId))
     return {}
