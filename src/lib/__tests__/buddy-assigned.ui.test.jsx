@@ -90,3 +90,56 @@ it('shows My Buddy audience posts to the assigned upper year',async()=>{
  expect(screen.getByText('Coffee chat advice')).toBeTruthy()
  expect(screen.queryByText('No questions yet')).toBeNull()
 })
+
+it.each(['upper','first'])('hides resolved question previews for %s while preserving Buddy chat and history',async role=>{
+ const resolved={id:'resolved',body:'How can I find a job in VC?',resolved:true,replied:true,replies:[]}
+ const onOpenChat=vi.fn(),rpc=vi.fn(async name=>name==='buddy_assigned_open_chat'?{match_id:'buddy-chat'}:{pairs:[{id:'p',name:'Sara',status:'confirmed',requests:[resolved]}]})
+ render(<BuddyAssigned role={role} program="p" rpc={rpc} onOpenChat={onOpenChat}/>);
+ await screen.findByText('Sara')
+ expect(screen.queryByText(resolved.body)).toBeNull()
+ expect(screen.getByText('No open questions.')).toBeTruthy()
+ expect(screen.getByText('Resolved')).toBeTruthy()
+ fireEvent.click(screen.getByRole('button',{name:'Open chat'}))
+ await waitFor(()=>expect(onOpenChat).toHaveBeenCalledWith('buddy-chat'))
+ fireEvent.click(screen.getByRole('button',{name:'View questions'}))
+ const savedQuestion=screen.getByRole('button',{name:/How can I find a job in VC/})
+ expect(screen.queryByRole('heading',{name:resolved.body})).toBeNull()
+ fireEvent.click(savedQuestion)
+ expect(screen.getByRole('heading',{name:resolved.body})).toBeTruthy()
+})
+
+it.each([false,true])('previews an older open question instead of a newer resolved question (replied: %s)',async replied=>{
+ const rpc=vi.fn(async()=>({pairs:[{id:'p',name:'Sara',status:'confirmed',requests:[
+  {id:'resolved',body:'Already helped',resolved:true,replied:true,replies:[]},
+  {id:'open',body:'Still need help',resolved:false,replied,replies:[]}
+ ]}]}))
+ render(<BuddyAssigned role="upper" program="p" rpc={rpc} onOpenChat={vi.fn()}/>);
+ await screen.findByText('Still need help')
+ expect(screen.queryByText('Already helped')).toBeNull()
+ expect(screen.getByText(replied?'Replied':'Needs a hand')).toBeTruthy()
+ fireEvent.click(screen.getByRole('button',{name:replied?'View questions':'Reply to question'}))
+ expect(screen.getByRole('heading',{name:'Still need help'})).toBeTruthy()
+})
+
+it('updates the preview when a Buddy question is resolved or reopened',async()=>{
+ let resolved=false
+ const rpc=vi.fn(async()=>({pairs:[{id:'p',name:'Sara',status:'confirmed',requests:[{id:'r',body:'An active question',resolved,replied:true,replies:[]}]}]}))
+ render(<BuddyAssigned role="upper" program="p" rpc={rpc} onOpenChat={vi.fn()}/>);
+ await screen.findByText('An active question')
+ resolved=true
+ fireEvent.click(screen.getByRole('button',{name:'Refresh'}))
+ await screen.findByText('No open questions.')
+ expect(screen.queryByText('An active question')).toBeNull()
+ resolved=false
+ fireEvent.click(screen.getByRole('button',{name:'Refresh'}))
+ await screen.findByText('An active question')
+ expect(screen.queryByText('No open questions.')).toBeNull()
+})
+
+it('previews a Buddy post when all private questions are resolved',async()=>{
+ const rpc=vi.fn(async()=>({pairs:[{id:'p',name:'Sara',status:'confirmed',posts:[{id:'post',needs:'Coffee chat advice'}],requests:[{id:'r',body:'Already helped',resolved:true,replied:true,replies:[]}]}]}))
+ render(<BuddyAssigned role="upper" program="p" rpc={rpc} onOpenChat={vi.fn()}/>);
+ await screen.findByText('Coffee chat advice')
+ expect(screen.queryByText('Already helped')).toBeNull()
+ expect(screen.getByText('New post')).toBeTruthy()
+})
