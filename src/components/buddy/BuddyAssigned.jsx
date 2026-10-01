@@ -26,6 +26,7 @@ export default function BuddyAssigned({program,role,rpc=buddyRpc,initialRoster='
  const [summary,setSummary]=useState(null),[summaryError,setSummaryError]=useState('')
  const live=useRef(true),lock=useRef(false),sequence=useRef(0),dirty=useRef(false)
  const upper=role==='upper',pair=pairs.find(p=>p.id===pairId),request=pair?.requests?.find(r=>r.id===requestId)
+ const unresolvedRequests=(pair?.requests||[]).filter(r=>!r.resolved),resolvedRequests=(pair?.requests||[]).filter(r=>r.resolved)
  const refresh=useCallback(async(quiet=false)=>{
   const seq=++sequence.current
   try{const result=await rpc('buddy_assigned_state',{p_program:program});if(live.current&&seq===sequence.current){setPairs(result.pairs||[]);setError('')}}
@@ -57,6 +58,7 @@ export default function BuddyAssigned({program,role,rpc=buddyRpc,initialRoster='
   finally{lock.current=false;if(live.current){setBusy(false);setOpeningPair(null)}}
  }
  async function report(){try{setSummary(await rpc('buddy_assigned_summary',{p_program:program}));setSummaryError('')}catch(e){setSummaryError(e.message)}}
+ const renderRequest=r=><button className="ba-request" type="button" key={r.id} disabled={busy} aria-pressed={requestId===r.id} onClick={()=>move(()=>setRequestId(r.id))}><span>{r.body}</span><small>{status(r)} →</small></button>
  const reset=()=>{setPairId(null);setRequestId(null);setAsking(false);setAdd(false);setReview(null)}
  const withdrawPairing=(id)=>{
   if(!window.confirm('Withdraw this pairing request? The student will no longer see it in My Buddy.'))return
@@ -80,11 +82,12 @@ export default function BuddyAssigned({program,role,rpc=buddyRpc,initialRoster='
     {!upper&&!asking&&<Button disabled={busy} primary onClick={()=>move(()=>{setAsking(true);setRequestId(null)})}>Ask my Buddy</Button>}
     {asking?<form onSubmit={e=>{e.preventDefault();act('buddy_assigned_ask',{p_pair:pair.id,p_body:draft},'Question sent.',()=>{setDraft('');setAsking(false)})}}><label className="ba-field">What would help?<textarea required maxLength={1000} value={draft} disabled={busy} onChange={e=>{setDraft(e.target.value);changed(true)}}/></label><p className="ba-muted">Your name is shown. Only your Buddy can read this.</p><button className="ba-cta" disabled={busy||!draft.trim()}>Send question →</button></form>:<>
      {(pair.posts||[]).length>0&&<section className="ba-buddy-posts"><h3>Buddy posts</h3>{pair.posts.map(post=><article className="ba-buddy-post" key={post.id}><span>Looking for</span><strong>{String(post.needs||'').split(/\n\n+/)[0]||'A little help'}</strong>{post.offers&&<p><b>Happy to help with:</b> {post.offers}</p>}</article>)}</section>}
-     {(pair.requests||[]).map(r=><button className="ba-request" type="button" key={r.id} disabled={busy} aria-pressed={requestId===r.id} onClick={()=>move(()=>setRequestId(r.id))}><span>{r.body}</span><small>{status(r)} →</small></button>)}
+     {!!pair.requests?.length&&<section className="ba-questions" aria-label="Unresolved questions"><h3>Unresolved ({unresolvedRequests.length})</h3>{unresolvedRequests.length?unresolvedRequests.map(renderRequest):<p className="ba-muted">No unresolved questions.</p>}</section>}
+     {resolvedRequests.length>0&&<details className="ba-resolved" key={pair.id}><summary>Resolved ({resolvedRequests.length})</summary>{resolvedRequests.map(renderRequest)}</details>}
      {!pair.requests?.length&&!pair.posts?.length&&<div className="ba-empty"><Sprout aria-hidden="true"/><h3>No questions yet</h3><p>{upper?'A little help starts here.':'Ask one small question.'}</p></div>}
      {request&&<div className="ba-thread"><h3>{request.body}</h3>{request.replies.map(r=><article className={r.mine?'ba-reply ba-mine':'ba-reply'} key={r.id}><small>{r.name}{r.mine?' · You':''}</small><p>{r.body}</p></article>)}
       {request.resolved?<p className="bc-notice">Marked resolved by the student.</p>:<form onSubmit={e=>{e.preventDefault();act('buddy_assigned_reply',{p_request:request.id,p_body:draft},'Reply sent.',()=>setDraft(''))}}><label className="ba-field">Your reply<textarea required maxLength={2000} value={draft} disabled={busy} onChange={e=>{setDraft(e.target.value);changed(true)}}/></label>{upper&&<Button disabled={busy} onClick={()=>{setDraft('Happy to help. Would a 15 minute chat after class work for you?');changed(true)}}>Suggest a quick chat</Button>}<button className="ba-cta" disabled={busy||!draft.trim()}>Send reply →</button></form>}
-      {!upper&&<Button disabled={busy} onClick={()=>act('buddy_assigned_resolve',{p_request:request.id,p_resolved:!request.resolved},request.resolved?'Request reopened.':'Glad it helped.')}>{request.resolved?'Reopen request':'This helped ✓'}</Button>}
+      {!upper&&<Button disabled={busy} onClick={()=>act('buddy_assigned_resolve',{p_request:request.id,p_resolved:!request.resolved},request.resolved?'Request reopened.':'Glad it helped.',()=>{if(!request.resolved)setRequestId(null)})}>{request.resolved?'Reopen request':'This helped ✓'}</Button>}
      </div>}
     </>}
    </>}

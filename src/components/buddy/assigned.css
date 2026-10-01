@@ -10,3 +10,10 @@
 .ba-buddy-post>span{display:block;font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:#8a7437;margin-bottom:4px}
 .ba-buddy-post>strong{display:block;font-size:14px;color:#30372c}
 .ba-buddy-post p{font-size:12px;line-height:1.45;color:#6d7367;margin:7px 0 0}
+
+.ba-questions{margin:20px 0 12px}
+.ba-questions>h3{font-size:14px;font-weight:650;color:#4f6340}
+.ba-resolved{margin:12px 0 18px;border-top:1px solid #e8e7dd}
+.ba-resolved>summary{min-height:44px;padding:12px 0;box-sizing:border-box;cursor:pointer;font-size:14px;font-weight:600;color:#786536}
+.ba-resolved>summary:focus-visible{outline:2px solid #728557;outline-offset:3px;border-radius:4px}
+.ba-resolved .ba-request:not([aria-pressed=true]){background:#faf8f1;color:#656b5c}

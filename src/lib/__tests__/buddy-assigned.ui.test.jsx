@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react'
 import {afterEach,it,expect,vi} from 'vitest'
-import {cleanup,render,screen,fireEvent,waitFor} from '@testing-library/react'
+import {cleanup,render,screen,fireEvent,waitFor,within} from '@testing-library/react'
 import BuddyAssigned,{parseBuddyList} from '../../components/buddy/BuddyAssigned'
 import BuddyAssignedDemo from '../../components/buddy/BuddyAssignedDemo'
 vi.mock('../../context/AuthContext',()=>({useAuth:()=>({profile:null})}))
@@ -18,7 +18,7 @@ it('runs the isolated demo from adding a roster to confirmation, question, reply
  render(<BuddyAssignedDemo onBack={()=>{}}/>);fireEvent.click(await screen.findByRole('button',{name:'Add my Buddies →'}));expect(screen.getByLabelText('School names and emails').value).toContain('thomas.peng@rotman.utoronto.ca');fireEvent.click(screen.getByRole('button',{name:'Review my Buddies →'}));fireEvent.click(screen.getByRole('button',{name:'Add 3 Buddies'}));await screen.findByText('Milan Patel')
  fireEvent.change(screen.getByLabelText('Demo perspective'),{target:{value:'first'}});fireEvent.click(await screen.findByRole('button',{name:'Confirm',exact:true}));fireEvent.click(screen.getByRole('button',{name:'Confirm my Buddy'}));fireEvent.click(await screen.findByRole('button',{name:'Ask my Buddy'}));fireEvent.change(screen.getByLabelText('What would help?'),{target:{value:'How do I prepare?'}});fireEvent.click(screen.getByRole('button',{name:'Send question →'}));await screen.findByText('Question sent.')
  fireEvent.change(screen.getByLabelText('Demo perspective'),{target:{value:'upper'}});fireEvent.click(await screen.findByRole('button',{name:'Reply →'}));fireEvent.click(screen.getByRole('button',{name:'Suggest a quick chat'}));fireEvent.click(screen.getByRole('button',{name:'Send reply →'}));await screen.findByText('Reply sent.')
- fireEvent.change(screen.getByLabelText('Demo perspective'),{target:{value:'first'}});fireEvent.click(await screen.findByRole('button',{name:'Open →'}));await screen.findByText(/Happy to help/);fireEvent.click(screen.getByRole('button',{name:'This helped ✓'}));await screen.findByText('Marked resolved by the student.')
+ fireEvent.change(screen.getByLabelText('Demo perspective'),{target:{value:'first'}});fireEvent.click(await screen.findByRole('button',{name:'Open →'}));await screen.findByText(/Happy to help/);fireEvent.click(screen.getByRole('button',{name:'This helped ✓'}));await screen.findByText('Glad it helped.');expect(screen.getByText('Unresolved (0)')).toBeTruthy();expect(screen.getByText('Resolved (1)')).toBeTruthy();expect(screen.queryByRole('heading',{name:'How do I prepare?'})).toBeNull()
 })
 
 it('lets an upper year withdraw a pending school pairing without touching confirmed Buddies',async()=>{
@@ -102,6 +102,7 @@ it.each(['upper','first'])('hides resolved question previews for %s while preser
  fireEvent.click(screen.getByRole('button',{name:'Open chat'}))
  await waitFor(()=>expect(onOpenChat).toHaveBeenCalledWith('buddy-chat'))
  fireEvent.click(screen.getByRole('button',{name:'View questions'}))
+ fireEvent.click(screen.getByText('Resolved (1)'))
  const savedQuestion=screen.getByRole('button',{name:/How can I find a job in VC/})
  expect(screen.queryByRole('heading',{name:resolved.body})).toBeNull()
  fireEvent.click(savedQuestion)
@@ -142,4 +143,53 @@ it('previews a Buddy post when all private questions are resolved',async()=>{
  await screen.findByText('Coffee chat advice')
  expect(screen.queryByText('Already helped')).toBeNull()
  expect(screen.getByText('New post')).toBeTruthy()
+})
+
+it.each(['upper','first'])('separates unresolved questions from collapsed resolved history for %s',async role=>{
+ const rpc=vi.fn(async()=>({pairs:[{id:'p',name:'Sara',status:'confirmed',requests:[
+  {id:'done',body:'Finished question',resolved:true,replied:true,replies:[]},
+  {id:'waiting',body:'Waiting for help',resolved:false,replied:false,replies:[]},
+  {id:'replied',body:'Still discussing',resolved:false,replied:true,replies:[]}
+ ]}]}))
+ render(<BuddyAssigned role={role} program="p" rpc={rpc} onOpenChat={vi.fn()}/>);
+ fireEvent.click(await screen.findByRole('button',{name:role==='upper'?'Reply to question':'View questions'}))
+ const active=screen.getByRole('region',{name:'Unresolved questions'})
+ expect(within(active).getByRole('heading',{name:'Unresolved (2)'})).toBeTruthy()
+ expect(within(active).getAllByRole('button')).toHaveLength(2)
+ expect(within(active).queryByText('Finished question')).toBeNull()
+ const summary=screen.getByText('Resolved (1)'),history=summary.closest('details')
+ expect(history.open).toBe(false)
+ fireEvent.click(summary)
+ expect(history.open).toBe(true)
+ fireEvent.click(within(history).getByRole('button',{name:/Finished question/}))
+ expect(screen.getByRole('heading',{name:'Finished question'})).toBeTruthy()
+ expect(screen.queryByLabelText('Your reply')).toBeNull()
+ expect(screen.queryByRole('button',{name:'Reopen request'})!==null).toBe(role==='first')
+})
+
+it('moves questions between groups when resolving and reopening without losing replies',async()=>{
+ let resolved=false
+ const replies=[{id:'reply',name:'Sara',body:'Try the alumni event.',mine:false}]
+ const rpc=vi.fn(async(name,args)=>{
+  if(name==='buddy_assigned_resolve'){resolved=args.p_resolved;return null}
+  return {pairs:[{id:'p',name:'Sara',status:'confirmed',requests:[{id:'r',body:'A career question',resolved,replied:true,replies}]}]}
+ })
+ render(<BuddyAssigned role="first" program="p" rpc={rpc} onOpenChat={vi.fn()}/>);
+ fireEvent.click(await screen.findByRole('button',{name:'View questions'}))
+ fireEvent.click(screen.getByRole('button',{name:'This helped ✓'}))
+ await screen.findByText('Unresolved (0)')
+ expect(screen.getByText('No unresolved questions.')).toBeTruthy()
+ expect(screen.queryByRole('heading',{name:'A career question'})).toBeNull()
+ expect(screen.queryByText('No questions yet')).toBeNull()
+ const summary=screen.getByText('Resolved (1)')
+ expect(summary.closest('details').open).toBe(false)
+ fireEvent.click(summary)
+ fireEvent.click(screen.getByRole('button',{name:/A career question/}))
+ expect(screen.getByText('Try the alumni event.')).toBeTruthy()
+ fireEvent.click(screen.getByRole('button',{name:'Reopen request'}))
+ await screen.findByText('Unresolved (1)')
+ expect(screen.queryByText('Resolved (1)')).toBeNull()
+ expect(within(screen.getByRole('region',{name:'Unresolved questions'})).getByRole('button',{name:/A career question/})).toBeTruthy()
+ expect(screen.getByText('Try the alumni event.')).toBeTruthy()
+ expect(screen.getByLabelText('Your reply')).toBeTruthy()
 })
