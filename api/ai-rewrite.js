@@ -191,7 +191,7 @@ export default async function handler(req, res) {
         max_tokens: 1500,
         temperature: 0.4,
         messages: [
-          { role: 'system', content: system + '\nNever use em dashes (U+2014). Use commas, periods or separate sentences instead.' },
+          { role: 'system', content: system + '\n' + finalChecks + '\nNever use em dashes (U+2014). Use commas, periods or separate sentences instead.' },
           { role: 'user',   content: userMessage },
         ],
       }),
@@ -277,7 +277,7 @@ Rules: Use ONLY facts present in the note. Do not invent names, companies, needs
         max_tokens: 1200,
         temperature: 0.2,
         messages: [
-          { role: 'system', content: system + '\nNever use em dashes (U+2014). Use commas, periods or separate sentences instead.' },
+          { role: 'system', content: system + '\n' + finalChecks + '\nNever use em dashes (U+2014). Use commas, periods or separate sentences instead.' },
           { role: 'user',   content: user },
         ],
       }),
@@ -368,6 +368,13 @@ Only when the user asks what they DISCUSSED with a specific met person who has n
 
 When asked to draft a message, write a short, warm, specific note (2–4 sentences) they can send as-is. Keep other answers concise and warm, under ~130 words.`
 
+  const languageRule = /[\u3400-\u9fff]/.test(question)
+    ? 'Reply in Chinese because this question is in Chinese. A draft to an English-speaking contact may be in English.'
+    : "Reply in the same language as the user's question."
+  const finalChecks = `Before sending your answer, check EVERY suggestion and EVERY sentence in a message draft against this user's own profile or question. Never add a reciprocal interview, case, fit-story, resume review or other professional offer unless this user's own stated expertise or offered help supports it. Merely asking for interview help does not mean they can provide it. A hobby alone supports an invitation, not teaching, hosting at their home, paying for someone, or access to a venue. Do not invent these details in the draft. Do not make accepting the invitation a prerequisite for getting help. No obligation to return the favor.
+An absent source is UNKNOWN, not proof of zero activity. In particular, never say they have not practised together unless explicit records establish that. If the other person's profile is missing, say it is unavailable, not that they lack the skill.
+Keep the explanation to two short paragraphs and optionally one brief draft. ${languageRule}`
+
   const user = `Question: ${question}\n\nMy networking data (JSON):\n${context}`
 
   let resp
@@ -385,7 +392,7 @@ When asked to draft a message, write a short, warm, specific note (2–4 sentenc
         max_tokens: 1400,
         temperature: 0.35,
         messages: [
-          { role: 'system', content: system + '\nNever use em dashes (U+2014). Use commas, periods or separate sentences instead.' },
+          { role: 'system', content: system + '\n' + finalChecks + '\nNever use em dashes (U+2014). Use commas, periods or separate sentences instead.' },
           { role: 'user',   content: user },
         ],
       }),
@@ -490,7 +497,7 @@ Be genuinely helpful: whenever there's any reasonable signal, suggest at least o
         max_tokens: 400,
         temperature: 0.3,
         messages: [
-          { role: 'system', content: system + '\nNever use em dashes (U+2014). Use commas, periods or separate sentences instead.' },
+          { role: 'system', content: system + '\n' + finalChecks + '\nNever use em dashes (U+2014). Use commas, periods or separate sentences instead.' },
           { role: 'user', content: known },
         ],
       }),
@@ -581,7 +588,7 @@ Output ONLY the answer — no quotes, no label, no trailing period needed. One l
         max_tokens: 200,
         temperature: 0.7,
         messages: [
-          { role: 'system', content: system + '\nNever use em dashes (U+2014). Use commas, periods or separate sentences instead.' },
+          { role: 'system', content: system + '\n' + finalChecks + '\nNever use em dashes (U+2014). Use commas, periods or separate sentences instead.' },
           { role: 'user', content: userMessage },
         ],
       }),
