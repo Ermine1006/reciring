@@ -40,6 +40,7 @@ const C = {
 // during recruiting season, and these are the questions members
 // actually arrive with.
 const SUGGESTIONS = [
+  'How could I support someone who helps me?',
   'What should I practise next?',
   'Who should I practise with?',
   'How is my interview prep going?',
@@ -88,9 +89,11 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
   const { profile } = useAuth()
   const [ctx, setCtx] = useState(null)
   const [contextUserId, setContextUserId] = useState(null)
+  const [contextProfile, setContextProfile] = useState(null)
+  const contextVersion = useRef(0)
   const [contextError, setContextError] = useState(false)
   const [retry, setRetry] = useState(0)
-  const ready = Boolean(userId && ctx && contextUserId === userId)
+  const ready = Boolean(userId && ctx && contextUserId === userId && contextProfile === profile)
   const [msgs, setMsgs] = useState([])       // { role: 'user'|'mutu', text }
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
@@ -99,7 +102,10 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
   const bottomRef = useRef(null)
 
   useEffect(() => {
-    if (!open) return
+    const version = ++contextVersion.current
+    if (!open || !userId) return
+    // Auth can briefly still hold the previous account’s profile. Never use it.
+    const myProfile = profile?.id === userId ? profile : null
     let cancelled = false
     setCtx(null)
     setContextUserId(null)
@@ -107,11 +113,12 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
     setMsgs([])
     setInput('')
     setView('home')
+    setBusy(false)
     ;(async () => {
-      const [{ data: enc }, { data: hist }, { data: conns }, { data: myEvents }, { data: discover }, postsRes, matchedRes] = await Promise.all([
+      const [{ data: enc }, { data: hist }, { data: conns, error: connectionsError }, { data: myEvents }, { data: discover }, postsRes, matchedRes] = await Promise.all([
         fetchEncounters(userId),
         fetchAskHistory(userId),
-        fetchConnections(userId),
+        fetchConnections(userId, { includeProfiles: true }),
         fetchMyEvents(userId),
         fetchUpcomingEvents(),
         fetchPosts().catch(() => ({ data: [] })),
@@ -137,7 +144,7 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
         .filter(e => e.joined && e.start_at && new Date(e.start_at).getTime() >= now - 12 * 3600 * 1000)
         .slice(0, 5)
       const lists = await Promise.all(
-        joinedUpcoming.map(e => fetchEventPrepCandidates(e.id, userId, profile).catch(() => ({ candidates: [], signal: 'none' })))
+        joinedUpcoming.map(e => fetchEventPrepCandidates(e.id, userId, myProfile).catch(() => ({ candidates: [], signal: 'none' })))
       )
       const eventMatches = {}
       joinedUpcoming.forEach((e, i) => {
@@ -145,6 +152,7 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
         eventMatches[e.id] = { data: r.candidates || [], needsMyIntentions: r.signal === 'none' }
       })
 
+      if (cancelled) return
       setPrepEvents(joinedUpcoming)
       // Mock interview grounding. Only gathered when the pilot is on
       // for this member, and assembled by the same canonical layers the
@@ -190,11 +198,12 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
       }
       const extras = await loadAskMutuContextExtras(userId)
       if (cancelled) return
-      setCtx(buildAssistantContext({ encounters: enc || [], events: allEvents, connections: conns || [], me: profile, eventMatches, practice, myPosts, ...extras }))
+      setCtx(buildAssistantContext({ encounters: enc || [], events: allEvents, connections: conns || [], me: myProfile, eventMatches, practice, myPosts, ...extras, unavailableSources: [...(extras.unavailableSources || []), ...(!myProfile ? ['profile'] : []), ...(connectionsError ? ['connections'] : [])] }))
       setContextUserId(userId)
+      setContextProfile(profile)
       setMsgs((hist || []).map(m => ({ role: m.role, text: m.text })))
     })().catch(() => { if (!cancelled) setContextError(true) })
-    return () => { cancelled = true }
+    return () => { cancelled = true; if (contextVersion.current === version) contextVersion.current++ }
   }, [open, userId, profile, retry]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [msgs, busy])
@@ -204,11 +213,13 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
   const send = async (q) => {
     const question = (q ?? input).trim()
     if (!question || busy || !ready) return
+    const version = contextVersion.current
     setInput('')
     setMsgs(m => [...m, { role: 'user', text: question }])
     saveAskMessage(userId, 'user', question)
     setBusy(true)
     const { answer, error } = await askMutu(question, ctx || {})
+    if (version !== contextVersion.current) return
     setBusy(false)
     const reply = error ? (error.message || 'Sorry, try again.') : answer
     setMsgs(m => [...m, { role: 'mutu', text: reply }])
@@ -297,7 +308,7 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
           ) : empty ? (
             <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center' }}>
               <p style={{ fontSize: 14, color: C.sub, lineHeight: 1.6, textAlign: 'center', maxWidth: 320, fontFamily: 'Inter, system-ui, sans-serif' }}>
-                I know your network, the people you've met, who you've connected with, and your events. Pick a shortcut below, or ask me anything.
+                I use your profile, interests and network to suggest who to ask and how you could support each other. Pick a shortcut below, or ask me a question.
               </p>
             </div>
           ) : (

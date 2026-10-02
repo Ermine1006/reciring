@@ -2,6 +2,7 @@ import { supabase, isSupabaseConfigured } from './supabase'
 import { fetchMyMatches, matchToUI } from './matches'
 import { fetchBlockedIds } from './safety'
 import { VISIBILITY_PUBLIC } from './visibility'
+import { buildProfileContext } from './askMutuProfile'
 
 // ── Unified relationship service (read-only, derived) ────────────────────
 // Mutu keeps two separate memories of the same person: the `matches` spine
@@ -43,15 +44,15 @@ const nonEmpty = (arr) => Array.isArray(arr) && arr.length > 0
  * Sorted newest-interaction first. `name`/`avatarUrl`/`program` are null when
  * the peer's identity is not authorized to this user (still anonymous).
  */
-export async function fetchConnections(userId) {
+export async function fetchConnections(userId, { includeProfiles = false } = {}) {
   if (!isSupabaseConfigured || !userId) return { data: [], error: null }
 
-  const [{ data: matches, error: mErr }, { data: blocked }, metIds] = await Promise.all([
+  const [{ data: matches, error: mErr }, { data: blocked, error: bErr }, metIds] = await Promise.all([
     fetchMyMatches(userId),
     fetchBlockedIds(userId),
     fetchMetUserIds(userId),
   ])
-  if (mErr) return { data: [], error: mErr }
+  if (mErr || bErr) return { data: [], error: mErr || bErr }
 
   const blockedSet = new Set(blocked || [])
   const metSet = new Set(metIds || [])
@@ -94,7 +95,7 @@ export async function fetchConnections(userId) {
 
   // Peer identities (respecting privacy). Public profile or accepted reveal ⇒ known.
   const peerIds = Array.from(byPeer.keys())
-  const profById = await fetchProfiles(peerIds)
+  const profById = await fetchProfiles(peerIds, includeProfiles)
 
   const out = []
   for (const c of byPeer.values()) {
@@ -111,6 +112,7 @@ export async function fetchConnections(userId) {
       name:      identityKnown ? (prof?.name || 'Member') : null,
       avatarUrl: identityKnown ? (prof?.avatar_url || null) : null,
       program:   identityKnown ? (prof?.program || null) : null,
+      ...(includeProfiles && identityKnown ? { profile: buildProfileContext(prof) } : {}),
       lastInteractionAt: c.lastInteractionAt,
     })
   }
@@ -203,11 +205,11 @@ async function fetchMatchIdsWithMessages(matchIds) {
   return new Set((data || []).map(r => r.match_id))
 }
 
-async function fetchProfiles(ids) {
+async function fetchProfiles(ids, includeProfiles = false) {
   if (!nonEmpty(ids)) return {}
   const { data } = await supabase
     .from('profiles')
-    .select('id, name, avatar_url, program, visibility')
+    .select(includeProfiles ? '*' : 'id, name, avatar_url, program, visibility')
     .in('id', ids)
   return Object.fromEntries((data || []).map(p => [p.id, p]))
 }

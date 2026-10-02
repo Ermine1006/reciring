@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from './supabase'
 import { apiUrl } from './apiBase'
+import { buildProfileContext } from './askMutuProfile'
 
 // ── Event memory · encounters + derived follow-ups ───────────────────
 // event_encounters is the single store. A "follow-up" is an encounter with a
@@ -218,22 +219,15 @@ export function buildAssistantContext({ encounters = [], events = [], connection
     ...(myPosts && myPosts.length ? { my_posts: myPosts } : {}),
     // The user's OWN profile — lets Mutu reason about fit ("who should I
     // connect with", "is this event worth attending") instead of punting.
-    me: me ? {
-      name:            me.name || null,
-      program:         me.program || null,
-      career_stage:    me.career_stage || null,
-      interests:       me.industry_interests || [],
-      can_help_with:   me.can_help_with || [],
-      wants_help_with: me.skills_to_learn || [],
-      looking_for:     me.networking_intent || [],
-      headline:        me.headline || null,
-    } : null,
+    me: buildProfileContext(me),
     // People you know but have NOT met in person yet (Community match /
     // identity reveal / chat). Kept separate from `people` (met) so Mutu never
     // conflates a connection with someone you met. Identity-hidden ones omitted.
     connections: connections
-      .filter(c => c.name)
-      .map(c => ({ name: c.name, relationship: c.context || 'Connection', program: c.program || null })),
+      .filter(c => c.name && c.identityKnown !== false)
+      .map(c => ({ name: c.name, relationship: c.context || 'Connection', program: c.program || null,
+        ...(c.identityKnown === true && c.profile ? { profile: buildProfileContext(c.profile) } : {}),
+      })),
     people: encounters.map(e => {
       // Three INDEPENDENT states — never collapse them into one "followed up":
       //  • message  = a communication (drafted / sent / none)

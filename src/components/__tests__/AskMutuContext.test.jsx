@@ -2,8 +2,8 @@
 import React from 'react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-const mocks = vi.hoisted(() => ({ extras: vi.fn(), ask: vi.fn(), encounters: vi.fn() }))
-vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ profile: null }) }))
+const mocks = vi.hoisted(() => ({ extras: vi.fn(), ask: vi.fn(), encounters: vi.fn(), profile: null }))
+vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ profile: mocks.profile }) }))
 vi.mock('../../lib/featureFlags', () => ({ isPracticeEnabled: () => false }))
 vi.mock('../../lib/askMutuContextExtras', () => ({ loadAskMutuContextExtras: mocks.extras }))
 vi.mock('../../lib/eventMemory', async importOriginal => ({
@@ -19,6 +19,7 @@ import AskMutuSheet from '../AskMutuSheet'
 HTMLElement.prototype.scrollIntoView = vi.fn()
 beforeEach(() => {
   vi.clearAllMocks()
+  mocks.profile = null
   mocks.encounters.mockResolvedValue({ data: [] })
   mocks.ask.mockResolvedValue({ answer: 'Ready to help.' })
   mocks.extras.mockResolvedValue({ buddy: { programs: [{ name: 'Rotman' }] }, stories: [{ title: 'My page' }], circle: [{ name: 'Maya', practices_together: 4 }] })
@@ -61,4 +62,46 @@ it('offers retry after loading fails instead of asking with an empty context', a
   expect(summary().disabled).toBe(true)
   fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
   await waitFor(() => expect(summary().disabled).toBe(false))
+})
+
+it('grounds any question in the current user’s full profile and refreshes edits', async () => {
+  mocks.profile = { id: 'me', name: 'Sara', personal_interests: ['yoga'], prompt_weekend: 'Yoga on weekends' }
+  const view = render(<AskMutuSheet open userId="me" onClose={() => {}} />)
+  await waitFor(() => expect(summary().disabled).toBe(false))
+  fireEvent.click(summary())
+  await screen.findByText('Ready to help.')
+  expect(mocks.ask.mock.calls[0][1].me).toMatchObject({ personal_interests: ['Yoga'], prompt_weekend: 'Yoga on weekends' })
+  mocks.profile = { id: 'me', name: 'Sara', personal_interests: ['cooking'], prompt_weekend: 'Cooking with friends' }
+  view.rerender(<AskMutuSheet open userId="me" onClose={() => {}} />)
+  await waitFor(() => expect(summary().disabled).toBe(false))
+  fireEvent.click(summary())
+  await screen.findByText('Ready to help.')
+  expect(mocks.ask.mock.calls[1][1].me.personal_interests).toEqual(['Cooking'])
+  expect(JSON.stringify(mocks.ask.mock.calls[1][1])).not.toContain('Yoga')
+})
+it('omits a stale auth profile belonging to a different account', async () => {
+  mocks.profile = { id: 'old', name: 'Old user', prompt_weekend: 'Private weekend' }
+  render(<AskMutuSheet open userId="new" onClose={() => {}} />)
+  await waitFor(() => expect(summary().disabled).toBe(false))
+  fireEvent.click(summary())
+  await screen.findByText('Ready to help.')
+  expect(mocks.ask.mock.calls[0][1].me).toBeNull()
+  expect(mocks.ask.mock.calls[0][1].unavailable_context).toContain('profile')
+  expect(JSON.stringify(mocks.ask.mock.calls[0][1])).not.toContain('Private weekend')
+})
+it('discards an old account’s response that arrives after switching accounts', async () => {
+  let resolve
+  mocks.ask.mockReturnValueOnce(new Promise(r => { resolve = r }))
+  mocks.profile = { id: 'first', personal_interests: ['yoga'] }
+  const view = render(<AskMutuSheet open userId="first" onClose={() => {}} />)
+  await waitFor(() => expect(summary().disabled).toBe(false))
+  fireEvent.click(summary())
+  mocks.profile = { id: 'second', personal_interests: ['cooking'] }
+  view.rerender(<AskMutuSheet open userId="second" onClose={() => {}} />)
+  await waitFor(() => expect(summary().disabled).toBe(false))
+  await act(async () => resolve({ answer: 'Old private answer' }))
+  expect(screen.queryByText('Old private answer')).toBeNull()
+  fireEvent.click(summary())
+  await screen.findByText('Ready to help.')
+  expect(mocks.ask.mock.calls[1][1].me.personal_interests).toEqual(['Cooking'])
 })
