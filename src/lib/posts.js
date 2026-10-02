@@ -92,7 +92,10 @@ export async function updatePost(postId, userId, fields) {
   if (!isSupabaseConfigured) return { data: null, error: new Error('Supabase not configured.') }
 
   const { data: current, error: readError } = await supabase.from('posts').select('*').eq('id', postId).eq('created_by', userId).single()
-  if (readError) return { data: null, error: readError }
+  // PGRST116 means the query matched no row. Postgres phrases that as
+  // "Cannot coerce the result to a single JSON object", which reached authors
+  // verbatim in the edit sheet. Say what it means for their post instead.
+  if (readError) return { data: null, error: noRow(readError) ? new Error('This post is not available to edit any more. Go back to your posts and open it again.') : readError }
   if (current.buddy_post_id) {
     const { error } = await supabase.rpc('buddy_public_update', { p_post: postId, p_fields: fields })
     if (error) return { data: null, error }
@@ -120,8 +123,21 @@ export async function updatePost(postId, userId, fields) {
     .select()
     .single()
 
+  // No row came back: the database ran the update but changed nothing, because
+  // a row rule refused it. A post that belongs to a program is only editable
+  // through its own route, so take that route once before giving up.
+  if (noRow(error)) {
+    const { error: viaProgram } = await supabase.rpc('buddy_public_update', { p_post: postId, p_fields: fields })
+    if (!viaProgram) return { data: rowToCard(await withCreator(current)), error: null }
+    return { data: null, error: new Error('We could not save this post. It may have been withdrawn, or it belongs to a program that manages its own posts.') }
+  }
   if (error) return { data: null, error }
   return { data: rowToCard(await withCreator(data)), error: null }
+}
+
+// True when PostgREST refused because the query matched no row.
+function noRow(error) {
+  return Boolean(error) && (error.code === 'PGRST116' || /coerce the result to a single JSON object/i.test(error.message || ''))
 }
 
 /**

@@ -49,3 +49,32 @@ it('preserves ordinary post edit, removal and connection behavior', async () => 
   expect(chain.upsert).toHaveBeenCalled()
   expect(rpc).not.toHaveBeenCalled()
 })
+
+const noRow = { code: 'PGRST116', message: 'Cannot coerce the result to a single JSON object' }
+it('explains a vanished post instead of showing the Postgres phrasing', async () => {
+  chain.single.mockResolvedValueOnce({ data: null, error: noRow })
+  const result = await updatePost('gone', 'owner', { need_text: 'After' })
+  expect(result.data).toBe(null)
+  expect(result.error.message).toMatch(/not available to edit/i)
+  expect(result.error.message).not.toMatch(/coerce/i)
+})
+it('saves through the program route when a row rule refuses the ordinary edit', async () => {
+  chain.single
+    .mockResolvedValueOnce({ data: { id: 'ordinary', created_by: 'owner', need_text: 'Before' } })
+    .mockResolvedValueOnce({ data: null, error: noRow })
+    .mockResolvedValueOnce({ data: { id: 'ordinary', created_by: 'owner', need_text: 'After' } })
+  const fields = { need_text: 'After' }
+  const result = await updatePost('ordinary', 'owner', fields)
+  expect(rpc).toHaveBeenCalledWith('buddy_public_update', { p_post: 'ordinary', p_fields: fields })
+  expect(result.error).toBe(null)
+})
+it('says what happened when neither route can save the post', async () => {
+  chain.single
+    .mockResolvedValueOnce({ data: { id: 'ordinary', created_by: 'owner' } })
+    .mockResolvedValueOnce({ data: null, error: noRow })
+  rpc.mockResolvedValue({ error: new Error('Post not available.') })
+  const result = await updatePost('ordinary', 'owner', { need_text: 'After' })
+  expect(result.data).toBe(null)
+  expect(result.error.message).toMatch(/could not save this post/i)
+  expect(result.error.message).not.toMatch(/coerce/i)
+})
