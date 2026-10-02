@@ -53,3 +53,36 @@ export async function readSharedProfiles(client, userId) {
   } catch (error) { return { data: [], error } }
 }
 
+
+// A specific chat can open either an explicitly shared profile or a genuinely
+// public profile. A named post is not consent to reveal a private full profile.
+export async function readChatProfile(client, userId, matchId) {
+  const missing = { status: 404, error: 'This profile is unavailable.' }
+  const failed = { status: 503, error: 'The profile could not load. Please try again.' }
+  const matchResult = await client.from('matches').select('id, requester_user_id, helper_user_id, status, identity_reveal_status, source, post_id').eq('id', matchId).maybeSingle()
+  if (matchResult.error) return failed
+  const match = matchResult.data
+  if (!match || !['active', 'completed'].includes(match.status)) return missing
+  const peerId = match.requester_user_id === userId ? match.helper_user_id : match.helper_user_id === userId ? match.requester_user_id : null
+  if (!peerId || peerId === userId) return missing
+  const blocked = await client.from('blocks').select('blocker_id').or(`and(blocker_id.eq.${userId},blocked_user_id.eq.${peerId}),and(blocker_id.eq.${peerId},blocked_user_id.eq.${userId})`).limit(1)
+  if (blocked.error) return failed
+  if (blocked.data?.length) return missing
+  const result = await client.from('profiles').select('*').eq('id', peerId).maybeSingle()
+  if (result.error) return failed
+  if (!result.data) return missing
+  const row = result.data
+  const shared = match.identity_reveal_status === 'accepted'
+  let publicAccess = false
+  if (!shared && row.visibility === 'public' && (match.source || 'post') === 'post' && match.post_id) {
+    const post = await client.from('posts').select('created_by, is_anonymous').eq('id', match.post_id).maybeSingle()
+    if (post.error) return failed
+    publicAccess = Boolean(post.data && !(post.data.created_by === peerId && post.data.is_anonymous === true))
+  }
+  if (!shared && !publicAccess) return { status: 403, error: 'Their full profile has not been shared yet.', code: 'profile_sharing_required' }
+  // Full member-authored profile, without AI length limits or account metadata.
+  const fields = ['name', 'avatar_url', 'program', 'graduation_year', 'location', 'career_stage', 'title', 'company', 'professional_headline', 'headline', 'industries_known', 'industries_exploring', 'industry_interests', 'expertise_offered', 'help_wanted', 'can_help_with', 'skills_to_learn', 'personal_interests', 'activity_preferences', 'helping_preferences', 'networking_intent', 'prompt_ask_me', 'prompt_weekend', 'prompt_seeking']
+  const profile = Object.fromEntries(fields.filter(key => row[key] != null).map(key => [key, row[key]]))
+  if (shared && row.email) profile.email = row.email
+  return { status: 200, profile, access: shared ? 'shared' : 'public' }
+}

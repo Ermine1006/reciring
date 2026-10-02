@@ -379,6 +379,7 @@ function AppShell() {
         } else if (isPeerNamePublic(data[i], m.peerId, p.visibility)) {
           m.peerName = p.name.trim().split(/\s+/)[0]; m.peerAvatarUrl = avatar
           m.peerNamePublic = true
+          m.peerProfilePublic = p.visibility === 'public'
         }
       })
     }

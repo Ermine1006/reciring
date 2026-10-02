@@ -1,264 +1,68 @@
-import { motion, AnimatePresence } from 'framer-motion'
+import { useEffect, useRef, useState } from 'react'
 import PeerAvatar from './PeerAvatar'
+import { fetchChatProfile } from '../lib/askMutuSharedProfiles'
+import { labelForTopic, labelForIndustry, labelForInterest, labelForActivity, labelForHelping, PROGRAMS, CAREER_STAGES } from '../data/profileTaxonomy'
+import './PeerProfileCard.css'
 
-const C = {
-  gold:      '#C9A33B',
-  goldDark:  '#A6822A',
-  goldLight: '#E8D9A7',
-  goldBg:    '#F8F3E5',
-  text:      '#111111',
-  textSub:   '#6B7280',
-  textMuted: '#9CA3AF',
-  white:     'var(--mutu-surface, #FFFFFF)',
-  border:    '#F0ECE4',
-  black:     '#111111',
-}
+const labelled = (values, label = value => value) => Array.isArray(values) ? values.filter(v => typeof v === 'string').map(v => v.startsWith('custom:') ? v.slice(7) : label(v)) : []
 
-const STATUS_LABEL = {
-  active:    { text: 'Active match',    color: '#2E6B4F', bg: '#EDF3EE' },
-  completed: { text: 'Completed',       color: '#15803D', bg: '#EDF3EE' },
-  cancelled: { text: 'Cancelled',       color: '#B45309', bg: '#FEF3C7' },
-  unmatched: { text: 'Unmatched',       color: '#9CA3AF', bg: '#F3F4F6' },
-}
-
-/**
- * Right-side slide-out card showing the peer's revealed identity.
- * Only renders when caller knows reveal status === 'accepted'.
- *
- * Props:
- *   open        — bool
- *   onClose     — close handler
- *   match       — UI match object (id, status, request)
- *   peerProfile — { id, name, email, avatar_url, program } | null
- */
-export default function PeerProfileCard({ open, onClose, match, peerProfile }) {
-  const status = STATUS_LABEL[match?.status] || STATUS_LABEL.active
-  const avatarSeed = peerProfile?.avatar_url || match?.id || 'peer'
-
-  return (
-    <AnimatePresence>
-      {open && (
-        <>
-          {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            onClick={onClose}
-            style={{
-              position: 'absolute', inset: 0, zIndex: 90,
-              background: 'rgba(17,17,17,0.4)',
-              backdropFilter: 'blur(3px)',
-            }}
-          />
-          {/* Slide-out panel */}
-          <motion.aside
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'spring', stiffness: 340, damping: 34 }}
-            role="dialog"
-            aria-modal="true"
-            style={{
-              position: 'absolute', top: 0, right: 0, bottom: 0,
-              zIndex: 91,
-              width: 'min(86%, 320px)',
-              background: C.white,
-              borderLeft: `1px solid ${C.border}`,
-              boxShadow: '-12px 0 40px rgba(0,0,0,0.16)',
-              display: 'flex', flexDirection: 'column',
-              overflow: 'hidden',
-            }}
-          >
-            {/* Header — black bar with gold accent */}
-            <div style={{
-              background: C.black,
-              padding: '18px 20px 20px',
-              position: 'relative',
-              borderBottom: `2px solid ${C.gold}`,
-            }}>
-              <button data-mutu-glass=""
-                type="button"
-                onClick={onClose}
-                aria-label="Close profile"
-                style={{
-                  position: 'absolute', top: 14, right: 14,
-                  width: 30, height: 30, borderRadius: '50%',
-                  background: 'rgba(255,255,255,0.08)',
-                  border: 'none', cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.goldLight} strokeWidth={2.2} strokeLinecap="round">
-                  <path d="M6 6l12 12M18 6L6 18" />
-                </svg>
-              </button>
-              <p style={{
-                fontSize: 10, fontWeight: 600,
-                letterSpacing: '0.22em', textTransform: 'uppercase',
-                color: C.gold,
-                fontFamily: 'Inter, system-ui, sans-serif',
-                margin: 0,
-              }}>
-                Identity revealed
-              </p>
-              <p style={{
-                fontSize: 12, color: 'rgba(255,255,255,0.55)',
-                fontFamily: 'Inter, system-ui, sans-serif',
-                marginTop: 6, lineHeight: 1.5,
-              }}>
-                Both of you agreed to share names.
-              </p>
-            </div>
-
-            {/* Body */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '24px 22px 28px' }}>
-              {/* Avatar + name */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 22 }}>
-                <div style={{
-                  padding: 3,
-                  borderRadius: '50%',
-                  background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`,
-                  boxShadow: '0 6px 20px rgba(201,163,59,0.25)',
-                  marginBottom: 14,
-                }}>
-                  <div style={{
-                    background: C.white,
-                    borderRadius: '50%',
-                    padding: 2,
-                  }}>
-                    <PeerAvatar name={peerProfile?.name || 'Peer'} seed={avatarSeed} size={72} />
-                  </div>
-                </div>
-
-                <h2 style={{
-                  fontSize: 20, fontWeight: 600, color: C.text,
-                  fontFamily: 'Fraunces, Georgia, serif',
-                  margin: 0, letterSpacing: '-0.01em',
-                  textAlign: 'center',
-                }}>
-                  {peerProfile?.name || 'Peer'}
-                </h2>
-                {peerProfile?.program && (
-                  <p style={{
-                    fontSize: 12, color: C.textSub,
-                    fontFamily: 'Inter, system-ui, sans-serif',
-                    margin: '4px 0 0',
-                  }}>
-                    {peerProfile.program}
-                  </p>
-                )}
-              </div>
-
-              {/* Info rows */}
-              <div style={{
-                background: C.goldBg,
-                border: `1px solid ${C.goldLight}`,
-                borderRadius: 16,
-                padding: '4px 4px',
-                marginBottom: 16,
-              }}>
-                <InfoRow label="School email" value={peerProfile?.email || 'Not provided'} copyable />
-                <Divider />
-                <InfoRow label="Program" value={peerProfile?.program || 'Not shared'} />
-              </div>
-
-              {/* Match status pill */}
-              <div style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '12px 14px',
-                borderRadius: 12,
-                background: status.bg,
-                border: `1px solid ${status.color}30`,
-              }}>
-                <span style={{
-                  fontSize: 11, fontWeight: 600,
-                  letterSpacing: '0.12em', textTransform: 'uppercase',
-                  color: C.textSub,
-                  fontFamily: 'Inter, system-ui, sans-serif',
-                }}>
-                  Match status
-                </span>
-                <span style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 6,
-                  fontSize: 12, fontWeight: 600,
-                  color: status.color,
-                  fontFamily: 'Inter, system-ui, sans-serif',
-                }}>
-                  <span style={{
-                    width: 7, height: 7, borderRadius: '50%',
-                    background: status.color,
-                  }} />
-                  {status.text}
-                </span>
-              </div>
-
-              <p style={{
-                marginTop: 18, fontSize: 11, color: C.textMuted,
-                lineHeight: 1.55, textAlign: 'center',
-                fontFamily: 'Inter, system-ui, sans-serif',
-              }}>
-                Reach out respectfully. Identity reveal is a trust signal, keep it that way.
-              </p>
-            </div>
-          </motion.aside>
-        </>
-      )}
-    </AnimatePresence>
-  )
-}
-
-function InfoRow({ label, value, copyable }) {
-  return (
-    <div style={{
-      padding: '12px 14px',
-      display: 'flex', flexDirection: 'column', gap: 3,
-    }}>
-      <p style={{
-        fontSize: 10, fontWeight: 600,
-        letterSpacing: '0.14em', textTransform: 'uppercase',
-        color: '#A6822A',
-        fontFamily: 'Inter, system-ui, sans-serif',
-        margin: 0,
-      }}>
-        {label}
-      </p>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-        <p style={{
-          fontSize: 13.5, fontWeight: 500, color: '#111',
-          fontFamily: 'Inter, system-ui, sans-serif',
-          margin: 0, wordBreak: 'break-all', lineHeight: 1.4,
-        }}>
-          {value}
-        </p>
-        {copyable && value && value !== 'Not provided' && (
-          <button data-mutu-glass=""
-            type="button"
-            onClick={() => {
-              try { navigator.clipboard?.writeText(value) } catch {}
-            }}
-            title="Copy"
-            style={{
-              flexShrink: 0,
-              width: 28, height: 28, borderRadius: 8,
-              background: '#FFFFFF',
-              border: '1px solid #E8D9A7',
-              cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#A6822A" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <rect x="9" y="9" width="13" height="13" rx="2" />
-              <path d="M5 15V5a2 2 0 012-2h10" />
-            </svg>
-          </button>
-        )}
+export default function PeerProfileCard({ open, onClose, match, currentUserId, onRequestReveal }) {
+  const dialog = useRef(null)
+  const [result, setResult] = useState(null)
+  const [retry, setRetry] = useState(0)
+  const scope = `${currentUserId}:${match?.id}:${match?.reveal?.status}:${match?.status}:${match?.peerProfilePublic}:${retry}`
+  const current = result?.scope === scope ? result : null
+  useEffect(() => {
+    if (!open) { setResult(null); return }
+    const target = dialog.current
+    const previous = document.activeElement
+    if (target && !target.open) target.showModal ? target.showModal() : target.setAttribute('open', '')
+    target?.querySelector('button')?.focus()
+    let cancelled = false
+    setResult(null)
+    fetchChatProfile(match?.id, currentUserId).then(data => { if (!cancelled) setResult({ ...data, scope }) })
+    return () => { cancelled = true; previous?.focus?.() }
+  }, [open, scope]) // eslint-disable-line react-hooks/exhaustive-deps
+  if (!open) return null
+  const p = current?.profile
+  const shared = current?.access === 'shared'
+  return <dialog ref={dialog} className="peer-full-profile" aria-label="Member profile" onCancel={e => { e.preventDefault(); onClose() }} onClick={e => { if (e.target === dialog.current) onClose() }}>
+    <div className="peer-full-profile__layout">
+      <header><strong>Profile</strong><button type="button" aria-label="Close profile" onClick={onClose}>×</button></header>
+      <div className="peer-full-profile__body">
+        {!current ? <p role="status">Loading profile…</p> : current.error ? <div role="alert">
+          <p>{current.error}</p>
+          {current.code === 'profile_sharing_required' ? <>
+            <p>A public name does not open a private profile. Both people can choose to share their profiles.</p>
+            {onRequestReveal && <button type="button" className="peer-full-profile__action" onClick={async () => { await onRequestReveal(); onClose() }}>Request profile sharing</button>}
+          </> : <button type="button" className="peer-full-profile__action" onClick={() => setRetry(n => n + 1)}>Try again</button>}
+        </div> : p && <>
+          <div className="peer-full-profile__hero">
+            <PeerAvatar name={p.name || 'Member'} seed={p.avatar_url || match?.id} size={72} />
+            <h2>{p.name || 'Member'}</h2>
+            <p>{shared ? 'Shared with you' : 'Public profile'}</p>
+            {(p.professional_headline || p.headline) && <p className="peer-full-profile__headline">{p.professional_headline || p.headline}</p>}
+          </div>
+          <section><h3>Background</h3><dl>
+            {[['Program', PROGRAMS.find(x => x.id === p.program)?.label || p.program], ['Graduation year', p.graduation_year], ['Role', p.title], ['Company', p.company], ['Location', p.location], ['Career stage', CAREER_STAGES.find(x => x.id === p.career_stage)?.label || p.career_stage], ['School email', shared && p.email]].filter(([, value]) => value).map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
+          </dl></section>
+          <Tags title="Industry experience" values={labelled(p.industries_known ?? p.industry_interests, labelForIndustry)} />
+          <Tags title="Industries I’m exploring" values={labelled(p.industries_exploring, labelForIndustry)} />
+          <Tags title="You can ask me about" values={labelled(p.expertise_offered, labelForTopic)} />
+          <Tags title="I’d like help with" values={labelled(p.help_wanted, labelForTopic)} />
+          <Tags title="Beyond work" values={labelled(p.personal_interests, labelForInterest)} />
+          <Tags title="Activities I’m up for" values={labelled(p.activity_preferences, labelForActivity)} />
+          <Tags title="Ways to connect" values={labelled(p.helping_preferences ?? p.can_help_with, labelForHelping)} />
+          <Tags title="Looking to connect" values={labelled(p.networking_intent)} />
+          <Tags title="Support I’m looking for" values={labelled(p.skills_to_learn)} />
+          {[['Ask me about', p.prompt_ask_me], ['On weekends', p.prompt_weekend], ['I’d love to find people for', p.prompt_seeking]].filter(([, value]) => value).map(([label, value]) => <section key={label}><h3>{label}</h3><p className="peer-full-profile__prompt">{value}</p></section>)}
+          <p className="peer-full-profile__note">Details this member has added to their profile.</p>
+        </>}
       </div>
     </div>
-  )
+  </dialog>
 }
-
-function Divider() {
-  return <div style={{ height: 1, background: 'rgba(201,163,59,0.25)', margin: '0 14px' }} />
+function Tags({ title, values }) {
+  if (!values.length) return null
+  return <section><h3>{title}</h3><div className="peer-full-profile__tags">{values.map((value, i) => <span key={`${value}:${i}`}>{value}</span>)}</div></section>
 }

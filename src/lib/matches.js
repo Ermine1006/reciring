@@ -176,7 +176,7 @@ export async function openOrCreateDirectMatch({ myId, peerId, eventId }) {
  *     A public-profile member who posted anonymously stays anonymous.
  *   - peer offered help on my post → their profile is public.
  * Only post matches; other sources keep their own identity flows.
- * Emails and the full profile still wait for the explicit reveal.
+ * Emails and private full profiles still wait for the explicit reveal.
  */
 export function isPeerNamePublic(row, peerId, peerVisibility) {
   if ((row.source || 'post') !== 'post' || !row.post || !peerId) return false

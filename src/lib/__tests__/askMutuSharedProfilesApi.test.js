@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-const mocks = vi.hoisted(() => ({ create: vi.fn(), user: vi.fn(), read: vi.fn() }))
+const mocks = vi.hoisted(() => ({ create: vi.fn(), user: vi.fn(), read: vi.fn(), chat: vi.fn() }))
 vi.mock('@supabase/supabase-js', () => ({ createClient: mocks.create }))
-vi.mock('../../../api/_lib/shared-profiles.js', () => ({ readSharedProfiles: mocks.read }))
+vi.mock('../../../api/_lib/shared-profiles.js', () => ({ readSharedProfiles: mocks.read, readChatProfile: mocks.chat }))
 import handler from '../../../api/shared-profiles'
 const res = () => ({ setHeader: vi.fn(), status: vi.fn().mockReturnThis(), json: vi.fn(), end: vi.fn() })
 beforeEach(() => {
@@ -40,4 +40,24 @@ it('returns an unavailable error without leaking database details', async () => 
   await handler({ method: 'GET', headers: { authorization: 'Bearer valid' } }, response)
   expect(response.status).toHaveBeenCalledWith(503)
   expect(JSON.stringify(response.json.mock.calls)).not.toContain('Sensitive')
+})
+
+it('scopes a chat profile request to the verified viewer and validates its conversation id', async () => {
+  const id = '00000000-0000-4000-8000-000000000001'
+  mocks.chat.mockResolvedValue({ status: 200, profile: { name: 'Shared member' }, access: 'shared' })
+  const response = res()
+  await handler({ method: 'GET', headers: { authorization: 'Bearer valid' }, query: { matchId: id, userId: 'someone-else' } }, response)
+  expect(mocks.chat.mock.calls[0].slice(1)).toEqual(['actual-user', id])
+  expect(response.json).toHaveBeenCalledWith({ profile: { name: 'Shared member' }, access: 'shared' })
+  const invalid = res()
+  await handler({ method: 'GET', headers: { authorization: 'Bearer valid' }, query: { matchId: ['bad', 'input'] } }, invalid)
+  expect(invalid.status).toHaveBeenCalledWith(400)
+  expect(mocks.chat).toHaveBeenCalledTimes(1)
+})
+it('returns a consent-required result without any private profile fields', async () => {
+  mocks.chat.mockResolvedValue({ status: 403, error: 'Not shared.', code: 'profile_sharing_required' })
+  const response = res()
+  await handler({ method: 'GET', headers: { authorization: 'Bearer valid' }, query: { matchId: '00000000-0000-4000-8000-000000000001' } }, response)
+  expect(response.status).toHaveBeenCalledWith(403)
+  expect(response.json).toHaveBeenCalledWith({ error: 'Not shared.', code: 'profile_sharing_required' })
 })

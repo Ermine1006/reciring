@@ -261,6 +261,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
 
   const reveal = match?.reveal || { status: 'none', iAmRequester: false }
   const isRevealed = reveal.status === 'accepted'
+  const canOpenProfile = isRevealed || Boolean(match?.peerNamePublic)
   const isPendingForMe = reveal.status === 'pending' && !reveal.iAmRequester
   const isPendingByMe  = reveal.status === 'pending' && reveal.iAmRequester
   const wasDeclinedByPeer = reveal.status === 'declined' && reveal.iAmRequester
@@ -350,7 +351,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
           const displayName = peerName || 'Anonymous Peer'
           const subtitle = explicitlyRevealed
             ? 'Identity revealed'
-            : (revealed && peerProfile?.program) || (match?.peerNamePublic ? 'Public profile' : 'Active match')
+            : (revealed && peerProfile?.program) || (match?.peerNamePublic ? (match.peerProfilePublic === false ? 'Public name' : 'Public profile') : 'Active match')
           const subtitleColor = explicitlyRevealed ? C.goldDark : '#2E6B4F'
 
           const HeaderInner = (
@@ -373,8 +374,8 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
             </>
           )
 
-          // Tappable header opens the profile card only when explicit reveal accepted
-          if (explicitlyRevealed) {
+          // The server checks whether this is public or explicitly shared.
+          if (canOpenProfile) {
             return (
               <button
                 type="button"
@@ -455,7 +456,7 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
                   Review reveal request
                 </button>
               )}
-              {isRevealed && (
+              {canOpenProfile && (
                 <button
                   type="button"
                   onClick={() => { setShowSafetyMenu(false); setShowProfileCard(true) }}
@@ -1097,10 +1098,11 @@ export default function ChatView({ match, messages, onSend, onProposeMeeting, on
 
       {/* Identity reveal — right-side profile card */}
       <PeerProfileCard
-        open={showProfileCard && isRevealed}
+        open={showProfileCard && canOpenProfile}
         onClose={() => setShowProfileCard(false)}
         match={match}
-        peerProfile={peerProfile}
+        currentUserId={currentUserId}
+        onRequestReveal={!isPendingByMe ? onRequestReveal : undefined}
       />
     </div>
   )
