@@ -191,7 +191,7 @@ export default async function handler(req, res) {
         max_tokens: 1500,
         temperature: 0.4,
         messages: [
-          { role: 'system', content: system + '\n' + finalChecks + '\nNever use em dashes (U+2014). Use commas, periods or separate sentences instead.' },
+          { role: 'system', content: system + '\nNever use em dashes (U+2014). Use commas, periods or separate sentences instead.' },
           { role: 'user',   content: userMessage },
         ],
       }),
@@ -277,7 +277,7 @@ Rules: Use ONLY facts present in the note. Do not invent names, companies, needs
         max_tokens: 1200,
         temperature: 0.2,
         messages: [
-          { role: 'system', content: system + '\n' + finalChecks + '\nNever use em dashes (U+2014). Use commas, periods or separate sentences instead.' },
+          { role: 'system', content: system + '\nNever use em dashes (U+2014). Use commas, periods or separate sentences instead.' },
           { role: 'user',   content: user },
         ],
       }),
@@ -504,7 +504,7 @@ Be genuinely helpful: whenever there's any reasonable signal, suggest at least o
         max_tokens: 400,
         temperature: 0.3,
         messages: [
-          { role: 'system', content: system + '\n' + finalChecks + '\nNever use em dashes (U+2014). Use commas, periods or separate sentences instead.' },
+          { role: 'system', content: system + '\nNever use em dashes (U+2014). Use commas, periods or separate sentences instead.' },
           { role: 'user', content: known },
         ],
       }),
@@ -595,7 +595,7 @@ Output ONLY the answer — no quotes, no label, no trailing period needed. One l
         max_tokens: 200,
         temperature: 0.7,
         messages: [
-          { role: 'system', content: system + '\n' + finalChecks + '\nNever use em dashes (U+2014). Use commas, periods or separate sentences instead.' },
+          { role: 'system', content: system + '\nNever use em dashes (U+2014). Use commas, periods or separate sentences instead.' },
           { role: 'user', content: userMessage },
         ],
       }),

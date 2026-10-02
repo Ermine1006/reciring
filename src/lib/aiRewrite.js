@@ -14,17 +14,25 @@ export async function rewriteText({ kind = 'post', text, context, maxChars } = {
   const source = String(text || '').trim()
   if (!source) return { text: null, error: new Error('Nothing to rewrite.') }
 
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 45000)
   try {
     const res = await fetch(apiUrl('/api/ai-rewrite'), {
+      signal: controller.signal,
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ kind, text: source, context, maxChars }),
     })
     const data = await res.json().catch(() => ({}))
     if (!res.ok) return { text: null, error: new Error(data.error || 'Rewrite failed.') }
-    return { text: withoutEmDashes(data.text) || null, error: null }
+    if (typeof data.text !== 'string' || !data.text.trim()) {
+      return { text: null, error: new Error('No rewrite returned. Please try again.') }
+    }
+    return { text: withoutEmDashes(data.text).trim(), error: null }
   } catch (err) {
     return { text: null, error: err instanceof Error ? err : new Error('Network error.') }
+  } finally {
+    clearTimeout(timeout)
   }
 }
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { HELP_TYPES, INDUSTRIES, TIME_OPTIONS } from '../data/requestOptions'
@@ -270,41 +270,60 @@ export default function SubmitRequest({ onSubmitted, prefill = null, demoMode = 
   const [improvingField, setImprovingField] = useState(null) // 'details' | 'offer' | null
   // { field, prev } — pre-rewrite text for Undo; presence drives the toast.
   const [rewriteUndo, setRewriteUndo] = useState(null)
+  const [rewriteFeedback, setRewriteFeedback] = useState(null)
+  const currentDraft = useRef({ title, details, offers })
+  currentDraft.current = { title, details, offers }
 
   const canImprove = (field) =>
     !improvingField &&
     (field === 'details' ? Boolean(details.trim() || title.trim()) : Boolean(offers.trim()))
 
   const handleImprove = async (field) => {
-    if (demoMode) { setSubmitError('AI rewriting is unavailable in this sample. You can edit the text yourself.'); return }
-    if (!canImprove(field)) return
-    setImprovingField(field)
-    setSubmitError(null)
-    const isDetails = field === 'details'
-    // Details: rewrite the description (expand the title if it's empty).
-    // Offer: rewrite what they're happy to help with.
-    const source = isDetails ? (details.trim() || title.trim()) : offers.trim()
-    const { text, error } = await rewriteText({
-      kind: isDetails ? 'post' : 'post_offer',
-      text: source,
-      maxChars: isDetails ? DETAILS_MAX : OFFERS_MAX,
-      // Pass the sibling field so the two stay coherent.
-      context: isDetails
-        ? { title: title.trim(), helpType, industry, time, offer: offers.trim() }
-        : { title: title.trim(), helpType, industry, time, need: details.trim() },
-    })
-    setImprovingField(null)
-    if (error || !text) {
-      setSubmitError("Couldn't rewrite just now, your text is unchanged.")
+    if (demoMode) {
+      setRewriteFeedback({ field, error: true, message: 'AI rewriting is unavailable in this sample. You can edit the text yourself.' })
       return
     }
-    setRewriteUndo({ field, prev: isDetails ? details : offers })
-    ;(isDetails ? setDetails : setOffers)(text)
+    if (!canImprove(field)) return
+    setImprovingField(field)
+    setRewriteFeedback(null)
+    setRewriteUndo(null)
+    const isDetails = field === 'details'
+    const previous = isDetails ? details : offers
+    const source = isDetails ? (details.trim() || title.trim()) : offers.trim()
+    try {
+      const { text, error } = await rewriteText({
+        kind: isDetails ? 'post' : 'post_offer',
+        text: source,
+        maxChars: isDetails ? DETAILS_MAX : OFFERS_MAX,
+        context: isDetails
+          ? { title: title.trim(), helpType, industry, time, offer: offers.trim() }
+          : { title: title.trim(), helpType, industry, time, need: details.trim() },
+      })
+      if (error || !text) throw error || new Error('Empty rewrite')
+      const current = currentDraft.current
+      if ((isDetails ? current.details : current.offers) !== previous ||
+          (isDetails && !details.trim() && current.title !== title)) {
+        setRewriteFeedback({ field, message: 'You edited your text while AI was working. Your edits were kept. Try again for a new suggestion.' })
+        return
+      }
+      if (text === previous) {
+        setRewriteFeedback({ field, message: 'AI kept your wording as it is. You can edit it or try again.' })
+        return
+      }
+      setRewriteUndo({ field, prev: previous })
+      ;(isDetails ? setDetails : setOffers)(text)
+      setRewriteFeedback({ field, message: 'Wording updated. Review it before posting.' })
+    } catch {
+      setRewriteFeedback({ field, error: true, message: "Couldn't rewrite just now. Your text is unchanged. Try again or keep editing." })
+    } finally {
+      setImprovingField(null)
+    }
   }
 
   const undoRewrite = () => {
     if (rewriteUndo) (rewriteUndo.field === 'details' ? setDetails : setOffers)(rewriteUndo.prev)
     setRewriteUndo(null)
+    setRewriteFeedback(null)
   }
 
   // Auto-dismiss the confirmation toast; re-arms on each new rewrite.
@@ -319,8 +338,10 @@ export default function SubmitRequest({ onSubmitted, prefill = null, demoMode = 
     const busyThis = improvingField === field
     const can = canImprove(field)
     return (
+      <>
       <button data-mutu-glass=""
         type="button"
+        aria-busy={busyThis}
         onClick={() => handleImprove(field)}
         disabled={!can}
         className="mt-2 inline-flex items-center gap-2 transition-all duration-150 active:scale-[0.98]"
@@ -333,7 +354,7 @@ export default function SubmitRequest({ onSubmitted, prefill = null, demoMode = 
           fontSize: 12.5, fontWeight: 700, fontFamily: 'Inter, system-ui, sans-serif',
           boxShadow: can ? '0 2px 8px rgba(201,163,59,0.18)' : 'none',
         }}
-        title="Let AI rewrite this to get more replies"
+        title="Make your wording clearer with AI"
       >
         {busyThis ? (
           <>
@@ -354,6 +375,13 @@ export default function SubmitRequest({ onSubmitted, prefill = null, demoMode = 
           </>
         )}
       </button>
+      {rewriteFeedback?.field === field && (
+        <p role={rewriteFeedback.error ? 'alert' : 'status'}
+          style={{ marginTop: 8, fontSize: 12, lineHeight: 1.5, color: rewriteFeedback.error ? '#991B1B' : C.warmDark }}>
+          {rewriteFeedback.message}
+        </p>
+      )}
+      </>
     )
   }
 
