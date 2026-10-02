@@ -81,6 +81,7 @@ it.each([
   expect(messages[1].content).toContain(question)
   expect(messages[1].content).toContain(JSON.stringify(context))
   expect(messages[0].content).toContain('No profile is required')
+  expect(messages[0].content).toContain('Do not append a profile-status disclaimer')
   expect(messages[0].content).toContain('Use the appropriate source, not the profile by default')
   expect(messages[0].content).toContain('answer the general part directly')
   expect(messages[0].content).toContain('General explanations, hypothetical examples and generic writing do not require profile evidence')
