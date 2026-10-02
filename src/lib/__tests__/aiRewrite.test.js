@@ -23,7 +23,12 @@ it.each([
   expect(res.status).toHaveBeenCalledWith(200)
   expect(res.json.mock.calls[0][0][key]).toBeTruthy()
   const { messages } = JSON.parse(fetchMock.mock.calls[0][1].body)
-  if (mode.mode !== 'assistant') expect(messages[0].content).not.toContain('Final response checks:')
+  if (mode.kind === 'post_offer') {
+    expect(messages[0].content).toContain('never the price of receiving help')
+    expect(messages[0].content).toContain('Do not turn the neighboring request')
+    expect(messages[0].content).not.toContain('however I can down the line')
+  }
+  if (mode.mode !== 'assistant') expect(messages[0].content).not.toContain('Before sending your answer, ground every PERSON-SPECIFIC')
 })
 it.each([{}, { text: '' }, { text: 123 }])('rejects an empty or malformed successful response: %j', async data => {
   vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => data })))
