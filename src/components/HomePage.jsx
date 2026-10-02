@@ -73,7 +73,7 @@ function fmtEventDate(iso) {
 export default function HomePage({
   profile, viewerProfile, userId, requests = [],
   onOpenDiscover, onOpenEvent, onOpenProfile, onOpenPost, onOpenNetworking, onOpenEvents, onAskMutu,
-  onSharePastPost,
+  onSharePastPost, onOpenMatches,
 }) {
   const me = profile || {}
 
@@ -260,7 +260,7 @@ export default function HomePage({
         </section>
         <aside className="mutu-home-secondary" aria-label="Connections and assistance">
         {/* ── People you should meet (Smart Match) ── */}
-        <SmartMatchSection />
+        <SmartMatchSection key={userId} onOpenMatches={onOpenMatches} />
 
         {/* ── Ask Mutu — AI assistant at the bottom of Home ── */}
         <button data-mutu-glass="" type="button" onClick={() => onAskMutu?.()}

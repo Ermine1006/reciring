@@ -1211,6 +1211,7 @@ function AppShell() {
               onOpenEvents={() => { setEventsTopView('discover'); setViewingEventId(null); setTab('events') }}
               onAskMutu={() => setAskMutuOpen(true)}
               onSharePastPost={handleSharePastPost}
+              onOpenMatches={() => { loadMatches(); setChatMatchId(null); setTab('matches') }}
             />
           )}
           {(tab === 'discover' || tab === 'post') && (

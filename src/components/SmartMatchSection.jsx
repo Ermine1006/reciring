@@ -1,144 +1,153 @@
 import { withoutEmDashes } from '../lib/aiCopy'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import PeerAvatar from './PeerAvatar'
-import { generateSmartMatches, fetchPendingNudges, setNudgeStatus, checkMutualMatch } from '../lib/smartMatch'
+import { generateSmartMatches, fetchVisibleNudges, setNudgeStatus, checkMutualMatch } from '../lib/smartMatch'
 import { track } from '../lib/analytics'
 import { matchaCta, MATCHA_DEEP } from '../lib/matchaCta'
 
-// ── Smart Match "People you should meet" (Phase 1.3) ─────────────────
-//
-// Surfaces the `match_nudges` the scorer produced. Peers stay anonymous —
-// we show a deterministic bean avatar (seeded on candidate_id) + the
-// identity-free reason string + the compatibility score. The viewer can
-// mark interest (recorded for the future mutual-interest handshake) or
-// skip. Both write match_nudges.status and log a funnel event.
-//
-// Degrades quietly: if the Edge Function isn't deployed or the table is
-// missing, it renders nothing rather than erroring.
-
 const C = {
   ground: 'var(--mutu-canvas, #F9F7F4)', ink: '#1A1712', ink2: '#5F584D', ink3: '#9A958B',
-  line: '#ECE7DE', gold: '#A6822A', goldBtn: '#C9A33B', goldBtnInk: '#2E2405',
-  goldSoft: '#F8F3E5', goldLine: '#E8D9A7',
+  line: '#ECE7DE',
 }
 const secHead = { margin: '18px 2px 9px' }
 const secTitle = { margin: 0, fontSize: 18, fontWeight: 700, color: C.ink, fontFamily: 'Inter, system-ui, sans-serif' }
+const primary = { border: 'none', borderRadius: 99, padding: '8px 15px', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif', ...matchaCta }
 
-export default function SmartMatchSection() {
+export default function SmartMatchSection({ onOpenMatches }) {
   const [nudges, setNudges] = useState([])
   const [loading, setLoading] = useState(true)
   const [busyId, setBusyId] = useState(null)
-  // Nudge ids that turned into a live mutual match — shown with a celebratory
-  // state instead of being removed, so the user knows to head to Matches.
-  const [matchedIds, setMatchedIds] = useState(() => new Set())
+  const [error, setError] = useState(null)
+  const [notice, setNotice] = useState(null)
+  // Refresh and actions cannot race and replace a newly saved interest with
+  // stale pending rows. Ref also protects against rapid repeated clicks.
+  const working = useRef(false)
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (refresh = false) => {
+    if (working.current) return
+    working.current = true
     setLoading(true)
-    // Read cached pending nudges first. If none, ask the scorer to generate
-    // a fresh set, then re-read. This keeps Home fast on repeat visits and
-    // only pays the scoring cost when there's nothing to show.
-    let { nudges } = await fetchPendingNudges()
-    if (nudges.length === 0) {
-      const { error } = await generateSmartMatches()
-      if (!error) ({ nudges } = await fetchPendingNudges())
+    setError(null)
+    try {
+      let result = await fetchVisibleNudges()
+      if (result.error) throw result.error
+      // Show saved interests even if generation of new suggestions fails.
+      setNudges(result.nudges)
+      if (refresh || !result.nudges.some(n => n.status === 'pending')) {
+        const generated = await generateSmartMatches()
+        if (generated.error) throw generated.error
+        result = await fetchVisibleNudges()
+        if (result.error) throw result.error
+        setNudges(result.nudges)
+      }
+      if (result.nudges.length) track('smart_match_shown', { count: result.nudges.length })
+    } catch {
+      setError('Could not refresh suggestions. Your saved interests are unchanged. Try Refresh again.')
+    } finally {
+      working.current = false
+      setLoading(false)
     }
-    setNudges(nudges)
-    setLoading(false)
-    if (nudges.length > 0) track('smart_match_shown', { count: nudges.length })
   }, [])
 
   useEffect(() => { load() }, [load])
 
-  const refresh = useCallback(async () => {
-    setLoading(true)
-    await generateSmartMatches()
-    const { nudges: fresh } = await fetchPendingNudges()
-    // Keep the current suggestions if a refresh yielded nothing (all seen, or a
-    // transient failure) so the section never blanks out on Refresh.
-    setNudges(prev => (fresh.length > 0 ? fresh : prev))
-    setLoading(false)
-  }, [])
-
-  const act = useCallback(async (nudge, status) => {
-    if (busyId) return
+  const act = async (nudge, status) => {
+    if (working.current || nudge.status !== 'pending') return
+    working.current = true
     setBusyId(nudge.id)
-    const { error } = await setNudgeStatus(nudge.id, status)
-    if (error) { setBusyId(null); return }
-    track(status === 'interested' ? 'smart_match_interested' : 'smart_match_skipped',
-      { candidate_id: nudge.candidate_id, score: nudge.score })
-
-    // If marking interest completed a mutual match, celebrate in place rather
-    // than removing the card. Otherwise the card resolves and drops out.
-    if (status === 'interested') {
-      const { matched } = await checkMutualMatch(nudge.candidate_id)
-      setBusyId(null)
-      if (matched) {
-        track('smart_match_mutual', { candidate_id: nudge.candidate_id })
-        setMatchedIds(prev => new Set(prev).add(nudge.id))
+    setError(null)
+    setNotice(null)
+    try {
+      const result = await setNudgeStatus(nudge.id, status)
+      if (result.error) throw result.error
+      track(status === 'interested' ? 'smart_match_interested' : 'smart_match_skipped',
+        { candidate_id: nudge.candidate_id, score: nudge.score })
+      if (status === 'skipped') {
+        setNudges(prev => prev.filter(n => n.id !== nudge.id))
+        setNotice('Suggestion skipped.')
         return
       }
-    } else {
+      // Interest is already persisted. Never drop the card just because the
+      // other person has not expressed interest or the match lookup fails.
+      setNudges(prev => prev.map(n => n.id === nudge.id ? { ...n, status: 'interested' } : n))
+      setNotice('Interest saved. You can find it here when you return.')
+      try {
+        const match = await checkMutualMatch(nudge.candidate_id)
+        if (match.error) throw match.error
+        if (match.matched) {
+          setNudges(prev => prev.map(n => n.id === nudge.id ? { ...n, status: 'matched' } : n))
+          setNotice('You are both interested. Open Matches to say hello.')
+          track('smart_match_mutual', { candidate_id: nudge.candidate_id })
+        }
+      } catch {
+        setNotice('Interest saved. We could not check for a connection yet. Refresh to check again.')
+      }
+    } catch {
+      setError('Could not save your choice. Please try again. If this suggestion has changed, tap Refresh.')
+    } finally {
+      working.current = false
       setBusyId(null)
     }
-    setNudges(prev => prev.filter(n => n.id !== nudge.id))
-  }, [busyId])
+  }
 
-  // Render nothing until we know there's something to show — avoids an empty
-  // header flashing on Home for users with no suggestions.
-  if (loading && nudges.length === 0) return null
-  if (!loading && nudges.length === 0) return null
+  if (loading && !nudges.length) return null
+  if (!nudges.length && !error && !notice) return null
+  const disabled = loading || Boolean(busyId)
 
   return (
-    <>
+    <section aria-label="People you should meet">
       <div style={{ ...secHead, display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
         <h2 style={secTitle}>People you should meet</h2>
-        <button type="button" onClick={refresh} disabled={loading}
-          style={{ background: 'none', border: 'none', padding: 0, cursor: loading ? 'default' : 'pointer', color: MATCHA_DEEP, fontWeight: 700, fontSize: 12.5, fontFamily: 'Inter, system-ui, sans-serif', opacity: loading ? 0.5 : 1 }}>
-          Refresh
+        <button type="button" onClick={() => load(true)} disabled={disabled}
+          style={{ background: 'none', border: 'none', padding: 0, cursor: disabled ? 'default' : 'pointer', color: MATCHA_DEEP, fontWeight: 700, fontSize: 12.5, opacity: disabled ? 0.5 : 1 }}>
+          {loading ? 'Refreshing…' : 'Refresh'}
         </button>
       </div>
-
-      <div style={{ background: '#FFFFFF', border: '1px solid #EFEBE2', borderRadius: 18, padding: '2px 14px', boxShadow: '0 1px 3px rgba(60,45,10,0.03)' }}>
+      {error && <p role="alert" style={{ fontSize: 12.5, color: '#991B1B', lineHeight: 1.5 }}>{error}</p>}
+      {notice && <p role="status" style={{ fontSize: 12.5, color: MATCHA_DEEP, lineHeight: 1.5 }}>{notice}</p>}
+      {nudges.length > 0 && <div style={{ background: '#FFFFFF', border: '1px solid #EFEBE2', borderRadius: 18, padding: '2px 14px', boxShadow: '0 1px 3px rgba(60,45,10,0.03)' }}>
         {nudges.map((n, i) => (
-          <div key={n.id}
-            style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '13px 2px', borderTop: i === 0 ? 'none' : '1px solid #F1EEE7' }}>
-            <div style={{ flexShrink: 0 }}><PeerAvatar name="Anonymous peer" seed={n.candidate_id} size={40} /></div>
-
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                <span style={{ fontSize: 14, fontWeight: 700, color: C.ink, fontFamily: 'Inter, system-ui, sans-serif' }}>Anonymous peer</span>
-                <span style={{ fontSize: 11, fontWeight: 600, color: '#8A6E1E', background: '#F6EFDD', border: '1px solid #EFE3C4', borderRadius: 99, padding: '2px 8px', fontFamily: 'Inter, system-ui, sans-serif' }}>
-                  {n.score}% match
+          <article key={n.id} aria-label="Anonymous peer recommendation"
+            style={{ padding: '13px 2px', borderTop: i === 0 ? 'none' : '1px solid #F1EEE7' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
+              <div style={{ flexShrink: 0 }}><PeerAvatar name="Anonymous peer" seed={n.candidate_id} size={40} /></div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ fontSize: 14, fontWeight: 700, color: C.ink }}>Anonymous peer</span>
+                <span style={{ display: 'block', fontSize: 12.5, color: C.ink2, marginTop: 2, lineHeight: 1.4 }}>
+                  {withoutEmDashes(n.reason)}
                 </span>
-              </span>
-              <span style={{ display: 'block', fontSize: 12.5, color: C.ink2, marginTop: 2, lineHeight: 1.35, fontFamily: 'Inter, system-ui, sans-serif' }}>
-                {withoutEmDashes(n.reason)}
-              </span>
+              </div>
             </div>
-
-            {matchedIds.has(n.id) ? (
-              <div style={{ flexShrink: 0, textAlign: 'center', maxWidth: 118 }}>
-                <span style={{ display: 'block', fontSize: 13, fontWeight: 800, color: C.goldBtnInk, fontFamily: 'Inter, system-ui, sans-serif' }}>🎉 It’s a match!</span>
-                <span style={{ display: 'block', fontSize: 11, color: C.ink2, marginTop: 2, fontFamily: 'Inter, system-ui, sans-serif' }}>Find them in Matches to say hi.</span>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
-                <button data-mutu-glass="" type="button" onClick={() => act(n, 'interested')} disabled={busyId === n.id}
-                  style={{ border: 'none', borderRadius: 99, padding: '8px 15px', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif', opacity: busyId === n.id ? 0.6 : 1, ...matchaCta }}>
-                  Interested
-                </button>
-                <button data-mutu-glass="" type="button" onClick={() => act(n, 'skipped')} disabled={busyId === n.id}
-                  style={{ border: `1px solid ${C.line}`, borderRadius: 99, padding: '6px 13px', background: C.ground, color: C.ink3, fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, system-ui, sans-serif' }}>
-                  Skip
-                </button>
-              </div>
-            )}
-          </div>
+            <div style={{ marginTop: 10, marginLeft: 51 }}>
+              {n.status === 'matched' ? (
+                <>
+                  <p style={{ margin: '0 0 7px', color: MATCHA_DEEP, fontSize: 13, fontWeight: 700 }}>You are both interested</p>
+                  {onOpenMatches && <button data-mutu-glass="" type="button" onClick={onOpenMatches} style={primary}>View Matches</button>}
+                </>
+              ) : n.status === 'interested' ? (
+                <>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: MATCHA_DEEP }}>Interest saved</span>
+                  <p style={{ margin: '3px 0 0', fontSize: 12, lineHeight: 1.4, color: C.ink2 }}>Waiting for mutual interest. A connection will appear in Matches if you both choose Interested.</p>
+                </>
+              ) : (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
+                  <button data-mutu-glass="" type="button" onClick={() => act(n, 'interested')} disabled={disabled}
+                    style={{ ...primary, opacity: disabled ? 0.6 : 1 }}>
+                    {busyId === n.id ? 'Saving…' : 'Interested'}
+                  </button>
+                  <button data-mutu-glass="" type="button" onClick={() => act(n, 'skipped')} disabled={disabled}
+                    style={{ border: `1px solid ${C.line}`, borderRadius: 99, padding: '6px 13px', background: C.ground, color: C.ink2, fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}>
+                    Skip
+                  </button>
+                </div>
+              )}
+            </div>
+          </article>
         ))}
-      </div>
-      <p style={{ fontSize: 11.5, color: C.ink3, margin: '7px 2px 0', fontFamily: 'Inter, system-ui, sans-serif' }}>
-        Marking interest is private. We’ll only connect you if it’s mutual.
+      </div>}
+      <p style={{ fontSize: 11.5, color: C.ink2, margin: '7px 2px 0' }}>
+        Your interest is private. We only connect you if it is mutual. These recommendations stay anonymous.
       </p>
-    </>
+    </section>
   )
 }
