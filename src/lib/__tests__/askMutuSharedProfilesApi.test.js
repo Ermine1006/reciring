@@ -1,0 +1,43 @@
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+const mocks = vi.hoisted(() => ({ create: vi.fn(), user: vi.fn(), read: vi.fn() }))
+vi.mock('@supabase/supabase-js', () => ({ createClient: mocks.create }))
+vi.mock('../../../api/_lib/shared-profiles.js', () => ({ readSharedProfiles: mocks.read }))
+import handler from '../../../api/shared-profiles'
+const res = () => ({ setHeader: vi.fn(), status: vi.fn().mockReturnThis(), json: vi.fn(), end: vi.fn() })
+beforeEach(() => {
+  vi.clearAllMocks()
+  vi.stubEnv('SUPABASE_URL', 'https://example.supabase.co')
+  vi.stubEnv('SUPABASE_SERVICE_ROLE_KEY', 'test-only')
+  mocks.create.mockReturnValue({ auth: { getUser: mocks.user } })
+  mocks.user.mockResolvedValue({ data: { user: { id: 'actual-user' } }, error: null })
+  mocks.read.mockResolvedValue({ data: [], error: null })
+})
+afterEach(() => vi.unstubAllEnvs())
+it('rejects unauthenticated requests without reading any data', async () => {
+  const response = res()
+  await handler({ method: 'GET', headers: {} }, response)
+  expect(response.status).toHaveBeenCalledWith(401)
+  expect(mocks.read).not.toHaveBeenCalled()
+})
+it('rejects invalid tokens before reading profiles', async () => {
+  mocks.user.mockResolvedValue({ data: null, error: new Error('Expired') })
+  const response = res()
+  await handler({ method: 'GET', headers: { authorization: 'Bearer invalid' } }, response)
+  expect(response.status).toHaveBeenCalledWith(401)
+  expect(mocks.read).not.toHaveBeenCalled()
+})
+it('ignores supplied viewer ids and returns only the authenticated user’s shared profiles without caching', async () => {
+  const response = res()
+  await handler({ method: 'GET', headers: { authorization: 'Bearer valid' }, query: { userId: 'another-user' } }, response)
+  expect(mocks.user).toHaveBeenCalledWith('valid')
+  expect(mocks.read.mock.calls[0][1]).toBe('actual-user')
+  expect(response.setHeader).toHaveBeenCalledWith('Cache-Control', 'private, no-store')
+  expect(response.json).toHaveBeenCalledWith({ profiles: [] })
+})
+it('returns an unavailable error without leaking database details', async () => {
+  mocks.read.mockResolvedValue({ data: [], error: new Error('Sensitive database detail') })
+  const response = res()
+  await handler({ method: 'GET', headers: { authorization: 'Bearer valid' } }, response)
+  expect(response.status).toHaveBeenCalledWith(503)
+  expect(JSON.stringify(response.json.mock.calls)).not.toContain('Sensitive')
+})

@@ -2,8 +2,9 @@
 import React from 'react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-const mocks = vi.hoisted(() => ({ extras: vi.fn(), ask: vi.fn(), encounters: vi.fn(), profile: null }))
+const mocks = vi.hoisted(() => ({ extras: vi.fn(), ask: vi.fn(), encounters: vi.fn(), shared: vi.fn(), profile: null }))
 vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ profile: mocks.profile }) }))
+vi.mock('../../lib/askMutuSharedProfiles', async importOriginal => ({ ...await importOriginal(), fetchAskMutuSharedProfiles: mocks.shared }))
 vi.mock('../../lib/featureFlags', () => ({ isPracticeEnabled: () => false }))
 vi.mock('../../lib/askMutuContextExtras', () => ({ loadAskMutuContextExtras: mocks.extras }))
 vi.mock('../../lib/eventMemory', async importOriginal => ({
@@ -20,6 +21,7 @@ HTMLElement.prototype.scrollIntoView = vi.fn()
 beforeEach(() => {
   vi.clearAllMocks()
   mocks.profile = null
+  mocks.shared.mockResolvedValue({ data: [], error: null })
   mocks.encounters.mockResolvedValue({ data: [] })
   mocks.ask.mockResolvedValue({ answer: 'Ready to help.' })
   mocks.extras.mockResolvedValue({ buddy: { programs: [{ name: 'Rotman' }] }, stories: [{ title: 'My page' }], circle: [{ name: 'Maya', practices_together: 4 }] })
@@ -96,6 +98,7 @@ it('discards an old account’s response that arrives after switching accounts',
   const view = render(<AskMutuSheet open userId="first" onClose={() => {}} />)
   await waitFor(() => expect(summary().disabled).toBe(false))
   fireEvent.click(summary())
+  await waitFor(() => expect(mocks.ask).toHaveBeenCalledTimes(1))
   mocks.profile = { id: 'second', personal_interests: ['cooking'] }
   view.rerender(<AskMutuSheet open userId="second" onClose={() => {}} />)
   await waitFor(() => expect(summary().disabled).toBe(false))
@@ -104,4 +107,39 @@ it('discards an old account’s response that arrives after switching accounts',
   fireEvent.click(summary())
   await screen.findByText('Ready to help.')
   expect(mocks.ask.mock.calls[1][1].me.personal_interests).toEqual(['Cooking'])
+})
+
+it('lets the user read Serine’s shared profile and gives the same fields to Ask Mutu', async () => {
+  mocks.shared.mockResolvedValue({ data: [{ peerId: 'serine', name: 'Serine Lyu', profile: { name: 'Serine Lyu', personal_interests: ['Yoga'], prompt_weekend: 'Weekend yoga classes', expertise_offered: ['Product strategy'] } }], error: null })
+  render(<AskMutuSheet open userId="me" onClose={() => {}} />)
+  await waitFor(() => expect(summary().disabled).toBe(false))
+  fireEvent.click(screen.getByRole('button', { name: 'Shared profiles', exact: true }))
+  await screen.findByText('Serine Lyu')
+  fireEvent.click(screen.getByText('Serine Lyu'))
+  expect(screen.getByText('Weekend yoga classes')).toBeTruthy()
+  expect(screen.getByText('Yoga')).toBeTruthy()
+  fireEvent.click(screen.getByRole('button', { name: /Back to Ask Mutu/ }))
+  fireEvent.click(summary())
+  await screen.findByText('Ready to help.')
+  expect(mocks.ask.mock.calls[0][1].shared_profiles[0].profile.personal_interests).toEqual(['Yoga'])
+})
+it('rechecks sharing before a question and removes a revoked profile from the AI payload', async () => {
+  mocks.shared.mockResolvedValueOnce({ data: [{ peerId: 'serine', name: 'Serine', profile: { prompt_weekend: 'Private weekend' } }], error: null })
+  render(<AskMutuSheet open userId="me" onClose={() => {}} />)
+  await waitFor(() => expect(summary().disabled).toBe(false))
+  fireEvent.click(summary())
+  await screen.findByText('Ready to help.')
+  expect(mocks.ask.mock.calls[0][1].shared_profiles).toEqual([])
+  expect(JSON.stringify(mocks.ask.mock.calls[0][1])).not.toContain('Private weekend')
+})
+it('marks failed profile reads unavailable and never sends cached profile content', async () => {
+  mocks.shared.mockResolvedValueOnce({ data: [{ peerId: 'serine', name: 'Serine', profile: { prompt_weekend: 'Private weekend' } }], error: null })
+  mocks.shared.mockResolvedValue({ data: [], error: new Error('Offline') })
+  render(<AskMutuSheet open userId="me" onClose={() => {}} />)
+  await waitFor(() => expect(summary().disabled).toBe(false))
+  fireEvent.click(summary())
+  await screen.findByText('Ready to help.')
+  expect(mocks.ask.mock.calls[0][1].shared_profiles).toBeUndefined()
+  expect(mocks.ask.mock.calls[0][1].unavailable_context).toContain('shared_profiles')
+  expect(JSON.stringify(mocks.ask.mock.calls[0][1])).not.toContain('Private weekend')
 })

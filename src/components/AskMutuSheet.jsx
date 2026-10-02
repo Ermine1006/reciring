@@ -3,6 +3,8 @@ import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { fetchEncounters, buildAssistantContext, askMutu, fetchAskHistory, saveAskMessage, clearAskHistory } from '../lib/eventMemory'
 import { fetchConnections } from '../lib/relationships'
+import { fetchAskMutuSharedProfiles, buildSharedProfilesContext } from '../lib/askMutuSharedProfiles'
+import AskMutuSharedProfiles from './AskMutuSharedProfiles'
 import { fetchMyEvents, fetchUpcomingEvents } from '../lib/events'
 import { fetchEventPrepCandidates } from '../lib/eventMatch'
 import {
@@ -100,6 +102,22 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
   const [view, setView] = useState('home')   // 'home' | 'pickEvent' (for "Prepare for an event")
   const [prepEvents, setPrepEvents] = useState([]) // future joined/hosted events we can prep for
   const bottomRef = useRef(null)
+  const [sharedProfiles, setSharedProfiles] = useState([])
+  const [sharedLoading, setSharedLoading] = useState(false)
+  const [sharedError, setSharedError] = useState(false)
+  const sharedSequence = useRef(0)
+
+  const refreshSharedProfiles = async () => {
+    const version = contextVersion.current, sequence = ++sharedSequence.current
+    setSharedLoading(true)
+    setSharedProfiles([])
+    const result = await fetchAskMutuSharedProfiles(userId)
+    if (version !== contextVersion.current || sequence !== sharedSequence.current) return null
+    setSharedProfiles(result.error ? [] : result.data)
+    setSharedError(Boolean(result.error))
+    setSharedLoading(false)
+    return result
+  }
 
   useEffect(() => {
     const version = ++contextVersion.current
@@ -113,16 +131,20 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
     setMsgs([])
     setInput('')
     setView('home')
+    setSharedProfiles([])
+    setSharedError(false)
+    setSharedLoading(false)
     setBusy(false)
     ;(async () => {
-      const [{ data: enc }, { data: hist }, { data: conns, error: connectionsError }, { data: myEvents }, { data: discover }, postsRes, matchedRes] = await Promise.all([
+      const [{ data: enc }, { data: hist }, { data: conns, error: connectionsError }, { data: myEvents }, { data: discover }, postsRes, matchedRes, sharedRes] = await Promise.all([
         fetchEncounters(userId),
         fetchAskHistory(userId),
-        fetchConnections(userId, { includeProfiles: true }),
+        fetchConnections(userId),
         fetchMyEvents(userId),
         fetchUpcomingEvents(),
         fetchPosts().catch(() => ({ data: [] })),
         fetchMatchedPostIds(userId).catch(() => ({ data: [] })),
+        fetchAskMutuSharedProfiles(userId),
       ])
       const myPosts = buildPostsContext({
         posts: postsRes?.data || [], userId, matchedPostIds: matchedRes?.data || [],
@@ -198,7 +220,9 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
       }
       const extras = await loadAskMutuContextExtras(userId)
       if (cancelled) return
-      setCtx(buildAssistantContext({ encounters: enc || [], events: allEvents, connections: conns || [], me: myProfile, eventMatches, practice, myPosts, ...extras, unavailableSources: [...(extras.unavailableSources || []), ...(!myProfile ? ['profile'] : []), ...(connectionsError ? ['connections'] : [])] }))
+      setSharedProfiles(sharedRes.error ? [] : sharedRes.data)
+      setSharedError(Boolean(sharedRes.error))
+      setCtx(buildAssistantContext({ encounters: enc || [], events: allEvents, connections: conns || [], me: myProfile, eventMatches, practice, myPosts, ...extras, sharedProfiles: sharedRes.error ? null : sharedRes.data, unavailableSources: [...(extras.unavailableSources || []), ...(!myProfile ? ['profile'] : []), ...(connectionsError ? ['connections'] : []), ...(sharedRes.error ? ['shared_profiles'] : [])] }))
       setContextUserId(userId)
       setContextProfile(profile)
       setMsgs((hist || []).map(m => ({ role: m.role, text: m.text })))
@@ -218,7 +242,17 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
     setMsgs(m => [...m, { role: 'user', text: question }])
     saveAskMessage(userId, 'user', question)
     setBusy(true)
-    const { answer, error } = await askMutu(question, ctx || {})
+    setView('home')
+    // Refresh consent and profile details for each request, not just on open.
+    const shared = await refreshSharedProfiles()
+    if (!shared || version !== contextVersion.current) return
+    const { shared_profiles: _oldShared, ...currentContext } = ctx || {}
+    const unavailable = (currentContext.unavailable_context || []).filter(source => source !== 'shared_profiles')
+    const questionContext = { ...currentContext,
+      ...(!shared.error ? { shared_profiles: buildSharedProfilesContext(shared.data) } : {}),
+      unavailable_context: [...unavailable, ...(shared.error ? ['shared_profiles'] : [])],
+    }
+    const { answer, error } = await askMutu(question, questionContext)
     if (version !== contextVersion.current) return
     setBusy(false)
     const reply = error ? (error.message || 'Sorry, try again.') : answer
@@ -267,6 +301,10 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
           </div>
         </div>
 
+        <div style={{ padding: '8px 18px', background: C.white }}>
+          <button type="button" disabled={!ready || busy || sharedLoading} onClick={() => { setView('profiles'); refreshSharedProfiles() }} style={{ ...rowChip, color: '#49603B' }}>Shared profiles</button>
+        </div>
+
         {/* Conversation */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '16px 18px' }}>
           {!ready ? (
@@ -274,6 +312,8 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
               {contextError ? 'Your network could not load. Please try again.' : 'Loading your network…'}
               {contextError && <button type="button" onClick={() => setRetry(n => n + 1)}>Try again</button>}
             </p>
+          ) : view === 'profiles' ? (
+            <AskMutuSharedProfiles key={userId} profiles={sharedProfiles} loading={sharedLoading} error={sharedError} onRefresh={refreshSharedProfiles} onBack={() => setView('home')} />
           ) : view === 'pickEvent' ? (
             <div>
               <button type="button" onClick={() => setView('home')}

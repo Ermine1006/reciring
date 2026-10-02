@@ -1,6 +1,7 @@
 import { supabase, isSupabaseConfigured } from './supabase'
 import { apiUrl } from './apiBase'
 import { buildProfileContext } from './askMutuProfile'
+import { buildSharedProfilesContext } from './askMutuSharedProfiles'
 
 // ── Event memory · encounters + derived follow-ups ───────────────────
 // event_encounters is the single store. A "follow-up" is an encounter with a
@@ -212,7 +213,7 @@ export async function clearAskHistory(userId) {
 
 // Build the compact, private grounding context for Ask Mutu from the user's
 // own encounters + events. Only fields the user already owns.
-export function buildAssistantContext({ encounters = [], events = [], connections = [], me = null, eventMatches = {}, practice = null, myPosts = null, buddy = null, stories = null, circle = null, unavailableSources = [] }) {
+export function buildAssistantContext({ encounters = [], events = [], connections = [], me = null, eventMatches = {}, practice = null, myPosts = null, buddy = null, stories = null, circle = null, unavailableSources = [], sharedProfiles = null }) {
   return {
     // What they asked the community for, and whether it worked. Only
     // their own posts: see src/lib/askMutuPosts.js.
@@ -220,6 +221,7 @@ export function buildAssistantContext({ encounters = [], events = [], connection
     // The user's OWN profile — lets Mutu reason about fit ("who should I
     // connect with", "is this event worth attending") instead of punting.
     me: buildProfileContext(me),
+    ...(sharedProfiles ? { shared_profiles: buildSharedProfilesContext(sharedProfiles) } : {}),
     // People you know but have NOT met in person yet (Community match /
     // identity reveal / chat). Kept separate from `people` (met) so Mutu never
     // conflates a connection with someone you met. Identity-hidden ones omitted.

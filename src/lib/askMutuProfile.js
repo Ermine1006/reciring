@@ -1,6 +1,6 @@
 import {
   labelForTopic, labelForIndustry, labelForInterest, labelForActivity, labelForHelping,
-} from '../data/profileTaxonomy'
+} from '../data/profileTaxonomy.js'
 
 const text = (value, limit = 200) => typeof value === 'string' ? value.trim().slice(0, limit) || null : null
 const list = (values, label = value => value) => Array.isArray(values)
