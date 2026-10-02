@@ -308,7 +308,7 @@ export default function AskMutuSheet({ open, userId, events = [], onClose }) {
           ) : empty ? (
             <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center' }}>
               <p style={{ fontSize: 14, color: C.sub, lineHeight: 1.6, textAlign: 'center', maxWidth: 320, fontFamily: 'Inter, system-ui, sans-serif' }}>
-                I use your profile, interests and network to suggest who to ask and how you could support each other. Pick a shortcut below, or ask me a question.
+                Ask a question, explore an idea or draft a message. When relevant, I can use your profile and Mutu records to make suggestions more personal.
               </p>
             </div>
           ) : (
