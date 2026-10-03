@@ -33,3 +33,15 @@ it('does not let the client promote a suggestion to matched', async () => {
   expect((await setNudgeStatus('n1', 'matched')).error).toBeInstanceOf(Error)
   expect(mocks.from).not.toHaveBeenCalled()
 })
+it('names only candidates with a Public profile, filtered server side', async () => {
+  mocks.query.order.mockResolvedValue({ data: [
+    { id: 'a', candidate_id: 'pub', status: 'pending' },
+    { id: 'b', candidate_id: 'priv', status: 'pending' },
+  ], error: null })
+  mocks.query.eq.mockResolvedValueOnce({ data: [{ id: 'pub', name: 'Sarah Chen' }], error: null })
+  const { nudges } = await fetchVisibleNudges()
+  expect(mocks.from).toHaveBeenCalledWith('profiles')
+  expect(mocks.query.eq).toHaveBeenCalledWith('visibility', 'public')
+  expect(nudges[0].publicName).toBe('Sarah')
+  expect(nudges[1].publicName).toBeUndefined()
+})

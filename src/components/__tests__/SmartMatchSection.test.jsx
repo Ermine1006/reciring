@@ -97,3 +97,9 @@ it('keeps saved interests visible when generation fails', async () => {
   await screen.findByRole('alert')
   expect(screen.getByText('Interest saved')).toBeTruthy()
 })
+it('shows the first name of a member who chose a Public profile', async () => {
+  api.fetch.mockResolvedValue({ nudges: [{ ...row, publicName: 'Sarah' }], error: null })
+  render(<SmartMatchSection />)
+  expect(await screen.findByText('Sarah')).toBeTruthy()
+  expect(screen.queryByText('Anonymous peer')).toBeNull()
+})

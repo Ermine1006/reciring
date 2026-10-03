@@ -107,12 +107,12 @@ export default function SmartMatchSection({ onOpenMatches }) {
       {notice && <p role="status" style={{ fontSize: 12.5, color: MATCHA_DEEP, lineHeight: 1.5 }}>{notice}</p>}
       {nudges.length > 0 && <div style={{ background: '#FFFFFF', border: '1px solid #EFEBE2', borderRadius: 18, padding: '2px 14px', boxShadow: '0 1px 3px rgba(60,45,10,0.03)' }}>
         {nudges.map((n, i) => (
-          <article key={n.id} aria-label="Anonymous peer recommendation"
+          <article key={n.id} aria-label={n.publicName ? `Recommendation: ${n.publicName}` : 'Anonymous peer recommendation'}
             style={{ padding: '13px 2px', borderTop: i === 0 ? 'none' : '1px solid #F1EEE7' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
-              <div style={{ flexShrink: 0 }}><PeerAvatar name="Anonymous peer" seed={n.candidate_id} size={40} /></div>
+              <div style={{ flexShrink: 0 }}><PeerAvatar name={n.publicName || 'Anonymous peer'} anonymous={!n.publicName} seed={n.candidate_id} size={40} /></div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ fontSize: 14, fontWeight: 700, color: C.ink }}>Anonymous peer</span>
+                <span style={{ fontSize: 14, fontWeight: 700, color: C.ink }}>{n.publicName || 'Anonymous peer'}</span>
                 <span style={{ display: 'block', fontSize: 12.5, color: C.ink2, marginTop: 2, lineHeight: 1.4 }}>
                   {withoutEmDashes(n.reason)}
                 </span>
@@ -146,7 +146,7 @@ export default function SmartMatchSection({ onOpenMatches }) {
         ))}
       </div>}
       <p style={{ fontSize: 11.5, color: C.ink2, margin: '7px 2px 0' }}>
-        Your interest is private. We only connect you if it is mutual. These recommendations stay anonymous.
+        Your interest is private. We only connect you if it is mutual. Members with a private profile stay anonymous until you connect.
       </p>
     </section>
   )

@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from './supabase'
+import { VISIBILITY_PUBLIC } from './visibility'
 
 // ── Smart Match Nudge · client wiring (Phase 1.3) ────────────────────
 //
@@ -36,7 +37,10 @@ export async function fetchPendingNudges() {
 }
 
 // Keep saved interest visible across refreshes and return visits. RLS still
-// scopes these rows to the viewer; no peer profile or reciprocal row is read.
+// scopes these rows to the viewer; no reciprocal row is read. Candidates who
+// chose a Public profile are named (same rule as Give & Ask posts); the
+// profile query filters on visibility server-side, so a Private member's
+// name never reaches this client.
 export async function fetchVisibleNudges() {
   if (!isSupabaseConfigured) return { nudges: [], error: null }
   const { data, error } = await supabase
@@ -44,7 +48,21 @@ export async function fetchVisibleNudges() {
     .select('id, candidate_id, score, reason, status')
     .in('status', ['pending', 'interested', 'matched'])
     .order('score', { ascending: false })
-  return { nudges: data || [], error }
+  const nudges = data || []
+  const ids = [...new Set(nudges.map(n => n.candidate_id).filter(Boolean))]
+  if (error || !ids.length) return { nudges, error }
+  const { data: publicProfiles } = await supabase
+    .from('profiles')
+    .select('id, name')
+    .in('id', ids)
+    .eq('visibility', VISIBILITY_PUBLIC)
+  const nameById = new Map((Array.isArray(publicProfiles) ? publicProfiles : [])
+    .filter(p => String(p?.name || '').trim())
+    .map(p => [p.id, String(p.name).trim().split(/\s+/)[0]]))
+  return {
+    nudges: nudges.map(n => nameById.has(n.candidate_id) ? { ...n, publicName: nameById.get(n.candidate_id) } : n),
+    error,
+  }
 }
 
 // Move one of my nudges pending → 'interested' | 'skipped'. RLS lets a user
