@@ -26,6 +26,7 @@ const SUPPORT_EMAIL = 'hello@muturing.com'
 export default function LoginScreen() {
   const {
     signIn, signUp, signInWithGoogle, signInWithApple, resetPassword, verifyRecoveryCode,
+    resendConfirmation,
     accessDenied, clearAccessDenied,
   } = useAuth()
 
@@ -56,6 +57,10 @@ export default function LoginScreen() {
   const [newPassword, setNewPassword]   = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [info, setInfo]         = useState(null)
+  // Shown when an account exists but its email was never confirmed, so the
+  // person can ask for the link again instead of being stuck at the door.
+  const [canResend, setCanResend] = useState(false)
+  const [resending, setResending] = useState(false)
   const [showForgotEmail, setShowForgotEmail] = useState(false)
 
   const emailLower = email.trim().toLowerCase()
@@ -156,6 +161,7 @@ export default function LoginScreen() {
       // confirmation is required in project settings.
       if (!data?.session) {
         setInfo('Check your UofT email to confirm your account, then sign in.')
+        setCanResend(true)
       }
       return
     }
@@ -175,10 +181,28 @@ export default function LoginScreen() {
         setError('Email or password is incorrect. If you are new to Mutu, click "Create account" above.')
       } else if (/email.*not.*confirmed/i.test(msg)) {
         setError('Confirm your account first, check your inbox for the Mutu confirmation email.')
+        setCanResend(true)
       } else {
         setError(msg)
       }
     }
+  }
+
+  // Ask for the confirmation email again.
+  const handleResendConfirmation = async () => {
+    const trimmed = email.trim().toLowerCase()
+    if (!trimmed) { setError('Enter your email above first.'); return }
+    setError(null); setInfo(null); setResending(true)
+    const { error: resendError } = await resendConfirmation(trimmed)
+    setResending(false)
+    if (resendError) {
+      const msg = String(resendError.message || '')
+      setError(/rate|seconds|too many/i.test(msg)
+        ? 'We just sent one. Give it a minute, then try again.'
+        : msg)
+      return
+    }
+    setInfo('Sent. Open the link in that email, then come back and sign in.')
   }
 
   // sessionStorage stash used to bridge the access code across the
@@ -310,7 +334,7 @@ export default function LoginScreen() {
                   type="button"
                   role="tab"
                   aria-selected={active}
-                  onClick={() => { setMode(t.id); setError(null); setInfo(null) }}
+                  onClick={() => { setMode(t.id); setError(null); setInfo(null); setCanResend(false) }}
                   className="flex-1 py-2 text-xs font-semibold tracking-wide rounded-lg"
                   style={{
                     background: active ? 'linear-gradient(135deg, #97A275, #78855A)' : 'transparent',
@@ -423,6 +447,23 @@ export default function LoginScreen() {
           {info && (
             <p className="mt-3 text-center" style={{ fontSize: 12, color: C.goldDark }}>
               {info}
+            </p>
+          )}
+          {canResend && (mode === 'signin' || mode === 'signup') && (
+            <p className="mt-2 text-center" style={{ fontSize: 12, color: C.textMuted }}>
+              <button
+                type="button"
+                onClick={handleResendConfirmation}
+                disabled={resending}
+                style={{
+                  background: 'none', border: 'none', padding: 0,
+                  fontSize: 12, fontWeight: 600, color: C.goldDark,
+                  textDecoration: 'underline', cursor: resending ? 'default' : 'pointer',
+                  opacity: resending ? 0.6 : 1,
+                }}
+              >
+                {resending ? 'Sending…' : 'Send the confirmation email again'}
+              </button>
             </p>
           )}
 

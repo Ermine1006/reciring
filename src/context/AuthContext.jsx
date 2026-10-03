@@ -459,6 +459,20 @@ export function AuthProvider({ children }) {
     return { data, error }
   }
 
+  // Send the confirmation email again. Someone who signed up but never
+  // opened the link cannot sign in and has no other way back in. Supabase
+  // rate limits this, and answers the same way whether or not the address
+  // has an account, so it never reveals who is registered.
+  async function resendConfirmation(email) {
+    if (!isSupabaseConfigured) return { error: new Error('Supabase not configured.') }
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: { emailRedirectTo: emailRedirect('/auth/confirmed') },
+    })
+    return { error }
+  }
+
   async function signInWithGoogle() {
     if (!isSupabaseConfigured) return { error: new Error('Supabase not configured.') }
     if (isNativeApp) {
@@ -771,6 +785,7 @@ export function AuthProvider({ children }) {
       loading,
       isConfigured: isSupabaseConfigured,
       signUp,
+      resendConfirmation,
       signIn,
       signInWithGoogle,
       signInWithApple,
