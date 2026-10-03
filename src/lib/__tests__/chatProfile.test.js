@@ -13,14 +13,14 @@ beforeEach(() => {
     return q
   }) }
 })
-it('opens a genuinely public profile in a named post chat without disclosing contact or account fields', async () => {
+it('shows a matched Public member their full profile with school email, but no account fields', async () => {
   const result = await readChatProfile(client, 'me', 'chat')
   expect(result.status).toBe(200)
-  expect(result.access).toBe('public')
+  expect(result.access).toBe('connected')
   expect(result.profile.personal_interests).toEqual(['yoga'])
   expect(result.profile.prompt_weekend).toBe(rows.profiles.prompt_weekend)
   expect(result.profile.graduation_year).toBe(2027)
-  expect(result.profile.email).toBeUndefined()
+  expect(result.profile.email).toBe('private@example.com')
   expect(result.profile.is_admin).toBeUndefined()
 })
 it('shows the full shared private profile and existing shared email after accepted reveal', async () => {
@@ -40,9 +40,14 @@ it('preserves anonymous posts even when the poster has a public profile', async 
   rows.posts.is_anonymous = true
   expect((await readChatProfile(client, 'me', 'chat')).status).toBe(403)
 })
-it('does not treat Buddy or practice membership alone as profile access', async () => {
-  rows.matches.source = 'buddy'; rows.matches.post_id = null
-  expect((await readChatProfile(client, 'me', 'chat')).status).toBe(403)
+it('opens a Public member in a Smart Match or Buddy chat, but never a Private one without a reveal', async () => {
+  rows.matches.source = 'smart_match'; rows.matches.post_id = null
+  expect((await readChatProfile(client, 'me', 'chat')).access).toBe('connected')
+  expect(client.from).not.toHaveBeenCalledWith('posts')
+  rows.matches.source = 'buddy'; rows.profiles.visibility = 'private'
+  const result = await readChatProfile(client, 'me', 'chat')
+  expect(result.status).toBe(403)
+  expect(result.profile).toBeUndefined()
 })
 it('refuses other people’s conversations before fetching a profile', async () => {
   expect((await readChatProfile(client, 'outsider', 'chat')).status).toBe(404)

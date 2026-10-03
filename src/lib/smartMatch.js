@@ -100,3 +100,27 @@ export async function checkMutualMatch(candidateId) {
   const row = data && data[0]
   return { matched: Boolean(row), matchId: row ? row.id : null, error }
 }
+
+// People who tapped Interested on me and are waiting for my answer (see
+// scripts/migration-smart-match-interest-notify.sql). The server returns a
+// sender's id and first name only when they chose a Public profile; for
+// Private senders the client only ever sees the nudge id. Before that
+// migration runs this quietly returns nothing.
+export async function fetchIncomingInterests() {
+  if (!isSupabaseConfigured) return { incoming: [], error: null }
+  const { data, error } = await supabase.rpc('incoming_smart_interests')
+  if (error) {
+    const missing = error.code === 'PGRST202' || error.code === '42883' || /could not find the function/i.test(error.message || '')
+    return { incoming: [], error: missing ? null : error }
+  }
+  return { incoming: Array.isArray(data) ? data : [], error: null }
+}
+
+// Answer an incoming interest. Interested creates the match through the
+// server handshake; Not now is silent and the sender is never told.
+export async function respondToInterest(nudgeId, interested) {
+  if (!isSupabaseConfigured || !nudgeId) return { matched: false, matchId: null, error: new Error('not configured') }
+  const { data, error } = await supabase.rpc('respond_smart_interest', { p_nudge_id: nudgeId, p_interested: Boolean(interested) })
+  const row = Array.isArray(data) ? data[0] : data
+  return { matched: Boolean(row?.matched), matchId: row?.match_id || null, error }
+}

@@ -2,8 +2,8 @@
 import React from 'react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-const api = vi.hoisted(() => ({ generate: vi.fn(), fetch: vi.fn(), save: vi.fn(), mutual: vi.fn() }))
-vi.mock('../../lib/smartMatch', () => ({ generateSmartMatches: api.generate, fetchVisibleNudges: api.fetch, setNudgeStatus: api.save, checkMutualMatch: api.mutual }))
+const api = vi.hoisted(() => ({ generate: vi.fn(), fetch: vi.fn(), save: vi.fn(), mutual: vi.fn(), incoming: vi.fn(), respond: vi.fn() }))
+vi.mock('../../lib/smartMatch', () => ({ generateSmartMatches: api.generate, fetchVisibleNudges: api.fetch, setNudgeStatus: api.save, checkMutualMatch: api.mutual, fetchIncomingInterests: api.incoming, respondToInterest: api.respond }))
 vi.mock('../../lib/analytics', () => ({ track: vi.fn() }))
 import SmartMatchSection from '../SmartMatchSection'
 const row = { id: 'n1', candidate_id: 'peer', score: 62, reason: 'Shared focus on Finance', status: 'pending' }
@@ -13,6 +13,7 @@ beforeEach(() => {
   api.generate.mockResolvedValue({ error: null })
   api.save.mockResolvedValue({ error: null })
   api.mutual.mockResolvedValue({ matched: false })
+  api.incoming.mockResolvedValue({ incoming: [], error: null })
 })
 afterEach(cleanup)
 it('keeps the card after one-sided interest and explains the next step', async () => {
@@ -20,7 +21,7 @@ it('keeps the card after one-sided interest and explains the next step', async (
   fireEvent.click(await screen.findByRole('button', { name: 'Interested' }))
   expect(await screen.findByText('Interest saved')).toBeTruthy()
   expect(screen.getByRole('article')).toBeTruthy()
-  expect(screen.getByText(/Waiting for mutual interest/)).toBeTruthy()
+  expect(screen.getByText(/We let them know/)).toBeTruthy()
   expect(screen.queryByRole('button', { name: 'Interested' })).toBeNull()
   expect(screen.queryByText(/62%/)).toBeNull()
 })
@@ -102,4 +103,29 @@ it('shows the first name of a member who chose a Public profile', async () => {
   render(<SmartMatchSection />)
   expect(await screen.findByText('Sarah')).toBeTruthy()
   expect(screen.queryByText('Anonymous peer')).toBeNull()
+})
+it('lets a private sender connect without ever seeing who they are, and Not now stays silent', async () => {
+  api.fetch.mockResolvedValue({ nudges: [row], error: null })
+  api.incoming.mockResolvedValue({ incoming: [{ nudge_id: 'in1', public_id: null, public_name: null, my_pending_nudge_id: 'n1' }], error: null })
+  api.respond.mockResolvedValue({ matched: true, matchId: 'm9', error: null })
+  const open = vi.fn()
+  render(<SmartMatchSection onOpenMatches={open} />)
+  expect(await screen.findByText('Someone in your community')).toBeTruthy()
+  // My own suggestion for the same person is folded into this card.
+  expect(screen.getAllByRole('article')).toHaveLength(1)
+  fireEvent.click(screen.getByRole('button', { name: 'Interested' }))
+  expect(await screen.findByText('You are both interested')).toBeTruthy()
+  expect(api.respond).toHaveBeenCalledWith('in1', true)
+  fireEvent.click(screen.getByRole('button', { name: 'View Matches' }))
+  expect(open).toHaveBeenCalled()
+})
+it('names a Public sender and removes the card quietly on Not now', async () => {
+  api.incoming.mockResolvedValue({ incoming: [{ nudge_id: 'in2', public_id: 'pub', public_name: 'Sarah' }], error: null })
+  api.respond.mockResolvedValue({ matched: false, matchId: null, error: null })
+  render(<SmartMatchSection />)
+  expect(await screen.findByText('Sarah')).toBeTruthy()
+  fireEvent.click(screen.getByRole('button', { name: 'Not now' }))
+  expect(await screen.findByText('Okay. They will not be told.')).toBeTruthy()
+  expect(screen.queryByText('Sarah')).toBeNull()
+  expect(api.respond).toHaveBeenCalledWith('in2', false)
 })

@@ -11,6 +11,7 @@ import { MOCK_REQUESTS } from './data/mockRequests'
 import LeaderboardView from './components/LeaderboardView'
 import ChatView from './components/ChatView'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { PeerProfileProvider } from './context/PeerProfileContext'
 import LoginScreen from './components/LoginScreen'
 import EmailConfirmed from './components/EmailConfirmed'
 import ResetPasswordPage from './components/ResetPasswordPage'
@@ -364,9 +365,9 @@ function AppShell() {
     const ui = data.map(m => matchToUI(m, user.id))
     // Resolve the peer's real name for identity-revealed matches so the
     // Matches list shows it (instead of always "Anonymous Peer"), and for
-    // post matches whose peer had ALREADY made their name public (see
-    // isPeerNamePublic) — first name only, like the Give & Ask card.
-    const lookupIds = [...new Set(ui.filter(m => m.peerId && (m.reveal?.status === 'accepted' || m.source === 'post')).map(m => m.peerId))]
+    // any match whose peer has a Public profile (see isPeerNamePublic), first
+    // name only, like the Give & Ask card.
+    const lookupIds = [...new Set(ui.filter(m => m.peerId).map(m => m.peerId))]
     if (lookupIds.length) {
       const { data: profs } = await supabase.from('profiles').select('id, name, avatar_url, visibility').in('id', lookupIds)
       const byId = Object.fromEntries((profs || []).map(p => [p.id, p]))
@@ -775,6 +776,12 @@ function AppShell() {
         // Recognition now happens inside the match thread — open it there.
         if (matchId) { setTab('matches'); setChatMatchId(matchId) }
         else { setTab('profile'); setProfileSubTab('profile') }
+        break
+      case 'smart_match_interest':
+        // Someone tapped Interested on me: answer on Home, People you should meet.
+        setChatMatchId(null)
+        setTab('home')
+        window.dispatchEvent(new CustomEvent('mutu:smart-interest'))
         break
       case 'review_received':
         setTab('profile')
@@ -1593,7 +1600,9 @@ export default function App() {
   return (
     <DisplayModeProvider>
       <AuthProvider>
-        <AppRoot />
+        <PeerProfileProvider>
+          <AppRoot />
+        </PeerProfileProvider>
       </AuthProvider>
     </DisplayModeProvider>
   )

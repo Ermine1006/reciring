@@ -109,6 +109,9 @@ export async function fetchConnections(userId, { includeProfiles = false } = {})
       status,
       context: contextLabel(status, identityKnown),
       identityKnown,
+      // Only a Public profile opens from the name; a mutual reveal still
+      // shows the shared profile inside that conversation.
+      publicProfileId: isPublic ? c.peerId : null,
       name:      identityKnown ? (prof?.name || 'Member') : null,
       avatarUrl: identityKnown ? (prof?.avatar_url || null) : null,
       program:   identityKnown ? (prof?.program || null) : null,

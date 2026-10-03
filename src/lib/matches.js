@@ -179,8 +179,12 @@ export async function openOrCreateDirectMatch({ myId, peerId, eventId }) {
  * Emails and private full profiles still wait for the explicit reveal.
  */
 export function isPeerNamePublic(row, peerId, peerVisibility) {
-  if ((row.source || 'post') !== 'post' || !row.post || !peerId) return false
+  if (!peerId) return false
   const profilePublic = peerVisibility === 'public'
+  // Smart Match, Buddy and other non-post connections: a Public profile is
+  // named to the person they matched with. Private members keep the reveal.
+  if ((row.source || 'post') !== 'post') return profilePublic
+  if (!row.post) return false
   if (peerId === row.post.created_by) {
     if (row.post.is_anonymous === false) return true
     if (row.post.is_anonymous === true) return false

@@ -22,12 +22,22 @@ export function buildSharedProfilesContext(rows = []) {
   return rows.map(row => ({ name: row.name, profile: buildProfileContext(row.profile) }))
 }
 
-export async function fetchChatProfile(matchId, userId) {
-  if (!isSupabaseConfigured || !matchId || !userId) return { error: 'Please sign in.' }
+export function fetchChatProfile(matchId, userId) {
+  return fetchProfileBy('matchId', matchId, userId)
+}
+
+// Open a member's profile from anywhere they are named. The server only
+// returns it when that member chose a Public profile.
+export function fetchPublicProfile(peerId, userId) {
+  return fetchProfileBy('peerId', peerId, userId)
+}
+
+async function fetchProfileBy(param, id, userId) {
+  if (!isSupabaseConfigured || !id || !userId) return { error: 'Please sign in.' }
   try {
     const { data, error } = await supabase.auth.getSession()
     if (error || !data?.session?.access_token || data.session.user?.id !== userId) return { error: 'Please sign in again.' }
-    const response = await fetch(apiUrl(`/api/shared-profiles?matchId=${encodeURIComponent(matchId)}`), {
+    const response = await fetch(apiUrl(`/api/shared-profiles?${param}=${encodeURIComponent(id)}`), {
       headers: { Authorization: `Bearer ${data.session.access_token}` }, cache: 'no-store',
     })
     const result = await response.json()

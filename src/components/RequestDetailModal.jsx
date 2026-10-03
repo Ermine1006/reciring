@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Handshake } from 'lucide-react'
 import PeerAvatar from './PeerAvatar'
 import ReportModal from './ReportModal'
-import { posterDisplay } from '../lib/visibility'
+import { posterDisplay, publicProfileIdForPost } from '../lib/visibility'
+import PeerNameLink from './PeerNameLink'
 import { resolveAvatarSeed } from './SettingsPage'
 import { matchaCta } from '../lib/matchaCta'
 
@@ -224,7 +225,7 @@ export default function RequestDetailModal({ request, matchReason, matchReasons,
                 fontFamily: 'Inter, system-ui, sans-serif',
               }}>
                 {display.isPublic && <span style={{ marginRight: 5, opacity: 0.85 }}>🌟</span>}
-                {display.primary}
+                <PeerNameLink peerId={publicProfileIdForPost(request)}>{display.primary}</PeerNameLink>
                 {display.secondary && (
                   <span style={{ color: C.textMuted, opacity: 0.7, fontWeight: 400 }}>
                     {' · '}{display.secondary}

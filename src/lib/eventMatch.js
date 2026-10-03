@@ -114,6 +114,8 @@ export async function fetchEventMatches(eventId, meUserId) {
     const isPublic = p.visibility === 'public' && p.name
     return {
       userId:  o.user_id,
+      // Set only for Public profiles, so the name can open their profile.
+      publicProfileId: isPublic ? o.user_id : null,
       name:    isPublic ? p.name : 'A peer',
       program: isPublic ? (p.program || null) : null,
       need:    o.need_text || '',

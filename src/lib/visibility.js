@@ -11,7 +11,7 @@ export const VISIBILITY_OPTIONS = [
     id:    VISIBILITY_PUBLIC,
     label: 'Public profile',
     badge: '🌟',
-    description: 'Recommended for alumni, EMBA, and users who want maximum networking opportunities.',
+    description: 'Recommended for alumni, EMBA, and anyone who wants more networking. Members can see your profile, and people you match with can also see your school email.',
   },
   {
     id:    VISIBILITY_PRIVATE,
@@ -104,4 +104,13 @@ export function posterDisplay(post) {
     useAvatar: false,
     avatarUrl: null,
   }
+}
+
+// The user id whose profile may open from a post: only a named post by a
+// member who chose a Public profile. Anonymous posts and named posts from
+// Private members return null, so their profile is never offered.
+export function publicProfileIdForPost(post) {
+  const c = post?.creator || {}
+  if (post?.isAnonymous !== false || c.visibility !== VISIBILITY_PUBLIC || !String(c.name || '').trim()) return null
+  return post.created_by || post.poster_id || null
 }

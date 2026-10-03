@@ -1,6 +1,7 @@
 import { withoutEmDashes } from '../lib/aiCopy'
 import { useState, useEffect } from 'react'
 import { fetchEventMatches } from '../lib/eventMatch'
+import PeerNameLink from './PeerNameLink'
 
 const C = {
   gold: '#C9A33B', goldDark: '#A6822A', goldLight: '#E8D9A7', goldBg: '#F8F3E5',
@@ -76,7 +77,7 @@ export default function EventMatchList({ eventId, userId, title = 'People to mee
           <div key={m.userId} style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 14, padding: 16 }}>
             <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10, marginBottom: 6 }}>
               <span style={{ fontSize: 15, fontWeight: 700, color: C.ink }}>
-                {m.name}{m.program ? <span style={{ color: C.textMuted, fontWeight: 500 }}>{' · '}{m.program}</span> : null}
+                <PeerNameLink peerId={m.publicProfileId}>{m.name}</PeerNameLink>{m.program ? <span style={{ color: C.textMuted, fontWeight: 500 }}>{' · '}{m.program}</span> : null}
               </span>
             </div>
             <p style={{ margin: '0 0 10px', fontSize: 12, fontWeight: 600, color: C.goldDark }}>{withoutEmDashes(m.reason)}</p>

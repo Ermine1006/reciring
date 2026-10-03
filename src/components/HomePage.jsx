@@ -4,6 +4,8 @@ import { createPortal } from 'react-dom'
 import { Clock, Users, UserPlus, CalendarDays, ArrowRight, MessageSquareText, ChevronRight, Sparkles } from 'lucide-react'
 import AnonymousAvatar from './AnonymousAvatar'
 import PeerAvatar from './PeerAvatar'
+import PeerNameLink from './PeerNameLink'
+import { publicProfileIdForPost } from '../lib/visibility'
 import SmartMatchSection from './SmartMatchSection'
 import { resolveAvatarSeed } from './SettingsPage'
 import { getMatchScore, DEFAULT_VIEWER_PROFILE } from '../data/matchRanking'
@@ -224,7 +226,7 @@ export default function HomePage({
               <SuggCard
                 lead={<PersonAvatar post={personRec} />}
                 label="Person"
-                title={personRec.creator?.name}
+                title={<PeerNameLink peerId={publicProfileIdForPost(personRec)}>{personRec.creator?.name}</PeerNameLink>}
                 sub={[personRec.creator?.headline, personRec.creator?.program].filter(Boolean).join(' · ') || 'Community member'}
                 reason={titleOf(personRec.needs || personRec.offers)}
                 actionLabel="View"

@@ -25,6 +25,7 @@ const C = {
 
 const TYPE_ICONS = {
   new_match:         '🤝',
+  smart_match_interest: '👋',
   new_message:       '💬',
   feedback_request:  '⭐',
   meeting_confirmed: '📅',

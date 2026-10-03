@@ -4,7 +4,8 @@ import { motion } from 'framer-motion'
 import { fetchTrustSignal } from '../lib/recognition'
 import { Handshake, X } from 'lucide-react'
 import PeerAvatar from './PeerAvatar'
-import { posterDisplay } from '../lib/visibility'
+import { posterDisplay, publicProfileIdForPost } from '../lib/visibility'
+import PeerNameLink from './PeerNameLink'
 import { resolveAvatarSeed } from './SettingsPage'
 
 // Distance (px) the card must travel to commit a swipe on release. Kept
@@ -469,7 +470,7 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
               {display.isPublic && (
                 <span style={{ marginRight: 5, opacity: 0.85 }}>🌟</span>
               )}
-              {display.primary}
+              <PeerNameLink peerId={publicProfileIdForPost(request)}>{display.primary}</PeerNameLink>
               {display.secondary && (
                 <span style={{ color: preview ? C.textSub : C.textMuted, opacity: preview ? 1 : 0.7, fontWeight: 400 }}>
                   {' · '}{display.secondary}

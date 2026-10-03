@@ -20,8 +20,9 @@ describe('isPeerNamePublic', () => {
     expect(isPeerNamePublic(row({ is_anonymous: false }), HELPER, 'public')).toBe(true)
     expect(isPeerNamePublic(row({ is_anonymous: false }), HELPER, 'private')).toBe(false)
   })
-  it('leaves non-post connections to their own identity flows', () => {
-    expect(isPeerNamePublic(row({ is_anonymous: false }, 'smart_match'), POSTER, 'public')).toBe(false)
+  it('names a matched Public member on non-post connections, never a Private one', () => {
+    expect(isPeerNamePublic(row({ is_anonymous: false }, 'smart_match'), POSTER, 'public')).toBe(true)
+    expect(isPeerNamePublic(row({ is_anonymous: false }, 'smart_match'), POSTER, 'private')).toBe(false)
     expect(isPeerNamePublic({ source: 'post', post: null }, POSTER, 'public')).toBe(false)
   })
 })

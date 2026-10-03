@@ -8,6 +8,7 @@ import ContactHistorySheet from './ContactHistorySheet'
 import ContactsListSheet from './ContactsListSheet'
 import { fetchEncounters, fetchFollowups, completeFollowup, personKey } from '../lib/eventMemory'
 import { fetchConnections } from '../lib/relationships'
+import PeerNameLink from './PeerNameLink'
 
 const C = {
   bg: '#F6F3EC', card: '#FFFFFF', ink: '#25231E', sub: '#6E675B',
@@ -194,16 +195,17 @@ export default function MyNetworkingDashboard({ userId, events = [], joinedIds =
           <LabelRow left="Connections" right={connections.length > 4 ? `${connections.length}` : null} />
           <div style={{ ...card, padding: '4px 14px', marginBottom: 22 }}>
             {connections.slice(0, 5).map((c, i) => (
-              <button key={c.peerId} type="button"
+              <div key={c.peerId} role="button" tabIndex={c.matchId ? 0 : -1}
                 onClick={() => c.matchId && onOpenMatch?.(c.matchId)}
-                style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 0', width: '100%', background: 'none', border: 'none', borderTop: i ? `1px solid ${C.border}` : 'none', cursor: c.matchId ? 'pointer' : 'default', textAlign: 'left' }}>
+                onKeyDown={e => { if (c.matchId && (e.key === 'Enter' || e.key === ' ') && e.target === e.currentTarget) { e.preventDefault(); onOpenMatch?.(c.matchId) } }}
+                style={{ display: 'flex', boxSizing: 'border-box', alignItems: 'center', gap: 12, padding: '11px 0', width: '100%', background: 'none', border: 'none', borderTop: i ? `1px solid ${C.border}` : 'none', cursor: c.matchId ? 'pointer' : 'default', textAlign: 'left' }}>
                 <Avatar name={c.name || 'Private connection'} url={/^https?:/.test(c.avatarUrl || '') ? c.avatarUrl : null} size={38} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: C.ink, fontFamily: 'Inter, system-ui, sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name || 'Private connection'}</p>
+                  <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: C.ink, fontFamily: 'Inter, system-ui, sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}><PeerNameLink peerId={c.publicProfileId}>{c.name || 'Private connection'}</PeerNameLink></p>
                   <p style={{ margin: '1px 0 0', fontSize: 12, color: connColor(c.status), fontWeight: 600, fontFamily: 'Inter, system-ui, sans-serif' }}>{c.context}</p>
                 </div>
                 {c.matchId && <span style={{ color: C.goldDeep, flexShrink: 0 }}>{Icon.chev}</span>}
-              </button>
+              </div>
             ))}
           </div>
         </>

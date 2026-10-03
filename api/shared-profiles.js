@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { readSharedProfiles, readChatProfile } from './_lib/shared-profiles.js'
+import { readSharedProfiles, readChatProfile, readPublicProfile } from './_lib/shared-profiles.js'
 
 // Read only. Authenticated identity is the ONLY source of viewer id. The server
 // checks blocks both ways without exposing another person's block list, which
@@ -20,6 +20,13 @@ export default async function handler(req, res) {
     const client = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } })
     const { data, error } = await client.auth.getUser(token)
     if (error || !data?.user?.id) return res.status(401).json({ error: 'Please sign in again.' })
+    const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (req.query?.peerId !== undefined) {
+      const id = req.query.peerId
+      if (typeof id !== 'string' || !UUID.test(id)) return res.status(400).json({ error: 'Invalid member.' })
+      const result = await readPublicProfile(client, data.user.id, id)
+      return res.status(result.status).json(result.status === 200 ? { profile: result.profile, access: result.access } : { error: result.error })
+    }
     if (req.query?.matchId !== undefined) {
       const id = req.query.matchId
       if (typeof id !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) return res.status(400).json({ error: 'Invalid conversation.' })

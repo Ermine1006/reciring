@@ -2,8 +2,8 @@
 import React from 'react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-const mocks = vi.hoisted(() => ({ fetch: vi.fn() }))
-vi.mock('../../lib/askMutuSharedProfiles', () => ({ fetchChatProfile: mocks.fetch }))
+const mocks = vi.hoisted(() => ({ fetch: vi.fn(), fetchPublic: vi.fn() }))
+vi.mock('../../lib/askMutuSharedProfiles', () => ({ fetchChatProfile: mocks.fetch, fetchPublicProfile: mocks.fetchPublic }))
 vi.mock('../VoiceTyping', () => ({ default: () => null }))
 import PeerProfileCard from '../PeerProfileCard'
 import ChatView from '../ChatView'
