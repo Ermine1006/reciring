@@ -5,7 +5,7 @@ import { fetchTrustSignal } from '../lib/recognition'
 import { Handshake, X } from 'lucide-react'
 import PeerAvatar from './PeerAvatar'
 import { posterDisplay, publicProfileIdForPost } from '../lib/visibility'
-import PeerNameLink from './PeerNameLink'
+import PeerProfileTap from './PeerProfileTap'
 import { resolveAvatarSeed } from './SettingsPage'
 
 // Distance (px) the card must travel to commit a swipe on release. Kept
@@ -449,7 +449,7 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
             boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
             flexShrink: 0,
           }}>
-            <PeerAvatar name={display.primary} anonymous={!display.isPublic} seed={avatarSeed} size={36} />
+            <PeerProfileTap peerId={publicProfileIdForPost(request)} name={display.primary}><PeerAvatar name={display.primary} anonymous={!display.isPublic} seed={avatarSeed} size={36} /></PeerProfileTap>
           </div>
 
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -470,7 +470,7 @@ export default function RequestCard({ request, onDrag, onSwipeLeft, onSwipeRight
               {display.isPublic && (
                 <span style={{ marginRight: 5, opacity: 0.85 }}>🌟</span>
               )}
-              <PeerNameLink peerId={publicProfileIdForPost(request)}>{display.primary}</PeerNameLink>
+              {display.primary}
               {display.secondary && (
                 <span style={{ color: preview ? C.textSub : C.textMuted, opacity: preview ? 1 : 0.7, fontWeight: 400 }}>
                   {' · '}{display.secondary}

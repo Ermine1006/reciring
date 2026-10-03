@@ -1,7 +1,7 @@
 import { withoutEmDashes } from '../lib/aiCopy'
 import { useEffect, useState, useCallback, useRef } from 'react'
 import PeerAvatar from './PeerAvatar'
-import PeerNameLink from './PeerNameLink'
+import PeerProfileTap from './PeerProfileTap'
 import { generateSmartMatches, fetchVisibleNudges, setNudgeStatus, checkMutualMatch, fetchIncomingInterests, respondToInterest } from '../lib/smartMatch'
 import { track } from '../lib/analytics'
 import { matchaCta, MATCHA_DEEP } from '../lib/matchaCta'
@@ -158,9 +158,9 @@ export default function SmartMatchSection({ onOpenMatches }) {
           <article key={item.nudge_id} aria-label="Someone would like to connect"
             style={{ padding: '13px 2px', borderTop: i === 0 ? 'none' : '1px solid #F1EEE7' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
-              <div style={{ flexShrink: 0 }}><PeerAvatar name={item.public_name || 'Anonymous peer'} anonymous={!item.public_name} seed={item.public_id || item.nudge_id} size={40} /></div>
+              <div style={{ flexShrink: 0 }}><PeerProfileTap peerId={item.public_name ? item.public_id : null} name={item.public_name}><PeerAvatar name={item.public_name || 'Anonymous peer'} anonymous={!item.public_name} seed={item.public_id || item.nudge_id} size={40} /></PeerProfileTap></div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <PeerNameLink peerId={item.public_name ? item.public_id : null} style={{ fontSize: 14, fontWeight: 700, color: C.ink }}>{item.public_name || 'Someone in your community'}</PeerNameLink>
+                <span style={{ fontSize: 14, fontWeight: 700, color: C.ink }}>{item.public_name || 'Someone in your community'}</span>
                 <span style={{ display: 'block', fontSize: 12.5, color: C.ink2, marginTop: 2, lineHeight: 1.4 }}>
                   Would like to connect with you
                 </span>
@@ -191,9 +191,9 @@ export default function SmartMatchSection({ onOpenMatches }) {
           <article key={n.id} aria-label={n.publicName ? `Recommendation: ${n.publicName}` : 'Anonymous peer recommendation'}
             style={{ padding: '13px 2px', borderTop: i === 0 && !incoming.length ? 'none' : '1px solid #F1EEE7' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
-              <div style={{ flexShrink: 0 }}><PeerAvatar name={n.publicName || 'Anonymous peer'} anonymous={!n.publicName} seed={n.candidate_id} size={40} /></div>
+              <div style={{ flexShrink: 0 }}><PeerProfileTap peerId={n.publicName ? n.candidate_id : null} name={n.publicName}><PeerAvatar name={n.publicName || 'Anonymous peer'} anonymous={!n.publicName} seed={n.candidate_id} size={40} /></PeerProfileTap></div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <PeerNameLink peerId={n.publicName ? n.candidate_id : null} style={{ fontSize: 14, fontWeight: 700, color: C.ink }}>{n.publicName || 'Anonymous peer'}</PeerNameLink>
+                <span style={{ fontSize: 14, fontWeight: 700, color: C.ink }}>{n.publicName || 'Anonymous peer'}</span>
                 <span style={{ display: 'block', fontSize: 12.5, color: C.ink2, marginTop: 2, lineHeight: 1.4 }}>
                   {withoutEmDashes(n.reason)}
                 </span>
