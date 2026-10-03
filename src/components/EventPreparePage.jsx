@@ -71,7 +71,7 @@ export default function EventPreparePage({ eventId, userId, onBack, onSaved }) {
     const source = (field === 'look' ? look : offer).trim()
     if (!source || improving) return
     setImproving(field)
-    const { text, error } = await rewriteText({ kind: field === 'look' ? 'event_need' : 'event_offer', text: source, maxChars: 600 })
+    const { text, error } = await rewriteText({ kind: field === 'look' ? 'event_need' : 'event_offer', text: source, maxChars: MAX })
     setImproving(null)
     if (error || !text) return
     setUndo({ field, prev: field === 'look' ? look : offer })
