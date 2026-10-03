@@ -479,6 +479,15 @@ function AppShell() {
     if (error) { console.warn('[ReciRing] clearSwipedLeft failed:', error.message || error); loadInteractions() }
   }, [user?.id, loadInteractions])
 
+  // Posts the viewer has passed on. Home reads this so "Not for me" in a
+  // recommendation actually moves on to the next person, instead of closing
+  // the sheet onto the same card.
+  const passedPostIds = useMemo(() => {
+    const passed = new Set()
+    for (const [postId, type] of interactionMap) if (type === 'swiped_left') passed.add(postId)
+    return passed
+  }, [interactionMap])
+
   // Record a Discover interaction. Optimistic + non-blocking.
   // Priority: swiped_left > viewed > none. Refuses to downgrade an
   // existing 'swiped_left' to 'viewed'.
@@ -1212,6 +1221,7 @@ function AppShell() {
               onAskMutu={() => setAskMutuOpen(true)}
               onSharePastPost={handleSharePastPost}
               onOpenMatches={() => { loadMatches(); setChatMatchId(null); setTab('matches') }}
+              passedPostIds={passedPostIds}
             />
           )}
           {(tab === 'discover' || tab === 'post') && (

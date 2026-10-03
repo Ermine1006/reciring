@@ -70,9 +70,13 @@ function fmtEventDate(iso) {
          d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 }
 
+// Shared empty set so the default prop keeps a stable identity across renders.
+const EMPTY_PASSED = new Set()
+
 export default function HomePage({
   profile, viewerProfile, userId, requests = [],
   onOpenDiscover, onOpenEvent, onOpenProfile, onOpenPost, onOpenNetworking, onOpenEvents, onAskMutu,
+  passedPostIds = EMPTY_PASSED,
   onSharePastPost, onOpenMatches,
 }) {
   const me = profile || {}
@@ -121,9 +125,12 @@ export default function HomePage({
   const personRec = useMemo(() => {
     return (requests || [])
       .filter(p => p.created_by !== userId && (p.needs || p.offers) && p.creator?.name && !p.isAnonymous && (!p.expiresAt || new Date(p.expiresAt).getTime() > Date.now()))
+      // Someone who said "Not for me" should see the next person, not the
+      // same card again.
+      .filter(p => !passedPostIds.has(p.id))
       .map(p => ({ post: p, score: getMatchScore(p, rankViewer) }))
       .sort((a, b) => b.score - a.score)[0]?.post || null
-  }, [requests, userId, rankViewer])
+  }, [requests, userId, rankViewer, passedPostIds])
 
   const eventRec = data.events[0] || null
 
