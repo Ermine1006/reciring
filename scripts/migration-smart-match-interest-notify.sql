@@ -39,9 +39,23 @@ BEGIN
   IF def LIKE '%''smart_match_interest''%' THEN
     RETURN;
   END IF;
-  SELECT array_agg(DISTINCT m[1]) INTO vals
-    FROM regexp_matches(def, '''([a-z_]+)''', 'g') AS m;
-  vals := vals || ARRAY['smart_match_interest'];
+  -- Read every allowed value whether the live constraint is written as
+  -- ARRAY['a'::text, 'b'::text] or as '{a,b}'::text[]. Values already used
+  -- by existing rows are kept too, so the new constraint can never reject
+  -- a stored notification.
+  SELECT array_agg(DISTINCT v ORDER BY v) INTO vals FROM (
+    SELECT btrim(t) AS v
+      FROM regexp_matches(def, '''([^'']*)''', 'g') AS q,
+           regexp_split_to_table(q[1], '[{},]') AS t
+     WHERE btrim(t) ~ '^[a-z_]+$' AND btrim(t) <> 'text'
+    UNION
+    SELECT type FROM public.notifications WHERE type IS NOT NULL
+    UNION
+    SELECT 'smart_match_interest'
+  ) s;
+  IF array_length(vals, 1) < 10 THEN
+    RAISE EXCEPTION 'Read only % notification types from the live constraint; stopping so nothing is dropped', array_length(vals, 1);
+  END IF;
   EXECUTE 'ALTER TABLE public.notifications DROP CONSTRAINT notifications_type_check';
   EXECUTE format('ALTER TABLE public.notifications ADD CONSTRAINT notifications_type_check CHECK (type = ANY (%L::text[]))', vals);
 END $$;
